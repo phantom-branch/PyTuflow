@@ -313,6 +313,10 @@ class Command(TuflowLine):
         """AD BC data has a separate role from the hydraulic BC database."""
         return self.command == 'AD BC DATABASE'
 
+    def is_ad_global_database_file(self):
+        """AD constituent properties can contain secondary GIS inputs."""
+        return self.command == 'AD GLOBAL DATABASE'
+
     def is_pit_inlet_dbase_file(self):
         """Whether this command defines a pit or depth-discharge source database."""
         return self.command in ('PIT INLET DATABASE', 'DEPTH DISCHARGE DATABASE')
@@ -599,8 +603,8 @@ class Command(TuflowLine):
 
     def is_read_database(self):
         """Returns whether command is a database command."""
-        return self.is_mat_dbase() or self.is_bc_dbase_file() or self.is_rainfall_grid() \
-            or self.is_pit_inlet_dbase_file() or self.is_soil_dbase() or self.is_xs_dbase()
+        return self.is_mat_dbase() or self.is_bc_dbase_file() or self.is_ad_global_database_file() \
+            or self.is_rainfall_grid() or self.is_pit_inlet_dbase_file() or self.is_soil_dbase() or self.is_xs_dbase()
 
     def is_mat_dbase(self):
         """Returns whether command is a Read Material(s) File"""
