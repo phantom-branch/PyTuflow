@@ -8,6 +8,7 @@ from ..context import Context
 from .. import const
 
 from .. db import bc_dbase, mat, soil, pit_inlet, rf, xs
+from ..db.db_build_state import DatabaseBuildState
 
 
 if typing.TYPE_CHECKING:
@@ -50,6 +51,10 @@ class DatabaseInput(FileInput):
             try:
                 if self._command.is_bc_dbase_file():
                     cf = bc_dbase.BCDatabase(file, self._command.config, self.parent, self.scope)
+                elif self._command.is_ad_global_database_file():
+                    # Constituent properties live in a CSV and can contain
+                    # GIS paths in Initial Condition / Minimum Dispersion.
+                    cf = DatabaseBuildState(file, self._command.config, self.parent, self.scope)
                 elif self._command.is_mat_dbase():
                     cf = mat.get_material_database_class(file)(file, self._command.config, self.parent, self.scope)
                 elif self._command.is_soil_dbase():
