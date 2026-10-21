@@ -48,6 +48,37 @@ jobs:
           git rev-parse HEAD
           python -m tests.fixtures.tuflow_example_repro.run_checks --verify-only
         working-directory: ryan-tools
+      - name: Show exact eager/deferred identity differences for representative TCFs
+        working-directory: ryan-tools
+        shell: pwsh
+        run: |
+          @'
+          import sys
+          import tempfile
+          from pathlib import Path
+          sys.path.insert(0, str(Path("../upstream").absolute()))
+          from pytuflow import TCF
+          from tests.fixtures.tuflow_example_repro.run_checks import (
+              collect, discover_cases, extract_bundle,
+          )
+          from ryan_library.orchestrators.tuflow.input_preflight import RunRequest
+
+          bundle = Path("tests/test_data/tuflow/example_input_preflight")
+          with tempfile.TemporaryDirectory(prefix="tuflow-parity-diff-") as temp:
+              base = Path(temp)
+              extract_bundle(bundle, base)
+              cases = discover_cases(base)
+              for name in ("EG02_013.tcf", "EG03_012.tcf", "EG17_001.tcf", "EG15_007.tcf"):
+                  tcf = next(p for p in cases if p.name == name)
+                  runs = [RunRequest(i, flags) for i, flags in enumerate(cases[tcf], 1)]
+                  eager, _ = collect(tcf, runs, "eager", TCF)
+                  deferred, _ = collect(tcf, runs, "deferred", TCF)
+                  print(f"PARITY_DIFF {name}: eager-only={len(eager-deferred)}, deferred-only={len(deferred-eager)}", flush=True)
+                  for identity in sorted(eager-deferred)[:12]:
+                      print("EAGER_ONLY", repr(identity), flush=True)
+                  for identity in sorted(deferred-eager)[:12]:
+                      print("DEFERRED_ONLY", repr(identity), flush=True)
+          '@ | python -
       - name: Run focused rainfall, AD BC, table-link and curve examples
         continue-on-error: true
         working-directory: ryan-tools
