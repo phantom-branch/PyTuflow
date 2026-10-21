@@ -265,10 +265,11 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
             lhs = names[0]
             if not inputs:
                 continue
-            # Rainfall commands are additive: several CSV time indexes and
-            # terminal NetCDF sources may be active in one run. Database
-            # declarations of the same other role remain ambiguous.
-            if len(inputs) != 1 and kind != 'rainfall':
+            # Rainfall and materials inputs are additive. Material files
+            # with separate roughness classes are explicitly supported by
+            # TUFLOW, and each distinct source contributes dependencies.
+            # Stateful BC selection requires separate activation handling.
+            if len(inputs) != 1 and kind not in ('rainfall', 'materials'):
                 raise ValueError(f'Multiple active {lhs} inputs need disambiguation')
             for inp in inputs:
                 if kind == 'rainfall' and len(inp.file_references) == 1:
