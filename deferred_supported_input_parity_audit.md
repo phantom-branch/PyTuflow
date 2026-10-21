@@ -48,3 +48,37 @@ A deferred `FileReference` marks whether directory, layer, GIS attribute, table-
 - `Read GIS Table Links` resolves secondary cross-section/tabular sources via the GIS feature attributes, not by parsing the GIS source file as a CSV database.
 
 Sources: https://docs.tuflow.com/classic-hpc/manual/2026.3/075-Advection-Dispersion.html and https://docs.tuflow.com/classic-hpc/manual/2026.0/TwoDBoundaries-2.html .
+
+## Read-only GitHub Actions example sweep (22 October 2026)
+
+Run [39652484033](https://github.com/phantom-branch/PyTuflow/actions/runs/39652484033)
+used Linux/Python 3.14 with PyTUFLOW code commit `172af012f88ccb9088e894dc3b8fde85adc7623d` and
+pinned ryan-tools commit `aaa475e30eb5397d7b88adeffb970ff0c5155b6f`. The verified 1,464-member
+archive was extracted into a temporary directory; no TUFLOW executable was launched.
+
+**Observed results (older code SHA, not the current head):**
+- 161 TCFs / 174 run combinations checked; 21 TCFs / 21 runs accepted.
+- Eager-only dependency identities: **2** (EG05_018).
+- Deferred-only dependency identities: **18** (16 rainfall grids in EG03_012; one each in EG15_007/008).
+- No whole-context parser exceptions returned by the harness, but **one eager collection issue**:
+  pandas 3 StringArray assignment fails inside `DatabaseRunState._resolve_scope_in_context`
+  for EG03_012, resulting in an incomplete eager inventory.
+- 145 preflight missing-file findings included case-sensitive Linux lookups:
+  the control input asks for `model/materials.csv` but the stored member is `model/Materials.csv`.
+  This makes the Linux accepted-count **not comparable** to the earlier Windows baseline of
+  119 accepted / 55 unresolved. Agent 1 must implement shared case-insensitive literal
+  materialisation (or retest on Windows), without per-run filesystem scans.
+- The pinned downstream consumer accepts only `bc` and `materials` database source kinds.
+  It correctly fails closed on `pit_inlet` (13 cases), `ad_bc` (4), `depth_discharge` (3)
+  and `rainfall` (1). Other blocked cases include GIS table links (12).
+- EG03_011 passed both modes with 16 identical reference identities. EG03_012's eager
+  pandas failure has subsequently been repaired in `db_run_state.py`; the eager
+  rainfall CSV index inventory now projects cached grid Source rows.
+- Do not suppress empty BC Source `GT01` in EG05_018 or treat the two network curve
+  differences as solved without checking source row semantics and active identifiers.
+
+The job stores full per-case JSON and CSV in its Actions artifact. The GitHub diagnostic
+workflow's full sweep is **opt-in** via `[run examples]` in the supporting PR title;
+ordinary synthetic CI remains automatic. A later exact-head rerun must overwrite none
+of the original example bundle, and must compare missing **and** extra dependencies.
+
