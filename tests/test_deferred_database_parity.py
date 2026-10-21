@@ -541,3 +541,67 @@ def test_eager_rainfall_grid_projection_is_cached_in_memory(tmp_path):
         again = input_.files
     assert source == again
     assert [p.name for p in source] == ["rf.csv", "grid.tif"]
+
+
+
+def test_blank_hydraulic_bc_source_uses_numeric_constant_not_file(tmp_path):
+    """TUFLOW Table 8.13 permits Source blank with numeric Column 2."""
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "Set Variable BCConstant == 2.75\n"
+        "BC Database == conditions.csv\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "conditions.csv").write_text(
+        "Name,Source,Column 1,Column 2\n"
+        "GT01,,,<<BCConstant>>\n"
+        "QT01,flows.csv,Time,Flow\n",
+        encoding="utf-8",
+    )
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("file opened")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+    ):
+        run = model.context(file_resolution="deferred")
+        references = run.deferred_database_sources()
+    assert len(references) == 1
+    assert references[0].database_kind == "bc"
+    assert references[0].entry_name == "QT01"
+    assert references[0].path_pattern == tmp_path / "flows.csv"
+
+
+@pytest.mark.parametrize("blank_row", [
+    "GT01,,,",
+    "GT01,,,not-numeric",
+])
+def test_blank_bc_source_without_numeric_constant_fails_closed(tmp_path, blank_row):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("BC Database == conditions.csv\n", encoding="utf-8")
+    (tmp_path / "conditions.csv").write_text(
+        "Name,Source,Column 1,Column 2\n" + blank_row + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(DeferredDatabaseResolutionError, match="Column 2"):
+        TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
+
+
+def test_ad_bc_blank_source_remains_invalid_even_with_column_two(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "AD Global Database == constituents.csv\n"
+        "AD BC Database == ad.csv\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "constituents.csv").write_text(
+        "Name,Initial Condition,Minimum Dispersion\nSalinity,0,0\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "ad.csv").write_text(
+        "Name,Source,Column 1,Column 2\n"
+        "Ocean__Salinity,,,3.2\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(DeferredDatabaseResolutionError, match="Empty ad_bc source"):
+        TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
