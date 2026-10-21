@@ -306,8 +306,12 @@ class Command(TuflowLine):
         return self.is_quadtree_control_file() and self.value.upper() == 'SINGLE LEVEL'
 
     def is_bc_dbase_file(self):
-        """Returns whether command is referencing the bc_dbase.csv."""
-        return self.command == 'BC DATABASE' or self.command == 'AD BC DATABASE'
+        """Whether this is a hydraulic or advection-dispersion BC database."""
+        return self.command in ('BC DATABASE', 'AD BC DATABASE')
+
+    def is_ad_bc_dbase_file(self):
+        """AD BC data has a separate role from the hydraulic BC database."""
+        return self.command == 'AD BC DATABASE'
 
     def is_pit_inlet_dbase_file(self):
         """Returns whether command is referecing the pit_inlet_dbase.csv"""
