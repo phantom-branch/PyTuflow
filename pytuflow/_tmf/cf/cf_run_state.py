@@ -83,7 +83,12 @@ class ControlFileRunState(RunState, ControlFile):
 
         # try and resolve variables
         if not self.ctx.var_loaded:
-            var_inputs = self.bs.find_input(lhs='set variable', recursive=True)
+            # Batch dependency collection precomputes the immutable list of
+            # variable declarations once per parsed TCF. Each run still
+            # independently evaluates scopes and the active variable values.
+            var_inputs = getattr(self.ctx, '_batch_variable_inputs', None)
+            if var_inputs is None:
+                var_inputs = self.bs.find_input(lhs='set variable', recursive=True)
             var_map = {}
             for var_input in var_inputs:
                 if self.ctx.in_context_by_scope(var_input.scope):
