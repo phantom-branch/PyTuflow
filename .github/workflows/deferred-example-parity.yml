@@ -94,6 +94,8 @@ jobs:
             --tcf EG04_005.tcf --tcf EG04_006.tcf `
             --tcf EG11_006.tcf --tcf EG15_007.tcf --tcf EG15_008.tcf
       - name: Run complete 174-run example sweep
+        # Run the expensive full matrix only on explicitly requested sweeps.
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.title, '[full]')
         continue-on-error: true
         working-directory: ryan-tools
         shell: pwsh
