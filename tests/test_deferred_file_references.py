@@ -237,3 +237,57 @@ def test_440_synthetic_scenario_contexts_are_probe_free(tmp_path, capsys):
     tracemalloc.stop()
     assert counts['glob'] == 0
     print(f'440 deferred synthetic contexts: {elapsed:.3f}s, peak={peak / (1024 * 1024):.1f}MiB')
+
+
+@pytest.mark.parametrize('scenario', ['DEV', 'EXG'])
+def test_scenario_specific_eager_deferred_file_parity(tmp_path, scenario):
+    gis = tmp_path / 'gis'
+    gis.mkdir()
+    for name in ('DEV', 'EXG'):
+        (gis / f'2d_code_{name}.shp').touch()
+    tcf_path = tmp_path / 'model.tcf'
+    tcf_path.write_text(
+        'IF Scenario == DEV\n'
+        '    Read GIS Code == gis/2d_code_DEV.shp\n'
+        'ELSE\n'
+        '    Read GIS Code == gis/2d_code_EXG.shp\n'
+        'END IF\n',
+        encoding='utf-8',
+    )
+    tcf = TCF(tcf_path)
+    eager = tcf.context(f'-s1 {scenario}')
+    eager_paths = {
+        str(file) for inp in eager.inputs for file in inp.files
+        if str(file).endswith('.shp')
+    }
+    deferred = tcf.context(f'-s1 {scenario}', file_resolution='deferred')
+    deferred_paths = {
+        str(ref.path_pattern) for inp in deferred.inputs
+        for ref in inp.file_references if str(ref.path_pattern).endswith('.shp')
+    }
+    assert eager_paths == deferred_paths
+    assert {Path(file).name for file in deferred_paths} == {f'2d_code_{scenario}.shp'}
+
+
+def test_wildcard_deferred_pattern_materialises_to_eager_dependencies(tmp_path):
+    gis = tmp_path / 'gis'
+    gis.mkdir()
+    expected = {gis / '2d_code_001.shp', gis / '2d_code_002.shp'}
+    for source in expected:
+        source.touch()
+    tcf_path = tmp_path / 'model.tcf'
+    tcf_path.write_text('Read GIS Code == gis/2d_code_*.shp\n', encoding='utf-8')
+    tcf = TCF(tcf_path)
+    eager_paths = {
+        Path(file) for inp in tcf.context().inputs for file in inp.files
+        if str(file).endswith('.shp')
+    }
+    run = tcf.context(file_resolution='deferred')
+    patterns = [
+        ref.path_pattern for inp in run.inputs for ref in inp.file_references
+        if ref.path_pattern.suffix.lower() == '.shp'
+    ]
+    assert len(patterns) == 1
+    assert '*' in patterns[0].name
+    resolved = set(patterns[0].parent.glob(patterns[0].name))
+    assert eager_paths == resolved == expected
