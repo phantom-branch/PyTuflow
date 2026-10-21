@@ -56,6 +56,13 @@ def make_file_reference(command: Command) -> FileReference:
     if not path.is_absolute():
         path = base / path
     path_glob = str(path)
+    # A layerless GIS/Projection GeoPackage resolves to its stem-named layer
+    # in eager TUFLOW materialisation. Preserve that requirement for
+    # deferred consumers; omitting it would skip a required GPKG layer check.
+    if layer is None and path.suffix.casefold() == '.gpkg' and (
+        command.is_read_gis() or command.is_read_projection()
+    ):
+        layer = path.stem
     layer_glob = str(globify(layer, command.config.wildcards)) if layer is not None else None
     unresolved = tuple(dict.fromkeys(re.findall(r'<<[^<>]+>>', value)))
     # All GIS sources are candidates: their attributes may reference further
