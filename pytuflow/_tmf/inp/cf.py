@@ -24,6 +24,12 @@ class ControlFileInputRunState(InputRunState):
     def _resolve_scope_in_context(self):
         super()._resolve_scope_in_context()
         deferred = getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'
+        if deferred and not isinstance(self.bs, ControlFileInput):
+            # DatabaseInput shares this run-state class, but its cached .cf
+            # entries are tables, not recursively parsed control files.
+            # The explicit deferred_database_sources API handles database
+            # contents; do not apply nested-control coverage checks here.
+            return
         if deferred:
             # Use the paths captured when cached child control files were
             # loaded in the initial TCF parse. cf.fpath may be canonicalised
