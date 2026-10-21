@@ -249,6 +249,7 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
         for kind, names in (
             ('bc', ('bc database',)),
             ('ad_bc', ('ad bc database',)),
+            ('ad_global', ('ad global database',)),
             ('pit_inlet', ('pit inlet database',)),
             ('depth_discharge', ('depth discharge database',)),
             ('materials', ('read materials file', 'read material file')),
@@ -280,8 +281,9 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
             if primary.unresolved_variables or primary.requires_directory_scan:
                 raise ValueError(f'Cannot inspect unresolved primary database: {primary.path_pattern}')
             for source in inp.database_source_references:
-                if (source.unresolved_variables or source.layer_pattern is not None
-                        or source.requires_database_scan or source.requires_attribute_scan):
+                if (source.unresolved_variables or source.requires_database_scan
+                        or source.requires_attribute_scan
+                        or (source.layer_pattern is not None and kind != 'ad_global')):
                     raise ValueError(f'Unsupported secondary database reference: {source.path_pattern}')
                 row = source.origin.rsplit(' row ', 1)
                 if len(row) != 2 or not row[1]:
@@ -290,6 +292,11 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
                     primary.path_pattern, kind, row[1], source.path_pattern,
                     owning_command=primary.origin,
                     owner_control_file=inp._command.parent,
+                    layer_pattern=source.layer_pattern,
+                    source_field=(source.origin.rsplit(' / ', 1)[-1]
+                                  if kind == 'ad_global' else None),
+                    requires_layer_scan=source.requires_layer_scan,
+                    requires_directory_scan=source.requires_directory_scan,
                 ))
         return tuple(result)
 
