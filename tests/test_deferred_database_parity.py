@@ -710,3 +710,49 @@ def test_numeric_required_secondary_source_fails_closed(
         match=f"Numeric {kind} Source",
     ):
         TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
+
+
+def test_deferred_database_sources_for_selected_bc_activation(tmp_path):
+    """The consumer chooses an active table by UUID; unused tables stay distinct."""
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "BC Database == upstream.csv\n"
+        "Read GIS BC == gis/2d_bc_upstream.shp\n"
+        "BC Database == downstream.csv\n"
+        "Read GIS BC == gis/2d_bc_downstream.shp\n",
+        encoding="utf-8",
+    )
+    _bc_csv(tmp_path / "upstream.csv", "upstream_hydrograph.csv")
+    _bc_csv(tmp_path / "downstream.csv", "downstream_hydrograph.csv")
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("file opened")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+        patch("sqlite3.connect", side_effect=AssertionError("sqlite")),
+    ):
+        run = model.context(file_resolution="deferred")
+        bc = [entry for entry in run.deferred_database_activations()
+              if entry.database_kind == "bc"]
+        assert len(bc) == 2
+        first = run.deferred_database_sources_for_activation(bc[0].input_uuid)
+        second = run.deferred_database_sources_for_activation(bc[1].input_uuid)
+    assert [ref.path_pattern.name for ref in first] == ["upstream_hydrograph.csv"]
+    assert [ref.path_pattern.name for ref in second] == ["downstream_hydrograph.csv"]
+    assert all(ref.input_uuid == bc[0].input_uuid for ref in first)
+    assert all(ref.input_uuid == bc[1].input_uuid for ref in second)
+    assert first[0].database_path == bc[0].database_path
+    assert second[0].database_path == bc[1].database_path
+    with pytest.raises(ValueError, match="Expected exactly one"):
+        run.deferred_database_sources_for_activation("missing")
+    with pytest.raises(ValueError, match="Multiple active bc"):
+        run.deferred_database_sources()
+
+
+def test_selected_activation_requires_deferred_mode(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("BC Database == bc.csv\n", encoding="utf-8")
+    _bc_csv(tmp_path / "bc.csv", "hydrograph.csv")
+    run = TCF(tcf).context(file_resolution="eager")
+    with pytest.raises(ValueError, match="requires deferred mode"):
+        run.deferred_database_sources_for_activation("any")
