@@ -197,10 +197,34 @@ def database_source_references(
         column = columns[0]
 
     refs = []
-    for key, raw in frame[column].items():
-        value = _expanded(raw, context, kind=kind, row=key)
+    for key, record in frame.iterrows():
+        value = _expanded(record[column], context, kind=kind, row=key)
         if not value:
-            if kind in ('rainfall', 'bc', 'ad_bc', 'pit_inlet', 'depth_discharge', 'cross_section'):
+            if kind == 'bc':
+                # TUFLOW BC Database allows a blank Source *only* for a
+                # constant boundary with a numeric Column 2 (Value). Do not
+                # invent a source filename, or silently accept an incomplete
+                # constant without a value (2026.3 manual Table 8.13).
+                constant_column = next(
+                    (col for col in columns if str(col).strip().casefold()
+                     in ('column 2', 'value', 'column 2 or value')),
+                    None,
+                )
+                if constant_column is None:
+                    raise DeferredDatabaseResolutionError(
+                        f'Blank BC Source at row {key} without Column 2'
+                    )
+                constant = _expanded(
+                    record[constant_column], context, kind=kind, row=key,
+                )
+                try:
+                    float(constant)
+                except ValueError as exc:
+                    raise DeferredDatabaseResolutionError(
+                        f'Blank BC Source at row {key} lacks numeric Column 2: {constant!r}'
+                    ) from exc
+                continue
+            if kind in ('rainfall', 'ad_bc', 'pit_inlet', 'depth_discharge', 'cross_section'):
                 raise DeferredDatabaseResolutionError(f'Empty {kind} source path at row {key}')
             continue
         if kind == 'materials' and _inline_material(value, key):
