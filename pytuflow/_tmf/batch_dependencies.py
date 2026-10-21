@@ -155,8 +155,7 @@ def collect_batch_dependencies(
     scope_builds = scope_hits = translation_hits = translation_misses = 0
 
     for index, flags in enumerate(run_flags):
-        ctx = (BatchContext(flags, config=model.config)
-               if cache_scopes else Context(flags, config=model.config))
+        ctx = None
         flag_text = flags if isinstance(flags, str) else ' '.join(
             f'-{key.lstrip("-")} {value}' for key, value in flags.items()
         )
@@ -165,6 +164,10 @@ def collect_batch_dependencies(
         activations = ()
         error = None
         try:
+            # Even an invalid flag combination is one failed run, not an
+            # uncaught exception that aborts the remaining batch.
+            ctx = (BatchContext(flags, config=model.config)
+                   if cache_scopes else Context(flags, config=model.config))
             run = model.context(context=ctx, file_resolution='deferred')
             refs = tuple(ref for inp in run.find_input() for ref in inp.file_references)
             activations = run.deferred_database_activations()
