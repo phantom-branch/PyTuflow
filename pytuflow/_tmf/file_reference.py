@@ -26,6 +26,7 @@ class FileReference:
     requires_attribute_scan: bool
     requires_database_scan: bool
     unresolved_variables: tuple[str, ...] = ()
+    database_kind: str | None = None
 
 
 def make_file_reference(command: Command) -> FileReference:
@@ -50,6 +51,22 @@ def make_file_reference(command: Command) -> FileReference:
                  and (bool(tuflow_type_requires_feature_iter(layer_name))
                       or any(char in layer_name for char in '*?<[')
                       or layer_name == 'all'))
+    if command.is_bc_dbase_file():
+        kind = 'bc'
+    elif command.is_mat_dbase():
+        kind = 'materials'
+    elif command.is_soil_dbase():
+        kind = 'soils'
+    elif command.is_pit_inlet_dbase_file():
+        kind = 'pit_inlet'
+    elif command.is_xs_dbase() or command.is_table_link():
+        kind = 'cross_section'
+    elif command.is_rainfall_grid():
+        kind = 'rainfall'
+    elif command.is_read_database():
+        kind = 'unknown'
+    else:
+        kind = None
     return FileReference(
         base_directory=base, expanded_value=value, path_pattern=Path(path_glob),
         layer_pattern=layer_glob, origin=command.command_orig,
@@ -57,5 +74,5 @@ def make_file_reference(command: Command) -> FileReference:
         requires_layer_scan=layer_glob is not None,
         requires_attribute_scan=attr_scan,
         requires_database_scan=(command.is_read_database() or command.is_table_link()),
-        unresolved_variables=unresolved,
+        unresolved_variables=unresolved, database_kind=kind,
     )

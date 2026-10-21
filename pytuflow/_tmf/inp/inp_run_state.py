@@ -79,6 +79,25 @@ class InputRunState(RunState, Input):
         return self._rs.file_references if self._rs else ()
 
     @property
+    def database_source_references(self) -> tuple[FileReference, ...]:
+        """Secondary input-file references from cached database rows.
+
+        Explicit access only. Database files are loaded at initial TCF parse,
+        not while building a deferred context or requesting file_references.
+        Unsupported database schemas raise so consumers must fail closed.
+        """
+        from ..deferred_database import database_source_references
+        kinds = {ref.database_kind for ref in self.file_references
+                 if ref.requires_database_scan}
+        if not kinds:
+            return ()
+        if len(kinds) != 1:
+            raise ValueError(f'Ambiguous deferred database kinds: {kinds}')
+        return database_source_references(
+            self.bs, self.ctx, next(iter(kinds)), self._command.config,
+        )
+
+    @property
     def has_missing_files(self) -> bool:
         return self._rs.has_missing_files if self._rs else False
 
