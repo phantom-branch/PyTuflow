@@ -14,7 +14,8 @@ jobs:
     # Expensive sweep only when explicitly enabled in this PR's title.
     # Maintainers can append [run examples] and push a test commit to rerun.
     if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 2 && contains(github.event.pull_request.title, '[run examples]'))
-    runs-on: ubuntu-latest
+    # Windows is the only acceptance environment for current PyTUFLOW parity.
+    runs-on: windows-latest
     timeout-minutes: 30
     steps:
       - name: Checkout upstream parser
@@ -47,59 +48,51 @@ jobs:
       - name: Run focused rainfall, AD BC, table-link and curve examples
         continue-on-error: true
         working-directory: ryan-tools
+        shell: pwsh
         run: |
-          mkdir -p ../reports/focused
-          python -m tests.fixtures.tuflow_example_repro.run_checks \
-            --pytuflow-checkout ../upstream \
-            --output ../reports/focused \
-            --tcf EG03_011.tcf --tcf EG03_012.tcf \
-            --tcf EG17_001.tcf --tcf EG17_002.tcf --tcf EG17_003.tcf \
-            --tcf EG18_002.tcf --tcf EG02_013.tcf --tcf EG04_004.tcf \
-            --tcf EG04_005.tcf --tcf EG04_006.tcf \
+          New-Item -ItemType Directory -Path ../reports/focused -Force | Out-Null
+          python -m tests.fixtures.tuflow_example_repro.run_checks `
+            --pytuflow-checkout ../upstream `
+            --output ../reports/focused `
+            --tcf EG03_011.tcf --tcf EG03_012.tcf `
+            --tcf EG17_001.tcf --tcf EG17_002.tcf --tcf EG17_003.tcf `
+            --tcf EG18_002.tcf --tcf EG02_013.tcf --tcf EG04_004.tcf `
+            --tcf EG04_005.tcf --tcf EG04_006.tcf `
             --tcf EG11_006.tcf --tcf EG15_007.tcf --tcf EG15_008.tcf
       - name: Run complete 174-run example sweep
         continue-on-error: true
         working-directory: ryan-tools
+        shell: pwsh
         run: |
-          mkdir -p ../reports/full
-          python -m tests.fixtures.tuflow_example_repro.run_checks \
+          New-Item -ItemType Directory -Path ../reports/full -Force | Out-Null
+          python -m tests.fixtures.tuflow_example_repro.run_checks `
             --pytuflow-checkout ../upstream --output ../reports/full
       - name: Summarise actual accepted, unresolved and mismatch counts
         if: always()
+        shell: pwsh
         run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-
-          lines = ["## Deferred example-model parity (read-only)", ""]
-          for group in ("focused", "full"):
-              path = Path("reports") / group / "results.json"
-              if not path.is_file():
-                  lines.append(f"- {group}: no results file generated")
-                  continue
-              rows = json.loads(path.read_text(encoding="utf-8"))
-              accepted = sum(bool(row.get("accepted_parity")) for row in rows)
-              accepted_runs = sum(int(row["runs"]) for row in rows if row.get("accepted_parity"))
-              total_runs = sum(int(row["runs"]) for row in rows)
-              missing = sum(int(row.get("missing", 0)) for row in rows)
-              extra = sum(int(row.get("extra", 0)) for row in rows)
-              errors = sum(bool(row.get("eager", {}).get("error") or row.get("deferred", {}).get("error")) for row in rows)
-              lines.append(
-                  f"- {group}: {accepted}/{len(rows)} TCFs and {accepted_runs}/{total_runs} runs accepted; "
-                  f"missing {missing}; extra {extra}; parser error cases {errors}"
-              )
-              failures = [
-                  f"{row['tcf']}: eager={row.get('eager', {}).get('error', '-')}; "
-                  f"deferred={row.get('deferred', {}).get('error', '-')}"
-                  for row in rows
-                  if row.get("eager", {}).get("error") or row.get("deferred", {}).get("error")
-              ]
-              lines.extend(f"- {failure}" for failure in failures[:20])
-          Path("parity-summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-          with Path(__import__("os").environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as output:
-              output.write(Path("parity-summary.md").read_text(encoding="utf-8"))
-          print("\n".join(lines))
-          PY
+          $lines = @("## Windows deferred example-model parity (read-only)", "")
+          foreach ($group in @("focused", "full")) {
+            $path = Join-Path "reports" (Join-Path $group "results.json")
+            if (-not (Test-Path -LiteralPath $path)) {
+              $lines += "- ${group}: no results file generated"
+              continue
+            }
+            $rows = @(Get-Content -LiteralPath $path -Raw | ConvertFrom-Json)
+            $accepted = @($rows | Where-Object { $_.accepted_parity }).Count
+            $acceptedRuns = ($rows | Where-Object { $_.accepted_parity } | Measure-Object -Property runs -Sum).Sum
+            $totalRuns = ($rows | Measure-Object -Property runs -Sum).Sum
+            $missing = ($rows | Measure-Object -Property missing -Sum).Sum
+            $extra = ($rows | Measure-Object -Property extra -Sum).Sum
+            $errors = @($rows | Where-Object { $_.eager.error -or $_.deferred.error }).Count
+            $lines += "- ${group}: $accepted/$($rows.Count) TCFs and $acceptedRuns/$totalRuns runs accepted; missing $missing; extra $extra; parser error cases $errors"
+            foreach ($row in ($rows | Where-Object { $_.eager.error -or $_.deferred.error } | Select-Object -First 20)) {
+              $lines += "- $($row.tcf): eager=$($row.eager.error); deferred=$($row.deferred.error)"
+            }
+          }
+          $lines | Set-Content -Path parity-summary.md -Encoding utf8
+          $lines | Add-Content -Path $env:GITHUB_STEP_SUMMARY -Encoding utf8
+          $lines | ForEach-Object { Write-Output $_ }
       - name: Upload full diagnostics without modifying fixture archive
         if: always()
         uses: actions/upload-artifact@v4
