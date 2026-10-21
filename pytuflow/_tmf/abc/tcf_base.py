@@ -40,8 +40,9 @@ class TCFBase(ControlFile, ControlFileUniversalMixin):
         return self._find_control_file('swmm control file', **kwargs)
 
     def bc_dbase(self, *args, **kwargs) -> T_ControlFile:
-        # doc deferred to subclasses
-        return self._find_control_file(r'^bc database
+        # Hydraulic BC database; an AD BC database has a different role.
+        return self._find_control_file(r'^bc database$', regex=True,
+                                       regex_flags=re.IGNORECASE, **kwargs)
 
     def ad_bc_dbase(self, *args, **kwargs) -> T_ControlFile:
         """Return the AD boundary database, distinct from hydraulic BC data."""
