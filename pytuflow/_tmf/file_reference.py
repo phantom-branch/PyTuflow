@@ -86,6 +86,8 @@ def make_file_reference(command: Command) -> FileReference:
         kind = 'materials'
     elif command.is_soil_dbase():
         kind = 'soils'
+    elif command.is_depth_discharge_dbase_file():
+        kind = 'depth_discharge'
     elif command.is_pit_inlet_dbase_file():
         kind = 'pit_inlet'
     elif command.is_table_link():
