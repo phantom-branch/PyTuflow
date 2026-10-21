@@ -623,3 +623,100 @@ def test_wrong_scenario_cached_control_does_not_match_same_filename(tmp_path):
     inp._cf_loaded_paths[0] = tmp_path / 'EXG' / 'geometry.tgc'
     with pytest.raises(ResolveError, match='No cached nested control file'):
         model.context(file_resolution='deferred')
+
+
+@pytest.mark.parametrize('pairs', [
+    '0.05, 0.1',
+    '0.05, 0.1, 0.1, 0.05',
+])
+def test_deferred_material_inline_depth_n_matches_eager(tmp_path, pairs):
+    """Depth/n pairs that eager parses create no secondary file references."""
+    tcf = tmp_path / 'model.tcf'
+    materials = tmp_path / 'materials.csv'
+    tcf.write_text('Read Materials File == materials.csv | 0.8\n', encoding='utf-8')
+    materials.write_text(
+        "Material ID,Manning's n,Rainfall Losses\n"
+        f'1,"{pairs}",0\n',
+        encoding='utf-8',
+    )
+    model = TCF(tcf)
+    eager = model.context()
+    eager_material = eager.mat_file()
+    assert eager_material.value(1) is not None
+    with (
+        patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
+        patch.object(Path, 'stat', side_effect=AssertionError('stat')),
+        patch.object(Path, 'open', side_effect=AssertionError('open')),
+    ):
+        deferred = model.context(file_resolution='deferred')
+        sources = deferred.deferred_database_sources()
+    assert sources == ()
+
+
+def test_deferred_material_external_source_matches_eager(tmp_path):
+    """External material sources remain genuine file dependencies."""
+    tcf = tmp_path / 'model.tcf'
+    mat = tmp_path / 'materials.csv'
+    secondary = tmp_path / 'external_material.csv'
+    tcf.write_text('Read Materials File == materials.csv | 0.8\n', encoding='utf-8')
+    mat.write_text("Material ID,Manning's n\n1,external_material.csv\n", encoding='utf-8')
+    secondary.write_text('Depth,Manning n\n0,0.03\n', encoding='utf-8')
+    run = TCF(tcf).context(file_resolution='deferred')
+    files = {source.path_pattern for source in run.deferred_database_sources()}
+    assert files == {secondary}
+
+
+@pytest.mark.parametrize('method,values', [
+    ('NONE', ''),
+    ('ILCL', '12,1.2'),
+    ('GA', 'Sandy Clay'),
+    ('GA', '10,1.2,0.45'),
+    ('HO', '10,2,1,0.1'),
+    ('CO', '1.2,0.45'),
+    ('SCS', '85,0.2'),
+])
+def test_deferred_soil_inline_methods_have_no_secondary_files(tmp_path, method, values):
+    """Method-specific soil properties are inline parameters, not filenames."""
+    tcf = tmp_path / 'model.tcf'
+    soils = tmp_path / 'soils.tsoilf'
+    tcf.write_text('Read Soil File == soils.tsoilf\n', encoding='utf-8')
+    # TSOILF has no header; the first column is the soil ID.
+    soils.write_text(f'1,{method},{values}\n', encoding='utf-8')
+    model = TCF(tcf)
+    run = model.context(file_resolution='deferred')
+    ref = run.find_input(lhs='Read Soil File')[0].file_references
+    assert len(ref) == 1
+    assert ref[0].database_kind == 'soils'
+    assert run.deferred_database_sources() == ()
+
+
+@pytest.mark.parametrize('method,values', [
+    ('ILCL', 'not-a-number,1.2'),
+    ('HO', '10,,1,0.1'),
+    ('SCS', '85,<<UNRESOLVED>>'),
+    ('CUSTOM', 'some_file.csv'),
+])
+def test_deferred_soil_invalid_schema_fails_closed(tmp_path, method, values):
+    """Unsupported soil rows cannot silently pass a dependency audit."""
+    from pytuflow._tmf.deferred_database import DeferredDatabaseResolutionError
+    tcf = tmp_path / 'model.tcf'
+    soils = tmp_path / 'soils.tsoilf'
+    tcf.write_text('Read Soil File == soils.tsoilf\n', encoding='utf-8')
+    soils.write_text(f'1,{method},{values}\n', encoding='utf-8')
+    model = TCF(tcf)
+    with pytest.raises(DeferredDatabaseResolutionError):
+        model.context(file_resolution='deferred').deferred_database_sources()
+
+
+def test_deferred_malformed_inline_materials_fail_closed(tmp_path):
+    """Unpaired or nonnumeric depth/n values must not be mistaken for files."""
+    from pytuflow._tmf.deferred_database import DeferredDatabaseResolutionError
+    tcf = tmp_path / 'model.tcf'
+    mat = tmp_path / 'materials.csv'
+    tcf.write_text('Read Materials File == materials.csv | 0.8\n', encoding='utf-8')
+    mat.write_text(
+        "Material ID,Manning's n\n"
+        '1,"0.05, oops, 0.1, 0.05"\n', encoding='utf-8',
+    )
+    with pytest.raises(DeferredDatabaseResolutionError):
+        TCF(tcf).context(file_resolution='deferred').deferred_database_sources()
