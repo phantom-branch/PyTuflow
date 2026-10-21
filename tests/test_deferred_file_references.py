@@ -517,3 +517,55 @@ def test_deferred_case_insensitive_nested_file(tmp_path):
         paths = {ref.path_pattern.name for inp in run.find_input()
                  for ref in inp.file_references}
     assert '2d_code.shp' in paths, paths
+
+
+def test_deferred_recursive_geometry_bc_estry_sources_survive_cached_alias(tmp_path):
+    """A parsed child under a UNC-style alias still supplies its GIS/grid inputs."""
+    geom = tmp_path / 'geometry.tgc'
+    bc = tmp_path / 'boundaries.tbc'
+    estry = tmp_path / 'pipes.ecf'
+    top = tmp_path / 'model.tcf'
+    geom.write_text(
+        'Read GIS Code == gis/2d_code_upstream.shp\n'
+        'Read GRID Zpts == grids/terrain.tif\n', encoding='utf-8',
+    )
+    bc.write_text('Read GIS BC == gis/2d_bc_upstream.shp\n', encoding='utf-8')
+    estry.write_text('Read GIS Network == gis/1d_nwk_upstream.shp\n', encoding='utf-8')
+    top.write_text(
+        'Geometry Control File == geometry.tgc\n'
+        'BC Control File == boundaries.tbc\n'
+        'ESTRY Control File == pipes.ecf\n', encoding='utf-8',
+    )
+    model = TCF(top)
+    # Simulate a cached parse whose physical child paths have since been
+    # canonicalised to a different drive/share. Do not read these fake paths.
+    for inp in model.inputs:
+        for child in inp.cf:
+            child._fpath = tmp_path / 'other_share' / child.fpath.name
+    with (
+        patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
+        patch('sqlite3.connect', side_effect=AssertionError('sqlite')),
+        patch('os.scandir', side_effect=AssertionError('scan')),
+    ):
+        run = model.context(file_resolution='deferred')
+        references = {
+            ref.path_pattern.name for inp in run.find_input(recursive=True)
+            for ref in inp.file_references
+        }
+    assert {'geometry.tgc', 'boundaries.tbc', 'pipes.ecf',
+            '2d_code_upstream.shp', '2d_bc_upstream.shp',
+            '1d_nwk_upstream.shp', 'terrain.tif'} <= references
+
+
+def test_unmatched_cached_nested_file_must_fail_closed(tmp_path):
+    """Do not certify a model when a nested file was not parsed."""
+    top = tmp_path / 'model.tcf'
+    child = tmp_path / 'geometry.tgc'
+    child.write_text('Read GIS Code == gis/2d_code.shp\n', encoding='utf-8')
+    top.write_text('Geometry Control File == geometry.tgc\n', encoding='utf-8')
+    model = TCF(top)
+    inp = model.find_input(lhs='Geometry Control File')[0]
+    assert len(inp.cf) == 1
+    inp.cf.clear()
+    with pytest.raises(ValueError, match='No cached nested control file'):
+        model.context(file_resolution='deferred')
