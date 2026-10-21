@@ -375,3 +375,41 @@ def test_cross_section_without_source_column_fails_closed(tmp_path):
     )
     with pytest.raises(DeferredDatabaseResolutionError, match="no Source column"):
         TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
+
+
+
+def test_multiple_rainfall_indexes_and_netcdf_are_independently_projected(tmp_path):
+    """Multiple RF commands represent additive inputs, not ambiguous DB roles."""
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "Read Grid RF == east.csv\n"
+        "Read Grid RF == satellite.nc\n"
+        "Read Grid RF == west.csv\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "east.csv").write_text("0,grids/east_000.tif\n", encoding="utf-8")
+    (tmp_path / "west.csv").write_text("0,grids/west_000.tif\n", encoding="utf-8")
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("file opened")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+        patch("sqlite3.connect", side_effect=AssertionError("SQLite")),
+    ):
+        run = model.context(file_resolution="deferred")
+        secondary = run.deferred_database_sources()
+    assert {(ref.database_path.name, ref.path_pattern.name) for ref in secondary} == {
+        ("east.csv", "east_000.tif"),
+        ("west.csv", "west_000.tif"),
+    }
+    assert all(ref.requires_raster_metadata_scan for ref in secondary)
+    primaries = [
+        ref for inp in run.find_input(lhs="Read Grid RF")
+        for ref in inp.file_references
+    ]
+    assert {ref.path_pattern.name for ref in primaries} == {
+        "east.csv", "satellite.nc", "west.csv",
+    }
+    assert {ref.database_kind for ref in primaries} == {
+        "rainfall", "rainfall_netcdf",
+    }
