@@ -190,3 +190,48 @@ eager collection with the public deferred-reference API.
 4. Implement literal paths, variables and wildcard preservation first.
 5. Add database/layer and GIS-attribute semantics without silently weakening dependency coverage.
 6. Run unit tests and the 440-run downstream benchmark, documenting parity and timing evidence in the pull request.
+
+## Full eager/deferred dependency parity contract
+
+**No reduced feature set is acceptable for the deferred mode.** The acceptance
+criterion is that every file dependency which eager PyTUFLOW can discover
+must also be available to deferred consumers with the same originating
+command, resolved run/event/scenario, physical path and (when relevant)
+GeoPackage layer. The model must not need edits to its materials or soils
+inputs to permit deferred resolution.
+
+The implementation should therefore keep a coverage matrix for **all**
+supported eager input categories:
+
+- direct grids, rasters, GIS and hydrology files; literal and wildcard paths;
+- nested TCF, TGC, TBC, ECF, TEF, TRD and other control-file forms;
+- BC databases and event/scenario-resolved source CSVs;
+- materials CSV/TMF databases, including scalar, inline depth/Manning's-n
+  curves and externally referenced source files;
+- TSOILF soil methods and parameters, including contextual variables;
+- pit inlet/depth-discharge, cross-section, table-link, rainfall and other
+  eager-supported database schema references;
+- GIS attribute-linked files and layer/geometry-specific selectors;
+- output-only commands versus variable definitions that are later consumed
+  by actual input commands.
+
+Do not treat an inline numeric pair or soil method as a missing filename.
+Do not label an unsupported schema or incomplete traversal as passing;
+retain a structured unresolved finding until parity can be established.
+Bulk inspections should be deduplicated by source and relevant context
+while retaining per-run provenance.
+
+An implementation is **not merge-ready** if it only passes P/B or
+Higginsville, if a database type still has no deferred materialiser, or if
+the set of discovered input identities differs from eager for valid
+commands. Synthetic differential tests and real-model fixtures must
+compare normalised (run, physical file, layer, command origin) records,
+not just counts. Only after equality is established should timings be
+used as performance evidence.
+
+The October 21 local SSD benchmarks for model P (4 runs: eager 1.22 s,
+deferred 0.95 s) and model B (240 runs: eager 57.93 s, deferred 45.22 s)
+had **incomplete deferred inventories** from materials/soils and cannot
+be claimed as validated speedups. The validation record is local and
+uncommitted; the downstream Windows agent should include that evidence
+and exact software revisions in PR #143 before retesting.
