@@ -413,3 +413,37 @@ def test_multiple_rainfall_indexes_and_netcdf_are_independently_projected(tmp_pa
     assert {ref.database_kind for ref in primaries} == {
         "rainfall", "rainfall_netcdf",
     }
+
+
+
+def test_multiple_material_files_contribute_independent_sources(tmp_path):
+    """TUFLOW permits more than one Read Materials File command."""
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "Read Materials File == rock.csv | 0.85\n"
+        "Read Material File == soil_roughness.csv\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "rock.csv").write_text(
+        "Material ID,Manning's n\n1,rock_roughness.csv\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "soil_roughness.csv").write_text(
+        "Material ID,Manning's n\n2,0.04\n",
+        encoding="utf-8",
+    )
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("open")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+    ):
+        run = model.context(file_resolution="deferred")
+        sources = run.deferred_database_sources()
+    assert len(sources) == 1
+    assert sources[0].path_pattern == tmp_path / "rock_roughness.csv"
+    assert sources[0].database_path == tmp_path / "rock.csv"
+    assert {
+        ref.path_pattern.name for inp in run.find_input()
+        for ref in inp.file_references if ref.database_kind == "materials"
+    } == {"rock.csv", "soil_roughness.csv"}
