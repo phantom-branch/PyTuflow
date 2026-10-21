@@ -156,7 +156,10 @@ class InputRunState(RunState, Input):
             # Inspect the context-expanded command text, not the absolute
             # reference path: a literal ancestor directory can legitimately
             # contain text matching a TEF event wildcard (e.g. '_event_').
-            command_resolved = self.ctx.is_resolved(str(self._command.value))
+            # Check only the contextual command expression. An absolute
+            # parent folder may contain a literal TEF token such as _event_
+            # and must never be mistaken for an unresolved command.
+            command_resolved = self.ctx.is_resolved(str(self.ctx.translate(self.bs.rhs)))
             unresolved = [ref for ref in self.file_references if ref.unresolved_variables]
             if not command_resolved:
                 unresolved.append(str(self._command.value))
