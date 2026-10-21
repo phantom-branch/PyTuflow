@@ -367,7 +367,8 @@ def test_event_file_and_bc_sources_remain_event_specific(tmp_path, event, expect
         ]
     assert any(ref.path_pattern.name == 'bc_dbase.csv' for ref in references)
     assert not any('BC Event Source' in ref.origin for ref in references)
-    assert run.bc_dbase().df.loc['FC01']['Source'] == expected_source
+    # Eager mode still exposes a loaded database; deferred uses cached rows.
+    assert tcf.context(f'-e1 {event}').bc_dbase().df.loc['FC01']['Source'] == expected_source
     sources = run.deferred_database_sources()
     assert len(sources) == 1
     assert sources[0].database_kind == 'bc'
