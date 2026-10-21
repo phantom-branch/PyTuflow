@@ -98,3 +98,20 @@ Only this implementation scope exists in #5 initially. Next action: implement st
 **Still missing:** a compiled immutable dependency graph, transitive relevant-flag signatures, reuse of static command-reference expansion **across different runs**, benchmark profiles on representative 240/440/500 combinations and 174-run materialised GIS/database/raster parity. No speedup or feature-parity sign-off, no downstream dependency repin, no merge or release.
 
 The next action is to inspect the distinct-run benchmark output and profile the hot paths, then implement conservative cross-run command-level memoisation. If a command's dynamic scope, variable lineage or database activation cannot be proven safe, bypass caching rather than risk incomplete dependencies. Keep the upstream #2 branch synchronised without overwriting concurrent agent changes.
+
+
+### First comparable distinct-flag measurement (Windows CI)
+
+[Run 39662149567](https://github.com/phantom-branch/PyTuflow/actions/runs/39662149567) on commit `97c03a3` passed Windows Python 3.12/3.14 focused and existing context tests. The Python 3.14 manual benchmark used 500 **distinct** event-flag strings, 3 warm-cache trials, one parsed temporary TCF and identical syntactic dependency/provenance outputs across all modes:
+
+| Mode | Median contexts (s) | Trials (s) |
+| --- | ---: | --- |
+| Individual deferred | 4.839097 | 4.832053, 4.853546, 4.839097 |
+| Batch without caching | 4.845993 | 4.845993, 4.820860, 4.852573 |
+| Batch with per-run caching | 4.839513 | 4.799496, 4.839513, 4.862291 |
+
+The cached batch constructed **500 contexts**, reused **zero** complete-run signatures, built 500 available-scope views, reused 1,250 scope views, hit 14,500 translations and missed 1,500. **No meaningful speedup was observed.** This benchmark deliberately excludes initial parse, physical file/GIS checking, network drives and any TUFLOW executable; it is **not** end-to-end preflight performance evidence.
+
+After this measurement, a separate commit precomputed the immutable list of `Set Variable` build-state declarations once per batch, re-evaluating each declaration's scope/value for every distinct run. Exact-head CI and comparable benchmark are required to establish any improvement from this change.
+
+**Engineering conclusion:** context-local memoisation is insufficient; next implement cross-run immutable compiled command/dependency representations and relevant-flag signatures, not another round of file `stat` micro-optimisation. Preserve old single-context methods and conservative fallback for unsupported dynamic syntax.
