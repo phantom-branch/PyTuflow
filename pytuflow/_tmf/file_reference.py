@@ -27,6 +27,7 @@ class FileReference:
     requires_database_scan: bool
     unresolved_variables: tuple[str, ...] = ()
     database_kind: str | None = None
+    requires_table_link_scan: bool = False
 
 
 @dataclass(frozen=True)
@@ -42,6 +43,8 @@ class DeferredDatabaseSource:
     database_kind: str
     entry_name: str
     path_pattern: Path
+    owning_command: str = ''
+    owner_control_file: Path | None = None
 
 
 def make_file_reference(command: Command) -> FileReference:
@@ -71,11 +74,13 @@ def make_file_reference(command: Command) -> FileReference:
     # Only layers likely to have file-valued fields need an attribute scan.
     # Unknown/wildcard names remain candidates, preserving dependency coverage.
     from .gis import tuflow_type_requires_feature_iter
-    attr_scan = (command.is_read_gis() and not command.is_read_projection()
+    attr_scan = (command.is_table_link() or (command.is_read_gis() and not command.is_read_projection()
                  and (bool(tuflow_type_requires_feature_iter(layer_name))
                       or any(char in layer_name for char in '*?<[')
-                      or layer_name == 'all'))
-    if command.is_bc_dbase_file():
+                      or layer_name == 'all')))
+    if command.is_ad_bc_dbase_file():
+        kind = 'ad_bc'
+    elif command.is_bc_dbase_file():
         kind = 'bc'
     elif command.is_mat_dbase():
         kind = 'materials'
@@ -83,10 +88,12 @@ def make_file_reference(command: Command) -> FileReference:
         kind = 'soils'
     elif command.is_pit_inlet_dbase_file():
         kind = 'pit_inlet'
-    elif command.is_xs_dbase() or command.is_table_link():
+    elif command.is_table_link():
+        kind = 'gis_table_links'
+    elif command.is_xs_dbase():
         kind = 'cross_section'
     elif command.is_rainfall_grid():
-        kind = 'rainfall'
+        kind = 'rainfall_netcdf' if command.is_rainfall_grid_nc() else 'rainfall'
     elif command.is_read_database():
         kind = 'unknown'
     else:
@@ -97,6 +104,7 @@ def make_file_reference(command: Command) -> FileReference:
         requires_directory_scan=any(char in str(globify(db, command.config.wildcards)) for char in '*?['),
         requires_layer_scan=layer_glob is not None,
         requires_attribute_scan=attr_scan,
-        requires_database_scan=(command.is_read_database() or command.is_table_link()),
+        requires_database_scan=(command.is_read_database() and not command.is_rainfall_grid_nc()),
         unresolved_variables=unresolved, database_kind=kind,
+        requires_table_link_scan=command.is_table_link(),
     )
