@@ -160,7 +160,7 @@ def database_source_references(
     materials and soils follow the inline/source classifications supported
     by eager processing.
     """
-    if kind not in ('bc', 'ad_bc', 'ad_global', 'pit_inlet', 'depth_discharge', 'materials', 'soils', 'rainfall'):
+    if kind not in ('bc', 'ad_bc', 'ad_global', 'pit_inlet', 'depth_discharge', 'cross_section', 'materials', 'soils', 'rainfall'):
         raise DeferredDatabaseResolutionError(
             f'Unsupported deferred database schema: {kind!r}'
         )
@@ -179,7 +179,7 @@ def database_source_references(
         return ()
     if kind == 'ad_global':
         return _ad_global_references(frame, context, config, Path(database.fpath))
-    if kind in ('bc', 'ad_bc', 'pit_inlet', 'depth_discharge'):
+    if kind in ('bc', 'ad_bc', 'pit_inlet', 'depth_discharge', 'cross_section'):
         column = next((col for col in columns if str(col).strip().casefold() == 'source'), None)
         if column is None:
             raise DeferredDatabaseResolutionError(f'{kind} database has no Source column')
@@ -196,7 +196,7 @@ def database_source_references(
     for key, raw in frame[column].items():
         value = _expanded(raw, context, kind=kind, row=key)
         if not value:
-            if kind in ('rainfall', 'bc', 'ad_bc', 'pit_inlet', 'depth_discharge'):
+            if kind in ('rainfall', 'bc', 'ad_bc', 'pit_inlet', 'depth_discharge', 'cross_section'):
                 raise DeferredDatabaseResolutionError(f'Empty {kind} source path at row {key}')
             continue
         if kind == 'materials' and _inline_material(value, key):
