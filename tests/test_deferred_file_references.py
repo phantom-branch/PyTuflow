@@ -195,4 +195,6 @@ def test_nested_tgc_references_preserve_owning_directory(tmp_path):
     assert nested, 'Nested TGC run context was not constructed'
     refs = tuple(ref for cf in nested for inp in cf.inputs for ref in inp.file_references)
     assert any('2d_code.shp' in str(ref.path_pattern) for ref in refs)
-    assert all(ref.base_directory == geom for ref in refs)
+    assert all(ref.base_directory == geom for ref in refs), [
+        (str(ref.base_directory), str(ref.path_pattern)) for ref in refs
+    ]
