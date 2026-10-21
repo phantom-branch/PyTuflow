@@ -129,4 +129,5 @@ def test_nested_control_file_owns_reference_path(tmp_path):
     ctx = Context(config=cfg)
     ctx.file_resolution = 'deferred'
     run = source.context(context=ctx)
-    assert run.file_references[0].path_pattern == tmp_path / 'gis' / '2d_code.shp'
+    # Preserve lexical '..' rather than dereference a possible junction/symlink.
+    assert run.file_references[0].path_pattern == owner.parent / '../gis/2d_code.shp'
