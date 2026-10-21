@@ -77,6 +77,7 @@ from .inp.gis import GisInputRunState
 # misc / common
 from .gis import GISAttributes, has_gdal, get_driver_name_from_extension
 from .tfpathlib.file import TuflowPath
+from .file_reference import FileReference
 from .tfpathlib.vector_file_open import Geom, Feature
 from .misc.append_dict import AppendDict
 from .misc.case_insensitive_dict import CaseInsDict
