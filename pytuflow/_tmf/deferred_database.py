@@ -103,7 +103,56 @@ def _validate_soil_rows(frame, context):
                         ) from exc
 
 
-def database_source_references(build_input, context, kind: str | None, config) -> tuple[FileReference, ...]:
+def _ad_global_references(frame, context, config, database_path: Path) -> tuple[FileReference, ...]:
+    """Project spatial AD constituent fields from an already-loaded CSV.
+
+    The TUFLOW AD global database permits a numeric value or GIS file for
+    Initial Condition and Minimum Dispersion. Blank initial values mean zero;
+    blank minimum dispersion is invalid. GIS validation is a later stage.
+    """
+    columns = {str(column).strip().casefold(): column for column in frame.columns}
+    required = ('initial condition', 'minimum dispersion')
+    if any(name not in columns for name in required):
+        raise DeferredDatabaseResolutionError(
+            'AD Global Database is missing Initial Condition or Minimum Dispersion'
+        )
+    result = []
+    for key, row in frame.iterrows():
+        for field in required:
+            value = _expanded(row[columns[field]], context, kind='ad_global', row=key)
+            if not value:
+                if field == 'minimum dispersion':
+                    raise DeferredDatabaseResolutionError(
+                        f'AD constituent {key} requires Minimum Dispersion'
+                    )
+                continue
+            try:
+                float(value)
+            except ValueError:
+                pass
+            else:
+                continue
+            command = Command(f'Read GIS == {value}', config, parent=database_path)
+            found = tuple(
+                replace(
+                    make_file_reference(part),
+                    origin=f'ad_global database row {key} / {field}',
+                    database_kind=None,
+                )
+                for part in command.parts() if part.is_value_a_file()
+            )
+            if len(found) != 1:
+                raise DeferredDatabaseResolutionError(
+                    f'Invalid AD {field} GIS source at constituent {key}: {value}'
+                )
+            result.extend(found)
+    return tuple(result)
+
+
+def database_source_references(
+    build_input, context, kind: str | None, config,
+    *, source_base: Path | None = None,
+) -> tuple[FileReference, ...]:
     """Describe context-specific secondary sources with no additional file I/O.
 
     The build-state already contains database rows from initial TCF parsing.
@@ -111,7 +160,7 @@ def database_source_references(build_input, context, kind: str | None, config) -
     materials and soils follow the inline/source classifications supported
     by eager processing.
     """
-    if kind not in ('bc', 'ad_bc', 'pit_inlet', 'depth_discharge', 'materials', 'soils', 'rainfall'):
+    if kind not in ('bc', 'ad_bc', 'ad_global', 'pit_inlet', 'depth_discharge', 'materials', 'soils', 'rainfall'):
         raise DeferredDatabaseResolutionError(
             f'Unsupported deferred database schema: {kind!r}'
         )
@@ -128,6 +177,8 @@ def database_source_references(build_input, context, kind: str | None, config) -
     if kind == 'soils':
         _validate_soil_rows(frame, context)
         return ()
+    if kind == 'ad_global':
+        return _ad_global_references(frame, context, config, Path(database.fpath))
     if kind in ('bc', 'ad_bc', 'pit_inlet', 'depth_discharge'):
         column = next((col for col in columns if str(col).strip().casefold() == 'source'), None)
         if column is None:
@@ -158,7 +209,10 @@ def database_source_references(build_input, context, kind: str | None, config) -
             if kind == 'rainfall':
                 raise DeferredDatabaseResolutionError(f'Numeric rainfall grid path at time {key}: {value}')
             continue
-        command = Command(f'Read File == {value}', config, parent=Path(database.fpath))
+        command = Command(
+            f'Read File == {value}', config,
+            parent=source_base if source_base is not None else Path(database.fpath),
+        )
         found = tuple(
             replace(make_file_reference(part),
                     origin=f'{kind} database row {key!s}', database_kind=None)
