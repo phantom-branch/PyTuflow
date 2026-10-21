@@ -24,21 +24,50 @@ class ControlFileInputRunState(InputRunState):
         super()._resolve_scope_in_context()
         deferred = getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'
         if deferred:
-            # Source commands retain their *owning control file*, unlike a
-            # relative value created from the process working directory.
-            # Compare against expanded syntactic references with no probing.
-            patterns = {
-                os.path.normpath(str(ref.path_pattern)).casefold()
-                for ref in self.file_references
-                if not ref.unresolved_variables
-            }
-            for cf in self.bs.cf:
-                # Build-state children are concrete paths loaded once at TCF
-                # construction. Compare lexically, case-insensitively and
-                # honour wildcards without a new network filesystem scan.
-                cf_path = os.path.normpath(str(cf.fpath.absolute())).casefold()
-                if any(fnmatch.fnmatchcase(cf_path, pattern) for pattern in patterns):
-                    self.cf.append(cf.context(context=self.ctx, parent=self.parent))
+            # Cached child control files were already loaded during the
+            # one-time TCF parse. Their paths may have been canonicalised to
+            # UNC while the run-specific command still names a mapped drive.
+            # First match complete lexical paths, then permit a *unique*
+            # filename match within this input's own parsed children.
+            # Never silently discard an unmatched or ambiguous child.
+            from ..abc.run_state import ResolveError
+
+            children = tuple(self.bs.cf)
+            matched = set()
+            references = self.file_references
+            for ref in references:
+                if ref.unresolved_variables:
+                    raise ResolveError(f'Unresolved child control file: {ref.path_pattern}')
+                path = os.path.normpath(str(ref.path_pattern)).casefold()
+                full_matches = [
+                    i for i, cf in enumerate(children)
+                    if fnmatch.fnmatchcase(
+                        os.path.normpath(str(cf.fpath.absolute())).casefold(), path,
+                    )
+                ]
+                if full_matches:
+                    selected = full_matches
+                else:
+                    # The build-state list is scoped to this specific READ
+                    # command; a filename match cannot import an unrelated
+                    # control file from another command. Duplicated names
+                    # remain ambiguous and must fail closed.
+                    name = ref.path_pattern.name.casefold()
+                    selected = [
+                        i for i, cf in enumerate(children)
+                        if fnmatch.fnmatchcase(cf.fpath.name.casefold(), name)
+                    ]
+                    if len(selected) > 1 and not any(c in matched for c in selected):
+                        raise ResolveError(
+                            f'Ambiguous cached child for {ref.path_pattern}'
+                        )
+                if not selected:
+                    raise ResolveError(
+                        f'No cached nested control file for {ref.path_pattern}'
+                    )
+                matched.update(selected)
+            for i in sorted(matched):
+                self.cf.append(children[i].context(context=self.ctx, parent=self.parent))
         else:
             for cf in self.bs.cf:
                 if cf.fpath.resolve() == self.value.resolve():
