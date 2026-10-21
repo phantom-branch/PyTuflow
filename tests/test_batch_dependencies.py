@@ -142,3 +142,40 @@ def test_distinct_event_flags_do_not_collide_in_cache(tmp_path):
         assert {ref.path_pattern.name for ref in run.file_references} == {
             f'code_TEST{i:03d}.shp',
         }
+
+
+def test_batch_reuses_variable_declaration_scan_not_variable_values(tmp_path):
+    source = tmp_path / 'variable_model.tcf'
+    source.write_text(
+        'IF Scenario == DEV\n'
+        '    Set Variable InputDir == dev\n'
+        'ELSE\n'
+        '    Set Variable InputDir == exg\n'
+        'END IF\n'
+        'Read GIS Code == gis/<<InputDir>>/2d_code.shp\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    flags = tuple('-s1 DEV' if i % 2 else '-s1 EXG' for i in range(12))
+    # Use six distinct secondary flags to force contexts beyond the
+    # whole-run exact-flag cache, while retaining independent variable scope.
+    flags = tuple(f'{flag} -e1 TEST{i:02d}' for i, flag in enumerate(flags))
+    with patch.object(model, 'find_input', wraps=model.find_input) as finder:
+        batch = model.collect_batch_dependencies(flags)
+    assert batch.passed
+    declaration_reads = [
+        call for call in finder.call_args_list
+        if call.kwargs.get('lhs', '').casefold() == 'set variable'
+    ]
+    assert len(declaration_reads) == 1
+    assert batch.contexts_constructed == len(flags)
+    for i, case in enumerate(batch.runs):
+        expected = 'dev' if i % 2 else 'exg'
+        assert any(expected in ref.path_pattern.parts for ref in case.file_references)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert baseline.passed
+    assert [
+        item.file_references for item in baseline.runs
+    ] == [
+        item.file_references for item in batch.runs
+    ]
