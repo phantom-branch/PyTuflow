@@ -1,4 +1,4 @@
-# Batch-aware deferred dependency resolution — PR #3 scope
+# Batch-aware deferred dependency resolution — PR #5 scope
 
 Status: **scoped, not implemented**. This is a stacked development PR against PyTUFLOW PR #2 (branch `feat/deferred-parity-database-kinds`), which itself targets PR #1. No merge, release, or change to the published PyTUFLOW package is authorised.
 
@@ -12,7 +12,7 @@ Current downstream same-fork local SSD observation (single ordered pair, not a p
 
 - PR #1: `feat/deferred-file-resolution` (syntax-only per-context file references and explicit deferred secondary database inspection).
 - PR #2: `feat/deferred-parity-database-kinds` (database roles, rainfall grids, GIS table-link/raster metadata markers, ownership and external-source semantics).
-- PR #3 (this branch): `feat/batch-dependency-context-cache`, initially based on #2's exact head. Rebase/merge from #2 while it evolves.
+- PR #5 (this branch): `feat/batch-dependency-context-cache`, initially based on #2's exact head. Rebase/merge from #2 while it evolves.
 - New downstream ryan-tools PR: `feat/tuflow-batch-preflight-optimisation`, based on PR #143's `feat/tuflow-run-preflight`; it consumes the eventual public batch API.
 
 ## Deliverable A — profile and define a correctness baseline
@@ -67,11 +67,11 @@ Current downstream same-fork local SSD observation (single ordered pair, not a p
 
 ## PR acceptance and merge order
 
-1. #1/#2 parity fixes must be incorporated; #3 is not a vehicle for suppressing their outstanding correctness findings.
+1. #1/#2 parity fixes must be incorporated; #5 is not a vehicle for suppressing their outstanding correctness findings.
 2. All synthetically supported cases pass exact identity parity, no silent omissions/extras, and existing eager single-context behaviour remains unchanged.
 3. New batch API is opt-in, side-effect free after parse (outside explicitly requested cached database projection), typed/documented and benchmarked against repeated individual contexts.
 4. Full downstream regression parity and benchmark evidence are linked from the consumer PR before that consumer switches behaviour.
-5. Merge #2 into #1; retarget #3 to #1. After merging #1 into `master`, retarget #3 to `master`. Do not delete a base branch before moving #3. No automatic merge/publication.
+5. Merge #2 into #1; retarget #5 to #1. After merging #1 into `master`, retarget #5 to `master`. Do not delete a base branch before moving #5. No automatic merge/publication.
 
 ## Out of scope
 
@@ -82,4 +82,4 @@ Current downstream same-fork local SSD observation (single ordered pair, not a p
 
 ## Current handoff
 
-Only this implementation scope exists in #3 initially. Next action: implement stage A and an identity-equivalence harness, then add the immutable plan and batch API incrementally. Source branch will track #2; review and validation must always name exact head SHA.
+Only this implementation scope exists in #5 initially. Next action: implement stage A and an identity-equivalence harness, then add the immutable plan and batch API incrementally. Source branch will track #2; review and validation must always name exact head SHA.
