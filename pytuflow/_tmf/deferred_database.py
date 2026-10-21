@@ -15,7 +15,7 @@ def _expanded(value, context, *, kind, row):
     if value is None:
         return ''
     raw = str(value).strip()
-    if raw.casefold() == 'nan':
+    if raw.casefold() == 'nan' or (kind != 'soils' and raw.casefold() == 'none'):
         return ''
     translated = str(context.translate(raw)).strip()
     if translated and not context.is_resolved(translated):
