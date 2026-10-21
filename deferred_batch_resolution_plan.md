@@ -115,3 +115,12 @@ The cached batch constructed **500 contexts**, reused **zero** complete-run sign
 After this measurement, a separate commit precomputed the immutable list of `Set Variable` build-state declarations once per batch, re-evaluating each declaration's scope/value for every distinct run. Exact-head CI and comparable benchmark are required to establish any improvement from this change.
 
 **Engineering conclusion:** context-local memoisation is insufficient; next implement cross-run immutable compiled command/dependency representations and relevant-flag signatures, not another round of file `stat` micro-optimisation. Preserve old single-context methods and conservative fallback for unsupported dynamic syntax.
+
+
+### Follow-up cross-run variable-inventory optimisation checkpoint
+
+After the first benchmark, `BatchContext` was supplied with the parsed `Set Variable` build-state declaration list once per batch. `ControlFileRunState` uses that list instead of traversing the same TCF control tree for every context; every scenario's active declarations and substitution values are still individually evaluated. New tests assert one declaration traversal for twelve distinct flag combinations and exact cached/uncached dependency identity.
+
+[Windows CI 39662701759](https://github.com/phantom-branch/PyTuflow/actions/runs/39662701759) passed Python 3.12 and 3.14, including the added variable-scope regression. The 500-distinct-flag synthetic benchmark remained exactly equal across modes (zero missing/extra references); medians were individual **4.8233 s**, batch without caching **4.9150 s**, cached batch **4.8025 s**. The ~0.4% nominal cached-versus-individual difference is too small to establish a meaningful speedup, and the synthetic benchmark TCF contains **no Set Variable declarations**, so it does not measure the new traversal optimisation.
+
+Before claiming faster real-world batches, add a benchmark fixture containing substantial nested control files and scenario/event-dependent variable declarations; then implement cross-run immutable command compilation. Maintain parity first and do not promote the code to ryan-tools #148 just to report an inconclusive timing.
