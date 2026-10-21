@@ -22,6 +22,14 @@ class MatDatabaseInput(DatabaseInput):
         super().__init__(parent, command, load_control_files)
 
     def _load(self, load_control_files: bool):
+        if not load_control_files:
+            for cmd in self._command.parts():
+                if cmd.is_value_a_file():
+                    self._rhs.append(Path(cmd.value_expanded_path or cmd.value))
+                elif cmd.is_value_a_number_3():
+                    self._rhs.append(cmd.return_number())
+                    self.multiplier = cmd.return_number()
+            return
         for cmd in self._command.parts():
             if cmd.is_value_a_file():
                 self._rhs.append(Path(cmd.value_expanded_path))

@@ -1,0 +1,59 @@
+"""Focused tests for syntax-only TUFLOW input references."""
+from dataclasses import FrozenInstanceError
+from pathlib import Path
+from unittest.mock import patch
+
+import pytest
+
+from pytuflow import TCF
+from pytuflow._tmf.file_reference import make_file_reference
+from pytuflow._tmf.parsers.command import Command
+from pytuflow._tmf.settings import TCFConfig
+from pytuflow._tmf.tfpathlib import TuflowPath
+
+
+def config(tmp_path: Path) -> TCFConfig:
+    return TCFConfig(control_file=tmp_path / 'model.tcf', init_from_tcf=False,
+                     file_resolution='deferred')
+
+
+def test_glob_and_layer_patterns_are_immutable(tmp_path):
+    with patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')):
+        cmd = Command('Read GIS Mat == gis/model_*.gpkg >> 2d_mat_*', config(tmp_path))
+        ref = make_file_reference(next(cmd.parts()))
+    assert ref.path_pattern.name == 'model_*.gpkg'
+    assert ref.layer_pattern == '2d_mat_*'
+    assert ref.requires_directory_scan
+    assert ref.requires_layer_scan
+    with pytest.raises(FrozenInstanceError):
+        ref.origin = 'different'
+
+
+def test_gpkg_all_does_not_open_database(tmp_path):
+    with patch.object(Path, 'exists', side_effect=AssertionError('stat')):
+        cmd = Command('Read GIS Code == gis/model.gpkg >> all', config(tmp_path))
+    assert '>> all' in cmd.value_expanded_path
+
+
+def test_bc_event_source_is_not_a_file(tmp_path):
+    cmd = Command('BC Event Source == ~AEP~ | 05.00p', config(tmp_path))
+    assert not cmd.is_value_a_file()
+
+
+def test_deferred_context_does_not_glob_missing_input(tmp_path):
+    fpath = tmp_path / 'model.tcf'
+    fpath.write_text('Read GIS Code == gis/missing.shp\n', encoding='utf-8')
+    tcf = TCF(fpath)
+    with patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')):
+        run = tcf.context(file_resolution='deferred')
+        refs = [ref for inp in run.inputs for ref in inp.file_references]
+    assert refs
+    assert refs[0].path_pattern.name == 'missing.shp'
+    assert refs[0].requires_attribute_scan
+
+
+def test_invalid_mode_rejected(tmp_path):
+    fpath = tmp_path / 'model.tcf'
+    fpath.write_text('Read GIS Code == gis/missing.shp\n', encoding='utf-8')
+    with pytest.raises(ValueError, match='file_resolution'):
+        TCF(fpath).context(file_resolution='unknown')

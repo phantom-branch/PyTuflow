@@ -36,6 +36,7 @@ class Context:
         """
         #: bool: Whether variables defined in the TEF have been loaded into the context object
         self.events_loaded = False
+        self.file_resolution = 'eager'
         #: EventDatabase: An event database object that contains the events for the context object.
         self.event_db = EventDatabase()
         #: TCFConfig: Configuration object for the TUFLOW control file.

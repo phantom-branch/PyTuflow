@@ -81,6 +81,7 @@ class _ParseContext:
     time_format: str = 'HOURS'
     check_file_prefix_1d: str = ''
     check_file_prefix_2d: str = ''
+    file_resolution: str = 'eager'  # Build-state parsing remains eager.
 
     def set_spatial_database(self, value: 'str | Path | None'):
         """Mirror of :meth:`TCFConfig.set_spatial_database`, operating on *self*."""
@@ -134,6 +135,7 @@ class TCFConfig:
     time_format: str = field(default='HOURS', repr=False)   
     check_file_prefix_1d: str = field(default='', repr=False)
     check_file_prefix_2d: str = field(default='', repr=False)
+    file_resolution: str = field(default='eager', repr=False)
     init_from_tcf: bool = field(default=True, repr=False)
 
     def __post_init__(self):

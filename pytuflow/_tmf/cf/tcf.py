@@ -355,8 +355,18 @@ class TCF(ControlFileLoadMixin, TuflowControlFileMixin, TCFBuildState):
     def context(self,
                 run_context: str | dict[str, str] = '',
                 context: Context | None = None,
-                parent: ControlFileRunState | None = None) -> 'TCFRunState':
-        # docstring inherited
+                parent: ControlFileRunState | None = None,
+                *, file_resolution: str | None = None) -> 'TCFRunState':
+        """Create a context, optionally deferring input-file materialisation.
+
+        The default remains eager. With ``file_resolution='deferred'``, each
+        input exposes ``file_references`` without file or GIS discovery.
+        Requesting ``input_.files`` still materialises its references.
+        """
         from .tcf_run_state import TCFRunState
         ctx = context if context else Context(run_context, config=self.config)
+        if file_resolution is not None:
+            if file_resolution not in ('eager', 'deferred'):
+                raise ValueError("file_resolution must be 'eager' or 'deferred'")
+            ctx.file_resolution = file_resolution
         return TCFRunState(self, ctx, parent)

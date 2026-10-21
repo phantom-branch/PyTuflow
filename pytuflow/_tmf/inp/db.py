@@ -36,10 +36,10 @@ class DatabaseInput(FileInput):
 
     def _load(self, load_control_files: bool):
         super()._load(load_control_files)
-        self._load_files()
         if load_control_files:
+            self._load_files()
             self._load_database_files()
-        self._file_scopes()
+            self._file_scopes()
 
     def _load_files(self):
         super()._load_files()

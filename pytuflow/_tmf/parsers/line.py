@@ -22,7 +22,10 @@ class TuflowLine:
         self.part_index = -1
         self.value = self.original_text.strip()
         self.value_expanded_path = self.value  # This will be expanded later
-        self._expander = TuflowValueExpander(self.config.variables, self.config.spatial_database)
+        self._expander = TuflowValueExpander(
+            self.config.variables, self.config.spatial_database,
+            deferred=self.config.file_resolution == 'deferred',
+        )
 
     def __repr__(self):
         return self.original_text

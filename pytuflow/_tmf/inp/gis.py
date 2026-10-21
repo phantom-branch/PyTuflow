@@ -86,7 +86,8 @@ class GisInputRunState(InputRunState):
         #: GisInput: the BuildState object that the RunState object is based on.
         self.bs = build_state
         #: int: index of the attribute column to use for the GIS input.
-        self.attr_idx = build_state.attr_idx
+        self.attr_idx = (0 if getattr(context, 'file_resolution', 'eager') == 'deferred'
+                         else build_state.attr_idx)
 
         self._geoms = []
 
@@ -103,6 +104,9 @@ class GisInputRunState(InputRunState):
 
     def _resolve_scope_in_context(self):
         super()._resolve_scope_in_context()
+        if getattr(self.ctx, 'file_resolution', 'eager') == 'deferred':
+            self.attr_idx = self._rs.attr_idx
+            return  # GIS attribute/geometry inspection belongs to materialisation.
         self._geoms = self._rs.geoms if has_gdal or has_geopandas else []
         for cf in self.bs.cf:
             if cf.fpath.resolve() == self.value.resolve():

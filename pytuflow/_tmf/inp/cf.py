@@ -20,8 +20,11 @@ class ControlFileInputRunState(InputRunState):
 
     def _resolve_scope_in_context(self):
         super()._resolve_scope_in_context()
+        deferred = getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'
         for cf in self.bs.cf:
-            if cf.fpath.resolve() == self.value.resolve():
+            cf_path = cf.fpath.absolute() if deferred else cf.fpath.resolve()
+            value_path = self.value.absolute() if deferred else self.value.resolve()
+            if cf_path == value_path:
                 run_cf = cf.context(context=self.ctx, parent=self.parent)
                 self.cf.append(run_cf)
 

@@ -8,6 +8,8 @@ from ..tmf_types import PathLike
 from ..parsers.command import Command
 from ..scope import ScopeList
 from ..context import Context
+from ..settings import from_config
+from ..file_reference import FileReference
 
 
 
@@ -72,6 +74,11 @@ class InputRunState(RunState, Input):
         return self._rs.files if self._rs else []
 
     @property
+    def file_references(self) -> tuple[FileReference, ...]:
+        """Immutable syntactic references; does not probe files or GIS layers."""
+        return self._rs.file_references if self._rs else ()
+
+    @property
     def has_missing_files(self) -> bool:
         return self._rs.has_missing_files if self._rs else False
 
@@ -98,9 +105,18 @@ class InputRunState(RunState, Input):
         """
         from .get_input_class import get_input_class
         cmd_txt = f'{self.bs.lhs} == {self.ctx.translate(self.bs.rhs)}' if self.bs.rhs else self.bs.lhs
-        self._command = self.bs.command().__class__(cmd_txt, self.config)
+        deferred = getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'
+        run_config = from_config(self.config) if deferred else self.config
+        if deferred:
+            run_config.file_resolution = 'deferred'
+            run_config.variables = self.ctx.translate
+        self._command = self.bs.command().__class__(cmd_txt, run_config)
         self._command.config.variables = self.ctx.translate
         self._rs = get_input_class(self._command)(self.bs.parent, self._command, load_control_files=False)  # Input representing the RunState
         # check all variable names in file have been resolved
-        if [x for x in self.files if not self.ctx.is_resolved(x)]:
+        if deferred:
+            unresolved = [ref for ref in self.file_references if ref.unresolved_variables]
+        else:
+            unresolved = [x for x in self.files if not self.ctx.is_resolved(x)]
+        if unresolved:
             raise ResolveError('Input has not been completely resolved - {0}'.format(self.rhs))

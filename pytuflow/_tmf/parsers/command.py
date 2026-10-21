@@ -138,6 +138,8 @@ class Command(TuflowLine):
         if not self.is_valid() or not self.value_orig or self.is_number(text, total_parts, index):
             return False
 
+        if self.command == 'BC EVENT SOURCE':
+            return False  # A variable assignment, not a file reference.
         if self.is_mi_prj_string() or self.is_prj_string() or self.is_uk_hazard_formula():
             return False
 

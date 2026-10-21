@@ -14,6 +14,7 @@ from ..parsers.command import Command
 from ..scope_writer import ScopeWriter
 from ..scope import Scope, ScopeList
 from ..context import Context
+from ..file_reference import FileReference, make_file_reference
 
 
 if TYPE_CHECKING:
@@ -140,6 +141,16 @@ class InputBuildState(BuildState, Input):
                 variable_name, _ = self._command.parse_variable()
                 self.parent.tcf.remove_variable(variable_name)
         BuildState.scope.fset(self, value)
+
+    @property
+    def file_references(self) -> tuple[FileReference, ...]:
+        """Describe required source inputs without testing the filesystem."""
+        cmd = self._command
+        name = (cmd.command or '').upper()
+        if (not cmd.value_orig or name.startswith(('WRITE ', 'OUTPUT ', 'LOG ', 'CHECK '))
+                or name in ('SPATIAL DATABASE', 'BC EVENT SOURCE')):
+            return ()
+        return tuple(make_file_reference(part) for part in cmd.parts() if part.is_value_a_file())
 
     @property
     def files(self) -> list[Path]:
