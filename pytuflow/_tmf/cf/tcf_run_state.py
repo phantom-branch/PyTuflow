@@ -232,74 +232,44 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
         return super().rainfall_dbase()
 
     def deferred_database_sources(self):
-        """Return secondary BC/material source patterns without opening files.
+        """Describe active BC/material secondary files using cached parsed rows.
 
-        The already-parsed build-state databases are projected into this
-        simulation's event/scenario context in memory. Callers still need to
-        validate the primary database and each returned source on disk.
-        Unknown database kinds remain unsupported by this method.
+        Explicitly requesting this view does not open any database, create
+        database run-state objects or materialise GIS inputs. All paths are
+        syntactic; the consumer must validate and deduplicate them in bulk.
+        Unsupported schemas, ambiguous databases and unexpanded variables
+        raise rather than returning an incomplete dependency set.
         """
         from ..file_reference import DeferredDatabaseSource
 
         if getattr(self.ctx, 'file_resolution', 'eager') != 'deferred':
-            raise ValueError('deferred_database_sources requires a deferred run context')
+            raise ValueError('deferred_database_sources requires deferred mode')
 
         result = []
-        for kind, lhs in (
-            ('bc', 'BC Database'),
-            ('materials', 'Read Materials File'),
-        ):
+        for kind, lhs in (('bc', 'BC Database'), ('materials', 'Read Materials File')):
             inputs = self.find_input(lhs=lhs)
             if not inputs:
                 continue
             if len(inputs) != 1:
-                raise ValueError('Multiple active {0} inputs need disambiguation'.format(lhs))
-            input_ = inputs[0]
-            # The run-state .cf is intentionally empty in deferred mode.
-            # Reuse the parse-once build-state database, never call .files or
-            # rebuild an eager context. This remains a deliberate materialise
-            # call rather than part of syntax-only context construction.
-            databases = input_.bs.cf
-            if len(databases) != 1:
-                raise ValueError('Cannot uniquely identify parsed {0} database'.format(lhs))
-            db = databases[0].context(context=self.ctx, parent=input_.parent)
-            if not db.loaded or db.fpath is None:
-                raise ValueError('Active {0} database is not loaded'.format(lhs))
-            database_path = Path(db.fpath).absolute()
-
-            def add_source(name, source):
-                raw = str(source).strip()
-                if not raw or raw.casefold() in ('nan', 'none'):
-                    return
-                try:
-                    float(raw)
-                    return
-                except ValueError:
-                    pass
-                if not self.ctx.is_resolved(raw):
-                    raise ValueError('Unresolved {0} source: {1}'.format(lhs, raw))
-                path = Path(raw)
-                if not path.is_absolute():
-                    path = database_path.parent / path
+                raise ValueError(f'Multiple active {lhs} inputs need disambiguation')
+            inp = inputs[0]
+            primaries = [ref for ref in inp.file_references
+                         if ref.requires_database_scan and ref.database_kind == kind]
+            if len(primaries) != 1:
+                raise ValueError(f'Cannot uniquely identify primary {lhs} path')
+            primary = primaries[0]
+            if primary.unresolved_variables or primary.requires_directory_scan:
+                raise ValueError(f'Cannot inspect unresolved primary database: {primary.path_pattern}')
+            for source in inp.database_source_references:
+                if (source.unresolved_variables or source.layer_pattern is not None
+                        or source.requires_database_scan or source.requires_attribute_scan):
+                    raise ValueError(f'Unsupported secondary database reference: {source.path_pattern}')
+                row = source.origin.rsplit(' row ', 1)
+                if len(row) != 2 or not row[1]:
+                    raise ValueError(f'Cannot identify database entry: {source.origin}')
                 result.append(DeferredDatabaseSource(
-                    database_path, kind, str(name), path.absolute(),
+                    primary.path_pattern, kind, row[1], source.path_pattern,
                 ))
-
-            if kind == 'bc':
-                frame = db.df
-                columns = [col for col in frame.columns if str(col).strip().casefold() == 'source']
-                if len(columns) != 1:
-                    raise ValueError('BC database requires exactly one Source column')
-                for name, row in frame.iterrows():
-                    add_source(name, row[columns[0]])
-            else:
-                # Use PyTUFLOW's database entry classification, not a
-                # downstream guess about material column conventions.
-                for name, entry in db.entries.items():
-                    if entry.uses_source_file and not entry.is_list():
-                        source = entry[db.bs.SOURCE_INDEX]
-                        add_source(name, source.value_expanded_path or source.value)
-
         return tuple(result)
 
     def output_name(self) -> str:
