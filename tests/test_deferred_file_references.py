@@ -368,6 +368,13 @@ def test_event_file_and_bc_sources_remain_event_specific(tmp_path, event, expect
     assert any(ref.path_pattern.name == 'bc_dbase.csv' for ref in references)
     assert not any('BC Event Source' in ref.origin for ref in references)
     assert run.bc_dbase().df.loc['FC01']['Source'] == expected_source
+    sources = run.deferred_database_sources()
+    assert len(sources) == 1
+    assert sources[0].database_kind == 'bc'
+    assert sources[0].entry_name == 'FC01'
+    assert sources[0].database_path == bc_path
+    assert sources[0].path_pattern == tmp_path / expected_source
+
 
     database_inputs = run.find_input(lhs='BC Database')
     assert len(database_inputs) == 1
@@ -409,3 +416,18 @@ def test_deferred_material_database_reports_source_without_rechecking_disk(tmp_p
     assert len(refs) == 1
     assert refs[0].database_kind == 'materials'
     assert secondary == ()
+
+
+def test_deferred_material_database_without_secondary_sources(tmp_path):
+    """The material CSV is a primary file, not a perpetual unresolved scan."""
+    tcf_path = tmp_path / 'model.tcf'
+    mat_path = tmp_path / 'materials.csv'
+    tcf_path.write_text('Read Materials File == materials.csv | 0.8\n', encoding='utf-8')
+    mat_path.write_text(
+        "Material ID,Manning's n,Rainfall Losses,Land Use Hazard ID,SRF,Fraction Impervious\n"
+        '1,0.03,0,0,0,0\n',
+        encoding='utf-8',
+    )
+    run = TCF(tcf_path).context(file_resolution='deferred')
+    assert run.deferred_database_sources() == ()
+    assert run.mat_file().loaded
