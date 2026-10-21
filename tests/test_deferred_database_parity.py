@@ -165,3 +165,74 @@ def test_bc_database_paths_include_context_expansion(tmp_path):
     assert len(sources) == 1
     assert sources[0].database_kind == "ad_bc"
     assert sources[0].path_pattern == tmp_path / "ad_suffix.csv"
+
+
+def test_pit_inlet_and_depth_discharge_sources_are_typed(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "Pit Inlet Database == pit.csv\n"
+        "Depth Discharge Database == curves.csv\n",
+        encoding="utf-8",
+    )
+    for filename, source in [
+        ("pit.csv", "pit_curve.csv"),
+        ("curves.csv", "network_curve.csv"),
+    ]:
+        (tmp_path / filename).write_text(
+            "Name,Source,Depth_Col,Flow_Col,Area,Width\n"
+            + "aa," + source + ",Depth,Flow,0,0\n",
+            encoding="utf-8",
+        )
+
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("file opened")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+    ):
+        refs = model.context(file_resolution="deferred").deferred_database_sources()
+    assert {(ref.database_kind, ref.path_pattern.name) for ref in refs} == {
+        ("pit_inlet", "pit_curve.csv"),
+        ("depth_discharge", "network_curve.csv"),
+    }
+    assert all(ref.entry_name == "aa" for ref in refs)
+
+
+@pytest.mark.parametrize("row", ["aa,,Depth,Flow,0,0", "aa,<<UNKNOWN>>,Depth,Flow,0,0"])
+def test_invalid_pit_sources_fail_closed(tmp_path, row):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("Pit Inlet Database == pit.csv\n", encoding="utf-8")
+    (tmp_path / "pit.csv").write_text(
+        "Name,Source,Depth_Col,Flow_Col,Area,Width\n" + row + "\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(DeferredDatabaseResolutionError):
+        TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
+
+
+def test_network_file_roles_do_not_treat_curve_ids_as_paths():
+    from pytuflow._tmf.gis import network_attribute_file_sources
+
+    attrs = ["id", "Q", "", "", "", "", "", "", "", "", "aa"]
+    assert network_attribute_file_sources(attrs) == ()
+    attrs[1] = "P"
+    assert network_attribute_file_sources(attrs) == ()
+    attrs[1] = "PO"
+    assert network_attribute_file_sources(attrs) == ()
+    attrs[1] = "QO"
+    attrs[10] = "pump_rule | operational.csv"
+    assert network_attribute_file_sources(attrs) == ("operational.csv",)
+    attrs[1] = "M"
+    attrs[10] = "flow.csv | area.csv"
+    assert network_attribute_file_sources(attrs) == ("flow.csv", "area.csv")
+    attrs[2] = "Y"
+    assert network_attribute_file_sources(attrs) == ()
+    attrs[2] = "t"
+    assert network_attribute_file_sources(attrs) == ()
+
+
+def test_incomplete_network_qo_expression_rejected():
+    from pytuflow._tmf.gis import network_attribute_file_sources
+
+    attrs = ["id", "QO", "", "", "", "", "", "", "", "", "control_only"]
+    with pytest.raises(ValueError, match="QO operational"):
+        network_attribute_file_sources(attrs)
