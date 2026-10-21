@@ -231,6 +231,66 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
         """
         return super().rainfall_dbase()
 
+    def deferred_database_sources(self):
+        """Return secondary BC/material source patterns without opening files.
+
+        The already-parsed build-state databases are projected into this
+        simulation's event/scenario context in memory. Callers still need to
+        validate the primary database and each returned source on disk.
+        Unknown database kinds remain unsupported by this method.
+        """
+        from ..file_reference import DeferredDatabaseSource
+
+        if getattr(self.ctx, 'file_resolution', 'eager') != 'deferred':
+            raise ValueError('deferred_database_sources requires a deferred run context')
+
+        result = []
+        for kind, lhs, fetch in (
+            ('bc', 'BC Database', self.bc_dbase),
+            ('materials', 'Read Materials File', self.mat_file),
+        ):
+            if not self.find_input(lhs=lhs):
+                continue
+            db = fetch()
+            if not db.loaded or db.fpath is None:
+                raise ValueError('Active {0} database is not loaded'.format(lhs))
+            database_path = Path(db.fpath).absolute()
+
+            def add_source(name, source):
+                raw = str(source).strip()
+                if not raw or raw.casefold() in ('nan', 'none'):
+                    return
+                try:
+                    float(raw)
+                    return
+                except ValueError:
+                    pass
+                if not self.ctx.is_resolved(raw):
+                    raise ValueError('Unresolved {0} source: {1}'.format(lhs, raw))
+                path = Path(raw)
+                if not path.is_absolute():
+                    path = database_path.parent / path
+                result.append(DeferredDatabaseSource(
+                    database_path, kind, str(name), path.absolute(),
+                ))
+
+            if kind == 'bc':
+                frame = db.df
+                columns = [col for col in frame.columns if str(col).strip().casefold() == 'source']
+                if len(columns) != 1:
+                    raise ValueError('BC database requires exactly one Source column')
+                for name, row in frame.iterrows():
+                    add_source(name, row[columns[0]])
+            else:
+                # Use PyTUFLOW's database entry classification, not a
+                # downstream guess about material column conventions.
+                for name, entry in db.entries.items():
+                    if entry.uses_source_file and not entry.is_list():
+                        source = entry[db.bs.SOURCE_INDEX]
+                        add_source(name, source.value_expanded_path or source.value)
+
+        return tuple(result)
+
     def output_name(self) -> str:
         """Returns the file name of the result file without any extension.
 
