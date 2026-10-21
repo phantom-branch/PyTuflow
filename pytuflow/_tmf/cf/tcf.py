@@ -9,6 +9,7 @@ from .cf_run_state import ControlFileRunState
 from ..abc.tf_cf_base_mixin import TuflowControlFileMixin
 
 if typing.TYPE_CHECKING:
+    from ..batch_dependencies import BatchDependencyResult
     from .tcf_run_state import TCFRunState
     from .tgc import TGC
     from .tbc import TBC
@@ -370,3 +371,18 @@ class TCF(ControlFileLoadMixin, TuflowControlFileMixin, TCFBuildState):
                 raise ValueError("file_resolution must be 'eager' or 'deferred'")
             ctx.file_resolution = file_resolution
         return TCFRunState(self, ctx, parent)
+    def collect_batch_dependencies(
+        self,
+        run_flags: typing.Iterable[str | dict[str, str]],
+        *,
+        cache_scopes: bool = True,
+    ) -> 'BatchDependencyResult':
+        """Project many deferred run dependencies without materialising files.
+
+        This opt-in API preserves per-run issue provenance and retains the
+        existing single-run context() behaviour. A physical input validator
+        must still materialise each required reference exactly as needed.
+        """
+        from ..batch_dependencies import collect_batch_dependencies
+
+        return collect_batch_dependencies(self, run_flags, cache_scopes=cache_scopes)
