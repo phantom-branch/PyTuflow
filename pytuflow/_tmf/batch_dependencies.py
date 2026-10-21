@@ -168,7 +168,14 @@ def collect_batch_dependencies(
             run = model.context(context=ctx, file_resolution='deferred')
             refs = tuple(ref for inp in run.find_input() for ref in inp.file_references)
             activations = run.deferred_database_activations()
-            sources = run.deferred_database_sources()
+            # Keep rows attached to the exact declaration UUID. The consumer
+            # selects the database active at each boundary/GIS command; simply
+            # unioning BC rows would produce false secondary dependencies.
+            sources = tuple(
+                source
+                for activation in activations
+                for source in run.deferred_database_sources_for_activation(activation.input_uuid)
+            )
         except Exception as exc:
             # Fail closed. Never return the partial references accumulated
             # before an unknown database or malformed control-file failure.
