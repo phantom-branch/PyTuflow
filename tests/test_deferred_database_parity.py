@@ -340,3 +340,37 @@ def test_ad_bc_fails_closed_if_global_database_is_ambiguous(tmp_path):
     _bc_csv(tmp_path / "ad_bc.csv", "source.csv")
     with pytest.raises(ValueError, match="Multiple active ad global|requires one active"):
         TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
+
+
+
+def test_cross_section_csv_database_source_files(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("XS Database == xs.csv\n", encoding="utf-8")
+    (tmp_path / "xs.csv").write_text(
+        "Name,Source,Type,Flags\n"
+        "section1,sections/one.csv,XZ,\n"
+        "section2,sections/two.csv,CS,\n",
+        encoding="utf-8",
+    )
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("open")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+    ):
+        sources = model.context(file_resolution="deferred").deferred_database_sources()
+    assert {r.database_kind for r in sources} == {"cross_section"}
+    assert {r.path_pattern for r in sources} == {
+        tmp_path / "sections" / "one.csv",
+        tmp_path / "sections" / "two.csv",
+    }
+
+
+def test_cross_section_without_source_column_fails_closed(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("XS Database == xs.csv\n", encoding="utf-8")
+    (tmp_path / "xs.csv").write_text(
+        "Name,Other\nsection1,not-a-file\n", encoding="utf-8",
+    )
+    with pytest.raises(DeferredDatabaseResolutionError, match="no Source column"):
+        TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
