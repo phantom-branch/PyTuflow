@@ -249,6 +249,8 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
         for kind, names in (
             ('bc', ('bc database',)),
             ('ad_bc', ('ad bc database',)),
+            ('pit_inlet', ('pit inlet database',)),
+            ('depth_discharge', ('depth discharge database',)),
             ('materials', ('read materials file', 'read material file')),
             ('soils', ('read soil file', 'read soils file')),
             ('rainfall', ('read grid rf',)),
