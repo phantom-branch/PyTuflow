@@ -29,6 +29,7 @@ class FileReference:
     unresolved_variables: tuple[str, ...] = ()
     database_kind: str | None = None
     requires_table_link_scan: bool = False
+    requires_raster_metadata_scan: bool = False
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,7 @@ class DeferredDatabaseSource:
     source_field: str | None = None
     requires_layer_scan: bool = False
     requires_directory_scan: bool = False
+    requires_raster_metadata_scan: bool = False
 
 
 def make_file_reference(command: Command) -> FileReference:
@@ -119,4 +121,5 @@ def make_file_reference(command: Command) -> FileReference:
         requires_database_scan=(command.is_read_database() and not command.is_rainfall_grid_nc()),
         unresolved_variables=unresolved, database_kind=kind,
         requires_table_link_scan=command.is_table_link(),
+        requires_raster_metadata_scan=(command.is_read_grid() or command.is_rainfall_grid()),
     )
