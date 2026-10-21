@@ -41,7 +41,14 @@ def make_file_reference(command: Command) -> FileReference:
     unresolved = tuple(dict.fromkeys(re.findall(r'<<[^<>]+>>', value)))
     # All GIS sources are candidates: their attributes may reference further
     # files, especially for 1D network and cross-section layers.
-    attr_scan = command.is_read_gis() and not command.is_read_projection()
+    layer_name = (layer or path.stem).lower()
+    # Only layers likely to have file-valued fields need an attribute scan.
+    # Unknown/wildcard names remain candidates, preserving dependency coverage.
+    from .gis import tuflow_type_requires_feature_iter
+    attr_scan = (command.is_read_gis() and not command.is_read_projection()
+                 and (bool(tuflow_type_requires_feature_iter(layer_name))
+                      or any(char in layer_name for char in '*?<['])
+                      or layer_name == 'all'))
     return FileReference(
         base_directory=base, expanded_value=value, path_pattern=Path(path_glob),
         layer_pattern=layer_glob, origin=command.command_orig,

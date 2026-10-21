@@ -115,7 +115,8 @@ class InputRunState(RunState, Input):
         self._rs = get_input_class(self._command)(self.bs.parent, self._command, load_control_files=False)  # Input representing the RunState
         # check all variable names in file have been resolved
         if deferred:
-            unresolved = [ref for ref in self.file_references if ref.unresolved_variables]
+            unresolved = [ref for ref in self.file_references
+                          if ref.unresolved_variables or not self.ctx.is_resolved(ref.expanded_value)]
         else:
             unresolved = [x for x in self.files if not self.ctx.is_resolved(x)]
         if unresolved:

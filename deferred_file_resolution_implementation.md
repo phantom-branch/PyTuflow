@@ -13,6 +13,8 @@ dependencies before comparing dependency coverage.
 ## Before upstream review
 
 - Confirm zero filesystem/GIS operations during context creation using spies.
+- Include targeted tests for read-only reference access from an eager build state,
+  variable expansion, output classification and unresolved variables.
 - Cover nested TGC/TBC/TEF/TRD ownership and database paths.
 - Compare all dependencies with eager materialisation, including GIS attributes.
 - Rerun the representative 440-context network-drive benchmark; record I/O

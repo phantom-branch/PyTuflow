@@ -150,7 +150,14 @@ class InputBuildState(BuildState, Input):
         if (not cmd.value_orig or name.startswith(('WRITE ', 'OUTPUT ', 'LOG ', 'CHECK '))
                 or name in ('SPATIAL DATABASE', 'BC EVENT SOURCE')):
             return ()
-        return tuple(make_file_reference(part) for part in cmd.parts() if part.is_value_a_file())
+        # Parts must always be created with a deferred config. A build-state
+        # command may still have an eager config which probes the filesystem
+        # while expanding paths (case-insensitive search and GPKG >> all).
+        from ..settings import from_config
+        ref_config = from_config(cmd.config)
+        ref_config.file_resolution = 'deferred'
+        ref_command = cmd.__class__(cmd.original_text, ref_config, cmd.parent, cmd.part_index)
+        return tuple(make_file_reference(part) for part in ref_command.parts() if part.is_value_a_file())
 
     @property
     def files(self) -> list[Path]:

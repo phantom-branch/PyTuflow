@@ -57,3 +57,41 @@ def test_invalid_mode_rejected(tmp_path):
     fpath.write_text('Read GIS Code == gis/missing.shp\n', encoding='utf-8')
     with pytest.raises(ValueError, match='file_resolution'):
         TCF(fpath).context(file_resolution='unknown')
+
+
+def test_literal_relative_input_reference_from_eager_config(tmp_path):
+    from pytuflow._tmf.inp.file import FileInput
+
+    cmd = Command('Read File == subdir/extra.trd',
+                  TCFConfig(control_file=tmp_path / 'model.tcf', init_from_tcf=False))
+    inp = FileInput(None, cmd, load_control_files=False)
+    with patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')):
+        ref = inp.file_references[0]
+    assert ref.path_pattern == tmp_path / 'subdir' / 'extra.trd'
+    assert not ref.requires_directory_scan
+    assert not ref.requires_layer_scan
+
+
+def test_variable_substitution_without_glob(tmp_path):
+    cfg = config(tmp_path)
+    cfg.variables = {'TEST': 'DEV'}
+    with patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')):
+        cmd = Command('Read GIS Code == gis/code_<<TEST>>.shp', cfg)
+        ref = make_file_reference(next(cmd.parts()))
+    assert ref.path_pattern.name == 'code_DEV.shp'
+    assert not ref.unresolved_variables
+
+
+def test_unresolved_variable_is_preserved_in_reference(tmp_path):
+    cmd = Command('Read GIS Mat == gis/mat_<<MISSING>>.gpkg >> 2d_mat_*', config(tmp_path))
+    ref = make_file_reference(next(cmd.parts()))
+    assert ref.unresolved_variables == ('<<MISSING>>',)
+    assert ref.layer_pattern == '2d_mat_*'
+    assert ref.requires_directory_scan
+
+
+def test_non_source_commands_excluded(tmp_path):
+    from pytuflow._tmf.inp.file import FileInput
+    cmd = Command('Write GIS == checks/debug.gpkg', config(tmp_path))
+    inp = FileInput(None, cmd, load_control_files=False)
+    assert inp.file_references == ()
