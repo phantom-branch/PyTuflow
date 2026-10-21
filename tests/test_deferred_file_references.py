@@ -483,3 +483,37 @@ def test_nested_output_variables_are_assignments_not_input_files(tmp_path, mode)
         assert read_refs == [source]
     else:
         assert all(not item.files for item in variables)
+
+
+def test_deferred_wildcard_includes_loaded_nested_control_files(tmp_path):
+    """Cached TRD children must not disappear when their owner uses a glob."""
+    includes = tmp_path / 'includes'
+    includes.mkdir()
+    for part in ('one', 'two'):
+        (includes / f'{part}.trd').write_text(
+            f'Read GIS Code == ../gis/2d_code_{part}.shp\\n', encoding='utf-8',
+        )
+    top = tmp_path / 'model.tcf'
+    top.write_text('Read File == includes/*.trd\\n', encoding='utf-8')
+    model = TCF(top)
+    with patch.object(TuflowPath, 'glob', side_effect=AssertionError('deferred glob')):
+        run = model.context(file_resolution='deferred')
+        refs = [
+            ref.path_pattern.name for inp in run.find_input() for ref in inp.file_references
+        ]
+    assert '2d_code_one.shp' in refs, refs
+    assert '2d_code_two.shp' in refs, refs
+
+
+
+def test_deferred_case_insensitive_nested_file(tmp_path):
+    geom = tmp_path / 'Geom.TGC'
+    geom.write_text('Read GIS Code == gis/2d_code.shp\\n', encoding='utf-8')
+    tcf = tmp_path / 'main.tcf'
+    tcf.write_text('Geometry Control File == geom.tgc\\n', encoding='utf-8')
+    parsed = TCF(tcf)
+    with patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')):
+        run = parsed.context(file_resolution='deferred')
+        paths = {ref.path_pattern.name for inp in run.find_input()
+                 for ref in inp.file_references}
+    assert '2d_code.shp' in paths, paths

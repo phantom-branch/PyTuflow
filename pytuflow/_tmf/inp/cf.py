@@ -1,3 +1,4 @@
+import fnmatch
 import logging
 import os
 import typing
@@ -26,14 +27,17 @@ class ControlFileInputRunState(InputRunState):
             # Source commands retain their *owning control file*, unlike a
             # relative value created from the process working directory.
             # Compare against expanded syntactic references with no probing.
-            paths = {
-                os.path.normcase(os.path.normpath(str(ref.path_pattern)))
+            patterns = {
+                os.path.normpath(str(ref.path_pattern)).casefold()
                 for ref in self.file_references
                 if not ref.unresolved_variables
             }
             for cf in self.bs.cf:
-                cf_path = os.path.normcase(os.path.normpath(str(cf.fpath.absolute())))
-                if cf_path in paths:
+                # Build-state children are concrete paths loaded once at TCF
+                # construction. Compare lexically, case-insensitively and
+                # honour wildcards without a new network filesystem scan.
+                cf_path = os.path.normpath(str(cf.fpath.absolute())).casefold()
+                if any(fnmatch.fnmatchcase(cf_path, pattern) for pattern in patterns):
                     self.cf.append(cf.context(context=self.ctx, parent=self.parent))
         else:
             for cf in self.bs.cf:
