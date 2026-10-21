@@ -24,6 +24,7 @@ class FileReference:
     requires_directory_scan: bool
     requires_layer_scan: bool
     requires_attribute_scan: bool
+    requires_database_scan: bool
     unresolved_variables: tuple[str, ...] = ()
 
 
@@ -54,5 +55,7 @@ def make_file_reference(command: Command) -> FileReference:
         layer_pattern=layer_glob, origin=command.command_orig,
         requires_directory_scan=any(char in path_glob for char in '*?['),
         requires_layer_scan=layer_glob is not None,
-        requires_attribute_scan=attr_scan, unresolved_variables=unresolved,
+        requires_attribute_scan=attr_scan,
+        requires_database_scan=(command.is_read_database() or command.is_table_link()),
+        unresolved_variables=unresolved,
     )

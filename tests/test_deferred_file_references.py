@@ -95,3 +95,24 @@ def test_non_source_commands_excluded(tmp_path):
     cmd = Command('Write GIS == checks/debug.gpkg', config(tmp_path))
     inp = FileInput(None, cmd, load_control_files=False)
     assert inp.file_references == ()
+
+
+def test_database_reference_requests_deferred_inspection(tmp_path):
+    cmd = Command('BC Database == bc_dbase.csv', config(tmp_path))
+    ref = make_file_reference(next(cmd.parts()))
+    assert ref.path_pattern.name == 'bc_dbase.csv'
+    assert ref.requires_database_scan
+    assert not ref.requires_layer_scan
+
+
+def test_plain_gis_file_does_not_require_attribute_scan(tmp_path):
+    cmd = Command('Read GIS Code == gis/2d_code_001.shp', config(tmp_path))
+    ref = make_file_reference(next(cmd.parts()))
+    assert not ref.requires_attribute_scan
+    assert not ref.requires_database_scan
+
+
+def test_1d_gis_file_marks_attribute_dependencies(tmp_path):
+    cmd = Command('Read GIS Network == gis/1d_nwk_001.shp', config(tmp_path))
+    ref = make_file_reference(next(cmd.parts()))
+    assert ref.requires_attribute_scan

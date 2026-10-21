@@ -3,7 +3,7 @@
 The initial code introduces `TCF.context(..., file_resolution="deferred")` and
 `InputRunState.file_references`, keeping eager resolution as the default.
 References are immutable syntactic records for paths, GeoPackage layers,
-originating commands and pending GIS attribute scans.
+originating commands, database inspection requirements and pending GIS attribute scans.
 
 Initial model parsing remains eager and can perform filesystem operations.
 The bulk resolver is not implemented in this change. The consumer must
