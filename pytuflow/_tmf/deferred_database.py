@@ -38,14 +38,9 @@ def _inline_material(value, row):
         raise DeferredDatabaseResolutionError(
             f'Invalid inline Manning/depth list at material {row}: {value}'
         ) from exc
-    if len(numbers) < 4 or len(numbers) % 2:
+    if len(numbers) < 2 or len(numbers) % 2:
         raise DeferredDatabaseResolutionError(
-            f'Inline Manning/depth list needs at least two pairs at material {row}: {value}'
-        )
-    import math
-    if not all(math.isfinite(number) for number in numbers):
-        raise DeferredDatabaseResolutionError(
-            f'Non-finite inline Manning/depth list at material {row}: {value}'
+            f'Inline Manning/depth list needs complete depth/n pairs at material {row}: {value}'
         )
     return True
 
@@ -110,7 +105,7 @@ def database_source_references(build_input, context, kind: str | None, config) -
     """Describe context-specific secondary sources with no additional file I/O.
 
     The build-state already contains database rows from initial TCF parsing.
-    BC databases use the Source column and materials use their first column.
+    BC databases use the Source column; materials and soil rows follow\n    the same inline/source classifications supported by eager processing.
     """
     if kind not in ('bc', 'materials', 'soils'):
         raise DeferredDatabaseResolutionError(
