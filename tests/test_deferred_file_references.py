@@ -570,3 +570,17 @@ def test_unmatched_cached_nested_file_must_fail_closed(tmp_path):
     from pytuflow._tmf.abc.run_state import ResolveError
     with pytest.raises(ResolveError, match='No cached nested control file'):
         model.context(file_resolution='deferred')
+
+
+@pytest.mark.parametrize('name', ['Read GIS PO', 'GPKG Projection'])
+def test_deferred_gpkg_without_layer_uses_stem_named_default(tmp_path, name):
+    """A missing default layer cannot pass preflight as a file-only check."""
+    from pytuflow._tmf.file_reference import make_file_reference
+
+    cmd = Command(f'{name} == gis/terrain_source.gpkg', config(tmp_path))
+    refs = tuple(make_file_reference(part) for part in cmd.parts()
+                 if part.is_value_a_file())
+    assert len(refs) == 1
+    assert refs[0].path_pattern.name == 'terrain_source.gpkg'
+    assert refs[0].layer_pattern == 'terrain_source'
+    assert refs[0].requires_layer_scan
