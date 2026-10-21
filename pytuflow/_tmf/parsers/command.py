@@ -314,8 +314,12 @@ class Command(TuflowLine):
         return self.command == 'AD BC DATABASE'
 
     def is_pit_inlet_dbase_file(self):
-        """Returns whether command is referecing the pit_inlet_dbase.csv"""
-        return self.command and ('PIT INLET DATABASE' in self.command or 'DEPTH DISCHARGE DATABASE' in self.command)
+        """Whether this command defines a pit or depth-discharge source database."""
+        return self.command in ('PIT INLET DATABASE', 'DEPTH DISCHARGE DATABASE')
+
+    def is_depth_discharge_dbase_file(self):
+        """Distinguish network/pump depth-discharge curves from pit inlet types."""
+        return self.command == 'DEPTH DISCHARGE DATABASE'
 
     def is_rainfall_grid(self):
         """Returns whether command is referencing READ GRID RF"""
