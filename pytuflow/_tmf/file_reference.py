@@ -136,5 +136,5 @@ def make_file_reference(command: Command) -> FileReference:
         requires_database_scan=(command.is_read_database() and not command.is_rainfall_grid_nc()),
         unresolved_variables=unresolved, database_kind=kind,
         requires_table_link_scan=command.is_table_link(),
-        requires_raster_metadata_scan=(command.is_read_grid() or command.is_rainfall_grid()),
+        requires_raster_metadata_scan=(command.is_read_grid() or command.is_rainfall_grid_nc()),
     )
