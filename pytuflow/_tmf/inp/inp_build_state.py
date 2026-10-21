@@ -154,9 +154,15 @@ class InputBuildState(BuildState, Input):
         # command may still have an eager config which probes the filesystem
         # while expanding paths (case-insensitive search and GPKG >> all).
         from ..settings import from_config
-        ref_config = from_config(cmd.config)
-        ref_config.file_resolution = 'deferred'
-        ref_command = cmd.__class__(cmd.original_text, ref_config, cmd.parent, cmd.part_index)
+        if cmd.config.file_resolution == 'deferred':
+            ref_command = cmd  # already context-expanded; avoid a second parse
+        else:
+            ref_config = from_config(cmd.config)
+            ref_config.file_resolution = 'deferred'
+            ref_command = cmd.__class__(cmd.original_text, ref_config, cmd.parent,
+                                        cmd.part_index, cmd.line_number)
+            ref_command.define_blocks = cmd.define_blocks
+            ref_command.reload_value()
         return tuple(make_file_reference(part) for part in ref_command.parts() if part.is_value_a_file())
 
     @property
