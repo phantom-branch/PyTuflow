@@ -1,0 +1,110 @@
+name: Deferred example-model parity (read-only)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/deferred-example-parity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  example-parity:
+    if: github.event_name != 'pull_request' || github.event.pull_request.number == 2
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout upstream parser
+        uses: actions/checkout@v5
+        with:
+          path: upstream
+      - name: Checkout pinned diagnostic consumer and temporary fixture
+        uses: actions/checkout@v5
+        with:
+          repository: Chain-Frost/ryan-tools
+          ref: aaa475e30eb5397d7b88adeffb970ff0c5155b6f
+          path: ryan-tools
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: upstream/pyproject.toml
+      - name: Install upstream and isolated runner dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ./upstream
+          python -m pip install -e ./ryan-tools --no-deps
+          python -m pip install pyshp loguru colorama
+      - name: Record exact checkouts and bundle integrity
+        run: |
+          git -C upstream rev-parse HEAD
+          git -C ryan-tools rev-parse HEAD
+          python -m tests.fixtures.tuflow_example_repro.run_checks --verify-only
+        working-directory: ryan-tools
+      - name: Run focused rainfall, AD BC, table-link and curve examples
+        continue-on-error: true
+        working-directory: ryan-tools
+        run: |
+          mkdir -p ../reports/focused
+          python -m tests.fixtures.tuflow_example_repro.run_checks \
+            --pytuflow-checkout ../upstream \
+            --output ../reports/focused \
+            --tcf EG03_011.tcf --tcf EG03_012.tcf \
+            --tcf EG17_001.tcf --tcf EG17_002.tcf --tcf EG17_003.tcf \
+            --tcf EG18_002.tcf --tcf EG02_013.tcf --tcf EG04_004.tcf \
+            --tcf EG04_005.tcf --tcf EG04_006.tcf \
+            --tcf EG11_006.tcf --tcf EG15_007.tcf --tcf EG15_008.tcf
+      - name: Run complete 174-run example sweep
+        continue-on-error: true
+        working-directory: ryan-tools
+        run: |
+          mkdir -p ../reports/full
+          python -m tests.fixtures.tuflow_example_repro.run_checks \
+            --pytuflow-checkout ../upstream --output ../reports/full
+      - name: Summarise actual accepted, unresolved and mismatch counts
+        if: always()
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          lines = ["## Deferred example-model parity (read-only)", ""]
+          for group in ("focused", "full"):
+              path = Path("reports") / group / "results.json"
+              if not path.is_file():
+                  lines.append(f"- {group}: no results file generated")
+                  continue
+              rows = json.loads(path.read_text(encoding="utf-8"))
+              accepted = sum(bool(row.get("accepted_parity")) for row in rows)
+              accepted_runs = sum(int(row["runs"]) for row in rows if row.get("accepted_parity"))
+              total_runs = sum(int(row["runs"]) for row in rows)
+              missing = sum(int(row.get("missing", 0)) for row in rows)
+              extra = sum(int(row.get("extra", 0)) for row in rows)
+              errors = sum(bool(row.get("eager", {}).get("error") or row.get("deferred", {}).get("error")) for row in rows)
+              lines.append(
+                  f"- {group}: {accepted}/{len(rows)} TCFs and {accepted_runs}/{total_runs} runs accepted; "
+                  f"missing {missing}; extra {extra}; parser error cases {errors}"
+              )
+              failures = [
+                  f"{row['tcf']}: eager={row.get('eager', {}).get('error', '-')}; "
+                  f"deferred={row.get('deferred', {}).get('error', '-')}"
+                  for row in rows
+                  if row.get("eager", {}).get("error") or row.get("deferred", {}).get("error")
+              ]
+              lines.extend(f"- {failure}" for failure in failures[:20])
+          Path("parity-summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+          with Path(__import__("os").environ["GITHUB_STEP_SUMMARY"]).open("a", encoding="utf-8") as output:
+              output.write(Path("parity-summary.md").read_text(encoding="utf-8"))
+          print("\n".join(lines))
+          PY
+      - name: Upload full diagnostics without modifying fixture archive
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytuflow-deferred-example-parity
+          path: |
+            reports
+            parity-summary.md
+          if-no-files-found: warn
+          retention-days: 14
