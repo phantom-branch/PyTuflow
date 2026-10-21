@@ -369,6 +369,12 @@ def test_event_file_and_bc_sources_remain_event_specific(tmp_path, event, expect
     assert not any('BC Event Source' in ref.origin for ref in references)
     assert run.bc_dbase().df.loc['FC01']['Source'] == expected_source
 
+    database_inputs = run.find_input(lhs='BC Database')
+    assert len(database_inputs) == 1
+    secondary = database_inputs[0].database_source_references
+    assert {ref.path_pattern.name for ref in secondary} == {expected_source}
+    assert all(ref.origin.startswith('bc database row') for ref in secondary)
+
 
 @pytest.mark.parametrize('mode', ['eager', 'deferred'])
 def test_multipart_material_file_materialises_without_treating_multiplier_as_path(tmp_path, mode):
@@ -383,3 +389,23 @@ def test_multipart_material_file_materialises_without_treating_multiplier_as_pat
     assert input_.multiplier == pytest.approx(0.8)
     assert input_.files == [material]
     assert not input_.has_missing_files
+
+
+def test_deferred_material_database_reports_source_without_rechecking_disk(tmp_path):
+    tcf_path = tmp_path / 'model.tcf'
+    materials = tmp_path / 'materials.csv'
+    tcf_path.write_text('Read Materials File == materials.csv | 0.8\n', encoding='utf-8')
+    materials.write_text('Material ID,Manning\'s n\n1,0.03\n', encoding='utf-8')
+    model = TCF(tcf_path)
+    with (
+        patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
+        patch.object(Path, 'stat', side_effect=AssertionError('stat')),
+        patch.object(Path, 'open', side_effect=AssertionError('open')),
+    ):
+        run = model.context(file_resolution='deferred')
+        mat_input = run.find_input(lhs='Read Materials File')[0]
+        refs = mat_input.file_references
+        secondary = mat_input.database_source_references
+    assert len(refs) == 1
+    assert refs[0].database_kind == 'materials'
+    assert secondary == ()
