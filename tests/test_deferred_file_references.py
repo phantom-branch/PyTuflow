@@ -438,7 +438,7 @@ def test_deferred_material_database_without_secondary_sources(tmp_path):
     )
     run = TCF(tcf_path).context(file_resolution='deferred')
     assert run.deferred_database_sources() == ()
-    assert run.mat_file().loaded
+    assert run.find_input(lhs='Read Materials File')[0].bs.cf[0].loaded
 
 
 def test_deferred_event_file_under_literal_event_named_parent(tmp_path):
