@@ -37,6 +37,14 @@ def test_hydraulic_and_ad_bc_databases_are_independent(tmp_path):
     )
     _bc_csv(tmp_path / "hydraulic.csv", "hydro.csv")
     _bc_csv(tmp_path / "ad_sources.csv", "ad.csv")
+    (tmp_path / "ad_global.csv").write_text(
+        "Name,Initial Condition,Minimum Dispersion\nTracer,0,0\n",
+        encoding="utf-8",
+    )
+    tcf.write_text(
+        tcf.read_text(encoding="utf-8") + "AD Global Database == ad_global.csv\n",
+        encoding="utf-8",
+    )
 
     model = TCF(tcf)
     eager = model.context()
@@ -77,7 +85,14 @@ def test_multiple_hydraulic_databases_fail_closed(tmp_path):
 
 def test_missing_cached_ad_bc_database_fails_closed(tmp_path):
     tcf = tmp_path / "model.tcf"
-    tcf.write_text("AD BC Database == missing.csv\n", encoding="utf-8")
+    tcf.write_text(
+        "AD Global Database == global.csv\nAD BC Database == missing.csv\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "global.csv").write_text(
+        "Name,Initial Condition,Minimum Dispersion\nTracer,0,0\n",
+        encoding="utf-8",
+    )
     with pytest.raises(DeferredDatabaseResolutionError, match="has not been loaded"):
         TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
 
@@ -156,7 +171,12 @@ def test_table_link_is_a_gis_attribute_scan_not_csv_database(tmp_path):
 def test_bc_database_paths_include_context_expansion(tmp_path):
     tcf = tmp_path / "model.tcf"
     tcf.write_text(
-        "Set Variable ABC == suffix\nAD BC Database == ad.csv\n",
+        "Set Variable ABC == suffix\nAD Global Database == global.csv\n"
+        "AD BC Database == ad.csv\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "global.csv").write_text(
+        "Name,Initial Condition,Minimum Dispersion\nTracer,0,0\n",
         encoding="utf-8",
     )
     _bc_csv(tmp_path / "ad.csv", "ad_<<ABC>>.csv")
@@ -236,3 +256,85 @@ def test_incomplete_network_qo_expression_rejected():
     attrs = ["id", "QO", "", "", "", "", "", "", "", "", "control_only"]
     with pytest.raises(ValueError, match="QO operational"):
         network_attribute_file_sources(attrs)
+
+
+
+def test_nested_adcf_materialises_global_layers_and_bc_source_root(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    adcf = tmp_path / "adcf" / "ad.adcf"
+    adcf.parent.mkdir()
+    tables = tmp_path / "tables"
+    tables.mkdir()
+    tcf.write_text("AD Control File == adcf/ad.adcf\n", encoding="utf-8")
+    adcf.write_text(
+        "AD Global Database == ../tables/constituents.csv\n"
+        "AD BC Database == ../adbc/conditions.csv\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "adbc").mkdir()
+    _bc_csv(tmp_path / "adbc" / "conditions.csv", "source_series.csv")
+    (tables / "constituents.csv").write_text(
+        "Name,Initial Condition,Minimum Dispersion\n"
+        "Salinity,../gis/2d_ad_ic.gpkg >> 2d_ad_ic_Salinity,../gis/2d_ad_md.shp\n"
+        "Heat,12.5,0\n",
+        encoding="utf-8",
+    )
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("open")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+        patch("sqlite3.connect", side_effect=AssertionError("sqlite")),
+    ):
+        run = model.context(file_resolution="deferred")
+        refs = run.deferred_database_sources()
+    kinds = {(ref.database_kind, ref.path_pattern.name) for ref in refs}
+    assert ("ad_bc", "source_series.csv") in kinds
+    assert ("ad_global", "2d_ad_ic.gpkg") in kinds
+    assert ("ad_global", "2d_ad_md.shp") in kinds
+    bc = next(ref for ref in refs if ref.database_kind == "ad_bc")
+    assert bc.path_pattern == tables / "source_series.csv"
+    global_gpkg = next(ref for ref in refs if ref.path_pattern.name == "2d_ad_ic.gpkg")
+    assert global_gpkg.layer_pattern == "2d_ad_ic_Salinity"
+    assert global_gpkg.requires_layer_scan
+    assert global_gpkg.source_field == "initial condition"
+    assert global_gpkg.owner_control_file == adcf
+
+
+def test_ad_global_blank_minimum_dispersion_is_invalid(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("AD Global Database == ad_global.csv\n", encoding="utf-8")
+    (tmp_path / "ad_global.csv").write_text(
+        "Name,Initial Condition,Minimum Dispersion\nTracer,3,\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(DeferredDatabaseResolutionError, match="Minimum Dispersion"):
+        TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
+
+
+def test_ad_global_numeric_only_has_no_secondary_files(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("AD Global Database == ad_global.csv\n", encoding="utf-8")
+    (tmp_path / "ad_global.csv").write_text(
+        "Name,Initial Condition,Minimum Dispersion\nTracer,,0\n",
+        encoding="utf-8",
+    )
+    assert TCF(tcf).context(file_resolution="deferred").deferred_database_sources() == ()
+
+
+def test_ad_bc_fails_closed_if_global_database_is_ambiguous(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "AD Global Database == one.csv\n"
+        "AD Global Database == two.csv\n"
+        "AD BC Database == ad_bc.csv\n",
+        encoding="utf-8",
+    )
+    for name in ("one.csv", "two.csv"):
+        (tmp_path / name).write_text(
+            "Name,Initial Condition,Minimum Dispersion\nTracer,0,0\n",
+            encoding="utf-8",
+        )
+    _bc_csv(tmp_path / "ad_bc.csv", "source.csv")
+    with pytest.raises(ValueError, match="Multiple active ad global|requires one active"):
+        TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
