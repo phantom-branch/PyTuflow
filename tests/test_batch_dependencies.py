@@ -128,3 +128,17 @@ def test_empty_batch_is_rejected(tmp_path):
     model = _make_model(tmp_path)
     with pytest.raises(ValueError, match='At least one'):
         model.collect_batch_dependencies(())
+
+
+def test_distinct_event_flags_do_not_collide_in_cache(tmp_path):
+    source = tmp_path / 'event_model.tcf'
+    source.write_text('Read GIS Code == gis/code_<<E1>>.shp\n', encoding='utf-8')
+    model = TCF(source)
+    flags = tuple(f'-e1 TEST{i:03d}' for i in range(50))
+    batch = model.collect_batch_dependencies(flags)
+    assert batch.passed
+    assert (batch.contexts_constructed, batch.contexts_reused) == (50, 0)
+    for i, run in enumerate(batch.runs):
+        assert {ref.path_pattern.name for ref in run.file_references} == {
+            f'code_TEST{i:03d}.shp',
+        }
