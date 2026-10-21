@@ -110,7 +110,18 @@ class InputRunState(RunState, Input):
         if deferred:
             run_config.file_resolution = 'deferred'
             run_config.variables = self.ctx.translate
-        self._command = self.bs.command().__class__(cmd_txt, run_config)
+        source_command = self.bs.command()
+        if deferred:
+            # The owning control file may differ from config.control_file,
+            # notably for nested geometry/BC/event and TRD commands.
+            self._command = source_command.__class__(
+                cmd_txt, run_config, source_command.parent,
+                source_command.part_index, source_command.line_number,
+            )
+            self._command.define_blocks = source_command.define_blocks
+            self._command.reload_value()
+        else:
+            self._command = source_command.__class__(cmd_txt, run_config)
         self._command.config.variables = self.ctx.translate
         self._rs = get_input_class(self._command)(self.bs.parent, self._command, load_control_files=False)  # Input representing the RunState
         # check all variable names in file have been resolved

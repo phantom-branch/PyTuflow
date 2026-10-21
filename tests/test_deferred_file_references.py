@@ -116,3 +116,17 @@ def test_1d_gis_file_marks_attribute_dependencies(tmp_path):
     cmd = Command('Read GIS Network == gis/1d_nwk_001.shp', config(tmp_path))
     ref = make_file_reference(next(cmd.parts()))
     assert ref.requires_attribute_scan
+
+
+def test_nested_control_file_owns_reference_path(tmp_path):
+    from pytuflow._tmf.context import Context
+    from pytuflow._tmf.inp.gis import GisInput
+
+    owner = tmp_path / 'model' / 'geometry.tgc'
+    cfg = TCFConfig(control_file=tmp_path / 'main.tcf', init_from_tcf=False)
+    source = GisInput(None, Command('Read GIS Code == ../gis/2d_code.shp',
+                                    cfg, parent=owner), load_control_files=False)
+    ctx = Context(config=cfg)
+    ctx.file_resolution = 'deferred'
+    run = source.context(context=ctx)
+    assert run.file_references[0].path_pattern == tmp_path / 'gis' / '2d_code.shp'
