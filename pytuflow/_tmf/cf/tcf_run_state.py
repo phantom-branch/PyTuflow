@@ -252,6 +252,7 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
             ('ad_global', ('ad global database',)),
             ('pit_inlet', ('pit inlet database',)),
             ('depth_discharge', ('depth discharge database',)),
+            ('cross_section', ('xs database', 'read xs database')),
             ('materials', ('read materials file', 'read material file')),
             ('soils', ('read soil file', 'read soils file')),
             ('rainfall', ('read grid rf',)),
