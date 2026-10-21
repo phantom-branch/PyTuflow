@@ -1,6 +1,6 @@
 # Batch-aware deferred dependency resolution — PR #5 scope
 
-Status: **scoped, not implemented**. This is a stacked development PR against PyTUFLOW PR #2 (branch `feat/deferred-parity-database-kinds`), which itself targets PR #1. No merge, release, or change to the published PyTUFLOW package is authorised.
+Status: **implementation in progress; first batch API and per-run memoisation implemented, full shared-graph compilation outstanding**. This is a stacked development PR against PyTUFLOW PR #2 (branch `feat/deferred-parity-database-kinds`), which itself targets PR #1. No merge, release, or change to the published PyTUFLOW package is authorised.
 
 ## Purpose and ownership
 
@@ -83,3 +83,18 @@ Current downstream same-fork local SSD observation (single ordered pair, not a p
 ## Current handoff
 
 Only this implementation scope exists in #5 initially. Next action: implement stage A and an identity-equivalence harness, then add the immutable plan and batch API incrementally. Source branch will track #2; review and validation must always name exact head SHA.
+
+## 22 October implementation checkpoint
+
+**Implementation committed on the stacked #5 branch:**
+
+- Added `pytuflow/_tmf/batch_dependencies.py` with an opt-in `TCF.collect_batch_dependencies(..., cache_scopes=True)` public facade, immutable per-run projections, per-run parse/resolve failures, and measured construction/cache counters.
+- `BatchContext` caches available scopes, scope decisions by retained object identity and context-translated values **within one run**. Cache invalidation on `load_context_from_dict`, `load_events` and `load_variables` prevents stale TEF/variable substitutions. Default `TCF.context()` remains eager and unmodified.
+- Identical **full flag strings** reuse already-projected immutable references during a single batch, retaining distinct requested-run indices. Contexts with distinct flags are **still evaluated individually**; a 500-run alternating-two-flag benchmark would therefore be misleading as evidence of cross-run dependency compilation.
+- `deferred_database_activations()` and `deferred_database_sources_for_activation(uuid)` preserve database-declaration ownership; batch source projections are candidate rows, **not** authorisation to union all rows from multiple BC databases.
+- Added focused parity, invalid flag, cache invalidation, probe-free, duplicate/unique event flag and 500-run synthetic tests plus a separate comparable distinct-500-flags manual benchmark harness.
+- Windows Python 3.12/3.14 deferred CI [run 39661657613](https://github.com/phantom-branch/PyTuflow/actions/runs/39661657613) passed on commit `f85cd9c`. Exact-head CI including added unique-event regression and distinct-run benchmark must still complete before using the data as evidence.
+
+**Still missing:** a compiled immutable dependency graph, transitive relevant-flag signatures, reuse of static command-reference expansion **across different runs**, benchmark profiles on representative 240/440/500 combinations and 174-run materialised GIS/database/raster parity. No speedup or feature-parity sign-off, no downstream dependency repin, no merge or release.
+
+The next action is to inspect the distinct-run benchmark output and profile the hot paths, then implement conservative cross-run command-level memoisation. If a command's dynamic scope, variable lineage or database activation cannot be proven safe, bypass caching rather than risk incomplete dependencies. Keep the upstream #2 branch synchronised without overwriting concurrent agent changes.
