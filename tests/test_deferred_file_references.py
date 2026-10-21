@@ -331,3 +331,40 @@ def test_deferred_gpkg_all_materialises_when_files_requested(tmp_path):
     assert refs[0].layer_pattern == 'all'
     files = inp.files
     assert {f.lyrname for f in files} == {'2d_code_L', '2d_code_P'}
+
+
+@pytest.mark.parametrize(
+    ('event', 'expected_source'),
+    [('Q100', '100yr_001.csv'), ('QPMF', 'PMFyr_001.csv')],
+)
+def test_event_file_and_bc_sources_remain_event_specific(tmp_path, event, expected_source):
+    """A TEF's BC Event Source is an assignment, not a required file."""
+    tcf_path = tmp_path / 'model.tcf'
+    tef_path = tmp_path / 'events.tef'
+    bc_path = tmp_path / 'bc_dbase.csv'
+    tcf_path.write_text(
+        'Event File == events.tef\\nBC Database == bc_dbase.csv\\n', encoding='utf-8',
+    )
+    tef_path.write_text(
+        'Define Event == Q100\\n'
+        '    BC Event Source == _event_ | 100yr\\n'
+        'End Define\\n'
+        'Define Event == QPMF\\n'
+        '    BC Event Source == _event_ | PMFyr\\n'
+        'End Define\\n',
+        encoding='utf-8',
+    )
+    bc_path.write_text(
+        'Name,Source,Column 1,Column 2,Add Col 1,Mult Col 2,Add Col 2,Column 3,Column 4\\n'
+        'FC01,_event__001.csv,inflow_time_hr,inflow,,,,,\\n',
+        encoding='utf-8',
+    )
+    tcf = TCF(tcf_path)
+    with patch.object(TuflowPath, 'glob', side_effect=AssertionError('no glob')):
+        run = tcf.context(f'-e1 {event}', file_resolution='deferred')
+        references = [
+            ref for inp in run.find_input() for ref in inp.file_references
+        ]
+    assert any(ref.path_pattern.name == 'bc_dbase.csv' for ref in references)
+    assert not any('BC Event Source' in ref.origin for ref in references)
+    assert run.bc_dbase().df.loc['FC01']['Source'] == expected_source
