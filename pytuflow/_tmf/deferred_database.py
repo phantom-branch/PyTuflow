@@ -237,6 +237,16 @@ def database_source_references(
             if kind == 'rainfall':
                 raise DeferredDatabaseResolutionError(f'Numeric rainfall grid path at time {key}: {value}')
             continue
+        if kind == 'bc' and value.split('|', 1)[0].strip().casefold() == 'fews':
+            # The BC Database FEWS form is "FEWS | filename.csv/.xml".
+            # FEWS is a format selector, never a missing input file.
+            fields = [item.strip() for item in value.split('|')]
+            if (len(fields) != 2 or not fields[1]
+                    or Path(fields[1]).suffix.casefold() not in ('.csv', '.xml')):
+                raise DeferredDatabaseResolutionError(
+                    f'Invalid FEWS BC Source at row {key}: {value}'
+                )
+            value = fields[1]
         command = Command(
             f'Read File == {value}', config,
             parent=source_base if source_base is not None else Path(database.fpath),
