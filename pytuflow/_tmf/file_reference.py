@@ -46,14 +46,16 @@ class DeferredDatabaseSource:
 
 def make_file_reference(command: Command) -> FileReference:
     """Construct a reference lexically, without filesystem or GIS probes."""
-    value = str(command.value_expanded_path or command.value).strip()
+    # Transform only the supplied path, never the inherited absolute parent.
+    # An ancestor folder can contain a token also used as an event wildcard.
+    value = str(command.value).strip()
     db, layer = TuflowPath(value)._split_db_and_lyr()
     owner = command.parent
     base = (Path(owner).parent if owner and owner != Path() else Path.cwd()).absolute()
-    path = Path(db)
+    path = Path(str(globify(db, command.config.wildcards)))
     if not path.is_absolute():
         path = base / path
-    path_glob = str(globify(str(path), command.config.wildcards))
+    path_glob = str(path)
     layer_glob = str(globify(layer, command.config.wildcards)) if layer is not None else None
     unresolved = tuple(dict.fromkeys(re.findall(r'<<[^<>]+>>', value)))
     # All GIS sources are candidates: their attributes may reference further
