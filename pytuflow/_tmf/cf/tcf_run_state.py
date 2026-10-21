@@ -232,7 +232,7 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
         return super().rainfall_dbase()
 
     def deferred_database_sources(self):
-        """Describe active BC/material secondary files using cached parsed rows.
+        """Describe active database secondary files using cached parsed rows.
 
         Explicitly requesting this view does not open any database, create
         database run-state objects or materialise GIS inputs. All paths are
@@ -246,12 +246,19 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
             raise ValueError('deferred_database_sources requires deferred mode')
 
         result = []
-        for kind, lhs in (
-            ('bc', 'BC Database'),
-            ('materials', 'Read Materials File'),
-            ('soils', 'Read Soil'),
+        for kind, names in (
+            ('bc', ('bc database',)),
+            ('ad_bc', ('ad bc database',)),
+            ('materials', ('read materials file', 'read material file')),
+            ('soils', ('read soil file', 'read soils file')),
+            ('rainfall', ('read grid rf',)),
         ):
-            inputs = self.find_input(lhs=lhs)
+            # A substring lookup for 'BC Database' incorrectly includes
+            # 'AD BC Database'. Roles must be selected independently.
+            inputs = self.find_input(
+                callback=lambda inp: inp.lhs.strip().casefold() in names,
+            )
+            lhs = names[0]
             if not inputs:
                 continue
             if len(inputs) != 1:
@@ -273,6 +280,8 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
                     raise ValueError(f'Cannot identify database entry: {source.origin}')
                 result.append(DeferredDatabaseSource(
                     primary.path_pattern, kind, row[1], source.path_pattern,
+                    owning_command=primary.origin,
+                    owner_control_file=inp._command.parent,
                 ))
         return tuple(result)
 
