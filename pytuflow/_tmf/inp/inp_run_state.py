@@ -112,12 +112,20 @@ class InputRunState(RunState, Input):
             run_config.variables = self.ctx.translate
         source_command = self.bs.command()
         if deferred:
+            from ..parsers.command import EventCommand
             # The owning control file may differ from config.control_file,
             # notably for nested geometry/BC/event and TRD commands.
-            self._command = source_command.__class__(
-                cmd_txt, run_config, source_command.parent,
-                source_command.part_index, source_command.line_number,
-            )
+            if isinstance(source_command, EventCommand):
+                # EventCommand does not accept Command's line_number argument.
+                self._command = EventCommand(
+                    cmd_txt, run_config, source_command.parent, source_command.part_index,
+                )
+                self._command.event_name = source_command.event_name
+            else:
+                self._command = source_command.__class__(
+                    cmd_txt, run_config, source_command.parent,
+                    source_command.part_index, source_command.line_number,
+                )
             self._command.define_blocks = source_command.define_blocks
             self._command.reload_value()
         else:

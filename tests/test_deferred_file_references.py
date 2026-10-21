@@ -295,3 +295,39 @@ def test_wildcard_deferred_pattern_materialises_to_eager_dependencies(tmp_path):
     assert '*' in patterns[0].name
     resolved = set(patterns[0].parent.glob(patterns[0].name))
     assert eager_paths == resolved == expected
+
+
+def test_event_command_deferred_reconstruction_preserves_event_name(tmp_path):
+    from pytuflow._tmf.context import Context
+    from pytuflow._tmf.inp.event import EventInput
+    from pytuflow._tmf.parsers.command import EventCommand
+
+    cfg = config(tmp_path)
+    command = EventCommand('BC Event Source == ~AEP~ | 05.00p', cfg)
+    command.event_name = 'Q100'
+    original = EventInput(None, command)
+    context = Context(config=cfg)
+    context.file_resolution = 'deferred'
+    run = original.context(context=context)
+    assert run._command.event_name == 'Q100'
+    assert run.file_references == ()
+
+
+def test_deferred_gpkg_all_materialises_when_files_requested(tmp_path):
+    import sqlite3
+    from pytuflow._tmf.inp.gis import GisInput
+
+    gpkg = tmp_path / 'input.gpkg'
+    with sqlite3.connect(gpkg) as database:
+        database.execute('CREATE TABLE gpkg_contents (table_name TEXT)')
+        database.executemany(
+            'INSERT INTO gpkg_contents (table_name) VALUES (?)',
+            [('2d_code_L',), ('2d_code_P',)],
+        )
+    cmd = Command('Read GIS Code == input.gpkg >> all', config(tmp_path))
+    inp = GisInput(None, cmd, load_control_files=False)
+    refs = inp.file_references
+    assert len(refs) == 1
+    assert refs[0].layer_pattern == 'all'
+    files = inp.files
+    assert {f.lyrname for f in files} == {'2d_code_L', '2d_code_P'}
