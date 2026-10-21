@@ -605,3 +605,19 @@ def test_ad_bc_blank_source_remains_invalid_even_with_column_two(tmp_path):
     )
     with pytest.raises(DeferredDatabaseResolutionError, match="Empty ad_bc source"):
         TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
+
+
+
+def test_rainfall_index_csv_requires_table_scan_not_raster_metadata(tmp_path):
+    index = make_file_reference(next(
+        Command("Read Grid RF == rain_index.csv", _cfg(tmp_path)).parts()
+    ))
+    assert index.database_kind == "rainfall"
+    assert index.requires_database_scan
+    assert not index.requires_raster_metadata_scan
+    netcdf = make_file_reference(next(
+        Command("Read Grid RF == rain.nc", _cfg(tmp_path)).parts()
+    ))
+    assert netcdf.database_kind == "rainfall_netcdf"
+    assert not netcdf.requires_database_scan
+    assert netcdf.requires_raster_metadata_scan
