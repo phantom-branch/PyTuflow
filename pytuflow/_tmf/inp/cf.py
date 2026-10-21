@@ -1,4 +1,5 @@
 import logging
+import os
 import typing
 
 from .file import FileInput
@@ -22,8 +23,14 @@ class ControlFileInputRunState(InputRunState):
         super()._resolve_scope_in_context()
         deferred = getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'
         for cf in self.bs.cf:
-            cf_path = cf.fpath.absolute() if deferred else cf.fpath.resolve()
-            value_path = self.value.absolute() if deferred else self.value.resolve()
+            if deferred:
+                # Compare lexically: os.path.normpath folds '..' without stat,
+                # resolve(), or dereferencing symlinks on a network share.
+                cf_path = os.path.normcase(os.path.normpath(str(cf.fpath.absolute())))
+                value_path = os.path.normcase(os.path.normpath(str(self.value.absolute())))
+            else:
+                cf_path = cf.fpath.resolve()
+                value_path = self.value.resolve()
             if cf_path == value_path:
                 run_cf = cf.context(context=self.ctx, parent=self.parent)
                 self.cf.append(run_cf)

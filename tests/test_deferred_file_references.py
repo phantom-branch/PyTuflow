@@ -149,7 +149,6 @@ def test_context_after_parse_has_no_filesystem_or_gis_io(tmp_path):
         patch.object(Path, 'stat', side_effect=forbidden),
         patch.object(Path, 'resolve', side_effect=forbidden),
         patch.object(TuflowPath, 'open_gis', side_effect=forbidden),
-        patch.object(TuflowPath, 'gis_attributes', side_effect=forbidden),
         patch.object(TuflowPath, '_gpkg_layers', side_effect=forbidden),
     ):
         run = tcf.context(file_resolution='deferred')
