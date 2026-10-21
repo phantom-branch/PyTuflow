@@ -84,6 +84,9 @@ def test_batch_500_contexts_keep_correct_per_run_dependencies(tmp_path):
     assert batch.passed
     assert len(batch.runs) == 500
     assert batch.scope_hits > 0
+    # Literal duplicate contexts can share the exact same immutable projection.
+    assert batch.contexts_constructed == 2
+    assert batch.contexts_reused == 498
     for case, flag in zip(batch.runs, flags, strict=True):
         scenario = flag.split()[-1]
         paths = {ref.path_pattern.name for ref in case.file_references}
@@ -105,3 +108,23 @@ def test_batch_context_rejects_invalid_parse_without_making_partial_pass(tmp_pat
     assert result.runs[1].error is not None
     assert not result.passed
     assert result.runs[1].file_references == ()
+
+
+def test_duplicate_runs_keep_separate_provenance(tmp_path):
+    model = _make_model(tmp_path)
+    batch = model.collect_batch_dependencies(('-s1 DEV', '-s1 DEV', '-s1 EXG'))
+    assert batch.passed
+    assert (batch.contexts_constructed, batch.contexts_reused) == (2, 1)
+    assert [case.index for case in batch.runs] == [0, 1, 2]
+    assert batch.runs[0].file_references == batch.runs[1].file_references
+    plain = model.collect_batch_dependencies(('-s1 DEV', '-s1 DEV', '-s1 EXG'), cache_scopes=False)
+    assert plain.contexts_constructed == 3
+    assert plain.contexts_reused == 0
+
+
+def test_empty_batch_is_rejected(tmp_path):
+    import pytest
+
+    model = _make_model(tmp_path)
+    with pytest.raises(ValueError, match='At least one'):
+        model.collect_batch_dependencies(())
