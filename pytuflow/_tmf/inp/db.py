@@ -57,11 +57,11 @@ class DatabaseInput(FileInput):
                 elif self._command.is_pit_inlet_dbase_file():
                     cf = pit_inlet.PitInletDatabase(file, self._command.config, self.parent, self.scope)
                 elif self._command.is_rainfall_grid():
-                    if file.suffix == '.nc':
-                        logger.warning('Rainfall grid files in NetCDF format (.nc) are not supported yet.')
-                        cf = rf.RainfallDatabase(None)  # .nc not yet supported
-                    else:
-                        cf = rf.RainfallDatabase(file, self._command.config, self.parent, self.scope)
+                    if file.suffix.casefold() == '.nc':
+                        # NetCDF is the complete rainfall input, not an index
+                        # table. Do not install a fake database with fpath=None.
+                        continue
+                    cf = rf.RainfallDatabase(file, self._command.config, self.parent, self.scope)
                 elif self._command.is_table_link():
                     cf = xs.CrossSectionDatabase(file, self._command.config, self.parent, self.scope)
                 elif self._command.is_xs_dbase():
