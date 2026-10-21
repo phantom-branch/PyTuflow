@@ -265,43 +265,46 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
             lhs = names[0]
             if not inputs:
                 continue
-            if len(inputs) != 1:
+            # Rainfall commands are additive: several CSV time indexes and
+            # terminal NetCDF sources may be active in one run. Database
+            # declarations of the same other role remain ambiguous.
+            if len(inputs) != 1 and kind != 'rainfall':
                 raise ValueError(f'Multiple active {lhs} inputs need disambiguation')
-            inp = inputs[0]
-            if kind == 'rainfall' and len(inp.file_references) == 1:
-                netcdf = inp.file_references[0]
-                if netcdf.database_kind == 'rainfall_netcdf':
-                    # A NetCDF rainfall grid is the whole source, not an
-                    # index with secondary files to materialise.
-                    continue
-            primaries = [ref for ref in inp.file_references
-                         if ref.requires_database_scan and ref.database_kind == kind]
-            if len(primaries) != 1:
-                raise ValueError(f'Cannot uniquely identify primary {lhs} path')
-            primary = primaries[0]
-            if primary.unresolved_variables or primary.requires_directory_scan:
-                raise ValueError(f'Cannot inspect unresolved primary database: {primary.path_pattern}')
-            for source in inp.database_source_references:
-                if (source.unresolved_variables or source.requires_database_scan
-                        or source.requires_attribute_scan
-                        or (source.layer_pattern is not None and kind != 'ad_global')):
-                    raise ValueError(f'Unsupported secondary database reference: {source.path_pattern}')
-                row = source.origin.rsplit(' row ', 1)
-                if len(row) != 2 or not row[1]:
-                    raise ValueError(f'Cannot identify database entry: {source.origin}')
-                result.append(DeferredDatabaseSource(
-                    primary.path_pattern, kind,
-                    (row[1].split(' / ', 1)[0] if kind == 'ad_global' else row[1]),
-                    source.path_pattern,
-                    owning_command=primary.origin,
-                    owner_control_file=inp._command.parent,
-                    layer_pattern=source.layer_pattern,
-                    source_field=(source.origin.rsplit(' / ', 1)[-1]
-                                  if kind == 'ad_global' else None),
-                    requires_layer_scan=source.requires_layer_scan,
-                    requires_directory_scan=source.requires_directory_scan,
-                    requires_raster_metadata_scan=source.requires_raster_metadata_scan,
-                ))
+            for inp in inputs:
+                if kind == 'rainfall' and len(inp.file_references) == 1:
+                    netcdf = inp.file_references[0]
+                    if netcdf.database_kind == 'rainfall_netcdf':
+                        # A NetCDF rainfall grid is the whole source, not an
+                        # index with secondary files to materialise.
+                        continue
+                primaries = [ref for ref in inp.file_references
+                             if ref.requires_database_scan and ref.database_kind == kind]
+                if len(primaries) != 1:
+                    raise ValueError(f'Cannot uniquely identify primary {lhs} path')
+                primary = primaries[0]
+                if primary.unresolved_variables or primary.requires_directory_scan:
+                    raise ValueError(f'Cannot inspect unresolved primary database: {primary.path_pattern}')
+                for source in inp.database_source_references:
+                    if (source.unresolved_variables or source.requires_database_scan
+                            or source.requires_attribute_scan
+                            or (source.layer_pattern is not None and kind != 'ad_global')):
+                        raise ValueError(f'Unsupported secondary database reference: {source.path_pattern}')
+                    row = source.origin.rsplit(' row ', 1)
+                    if len(row) != 2 or not row[1]:
+                        raise ValueError(f'Cannot identify database entry: {source.origin}')
+                    result.append(DeferredDatabaseSource(
+                        primary.path_pattern, kind,
+                        (row[1].split(' / ', 1)[0] if kind == 'ad_global' else row[1]),
+                        source.path_pattern,
+                        owning_command=primary.origin,
+                        owner_control_file=inp._command.parent,
+                        layer_pattern=source.layer_pattern,
+                        source_field=(source.origin.rsplit(' / ', 1)[-1]
+                                      if kind == 'ad_global' else None),
+                        requires_layer_scan=source.requires_layer_scan,
+                        requires_directory_scan=source.requires_directory_scan,
+                        requires_raster_metadata_scan=source.requires_raster_metadata_scan,
+                    ))
         return tuple(result)
 
     def output_name(self) -> str:
