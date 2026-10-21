@@ -236,6 +236,15 @@ def database_source_references(
         else:
             if kind == 'rainfall':
                 raise DeferredDatabaseResolutionError(f'Numeric rainfall grid path at time {key}: {value}')
+            if kind in ('ad_bc', 'pit_inlet', 'depth_discharge', 'cross_section'):
+                # These database types need an actual Source. A numeric
+                # string is not a documented inline curve value; skipping
+                # it silently loses the dependency. Fail closed rather
+                # than silently omitting a potentially extensionless file.
+                raise DeferredDatabaseResolutionError(
+                    f'Numeric {kind} Source at row {key} cannot be classified: {value}'
+                )
+            # BC and materials support documented inline constants.
             continue
         if kind == 'bc' and value.split('|', 1)[0].strip().casefold() == 'fews':
             # The BC Database FEWS form is "FEWS | filename.csv/.xml".
