@@ -134,8 +134,13 @@ class InputRunState(RunState, Input):
         self._rs = get_input_class(self._command)(self.bs.parent, self._command, load_control_files=False)  # Input representing the RunState
         # check all variable names in file have been resolved
         if deferred:
-            unresolved = [ref for ref in self.file_references
-                          if ref.unresolved_variables or not self.ctx.is_resolved(ref.expanded_value)]
+            # Inspect the context-expanded command text, not the absolute
+            # reference path: a literal ancestor directory can legitimately
+            # contain text matching a TEF event wildcard (e.g. '_event_').
+            command_resolved = self.ctx.is_resolved(str(self._command.value))
+            unresolved = [ref for ref in self.file_references if ref.unresolved_variables]
+            if not command_resolved:
+                unresolved.append(str(self._command.value))
         else:
             unresolved = [x for x in self.files if not self.ctx.is_resolved(x)]
         if unresolved:
