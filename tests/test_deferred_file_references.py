@@ -368,3 +368,18 @@ def test_event_file_and_bc_sources_remain_event_specific(tmp_path, event, expect
     assert any(ref.path_pattern.name == 'bc_dbase.csv' for ref in references)
     assert not any('BC Event Source' in ref.origin for ref in references)
     assert run.bc_dbase().df.loc['FC01']['Source'] == expected_source
+
+
+@pytest.mark.parametrize('mode', ['eager', 'deferred'])
+def test_multipart_material_file_materialises_without_treating_multiplier_as_path(tmp_path, mode):
+    from pytuflow._tmf.inp.mat import MatDatabaseInput
+
+    material = tmp_path / 'materials.csv'
+    material.write_text('Material, Manning\\n1,0.03\\n', encoding='utf-8')
+    cfg = config(tmp_path)
+    cfg.file_resolution = mode
+    command = Command('Read Materials File == materials.csv | 0.8', cfg)
+    input_ = MatDatabaseInput(None, command, load_control_files=False)
+    assert input_.multiplier == pytest.approx(0.8)
+    assert input_.files == [material]
+    assert not input_.has_missing_files
