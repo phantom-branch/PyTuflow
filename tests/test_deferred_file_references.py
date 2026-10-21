@@ -198,3 +198,42 @@ def test_nested_tgc_references_preserve_owning_directory(tmp_path):
     # Preserve '..' in the emitted path; compare only its lexical location.
     import os
     assert all(os.path.normpath(ref.base_directory) == os.path.normpath(geom) for ref in refs)
+
+
+def test_440_synthetic_scenario_contexts_are_probe_free(tmp_path, capsys):
+    """A repeated ensemble remains syntactic after the one-time model parse."""
+    import time
+    import tracemalloc
+
+    tcf_path = tmp_path / 'ensemble.tcf'
+    tcf_path.write_text(
+        'IF Scenario == DEV\n'
+        '    Read GIS Code == gis/2d_code_DEV.shp\n'
+        'ELSE\n'
+        '    Read GIS Code == gis/2d_code_EXG.shp\n'
+        'END IF\n',
+        encoding='utf-8',
+    )
+    tcf = TCF(tcf_path)
+    counts = {'glob': 0}
+    def no_glob(*args, **kwargs):
+        counts['glob'] += 1
+        raise AssertionError('Deferred contexts must not expand globs')
+    tracemalloc.start()
+    start = time.perf_counter()
+    with (
+        patch.object(TuflowPath, 'glob', side_effect=no_glob),
+        patch.object(Path, 'stat', side_effect=AssertionError('stat')),
+    ):
+        for i in range(440):
+            scenario = 'DEV' if i % 2 else 'EXG'
+            run = tcf.context(f'-s1 {scenario}', file_resolution='deferred')
+            paths = {
+                ref.path_pattern.name for inp in run.inputs for ref in inp.file_references
+            }
+            assert f'2d_code_{scenario}.shp' in paths
+    elapsed = time.perf_counter() - start
+    _, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    assert counts['glob'] == 0
+    print(f'440 deferred synthetic contexts: {elapsed:.3f}s, peak={peak / (1024 * 1024):.1f}MiB')
