@@ -567,5 +567,6 @@ def test_unmatched_cached_nested_file_must_fail_closed(tmp_path):
     inp = model.find_input(lhs='Geometry Control File')[0]
     assert len(inp.cf) == 1
     inp.cf.clear()
-    with pytest.raises(ValueError, match='No cached nested control file'):
+    from pytuflow._tmf.abc.run_state import ResolveError
+    with pytest.raises(ResolveError, match='No cached nested control file'):
         model.context(file_resolution='deferred')
