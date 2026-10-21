@@ -500,3 +500,41 @@ def test_scenario_scoping_of_database_activations(tmp_path):
             if x.database_kind == "bc"] == ["exg.csv"]
     assert [x.database_path.name for x in dev.deferred_database_activations()
             if x.database_kind == "bc"] == ["dev.csv"]
+
+
+
+def test_eager_rainfall_csv_inventory_includes_cached_grid_sources(tmp_path):
+    """Correct eager omission rather than accepting extra deferred grids."""
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("Read Grid RF == rf_index.csv\n", encoding="utf-8")
+    (tmp_path / "rf_index.csv").write_text(
+        "0,grids/first.tif\n1,grids/second.asc\n", encoding="utf-8",
+    )
+    model = TCF(tcf)
+    eager = model.context(file_resolution="eager")
+    input_ = eager.find_input(lhs="Read Grid RF")[0]
+    files = input_.files
+    assert {path.name for path in files} == {
+        "rf_index.csv", "first.tif", "second.asc",
+    }
+    deferred = model.context(file_resolution="deferred")
+    assert {source.path_pattern for source in deferred.deferred_database_sources()} == {
+        path for path in files if path.name != "rf_index.csv"
+    }
+
+
+def test_eager_rainfall_grid_projection_is_cached_in_memory(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("Read Grid RF == rf.csv\n", encoding="utf-8")
+    (tmp_path / "rf.csv").write_text("0,grid.tif\n", encoding="utf-8")
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("file opened")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+    ):
+        run = model.context(file_resolution="eager")
+        source = run.find_input(lhs="Read Grid RF")[0].files
+        again = run.find_input(lhs="Read Grid RF")[0].files
+    assert source == again
+    assert [p.name for p in source] == ["rf.csv", "grid.tif"]
