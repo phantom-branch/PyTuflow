@@ -32,6 +32,25 @@ class FileReference:
 
 
 @dataclass(frozen=True)
+class DeferredDatabaseActivation:
+    """Database declaration in the context-specific ordered command stream.
+
+    This is an activation record, not permission to merge Source rows from
+    unrelated BC databases. Consumers can join the sequence/UUID to active
+    GIS and boundary inputs before selecting the correct database. The run
+    has already applied event/scenario scope filtering. No disk/GIS reads.
+    """
+
+    sequence: int
+    input_uuid: str
+    database_kind: str
+    database_path: Path
+    owning_command: str
+    owner_control_file: Path | None
+    line_number: int | None
+
+
+@dataclass(frozen=True)
 class DeferredDatabaseSource:
     """Context-resolved secondary input from a cached, parsed database.
 
