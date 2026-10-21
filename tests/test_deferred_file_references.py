@@ -439,3 +439,21 @@ def test_deferred_material_database_without_secondary_sources(tmp_path):
     run = TCF(tcf_path).context(file_resolution='deferred')
     assert run.deferred_database_sources() == ()
     assert run.mat_file().loaded
+
+
+def test_deferred_event_file_under_literal_event_named_parent(tmp_path):
+    """An ancestor spelling like '_event_' is not an unresolved TEF variable."""
+    parent = tmp_path / 'literal_event_example'
+    parent.mkdir()
+    tef = parent / 'events.tef'
+    tcf = parent / 'model.tcf'
+    tef.write_text(
+        'Define Event == Q100\n'
+        '    BC Event Source == _event_ | 100yr\n'
+        'End Define\n',
+        encoding='utf-8',
+    )
+    tcf.write_text('Event File == events.tef\n', encoding='utf-8')
+    run = TCF(tcf).context('-e1 Q100', file_resolution='deferred')
+    refs = [ref for inp in run.find_input() for ref in inp.file_references]
+    assert any(ref.path_pattern.name == 'events.tef' for ref in refs)
