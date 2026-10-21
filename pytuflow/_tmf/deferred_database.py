@@ -215,7 +215,8 @@ def database_source_references(
         )
         found = tuple(
             replace(make_file_reference(part),
-                    origin=f'{kind} database row {key!s}', database_kind=None)
+                    origin=f'{kind} database row {key!s}', database_kind=None,
+                    requires_raster_metadata_scan=(kind == 'rainfall'))
             for part in command.parts() if part.is_value_a_file()
         )
         if not found:
