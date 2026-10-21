@@ -38,8 +38,8 @@ jobs:
           python -m pip install pyshp loguru colorama
       - name: Record exact checkouts and bundle integrity
         run: |
-          git -C upstream rev-parse HEAD
-          git -C ryan-tools rev-parse HEAD
+          git -C ../upstream rev-parse HEAD
+          git rev-parse HEAD
           python -m tests.fixtures.tuflow_example_repro.run_checks --verify-only
         working-directory: ryan-tools
       - name: Run focused rainfall, AD BC, table-link and curve examples
