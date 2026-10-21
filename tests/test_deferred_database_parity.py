@@ -659,3 +659,54 @@ def test_invalid_fews_source_fails_closed(tmp_path, selector):
     )
     with pytest.raises(DeferredDatabaseResolutionError, match="Invalid FEWS"):
         TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
+
+
+
+@pytest.mark.parametrize(
+    ("command", "filename", "header", "row", "kind"),
+    [
+        (
+            "AD BC Database", "ad.csv",
+            "Name,Source,Column 1,Column 2",
+            "Ocean__Tracer,123,Time,Concentration", "ad_bc",
+        ),
+        (
+            "Pit Inlet Database", "pit.csv",
+            "Name,Source,Depth_Col,Flow_Col,Area,Width",
+            "Inlet_A,123,Depth,Flow,0,0", "pit_inlet",
+        ),
+        (
+            "Depth Discharge Database", "curves.csv",
+            "Name,Source,Depth_Col,Flow_Col,Area,Width",
+            "Curve_A,123,Depth,Flow,0,0", "depth_discharge",
+        ),
+        (
+            "XS Database", "xs.csv",
+            "Name,Source,Type,Flags",
+            "XS_A,123,XZ,", "cross_section",
+        ),
+    ],
+)
+def test_numeric_required_secondary_source_fails_closed(
+    tmp_path, command, filename, header, row, kind
+):
+    """A numeric-looking required Source must not vanish from the inventory."""
+    tcf = tmp_path / "model.tcf"
+    prefix = ""
+    if kind == "ad_bc":
+        (tmp_path / "global.csv").write_text(
+            "Name,Initial Condition,Minimum Dispersion\nTracer,0,0\n",
+            encoding="utf-8",
+        )
+        prefix = "AD Global Database == global.csv\n"
+    tcf.write_text(
+        prefix + f"{command} == {filename}\n", encoding="utf-8",
+    )
+    (tmp_path / filename).write_text(
+        header + "\n" + row + "\n", encoding="utf-8",
+    )
+    with pytest.raises(
+        DeferredDatabaseResolutionError,
+        match=f"Numeric {kind} Source",
+    ):
+        TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
