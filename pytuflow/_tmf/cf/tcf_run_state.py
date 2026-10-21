@@ -297,6 +297,7 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
                                   if kind == 'ad_global' else None),
                     requires_layer_scan=source.requires_layer_scan,
                     requires_directory_scan=source.requires_directory_scan,
+                    requires_raster_metadata_scan=source.requires_raster_metadata_scan,
                 ))
         return tuple(result)
 
