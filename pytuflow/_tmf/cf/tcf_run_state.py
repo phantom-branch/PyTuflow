@@ -264,6 +264,12 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
             if len(inputs) != 1:
                 raise ValueError(f'Multiple active {lhs} inputs need disambiguation')
             inp = inputs[0]
+            if kind == 'rainfall' and len(inp.file_references) == 1:
+                netcdf = inp.file_references[0]
+                if netcdf.database_kind == 'rainfall_netcdf':
+                    # A NetCDF rainfall grid is the whole source, not an
+                    # index with secondary files to materialise.
+                    continue
             primaries = [ref for ref in inp.file_references
                          if ref.requires_database_scan and ref.database_kind == kind]
             if len(primaries) != 1:
