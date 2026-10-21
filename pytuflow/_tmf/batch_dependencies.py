@@ -31,8 +31,11 @@ class BatchContext(Context):
     variables may become visible successively while evaluating event scopes.
     """
 
-    def __init__(self, run_flags: str | dict[str, str] = (), *, config=None):
+    def __init__(self, run_flags: str | dict[str, str] = (), *, config=None, variable_inputs=None):
         self._batch_active = False
+        # Build-state inputs are immutable during this single synchronous batch.
+        # Only their traversal is shared; scopes and values stay per-run.
+        self._batch_variable_inputs = variable_inputs
         self._batch_scopes = None
         self._batch_scope_decisions: dict[int, tuple[object, bool]] = {}
         self._batch_translations: dict[str, str] = {}
@@ -157,6 +160,10 @@ def collect_batch_dependencies(
     seen_flags: dict[str, BatchDependencyRun] = {}
     contexts_constructed = contexts_reused = 0
     scope_builds = scope_hits = translation_hits = translation_misses = 0
+    # Control-file traversal to locate Set Variable declarations was previously
+    # repeated for every run. The parsed input objects and their scopes are
+    # shared; active-variable values are still computed independently per run.
+    variable_inputs = tuple(model.find_input(lhs='set variable', recursive=True)) if cache_scopes else None
 
     for index, flags in enumerate(run_flags):
         flag_text = flags if isinstance(flags, str) else ' '.join(
@@ -183,7 +190,7 @@ def collect_batch_dependencies(
         try:
             # Even an invalid flag combination is one failed run, not an
             # uncaught exception that aborts the remaining batch.
-            ctx = (BatchContext(flags, config=model.config)
+            ctx = (BatchContext(flags, config=model.config, variable_inputs=variable_inputs)
                    if cache_scopes else Context(flags, config=model.config))
             run = model.context(context=ctx, file_resolution='deferred')
             refs = tuple(ref for inp in run.find_input() for ref in inp.file_references)
