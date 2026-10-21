@@ -57,13 +57,17 @@ class ControlFileInputRunState(InputRunState):
                         i for i, cf in enumerate(children)
                         if fnmatch.fnmatchcase(cf.fpath.name.casefold(), name)
                     ]
-                    if len(selected) > 1 and not any(c in matched for c in selected):
-                        raise ResolveError(
-                            f'Ambiguous cached child for {ref.path_pattern}'
-                        )
                 if not selected:
                     raise ResolveError(
                         f'No cached nested control file for {ref.path_pattern}'
+                    )
+                if len(selected) > 1 and not any(
+                    char in ref.path_pattern.name for char in '*?['
+                ):
+                    # A literal input cannot resolve to multiple children,
+                    # even when one was previously matched by another ref.
+                    raise ResolveError(
+                        f'Ambiguous cached child for {ref.path_pattern}'
                     )
                 matched.update(selected)
             for i in sorted(matched):
