@@ -12,8 +12,10 @@ class DeferredDatabaseResolutionError(ValueError):
 
 def _expanded(value, context, *, kind, row):
     """Expand model variables before classifying a table cell."""
+    if value is None:
+        return ''
     raw = str(value).strip()
-    if raw.casefold() in ('nan', 'none'):
+    if raw.casefold() == 'nan':
         return ''
     translated = str(context.translate(raw)).strip()
     if translated and not context.is_resolved(translated):
@@ -146,7 +148,7 @@ def database_source_references(build_input, context, kind: str | None, config) -
             pass
         else:
             continue
-        command = Command(f'Read File == {expanded}', config, parent=Path(database.fpath))
+        command = Command(f'Read File == {value}', config, parent=Path(database.fpath))
         found = tuple(
             replace(make_file_reference(part),
                     origin=f'{kind} database row {key!s}', database_kind=None)
