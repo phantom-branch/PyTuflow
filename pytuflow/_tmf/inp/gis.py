@@ -206,10 +206,19 @@ class GisInput(GisInputBase):
         self._files_loaded = True
 
     def _load_database_files(self):
-        # Read GIS Table Links names a GIS layer (typically 1d_xs), whose
-        # feature attributes point to cross-section tables. The layer itself
-        # is not a CrossSectionDatabase and must not be parsed as one.
-        # Its secondary paths are discovered by the shared GIS attribute scan.
+        if not self._command.is_table_link():
+            self._cf_loaded = True
+            return
+        # The cross-section database driver detects the GIS provider and
+        # creates the supported cached table-link view during initial parse.
+        # Deferred contexts skip additional GIS reads, but cannot discard
+        # this eager API or its already-parsed build-state database.
+        for file in self._rhs_files:
+            try:
+                db = xs.CrossSectionDatabase(file, self.config, self.parent, self.scope)
+                self._cf.append(db)
+            except Exception as e:
+                logger.error(f'Error loading control file {file}. Command: {self._command}. Error: {e}')
         self._cf_loaded = True
 
     def _process_gis_file(self, file: TuflowPath, cmd: Command) -> tuple[list[int], list[TuflowPath]]:
