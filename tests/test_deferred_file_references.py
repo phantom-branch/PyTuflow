@@ -49,7 +49,7 @@ def test_deferred_context_does_not_glob_missing_input(tmp_path):
         refs = [ref for inp in run.inputs for ref in inp.file_references]
     assert refs
     assert refs[0].path_pattern.name == 'missing.shp'
-    assert refs[0].requires_attribute_scan
+    assert not refs[0].requires_attribute_scan
 
 
 def test_invalid_mode_rejected(tmp_path):
@@ -131,3 +131,69 @@ def test_nested_control_file_owns_reference_path(tmp_path):
     run = source.context(context=ctx)
     # Preserve lexical '..' rather than dereference a possible junction/symlink.
     assert run.file_references[0].path_pattern == owner.parent / '../gis/2d_code.shp'
+
+
+def test_context_after_parse_has_no_filesystem_or_gis_io(tmp_path):
+    """Deferred contexts cannot enumerate, stat or open model dependencies."""
+    fpath = tmp_path / 'model.tcf'
+    fpath.write_text(
+        'Read GIS Code == gis/code_*.gpkg >> 2d_code_*\n'
+        'Read GRID Zpts == grids/missing_*.tif\n'
+        'BC Database == bc_dbase.csv\n',
+        encoding='utf-8',
+    )
+    tcf = TCF(fpath)  # Parsing is deliberately excluded from the I/O contract.
+    forbidden = AssertionError('deferred context unexpectedly touched filesystem')
+    with (
+        patch.object(TuflowPath, 'glob', side_effect=forbidden),
+        patch.object(Path, 'stat', side_effect=forbidden),
+        patch.object(Path, 'resolve', side_effect=forbidden),
+        patch.object(TuflowPath, 'open_gis', side_effect=forbidden),
+        patch.object(TuflowPath, 'gis_attributes', side_effect=forbidden),
+        patch.object(TuflowPath, '_gpkg_layers', side_effect=forbidden),
+    ):
+        run = tcf.context(file_resolution='deferred')
+        refs = tuple(ref for inp in run.inputs for ref in inp.file_references)
+    assert any(ref.requires_layer_scan for ref in refs)
+    assert any(ref.requires_directory_scan for ref in refs)
+    assert any(ref.requires_database_scan for ref in refs)
+
+
+def test_deferred_eager_parity_for_literal_existing_path(tmp_path):
+    gis = tmp_path / 'gis'
+    gis.mkdir()
+    (gis / '2d_code.shp').touch()
+    fpath = tmp_path / 'model.tcf'
+    fpath.write_text('Read GIS Code == gis/2d_code.shp\n', encoding='utf-8')
+    tcf = TCF(fpath)
+    eager = tcf.context()
+    eager_files = {
+        str(path) for inp in eager.inputs for path in inp.files
+        if str(path).lower().endswith('.shp')
+    }
+    deferred = tcf.context(file_resolution='deferred')
+    deferred_files = {
+        str(ref.path_pattern) for inp in deferred.inputs
+        for ref in inp.file_references if ref.path_pattern.suffix.lower() == '.shp'
+    }
+    assert eager_files == deferred_files
+
+
+def test_nested_tgc_references_preserve_owning_directory(tmp_path):
+    model = tmp_path / 'model'
+    geom = tmp_path / 'geom'
+    model.mkdir()
+    geom.mkdir()
+    control = model / 'main.tcf'
+    tgc = geom / 'geometry.tgc'
+    tgc.write_text('Read GIS Code == ../gis/2d_code.shp\n', encoding='utf-8')
+    control.write_text('Geometry Control File == ../geom/geometry.tgc\n', encoding='utf-8')
+    tcf = TCF(control)
+    run = tcf.context(file_resolution='deferred')
+    nested = [
+        cf for inp in run.inputs for cf in inp.cf if getattr(cf, 'fpath', None) == tgc
+    ]
+    assert nested, 'Nested TGC run context was not constructed'
+    refs = tuple(ref for cf in nested for inp in cf.inputs for ref in inp.file_references)
+    assert any('2d_code.shp' in str(ref.path_pattern) for ref in refs)
+    assert all(ref.base_directory == geom for ref in refs)
