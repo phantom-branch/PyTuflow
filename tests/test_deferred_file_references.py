@@ -463,14 +463,14 @@ def test_deferred_event_file_under_literal_event_named_parent(tmp_path):
 def test_nested_output_variables_are_assignments_not_input_files(tmp_path, mode):
     """Output-root variables must not create phantom files or split '>>' as GPKG."""
     tcf = tmp_path / 'model.tcf'
-    source = tmp_path / 'real_input.csv'
+    source = tmp_path / '2d_code.shp'
     source.touch()
     tcf.write_text(
         'Set Variable OutputBase == results\n'
         'Set Variable OutputRoot == ..\\<<OutputBase>>\n'
         'Set Variable XMDFBase == exports/output.xmdf\n'
         'Output Folder == <<OutputRoot>>\n'
-        'Read File == real_input.csv\n',
+        'Read GIS Code == 2d_code.shp\n',
         encoding='utf-8',
     )
     run = TCF(tcf).context(file_resolution=mode)
@@ -478,7 +478,7 @@ def test_nested_output_variables_are_assignments_not_input_files(tmp_path, mode)
     assert variables
     if mode == 'deferred':
         assert all(not item.file_references for item in variables)
-        read_refs = [ref.path_pattern for inp in run.find_input(lhs='Read File')
+        read_refs = [ref.path_pattern for inp in run.find_input(lhs='Read GIS Code')
                      for ref in inp.file_references]
         assert read_refs == [source]
     else:
