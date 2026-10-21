@@ -621,3 +621,41 @@ def test_rainfall_index_csv_requires_table_scan_not_raster_metadata(tmp_path):
     assert netcdf.database_kind == "rainfall_netcdf"
     assert not netcdf.requires_database_scan
     assert netcdf.requires_raster_metadata_scan
+
+
+
+@pytest.mark.parametrize("selector", [
+    "FEWS | rainfall.csv",
+    "fews|rainfall.xml",
+])
+def test_bc_fews_selector_references_only_actual_source_file(tmp_path, selector):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("BC Database == bc.csv\n", encoding="utf-8")
+    (tmp_path / "bc.csv").write_text(
+        "Name,Source,Column 1,Column 2\n"
+        + f"Weather,{selector},,\n",
+        encoding="utf-8",
+    )
+    run = TCF(tcf).context(file_resolution="deferred")
+    sources = run.deferred_database_sources()
+    assert len(sources) == 1
+    assert sources[0].path_pattern == tmp_path / selector.split("|")[1].strip()
+    assert sources[0].entry_name == "Weather"
+    assert all(source.path_pattern.name.upper() != "FEWS" for source in sources)
+
+
+@pytest.mark.parametrize("selector", [
+    "FEWS |",
+    "FEWS | rainfall.csv | ambiguous.csv",
+    "FEWS | not_a_filename",
+])
+def test_invalid_fews_source_fails_closed(tmp_path, selector):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("BC Database == bc.csv\n", encoding="utf-8")
+    (tmp_path / "bc.csv").write_text(
+        "Name,Source,Column 1,Column 2\n"
+        + f"Weather,{selector},,\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(DeferredDatabaseResolutionError, match="Invalid FEWS"):
+        TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
