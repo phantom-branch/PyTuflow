@@ -295,7 +295,7 @@ def test_nested_adcf_materialises_global_layers_and_bc_source_root(tmp_path):
     assert ("ad_global", "2d_ad_ic.gpkg") in kinds
     assert ("ad_global", "2d_ad_md.shp") in kinds
     bc = next(ref for ref in refs if ref.database_kind == "ad_bc")
-    assert bc.path_pattern == tables / "source_series.csv"
+    assert bc.path_pattern == adcf.parent / "../tables/source_series.csv"
     global_gpkg = next(ref for ref in refs if ref.path_pattern.name == "2d_ad_ic.gpkg")
     assert global_gpkg.layer_pattern == "2d_ad_ic_Salinity"
     assert global_gpkg.requires_layer_scan
