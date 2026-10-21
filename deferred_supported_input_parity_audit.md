@@ -15,8 +15,8 @@ A deferred `FileReference` marks whether directory, layer, GIS attribute, table-
 | TCF/TGC/TBC/ECF/TEF/TRD/ADCF and other cached nested controls | Scope-aware recursive cached references and lexical child matching inherited from #1; no per-context file I/O | Synthetic nested controls covered; example-model parity still required |
 | Direct GIS SHP/MIF/GPKG, implicit named layer, `>> all` | `FileReference.path_pattern`, `layer_pattern`, `requires_layer_scan`, `requires_attribute_scan` | Primary patterns represented; downstream format-specific scans required |
 | Direct raster TIF/FLT/ASC and wildcard paths | Lexical path reference and wildcard scan marker | Physical resolution and raster metadata checks belong to bulk stage |
-| `Read Grid RF == index.csv` | Loaded rainfall index rows exposed as typed `rainfall` secondary paths | Synthetic tests; EG03_011 and EG03_012 must be rerun and eager errors diagnosed |
-| `Read Grid RF == rainfall.nc` | Terminal `rainfall_netcdf` primary; no synthetic empty database | Synthetic test; metadata validation at bulk stage |
+| `Read Grid RF == index.csv` | Loaded rainfall index rows exposed as typed `rainfall` secondary paths; raster metadata scan marked explicitly | Synthetic tests; EG03_011 and EG03_012 must be rerun and eager errors diagnosed |
+| `Read Grid RF == rainfall.nc` | Terminal `rainfall_netcdf` primary with metadata scan marker; no synthetic empty database | Synthetic test; metadata validation at bulk stage |
 | Hydraulic `BC Database` | Typed `bc`, cached source rows and event substitutions; eager lookup now excludes AD BC | Synthetic tests; active-row and 174-run parity needed |
 | `AD BC Database` | Typed `ad_bc`, resolves Source paths relative to active AD Global Database as documented | Synthetic tests; actual ADCF examples needed |
 | `AD Global Database` | Cached constituent CSV; numeric/blank optional initial condition and numeric minimum dispersion; GIS source paths and GPKG layers represented | Synthetic tests; model parity and raster/GIS field checks outstanding |
@@ -26,7 +26,7 @@ A deferred `FileReference` marks whether directory, layer, GIS attribute, table-
 | `Depth Discharge Database` | Typed `depth_discharge`, Source CSV; 1d_nwk Q/P fields are database curve IDs | Synthetic tests; active Q/P IDs and case-insensitive matching in downstream materialiser |
 | 1d_nwk M and QO / ignored rows | Eager parser now classifies M matrix paths; QO file component only; Q/P identifiers are not fake files; Ignore Y/T skipped | Synthetic positional-field checks; actual feature geometry/attributes remain Agent 1's work |
 | `Read GIS Table Links` / 1d_xs, 1d_tab etc | Primary GIS layer with `requires_table_link_scan`; eager no longer treats shapefile/GPKG as CSV cross-section database | **Incomplete until Agent 1 materialises per-feature paths**; EG02/EG04 examples required |
-| `XS Database`, Flood Modeller/MIKE network external data | Primary `cross_section` database marked for inspection; no complete cached secondary resolver for every driver | **Implementation gap, fail closed** for unsupported source schemas |
+| `XS Database`, Flood Modeller/MIKE external data | Primary `cross_section`; cached CSV/GIS Source column yields secondary paths; Flood Modeller DAT cross sections are internally contained | Synthetic XS CSV tests; other external-driver schemas and model parity still require verification |
 | Attribute-linked secondary files for 1d_xs/network/pit etc | `requires_attribute_scan` and upstream channel semantics; scan results delegated to Agent 1's shared SHP/GPKG materialiser | **Implementation gap until full-format scanner and identity comparison** |
 | Output, log/check folders and variable assignments | Excluded from input-file inventory | Existing synthetic output/assignment regressions |
 
@@ -47,4 +47,4 @@ A deferred `FileReference` marks whether directory, layer, GIS attribute, table-
 - TUFLOW 2026 special/operational channel guidance: network Q/P are depth–discharge curve IDs, QO specifies an operational-matrix file after its control ID, and M refers to matrix inputs.
 - `Read GIS Table Links` resolves secondary cross-section/tabular sources via the GIS feature attributes, not by parsing the GIS source file as a CSV database.
 
-Sources: https://docs.tuflow.com/classic-hpc/manual/2026.3/075-Advection-Dispersion.html and https://docs.tuflow.com/classic-hpc/manual/2026.0/Special-Channels-2.html and https://docs.tuflow.com/classic-hpc/manual/2026.0/OperationalChannels-2.html .
+Sources: https://docs.tuflow.com/classic-hpc/manual/2026.3/075-Advection-Dispersion.html and https://docs.tuflow.com/classic-hpc/manual/2026.0/TwoDBoundaries-2.html .
