@@ -113,6 +113,11 @@ class DatabaseRunState(RunState, Database):
         return source_df
 
     def _resolve_scope_in_context(self):
+        # Pandas 3 may infer a StringDtype column for a rainfall index.
+        # Assigning an array-valued replacement to one scalar StringArray
+        # slot raises "setting an array element with a sequence". Context
+        # values may also change type after variable substitution.
+        self._df = self._df.astype(object)
         for index, row in self._df.iterrows():
             new_index = self.ctx.translate(index) if isinstance(index, str) else index
             new_row = [self.ctx.translate(x) for x in row]
