@@ -57,6 +57,7 @@ jobs:
           import tempfile
           from pathlib import Path
           sys.path.insert(0, str(Path("../upstream").absolute()))
+          sys.path.insert(0, str(Path.cwd()))
           from pytuflow import TCF
           from tests.fixtures.tuflow_example_repro.run_checks import (
               collect, discover_cases, extract_bundle,
