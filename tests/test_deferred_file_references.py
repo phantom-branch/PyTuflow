@@ -343,20 +343,20 @@ def test_event_file_and_bc_sources_remain_event_specific(tmp_path, event, expect
     tef_path = tmp_path / 'events.tef'
     bc_path = tmp_path / 'bc_dbase.csv'
     tcf_path.write_text(
-        'Event File == events.tef\\nBC Database == bc_dbase.csv\\n', encoding='utf-8',
+        'Event File == events.tef\nBC Database == bc_dbase.csv\n', encoding='utf-8',
     )
     tef_path.write_text(
-        'Define Event == Q100\\n'
-        '    BC Event Source == _event_ | 100yr\\n'
-        'End Define\\n'
-        'Define Event == QPMF\\n'
-        '    BC Event Source == _event_ | PMFyr\\n'
-        'End Define\\n',
+        'Define Event == Q100\n'
+        '    BC Event Source == _event_ | 100yr\n'
+        'End Define\n'
+        'Define Event == QPMF\n'
+        '    BC Event Source == _event_ | PMFyr\n'
+        'End Define\n',
         encoding='utf-8',
     )
     bc_path.write_text(
-        'Name,Source,Column 1,Column 2,Add Col 1,Mult Col 2,Add Col 2,Column 3,Column 4\\n'
-        'FC01,_event__001.csv,inflow_time_hr,inflow,,,,,\\n',
+        'Name,Source,Column 1,Column 2,Add Col 1,Mult Col 2,Add Col 2,Column 3,Column 4\n'
+        'FC01,_event__001.csv,inflow_time_hr,inflow,,,,,\n',
         encoding='utf-8',
     )
     tcf = TCF(tcf_path)
