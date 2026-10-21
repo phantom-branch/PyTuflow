@@ -60,3 +60,28 @@ Sources: https://docs.tuflow.com/classic-hpc/manual/2026.3/075-Advection-Dispers
   tracked in a separate follow-up draft PR to be considered after Windows parity passes.
 - Earlier cross-platform CI and Linux example results remain historical information in
   GitHub Actions logs; they are not used to approve or reject the Windows feature.
+
+## 22 October continuation — Windows-only parser API handoff
+
+- Required AD BC, pit inlet, depth-discharge and cross-section Source fields
+  containing numeric-looking values now **fail closed** rather than silently
+  disappearing from the inventory (Codex P2 review; regression matrix).
+  BC/material inline constants retain their separate documented semantics.
+- Multiple BC database declarations must not be combined into an invented
+  database. `deferred_database_activations()` returns ordered declaration UUIDs;
+  the new `deferred_database_sources_for_activation(input_uuid)` returns only
+  the corresponding cached row sources, with `DeferredDatabaseSource.input_uuid`
+  preserving declaration ownership. The caller must decide which declaration
+  was active for each GIS/boundary command and which Source row identifiers
+  were actually referenced. Fetching all row sources is **not itself parity**.
+  Unknown UUIDs, duplicate inputs and unsupported database schemas fail closed.
+- `Read GIS Table Links` primary references retain
+  `requires_table_link_scan` and `requires_attribute_scan` for SHP and
+  GPKG (explicit layers and `>> all`); they do **not** require CSV database
+  parsing. Eager public `CrossSectionDatabase` behaviour is retained. Feature
+  attribute reading and materialisation remain downstream Agent 1's work,
+  not extra operations during a deferred context.
+- CI/acceptance remains **Windows Python 3.12 and 3.14**; Linux checks are
+  deferred to [tracking PR #4](https://github.com/phantom-branch/PyTuflow/pull/4).
+- An exact-head Windows 161-TCF/174-run validation is still necessary after
+  consumer integration, including missing *and* extra linked files.
