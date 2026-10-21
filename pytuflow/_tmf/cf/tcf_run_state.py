@@ -231,6 +231,47 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
         """
         return super().rainfall_dbase()
 
+    def deferred_database_activations(self):
+        """List scoped database declarations in syntactic control-file order.
+
+        A BC Database may be reassigned during a TCF/TBC/ECF. It is therefore
+        incorrect to select the first occurrence or treat all declarations
+        as one global table. This immutable activation stream preserves
+        the model's active command order and source ownership; selecting
+        row identifiers for a particular GIS/BC command is a separate
+        downstream materialisation step.
+
+        Initial control-file parsing may perform I/O; this accessor does not.
+        """
+        from ..file_reference import DeferredDatabaseActivation
+
+        if getattr(self.ctx, 'file_resolution', 'eager') != 'deferred':
+            raise ValueError('deferred_database_activations requires deferred mode')
+
+        activations = []
+        for sequence, inp in enumerate(self.find_input()):
+            for ref in inp.file_references:
+                if not ref.requires_database_scan:
+                    continue
+                if ref.unresolved_variables or ref.requires_directory_scan:
+                    raise ValueError(
+                        f'Cannot establish database activation: {ref.path_pattern}'
+                    )
+                if ref.database_kind is None or ref.database_kind == 'unknown':
+                    raise ValueError(
+                        f'Unclassified database activation: {ref.path_pattern}'
+                    )
+                activations.append(DeferredDatabaseActivation(
+                    sequence=sequence,
+                    input_uuid=str(inp.uuid),
+                    database_kind=ref.database_kind,
+                    database_path=ref.path_pattern,
+                    owning_command=ref.origin,
+                    owner_control_file=inp._command.parent,
+                    line_number=inp.line_number,
+                ))
+        return tuple(activations)
+
     def deferred_database_sources(self):
         """Describe active database secondary files using cached parsed rows.
 
