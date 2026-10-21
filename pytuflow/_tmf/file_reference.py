@@ -87,7 +87,7 @@ def make_file_reference(command: Command) -> FileReference:
     return FileReference(
         base_directory=base, expanded_value=value, path_pattern=Path(path_glob),
         layer_pattern=layer_glob, origin=command.command_orig,
-        requires_directory_scan=any(char in path_glob for char in '*?['),
+        requires_directory_scan=any(char in str(globify(db, command.config.wildcards)) for char in '*?['),
         requires_layer_scan=layer_glob is not None,
         requires_attribute_scan=attr_scan,
         requires_database_scan=(command.is_read_database() or command.is_table_link()),
