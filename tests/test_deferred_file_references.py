@@ -147,7 +147,10 @@ def test_context_after_parse_has_no_filesystem_or_gis_io(tmp_path):
     with (
         patch.object(TuflowPath, 'glob', side_effect=forbidden),
         patch.object(Path, 'stat', side_effect=forbidden),
+        patch.object(Path, 'open', side_effect=forbidden),
         patch.object(Path, 'resolve', side_effect=forbidden),
+        patch('os.scandir', side_effect=forbidden),
+        patch('sqlite3.connect', side_effect=forbidden),
         patch.object(TuflowPath, 'open_gis', side_effect=forbidden),
         patch.object(TuflowPath, '_gpkg_layers', side_effect=forbidden),
     ):
