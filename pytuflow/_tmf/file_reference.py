@@ -82,6 +82,8 @@ def make_file_reference(command: Command) -> FileReference:
         kind = 'ad_bc'
     elif command.is_bc_dbase_file():
         kind = 'bc'
+    elif command.is_ad_global_database_file():
+        kind = 'ad_global'
     elif command.is_mat_dbase():
         kind = 'materials'
     elif command.is_soil_dbase():
