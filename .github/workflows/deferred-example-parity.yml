@@ -49,6 +49,8 @@ jobs:
           python -m tests.fixtures.tuflow_example_repro.run_checks --verify-only
         working-directory: ryan-tools
       - name: Show exact eager/deferred identity differences for representative TCFs
+        # Diagnostic-only; keep the ordinary focused matrix running on failure.
+        continue-on-error: true
         working-directory: ryan-tools
         shell: pwsh
         run: |
