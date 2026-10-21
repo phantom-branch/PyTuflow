@@ -93,8 +93,33 @@ class InputRunState(RunState, Input):
             return ()
         if len(kinds) != 1:
             raise ValueError(f'Ambiguous deferred database kinds: {kinds}')
+        kind = next(iter(kinds))
+        source_base = None
+        if kind == 'ad_bc':
+            # TUFLOW AD specifies its BC Source paths relative to the
+            # AD Global Database, not the AD BC table (2026.3 §9.4.4.1).
+            owner = self.parent
+            if owner is None:
+                raise ValueError('Cannot resolve AD BC Source without an owning control file')
+            globals_ = owner.root_cf.find_input(
+                callback=lambda inp: inp.lhs.strip().casefold() == 'ad global database',
+            )
+            if len(globals_) != 1:
+                raise ValueError(
+                    f'AD BC Source requires one active AD Global Database; found {len(globals_)}'
+                )
+            primaries = [
+                ref for ref in globals_[0].file_references
+                if ref.database_kind == 'ad_global'
+            ]
+            if len(primaries) != 1 or primaries[0].requires_directory_scan or (
+                primaries[0].unresolved_variables
+            ):
+                raise ValueError('Cannot identify a resolved AD Global Database path')
+            source_base = primaries[0].path_pattern
         return database_source_references(
-            self.bs, self.ctx, next(iter(kinds)), self._command.config,
+            self.bs, self.ctx, kind, self._command.config,
+            source_base=source_base,
         )
 
     @property
