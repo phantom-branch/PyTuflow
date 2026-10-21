@@ -172,6 +172,10 @@ def database_source_references(
     database = databases[0]
     if not getattr(database, 'loaded', False) or database.fpath is None:
         raise DeferredDatabaseResolutionError(f'{kind} database has not been loaded')
+    # Flood Modeller DAT stores its cross-section units directly in the
+    # primary file. There is no Source filename column to expand.
+    if kind == 'cross_section' and database.driver.name() == 'dat_cross_section':
+        return ()
     frame = database.df
     columns = list(frame.columns)
     if kind == 'soils':
