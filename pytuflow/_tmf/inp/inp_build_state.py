@@ -148,7 +148,8 @@ class InputBuildState(BuildState, Input):
         cmd = self._command
         name = (cmd.command or '').upper()
         if (not cmd.value_orig or name.startswith(('WRITE ', 'OUTPUT ', 'LOG ', 'CHECK '))
-                or name in ('SPATIAL DATABASE', 'BC EVENT SOURCE')):
+                or name in ('SPATIAL DATABASE', 'BC EVENT SOURCE')
+                or name.startswith('SET VARIABLE ')):
             return ()
         # Parts must always be created with a deferred config. A build-state
         # command may still have an eager config which probes the filesystem
