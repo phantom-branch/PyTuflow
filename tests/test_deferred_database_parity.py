@@ -528,13 +528,16 @@ def test_eager_rainfall_grid_projection_is_cached_in_memory(tmp_path):
     tcf.write_text("Read Grid RF == rf.csv\n", encoding="utf-8")
     (tmp_path / "rf.csv").write_text("0,grid.tif\n", encoding="utf-8")
     model = TCF(tcf)
+    run = model.context(file_resolution="eager")
+    input_ = run.find_input(lhs="Read Grid RF")[0]
+    source = input_.files
+    # Only cached projection is probe-free: ordinary eager context creation
+    # and first primary-file resolution may legitimately touch the disk.
     with (
         patch.object(Path, "open", side_effect=AssertionError("file opened")),
         patch.object(Path, "stat", side_effect=AssertionError("stat")),
         patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
     ):
-        run = model.context(file_resolution="eager")
-        source = run.find_input(lhs="Read Grid RF")[0].files
-        again = run.find_input(lhs="Read Grid RF")[0].files
+        again = input_.files
     assert source == again
     assert [p.name for p in source] == ["rf.csv", "grid.tif"]
