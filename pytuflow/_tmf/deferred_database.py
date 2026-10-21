@@ -107,9 +107,11 @@ def database_source_references(build_input, context, kind: str | None, config) -
     """Describe context-specific secondary sources with no additional file I/O.
 
     The build-state already contains database rows from initial TCF parsing.
-    BC databases use the Source column; materials and soil rows follow\n    the same inline/source classifications supported by eager processing.
+    BC databases use the Source column; rainfall indexes supply grid paths;
+    materials and soils follow the inline/source classifications supported
+    by eager processing.
     """
-    if kind not in ('bc', 'materials', 'soils'):
+    if kind not in ('bc', 'ad_bc', 'materials', 'soils', 'rainfall'):
         raise DeferredDatabaseResolutionError(
             f'Unsupported deferred database schema: {kind!r}'
         )
@@ -126,10 +128,14 @@ def database_source_references(build_input, context, kind: str | None, config) -
     if kind == 'soils':
         _validate_soil_rows(frame, context)
         return ()
-    if kind == 'bc':
+    if kind in ('bc', 'ad_bc'):
         column = next((col for col in columns if str(col).strip().casefold() == 'source'), None)
         if column is None:
-            raise DeferredDatabaseResolutionError('BC database has no Source column')
+            raise DeferredDatabaseResolutionError(f'{kind} database has no Source column')
+    elif kind == 'rainfall':
+        if len(columns) != 1 or str(columns[0]).strip().casefold() != 'rainfall_file':
+            raise DeferredDatabaseResolutionError('Rainfall index requires one Rainfall_File column')
+        column = columns[0]
     else:
         if not columns:
             raise DeferredDatabaseResolutionError('Materials database has no value column')
@@ -139,6 +145,8 @@ def database_source_references(build_input, context, kind: str | None, config) -
     for key, raw in frame[column].items():
         value = _expanded(raw, context, kind=kind, row=key)
         if not value:
+            if kind == 'rainfall':
+                raise DeferredDatabaseResolutionError(f'Empty rainfall grid path at time {key}')
             continue
         if kind == 'materials' and _inline_material(value, key):
             continue
@@ -147,6 +155,8 @@ def database_source_references(build_input, context, kind: str | None, config) -
         except ValueError:
             pass
         else:
+            if kind == 'rainfall':
+                raise DeferredDatabaseResolutionError(f'Numeric rainfall grid path at time {key}: {value}')
             continue
         command = Command(f'Read File == {value}', config, parent=Path(database.fpath))
         found = tuple(
