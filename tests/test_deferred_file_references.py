@@ -629,7 +629,7 @@ def test_wrong_scenario_cached_control_does_not_match_same_filename(tmp_path):
     '0.05, 0.1',
     '0.05, 0.1, 0.1, 0.05',
 ])
-def test_deferred_material_inline_depth_n_matches_eager(tmp_path, pairs):
+def test_deferred_material_inline_depth_n_retain_primary_reference(tmp_path, pairs):
     """Depth/n pairs that eager parses create no secondary file references."""
     tcf = tmp_path / 'model.tcf'
     materials = tmp_path / 'materials.csv'
@@ -650,6 +650,7 @@ def test_deferred_material_inline_depth_n_matches_eager(tmp_path, pairs):
         deferred = model.context(file_resolution='deferred')
         sources = deferred.deferred_database_sources()
     assert sources == ()
+    assert [ref.path_pattern for ref in deferred.find_input(lhs='Read Materials File')[0].file_references] == [materials]
 
 
 def test_deferred_material_external_source_matches_eager(tmp_path):
