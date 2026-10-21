@@ -245,13 +245,24 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
             raise ValueError('deferred_database_sources requires a deferred run context')
 
         result = []
-        for kind, lhs, fetch in (
-            ('bc', 'BC Database', self.bc_dbase),
-            ('materials', 'Read Materials File', self.mat_file),
+        for kind, lhs in (
+            ('bc', 'BC Database'),
+            ('materials', 'Read Materials File'),
         ):
-            if not self.find_input(lhs=lhs):
+            inputs = self.find_input(lhs=lhs)
+            if not inputs:
                 continue
-            db = fetch()
+            if len(inputs) != 1:
+                raise ValueError('Multiple active {0} inputs need disambiguation'.format(lhs))
+            input_ = inputs[0]
+            # The run-state .cf is intentionally empty in deferred mode.
+            # Reuse the parse-once build-state database, never call .files or
+            # rebuild an eager context. This remains a deliberate materialise
+            # call rather than part of syntax-only context construction.
+            databases = input_.bs.cf
+            if len(databases) != 1:
+                raise ValueError('Cannot uniquely identify parsed {0} database'.format(lhs))
+            db = databases[0].context(context=self.ctx, parent=input_.parent)
             if not db.loaded or db.fpath is None:
                 raise ValueError('Active {0} database is not loaded'.format(lhs))
             database_path = Path(db.fpath).absolute()
