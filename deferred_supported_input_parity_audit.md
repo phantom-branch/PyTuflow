@@ -1,6 +1,6 @@
 # Deferred supported-input parity audit — upstream workstream
 
-Status: **in progress, not merge-ready**. Supporting PR #2 builds on upstream PR #1; ryan-tools PR #143 owns shared GIS materialisation and the real-model harness. No TUFLOW engine was launched.
+Status: **in progress, not merge-ready**. Supporting PR #2 builds on upstream PR #1; ryan-tools PR #143 owns shared GIS materialisation and the real-model harness. **Windows only is in scope for current CI and real-model acceptance (Python 3.12/3.14). Linux portability is explicitly deferred to a separate follow-up PR.** No TUFLOW engine was launched.
 
 ## Parity contract
 
@@ -25,7 +25,7 @@ A deferred `FileReference` marks whether directory, layer, GIS attribute, table-
 | `Pit Inlet Database` | Typed `pit_inlet`, Source CSV from cached Name rows | Synthetic tests; active 1d_pit IDs must be mapped downstream |
 | `Depth Discharge Database` | Typed `depth_discharge`, Source CSV; 1d_nwk Q/P fields are database curve IDs | Synthetic tests; active Q/P IDs and case-insensitive matching in downstream materialiser |
 | 1d_nwk M and QO / ignored rows | Eager parser now classifies M matrix paths; QO file component only; Q/P identifiers are not fake files; Ignore Y/T skipped | Synthetic positional-field checks; actual feature geometry/attributes remain Agent 1's work |
-| `Read GIS Table Links` / 1d_xs, 1d_tab etc | Primary GIS layer with `requires_table_link_scan`; eager no longer treats shapefile/GPKG as CSV cross-section database | **Incomplete until Agent 1 materialises per-feature paths**; EG02/EG04 examples required |
+| `Read GIS Table Links` / 1d_xs, 1d_tab etc | Primary GIS layer with `requires_table_link_scan`; eager preserves the existing GIS-aware `CrossSectionDatabase` view | **Incomplete until Agent 1 materialises per-feature paths**; EG02/EG04 examples required |
 | `XS Database`, Flood Modeller/MIKE external data | Primary `cross_section`; cached CSV/GIS Source column yields secondary paths; Flood Modeller DAT cross sections are internally contained | Synthetic XS CSV tests; other external-driver schemas and model parity still require verification |
 | Attribute-linked secondary files for 1d_xs/network/pit etc | `requires_attribute_scan` and upstream channel semantics; scan results delegated to Agent 1's shared SHP/GPKG materialiser | **Implementation gap until full-format scanner and identity comparison** |
 | Output, log/check folders and variable assignments | Excluded from input-file inventory | Existing synthetic output/assignment regressions |
@@ -39,7 +39,7 @@ A deferred `FileReference` marks whether directory, layer, GIS attribute, table-
 5. Rainfall grids, GIS secondary files and GeoPackage `>>` layers require separate batched inspection. None of these validations is implied merely by returning a syntactic reference.
 6. Invalid and unsupported-but-valid inputs are different. Unsupported-but-valid cases are implementation blockers and remain **unresolved**, not accepted.
 7. Repeat targeted regression tests, original 42-run model, P (4), B (240), and example reproduction bundle (161 TCFs / 174 runs); report exact SHAs and filesystem/GIS operations before any speedup claim.
-8. No status in this file supersedes the downstream baseline: **107 TCFs / 119 runs accepted and 54 TCFs / 55 runs unresolved**, as supplied for PR143 head `b8d7adc` and PyTUFLOW head `65f24fa`. No revised full example sweep has yet been executed on this supporting branch.
+8. The reference **Windows** baseline remains **107 TCFs / 119 runs accepted and 54 TCFs / 55 runs unresolved**, as supplied for PR143 head `b8d7adc` and PyTUFLOW head `65f24fa`. A full **Windows** sweep using the latest upstream and downstream heads is still required; historical Linux results are not an acceptance criterion.
 
 ## External engineering semantics
 
@@ -49,36 +49,14 @@ A deferred `FileReference` marks whether directory, layer, GIS attribute, table-
 
 Sources: https://docs.tuflow.com/classic-hpc/manual/2026.3/075-Advection-Dispersion.html and https://docs.tuflow.com/classic-hpc/manual/2026.0/TwoDBoundaries-2.html .
 
-## Read-only GitHub Actions example sweep (22 October 2026)
+## Current validation scope — Windows only
 
-Run [39652484033](https://github.com/phantom-branch/PyTuflow/actions/runs/39652484033)
-used Linux/Python 3.14 with PyTUFLOW code commit `172af012f88ccb9088e894dc3b8fde85adc7623d` and
-pinned ryan-tools commit `aaa475e30eb5397d7b88adeffb970ff0c5155b6f`. The verified 1,464-member
-archive was extracted into a temporary directory; no TUFLOW executable was launched.
-
-**Observed results (older code SHA, not the current head):**
-- 161 TCFs / 174 run combinations checked; 21 TCFs / 21 runs accepted.
-- Eager-only dependency identities: **2** (EG05_018).
-- Deferred-only dependency identities: **18** (16 rainfall grids in EG03_012; one each in EG15_007/008).
-- No whole-context parser exceptions returned by the harness, but **one eager collection issue**:
-  pandas 3 StringArray assignment fails inside `DatabaseRunState._resolve_scope_in_context`
-  for EG03_012, resulting in an incomplete eager inventory.
-- 145 preflight missing-file findings included case-sensitive Linux lookups:
-  the control input asks for `model/materials.csv` but the stored member is `model/Materials.csv`.
-  This makes the Linux accepted-count **not comparable** to the earlier Windows baseline of
-  119 accepted / 55 unresolved. Agent 1 must implement shared case-insensitive literal
-  materialisation (or retest on Windows), without per-run filesystem scans.
-- The pinned downstream consumer accepts only `bc` and `materials` database source kinds.
-  It correctly fails closed on `pit_inlet` (13 cases), `ad_bc` (4), `depth_discharge` (3)
-  and `rainfall` (1). Other blocked cases include GIS table links (12).
-- EG03_011 passed both modes with 16 identical reference identities. EG03_012's eager
-  pandas failure has subsequently been repaired in `db_run_state.py`; the eager
-  rainfall CSV index inventory now projects cached grid Source rows.
-- Do not suppress empty BC Source `GT01` in EG05_018 or treat the two network curve
-  differences as solved without checking source row semantics and active identifiers.
-
-The job stores full per-case JSON and CSV in its Actions artifact. The GitHub diagnostic
-workflow's full sweep is **opt-in** via `[run examples]` in the supporting PR title;
-ordinary synthetic CI remains automatic. A later exact-head rerun must overwrite none
-of the original example bundle, and must compare missing **and** extra dependencies.
-
+- Automated contract/context regression matrix: **Windows Python 3.12 and Python 3.14**.
+- Read-only, explicitly opt-in 174-run example-model workflow: **Windows Python 3.14**.
+- Preserve all existing controls: both missing and extra dependency comparison; fail-closed
+  incomplete-attribute guard; no simulations; no fixture deletion; no merge or release.
+- **Linux acceptance, POSIX path sensitivity and Linux-specific materialiser
+  behaviour are excluded from this PR's acceptance criteria.** Linux work is
+  tracked in a separate follow-up draft PR to be considered after Windows parity passes.
+- Earlier cross-platform CI and Linux example results remain historical information in
+  GitHub Actions logs; they are not used to approve or reject the Windows feature.
