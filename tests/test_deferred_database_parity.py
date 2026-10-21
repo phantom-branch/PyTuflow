@@ -118,6 +118,7 @@ def test_rainfall_index_secondary_paths_without_raster_reads(tmp_path):
         tmp_path / "grids" / "step_001.asc",
     }
     assert all(x.database_kind == "rainfall" for x in sources)
+    assert all(x.requires_raster_metadata_scan for x in sources)
     assert all(x.database_path == tmp_path / "rainfall_index.csv" for x in sources)
 
 
@@ -137,6 +138,7 @@ def test_netcdf_rainfall_is_terminal_primary_not_database(tmp_path):
     ref = make_file_reference(next(command.parts()))
     assert ref.database_kind == "rainfall_netcdf"
     assert not ref.requires_database_scan
+    assert ref.requires_raster_metadata_scan
     assert ref.path_pattern == tmp_path / "rain.nc"
 
     tcf = tmp_path / "model.tcf"
