@@ -111,7 +111,7 @@ def database_source_references(build_input, context, kind: str | None, config) -
     materials and soils follow the inline/source classifications supported
     by eager processing.
     """
-    if kind not in ('bc', 'ad_bc', 'materials', 'soils', 'rainfall'):
+    if kind not in ('bc', 'ad_bc', 'pit_inlet', 'depth_discharge', 'materials', 'soils', 'rainfall'):
         raise DeferredDatabaseResolutionError(
             f'Unsupported deferred database schema: {kind!r}'
         )
@@ -128,7 +128,7 @@ def database_source_references(build_input, context, kind: str | None, config) -
     if kind == 'soils':
         _validate_soil_rows(frame, context)
         return ()
-    if kind in ('bc', 'ad_bc'):
+    if kind in ('bc', 'ad_bc', 'pit_inlet', 'depth_discharge'):
         column = next((col for col in columns if str(col).strip().casefold() == 'source'), None)
         if column is None:
             raise DeferredDatabaseResolutionError(f'{kind} database has no Source column')
@@ -145,8 +145,8 @@ def database_source_references(build_input, context, kind: str | None, config) -
     for key, raw in frame[column].items():
         value = _expanded(raw, context, kind=kind, row=key)
         if not value:
-            if kind == 'rainfall':
-                raise DeferredDatabaseResolutionError(f'Empty rainfall grid path at time {key}')
+            if kind in ('rainfall', 'bc', 'ad_bc', 'pit_inlet', 'depth_discharge'):
+                raise DeferredDatabaseResolutionError(f'Empty {kind} source path at row {key}')
             continue
         if kind == 'materials' and _inline_material(value, key):
             continue
