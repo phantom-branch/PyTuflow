@@ -719,3 +719,28 @@ def test_deferred_malformed_inline_materials_fail_closed(tmp_path):
     )
     with pytest.raises(DeferredDatabaseResolutionError):
         TCF(tcf).context(file_resolution='deferred').deferred_database_sources()
+
+
+def test_deferred_material_and_soil_variables_are_context_expanded(tmp_path):
+    """Variables inside cached table cells have the active context's values."""
+    tcf = tmp_path / 'model.tcf'
+    mat = tmp_path / 'materials.csv'
+    soils = tmp_path / 'soils.tsoilf'
+    tcf.write_text(
+        'Set Variable MaterialSource == roughness.csv\n'
+        'Set Variable InitialLoss == 12\n'
+        'Read Materials File == materials.csv | 0.8\n'
+        'Read Soil File == soils.tsoilf\n',
+        encoding='utf-8',
+    )
+    mat.write_text(
+        "Material ID,Manning's n\n"
+        '1,<<MaterialSource>>\n',
+        encoding='utf-8',
+    )
+    soils.write_text('1,ILCL,<<InitialLoss>>,1.2\n', encoding='utf-8')
+    run = TCF(tcf).context(file_resolution='deferred')
+    sources = run.deferred_database_sources()
+    assert len(sources) == 1
+    assert sources[0].database_kind == 'materials'
+    assert sources[0].path_pattern == tmp_path / 'roughness.csv'
