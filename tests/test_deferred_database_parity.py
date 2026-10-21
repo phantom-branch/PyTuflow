@@ -447,3 +447,56 @@ def test_multiple_material_files_contribute_independent_sources(tmp_path):
         ref.path_pattern.name for inp in run.find_input()
         for ref in inp.file_references if ref.database_kind == "materials"
     } == {"rock.csv", "soil_roughness.csv"}
+
+
+
+def test_bc_database_reassignments_retain_order_and_do_not_merge(tmp_path):
+    """A later BC Database changes the active table for subsequent BC inputs."""
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "BC Database == before.csv\n"
+        "Read GIS BC == gis/2d_bc_before.shp\n"
+        "BC Database == after.csv\n"
+        "Read GIS BC == gis/2d_bc_after.shp\n",
+        encoding="utf-8",
+    )
+    _bc_csv(tmp_path / "before.csv", "first.csv")
+    _bc_csv(tmp_path / "after.csv", "second.csv")
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("open")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+        patch("sqlite3.connect", side_effect=AssertionError("sqlite")),
+    ):
+        run = model.context(file_resolution="deferred")
+        activations = run.deferred_database_activations()
+    bc = [entry for entry in activations if entry.database_kind == "bc"]
+    assert [entry.database_path.name for entry in bc] == ["before.csv", "after.csv"]
+    assert bc[0].sequence < bc[1].sequence
+    assert bc[0].input_uuid != bc[1].input_uuid
+    assert all(entry.owning_command.casefold() == "bc database" for entry in bc)
+    assert all(entry.owner_control_file == tcf for entry in bc)
+    with pytest.raises(ValueError, match="Multiple active bc"):
+        run.deferred_database_sources()
+
+
+def test_scenario_scoping_of_database_activations(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "If Scenario == EXG\n"
+        "    BC Database == exg.csv\n"
+        "Else\n"
+        "    BC Database == dev.csv\n"
+        "End If\n",
+        encoding="utf-8",
+    )
+    _bc_csv(tmp_path / "exg.csv", "existing.csv")
+    _bc_csv(tmp_path / "dev.csv", "developed.csv")
+    model = TCF(tcf)
+    exg = model.context("-s1 EXG", file_resolution="deferred")
+    dev = model.context("-s1 DEV", file_resolution="deferred")
+    assert [x.database_path.name for x in exg.deferred_database_activations()
+            if x.database_kind == "bc"] == ["exg.csv"]
+    assert [x.database_path.name for x in dev.deferred_database_activations()
+            if x.database_kind == "bc"] == ["dev.csv"]
