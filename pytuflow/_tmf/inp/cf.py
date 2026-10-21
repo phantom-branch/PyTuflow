@@ -2,6 +2,7 @@ import fnmatch
 import logging
 import os
 import typing
+from pathlib import Path
 
 from .file import FileInput
 from .inp_run_state import InputRunState
@@ -24,39 +25,42 @@ class ControlFileInputRunState(InputRunState):
         super()._resolve_scope_in_context()
         deferred = getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'
         if deferred:
-            # Cached child control files were already loaded during the
-            # one-time TCF parse. Their paths may have been canonicalised to
-            # UNC while the run-specific command still names a mapped drive.
-            # First match complete lexical paths, then permit a *unique*
-            # filename match within this input's own parsed children.
-            # Never silently discard an unmatched or ambiguous child.
+            # Use the paths captured when cached child control files were
+            # loaded in the initial TCF parse. cf.fpath may be canonicalised
+            # to a different UNC/mapped-drive spelling, and must not become
+            # the only key for matching run-specific references.
             from ..abc.run_state import ResolveError
 
             children = tuple(self.bs.cf)
+            loaded_paths = tuple(getattr(self.bs, '_cf_loaded_paths', ()))
+            if len(children) != len(loaded_paths):
+                raise ResolveError(
+                    f'Cached nested control-file index incomplete: {self.bs.lhs}'
+                )
             matched = set()
-            references = self.file_references
-            for ref in references:
+            for ref in self.file_references:
                 if ref.unresolved_variables:
                     raise ResolveError(f'Unresolved child control file: {ref.path_pattern}')
-                path = os.path.normpath(str(ref.path_pattern)).casefold()
-                full_matches = [
-                    i for i, cf in enumerate(children)
-                    if fnmatch.fnmatchcase(
-                        os.path.normpath(str(cf.fpath.absolute())).casefold(), path,
-                    )
+                pattern = os.path.normpath(str(ref.path_pattern)).casefold()
+                selected = [
+                    i for i, original in enumerate(loaded_paths)
+                    if fnmatch.fnmatchcase(os.path.normpath(str(original)).casefold(), pattern)
                 ]
-                if full_matches:
-                    selected = full_matches
-                else:
-                    # The build-state list is scoped to this specific READ
-                    # command; a filename match cannot import an unrelated
-                    # control file from another command. Duplicated names
-                    # remain ambiguous and must fail closed.
-                    name = ref.path_pattern.name.casefold()
-                    selected = [
-                        i for i, cf in enumerate(children)
-                        if fnmatch.fnmatchcase(cf.fpath.name.casefold(), name)
-                    ]
+                if not selected:
+                    # UNC versus mapped-drive aliases can differ at their
+                    # root. Only accept a common *directory and basename*
+                    # suffix from the same input's preloaded children;
+                    # basename-only matching could select a wrong scenario.
+                    pattern_parts = Path(pattern).parts
+                    if len(pattern_parts) >= 2:
+                        selected = [
+                            i for i, original in enumerate(loaded_paths)
+                            if len(Path(original).parts) >= 2
+                            and all(fnmatch.fnmatchcase(
+                                Path(original).parts[-n].casefold(),
+                                pattern_parts[-n],
+                            ) for n in (1, 2))
+                        ]
                 if not selected:
                     raise ResolveError(
                         f'No cached nested control file for {ref.path_pattern}'
@@ -64,8 +68,6 @@ class ControlFileInputRunState(InputRunState):
                 if len(selected) > 1 and not any(
                     char in ref.path_pattern.name for char in '*?['
                 ):
-                    # A literal input cannot resolve to multiple children,
-                    # even when one was previously matched by another ref.
                     raise ResolveError(
                         f'Ambiguous cached child for {ref.path_pattern}'
                     )
@@ -106,10 +108,12 @@ class ControlFileInput(FileInput):
 
     def _load_control_files(self):
         from ..cf.get_control_file_class import get_control_file_class
+        self._cf_loaded_paths = []
         for file in self.files:
             try:
                 cf = get_control_file_class(file)(file, self._command.config, self.parent)
                 self.cf.append(cf)
+                self._cf_loaded_paths.append(Path(file))
             except Exception as e:
                 logger.error(f'Error loading control file {file}. Command: {self._command}. Error: {e}')
 
