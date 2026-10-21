@@ -457,3 +457,29 @@ def test_deferred_event_file_under_literal_event_named_parent(tmp_path):
     run = TCF(tcf).context('-e1 Q100', file_resolution='deferred')
     refs = [ref for inp in run.find_input() for ref in inp.file_references]
     assert any(ref.path_pattern.name == 'events.tef' for ref in refs)
+
+
+@pytest.mark.parametrize('mode', ['eager', 'deferred'])
+def test_nested_output_variables_are_assignments_not_input_files(tmp_path, mode):
+    """Output-root variables must not create phantom files or split '>>' as GPKG."""
+    tcf = tmp_path / 'model.tcf'
+    source = tmp_path / 'real_input.csv'
+    source.touch()
+    tcf.write_text(
+        'Set Variable OutputBase == results\n'
+        'Set Variable OutputRoot == ..\\<<OutputBase>>\n'
+        'Set Variable XMDFBase == exports/output.xmdf\n'
+        'Output Folder == <<OutputRoot>>\n'
+        'Read File == real_input.csv\n',
+        encoding='utf-8',
+    )
+    run = TCF(tcf).context(file_resolution=mode)
+    variables = run.find_input(lhs='Set Variable')
+    assert variables
+    if mode == 'deferred':
+        assert all(not item.file_references for item in variables)
+        read_refs = [ref.path_pattern for inp in run.find_input(lhs='Read File')
+                     for ref in inp.file_references]
+        assert read_refs == [source]
+    else:
+        assert all(not item.files for item in variables)
