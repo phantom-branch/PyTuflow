@@ -131,10 +131,12 @@ class BatchDependencyResult:
     scope_hits: int
     translation_hits: int
     translation_misses: int
+    contexts_constructed: int
+    contexts_reused: int
 
     @property
     def passed(self) -> bool:
-        return all(run.error is None for run in self.runs)
+        return bool(self.runs) and all(run.error is None for run in self.runs)
 
 
 def collect_batch_dependencies(
@@ -152,13 +154,28 @@ def collect_batch_dependencies(
     """
     started = perf_counter()
     results: list[BatchDependencyRun] = []
+    seen_flags: dict[str, BatchDependencyRun] = {}
+    contexts_constructed = contexts_reused = 0
     scope_builds = scope_hits = translation_hits = translation_misses = 0
 
     for index, flags in enumerate(run_flags):
-        ctx = None
         flag_text = flags if isinstance(flags, str) else ' '.join(
             f'-{key.lstrip("-")} {value}' for key, value in flags.items()
         )
+        if cache_scopes and flag_text in seen_flags:
+            # Identical *complete* flags have the same immutable dependency
+            # projection within this one read-only batch. Keep their individual
+            # run indices; never merge results for merely similar flag sets.
+            previous = seen_flags[flag_text]
+            results.append(BatchDependencyRun(
+                index, flag_text, previous.file_references, previous.database_sources,
+                previous.database_activations, previous.error,
+            ))
+            contexts_reused += 1
+            continue
+
+        ctx = None
+        contexts_constructed += 1
         refs = ()
         sources = ()
         activations = ()
@@ -184,14 +201,20 @@ def collect_batch_dependencies(
             # before an unknown database or malformed control-file failure.
             refs = sources = activations = ()
             error = f'{type(exc).__name__}: {exc}'
-        results.append(BatchDependencyRun(index, flag_text, refs, sources, activations, error))
+        projected = BatchDependencyRun(index, flag_text, refs, sources, activations, error)
+        results.append(projected)
+        if cache_scopes:
+            seen_flags[flag_text] = projected
         if isinstance(ctx, BatchContext):
             scope_builds += ctx.scope_builds
             scope_hits += ctx.scope_hits
             translation_hits += ctx.translation_hits
             translation_misses += ctx.translation_misses
 
+    if not results:
+        raise ValueError('At least one simulation context is required')
     return BatchDependencyResult(
         tuple(results), perf_counter() - started,
         scope_builds, scope_hits, translation_hits, translation_misses,
+        contexts_constructed, contexts_reused,
     )
