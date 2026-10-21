@@ -11,7 +11,9 @@ permissions:
 
 jobs:
   example-parity:
-    if: github.event_name != 'pull_request' || github.event.pull_request.number == 2
+    # Expensive sweep only when explicitly enabled in this PR's title.
+    # Maintainers can append [run examples] and push a test commit to rerun.
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 2 && contains(github.event.pull_request.title, '[run examples]'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
