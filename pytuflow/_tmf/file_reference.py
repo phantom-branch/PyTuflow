@@ -29,6 +29,21 @@ class FileReference:
     database_kind: str | None = None
 
 
+@dataclass(frozen=True)
+class DeferredDatabaseSource:
+    """Context-resolved secondary input from a cached, parsed database.
+
+    The primary database file remains a normal FileReference. A Source is
+    a syntactic file pattern, not an existence assertion. No file is opened
+    while creating this record from an already loaded build-state database.
+    """
+
+    database_path: Path
+    database_kind: str
+    entry_name: str
+    path_pattern: Path
+
+
 def make_file_reference(command: Command) -> FileReference:
     """Construct a reference lexically, without filesystem or GIS probes."""
     value = str(command.value_expanded_path or command.value).strip()
