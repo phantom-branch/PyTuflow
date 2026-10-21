@@ -22,18 +22,23 @@ class ControlFileInputRunState(InputRunState):
     def _resolve_scope_in_context(self):
         super()._resolve_scope_in_context()
         deferred = getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'
-        for cf in self.bs.cf:
-            if deferred:
-                # Compare lexically: os.path.normpath folds '..' without stat,
-                # resolve(), or dereferencing symlinks on a network share.
+        if deferred:
+            # Source commands retain their *owning control file*, unlike a
+            # relative value created from the process working directory.
+            # Compare against expanded syntactic references with no probing.
+            paths = {
+                os.path.normcase(os.path.normpath(str(ref.path_pattern)))
+                for ref in self.file_references
+                if not ref.unresolved_variables
+            }
+            for cf in self.bs.cf:
                 cf_path = os.path.normcase(os.path.normpath(str(cf.fpath.absolute())))
-                value_path = os.path.normcase(os.path.normpath(str(self.value.absolute())))
-            else:
-                cf_path = cf.fpath.resolve()
-                value_path = self.value.resolve()
-            if cf_path == value_path:
-                run_cf = cf.context(context=self.ctx, parent=self.parent)
-                self.cf.append(run_cf)
+                if cf_path in paths:
+                    self.cf.append(cf.context(context=self.ctx, parent=self.parent))
+        else:
+            for cf in self.bs.cf:
+                if cf.fpath.resolve() == self.value.resolve():
+                    self.cf.append(cf.context(context=self.ctx, parent=self.parent))
 
 
 class ControlFileInput(FileInput):
