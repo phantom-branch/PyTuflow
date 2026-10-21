@@ -272,6 +272,65 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
                 ))
         return tuple(activations)
 
+    @staticmethod
+    def _deferred_sources_for_input(inp, kind, primary):
+        """Project cached secondary rows while preserving declaration UUID."""
+        from ..file_reference import DeferredDatabaseSource
+
+        if primary.unresolved_variables or primary.requires_directory_scan:
+            raise ValueError(f'Cannot inspect unresolved primary database: {primary.path_pattern}')
+        result = []
+        for source in inp.database_source_references:
+            if (source.unresolved_variables or source.requires_database_scan
+                    or source.requires_attribute_scan
+                    or (source.layer_pattern is not None and kind != 'ad_global')):
+                raise ValueError(f'Unsupported secondary database reference: {source.path_pattern}')
+            row = source.origin.rsplit(' row ', 1)
+            if len(row) != 2 or not row[1]:
+                raise ValueError(f'Cannot identify database entry: {source.origin}')
+            result.append(DeferredDatabaseSource(
+                primary.path_pattern, kind,
+                (row[1].split(' / ', 1)[0] if kind == 'ad_global' else row[1]),
+                source.path_pattern,
+                owning_command=primary.origin,
+                owner_control_file=inp._command.parent,
+                layer_pattern=source.layer_pattern,
+                source_field=(source.origin.rsplit(' / ', 1)[-1]
+                              if kind == 'ad_global' else None),
+                requires_layer_scan=source.requires_layer_scan,
+                requires_directory_scan=source.requires_directory_scan,
+                requires_raster_metadata_scan=source.requires_raster_metadata_scan,
+                input_uuid=str(inp.uuid),
+            ))
+        return tuple(result)
+
+    def deferred_database_sources_for_activation(self, input_uuid: str):
+        """Return cached Source rows for exactly one selected declaration.
+
+        Consumers first pair a boundary/GIS command with its active database
+        using deferred_database_activations(). They can then inspect this
+        activation's source rows without merging unrelated BC databases.
+        A duplicate UUID, missing declaration or unsupported schema fails
+        closed. No additional file, GIS, SQLite or directory I/O is done.
+        """
+        if getattr(self.ctx, 'file_resolution', 'eager') != 'deferred':
+            raise ValueError('deferred_database_sources_for_activation requires deferred mode')
+        matches = [inp for inp in self.find_input() if str(inp.uuid) == str(input_uuid)]
+        if len(matches) != 1:
+            raise ValueError(
+                f'Expected exactly one database input for activation {input_uuid}, '
+                f'found {len(matches)}'
+            )
+        inp = matches[0]
+        primaries = [ref for ref in inp.file_references if ref.requires_database_scan]
+        if len(primaries) != 1:
+            raise ValueError(f'Cannot identify database for activation {input_uuid}')
+        primary = primaries[0]
+        kind = primary.database_kind
+        if kind is None or kind == 'unknown':
+            raise ValueError(f'Unsupported database kind for activation {input_uuid}')
+        return self._deferred_sources_for_input(inp, kind, primary)
+
     def deferred_database_sources(self):
         """Describe active database secondary files using cached parsed rows.
 
@@ -326,27 +385,7 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
                 primary = primaries[0]
                 if primary.unresolved_variables or primary.requires_directory_scan:
                     raise ValueError(f'Cannot inspect unresolved primary database: {primary.path_pattern}')
-                for source in inp.database_source_references:
-                    if (source.unresolved_variables or source.requires_database_scan
-                            or source.requires_attribute_scan
-                            or (source.layer_pattern is not None and kind != 'ad_global')):
-                        raise ValueError(f'Unsupported secondary database reference: {source.path_pattern}')
-                    row = source.origin.rsplit(' row ', 1)
-                    if len(row) != 2 or not row[1]:
-                        raise ValueError(f'Cannot identify database entry: {source.origin}')
-                    result.append(DeferredDatabaseSource(
-                        primary.path_pattern, kind,
-                        (row[1].split(' / ', 1)[0] if kind == 'ad_global' else row[1]),
-                        source.path_pattern,
-                        owning_command=primary.origin,
-                        owner_control_file=inp._command.parent,
-                        layer_pattern=source.layer_pattern,
-                        source_field=(source.origin.rsplit(' / ', 1)[-1]
-                                      if kind == 'ad_global' else None),
-                        requires_layer_scan=source.requires_layer_scan,
-                        requires_directory_scan=source.requires_directory_scan,
-                        requires_raster_metadata_scan=source.requires_raster_metadata_scan,
-                    ))
+                result.extend(self._deferred_sources_for_input(inp, kind, primary))
         return tuple(result)
 
     def output_name(self) -> str:
