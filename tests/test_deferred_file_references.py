@@ -152,7 +152,8 @@ def test_context_after_parse_has_no_filesystem_or_gis_io(tmp_path):
         patch.object(TuflowPath, '_gpkg_layers', side_effect=forbidden),
     ):
         run = tcf.context(file_resolution='deferred')
-        refs = tuple(ref for inp in run.inputs for ref in inp.file_references)
+        # Use the exact recursive traversal consumed by downstream preflight.
+        refs = tuple(ref for inp in run.find_input() for ref in inp.file_references)
     assert any(ref.requires_layer_scan for ref in refs)
     assert any(ref.requires_directory_scan for ref in refs)
     assert any(ref.requires_database_scan for ref in refs)
