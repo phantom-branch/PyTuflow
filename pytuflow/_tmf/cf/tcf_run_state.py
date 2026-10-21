@@ -290,7 +290,9 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
                 if len(row) != 2 or not row[1]:
                     raise ValueError(f'Cannot identify database entry: {source.origin}')
                 result.append(DeferredDatabaseSource(
-                    primary.path_pattern, kind, row[1], source.path_pattern,
+                    primary.path_pattern, kind,
+                    (row[1].split(' / ', 1)[0] if kind == 'ad_global' else row[1]),
+                    source.path_pattern,
                     owning_command=primary.origin,
                     owner_control_file=inp._command.parent,
                     layer_pattern=source.layer_pattern,
