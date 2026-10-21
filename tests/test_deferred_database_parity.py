@@ -300,6 +300,7 @@ def test_nested_adcf_materialises_global_layers_and_bc_source_root(tmp_path):
     assert global_gpkg.layer_pattern == "2d_ad_ic_Salinity"
     assert global_gpkg.requires_layer_scan
     assert global_gpkg.source_field == "initial condition"
+    assert global_gpkg.entry_name == "Salinity"
     assert global_gpkg.owner_control_file == adcf
 
 
