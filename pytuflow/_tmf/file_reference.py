@@ -5,7 +5,6 @@ contexts and inspect paths, database layers and GIS attributes in bulk.
 """
 from dataclasses import dataclass
 from pathlib import Path
-import os
 import re
 
 from .parsers.command import Command
@@ -65,10 +64,7 @@ def make_file_reference(command: Command) -> FileReference:
     path = Path(str(globify(db, command.config.wildcards)))
     if not path.is_absolute():
         path = base / path
-    # Lexically collapse .. segments without stat, resolve or path probing.
-    # Nested ADCF database ownership can otherwise expose equivalent paths
-    # under different spellings in the deferred dependency inventory.
-    path_glob = os.path.normpath(str(path))
+    path_glob = str(path)
     # A layerless GIS/Projection GeoPackage resolves to its stem-named layer
     # in eager TUFLOW materialisation. Preserve that requirement for
     # deferred consumers; omitting it would skip a required GPKG layer check.
