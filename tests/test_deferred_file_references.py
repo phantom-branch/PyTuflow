@@ -369,7 +369,14 @@ def test_event_file_and_bc_sources_remain_event_specific(tmp_path, event, expect
     assert not any('BC Event Source' in ref.origin for ref in references)
     # Eager mode still exposes a loaded database; deferred uses cached rows.
     assert tcf.context(f'-e1 {event}').bc_dbase().df.loc['FC01']['Source'] == expected_source
-    sources = run.deferred_database_sources()
+    # This explicit cached-row projection must not touch files or GIS either.
+    with (
+        patch.object(Path, 'open', side_effect=AssertionError('open')),
+        patch.object(Path, 'stat', side_effect=AssertionError('stat')),
+        patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
+        patch('sqlite3.connect', side_effect=AssertionError('SQLite')),
+    ):
+        sources = run.deferred_database_sources()
     assert len(sources) == 1
     assert sources[0].database_kind == 'bc'
     assert sources[0].entry_name == 'FC01'
