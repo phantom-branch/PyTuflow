@@ -540,8 +540,11 @@ def test_deferred_recursive_geometry_bc_estry_sources_survive_cached_alias(tmp_p
     # Simulate a cached parse whose physical child paths have since been
     # canonicalised to a different drive/share. Do not read these fake paths.
     for inp in model.inputs:
-        for child in inp.cf:
+        for i, child in enumerate(inp.cf):
             child._fpath = tmp_path / 'other_share' / child.fpath.name
+            inp._cf_loaded_paths[i] = (
+                tmp_path / 'other_share' / tmp_path.name / child.fpath.name
+            )
     with (
         patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
         patch('sqlite3.connect', side_effect=AssertionError('sqlite')),
@@ -568,7 +571,7 @@ def test_unmatched_cached_nested_file_must_fail_closed(tmp_path):
     assert len(inp.cf) == 1
     inp.cf.clear()
     from pytuflow._tmf.abc.run_state import ResolveError
-    with pytest.raises(ResolveError, match='No cached nested control file'):
+    with pytest.raises(ResolveError, match='Cached nested control-file index incomplete'):
         model.context(file_resolution='deferred')
 
 
@@ -598,5 +601,25 @@ def test_duplicate_cached_control_file_for_literal_reference_fails_closed(tmp_pa
     inp = model.find_input(lhs='Geometry Control File')[0]
     assert len(inp.cf) == 1
     inp.cf.append(inp.cf[0])
+    inp._cf_loaded_paths.append(inp._cf_loaded_paths[0])
     with pytest.raises(ResolveError, match='Ambiguous cached child'):
+        model.context(file_resolution='deferred')
+
+
+def test_wrong_scenario_cached_control_does_not_match_same_filename(tmp_path):
+    """Name-only fallback must not import geometry from an inactive folder."""
+    from pytuflow._tmf.abc.run_state import ResolveError
+
+    geom_dir = tmp_path / 'DEV'
+    geom_dir.mkdir()
+    (geom_dir / 'geometry.tgc').write_text(
+        'Read GIS Code == gis/2d_code.shp\n', encoding='utf-8',
+    )
+    tcf = tmp_path / 'model.tcf'
+    tcf.write_text('Geometry Control File == DEV/geometry.tgc\n', encoding='utf-8')
+    model = TCF(tcf)
+    inp = model.find_input(lhs='Geometry Control File')[0]
+    assert len(inp._cf_loaded_paths) == 1
+    inp._cf_loaded_paths[0] = tmp_path / 'EXG' / 'geometry.tgc'
+    with pytest.raises(ResolveError, match='No cached nested control file'):
         model.context(file_resolution='deferred')
