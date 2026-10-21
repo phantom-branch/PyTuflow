@@ -246,7 +246,11 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
             raise ValueError('deferred_database_sources requires deferred mode')
 
         result = []
-        for kind, lhs in (('bc', 'BC Database'), ('materials', 'Read Materials File')):
+        for kind, lhs in (
+            ('bc', 'BC Database'),
+            ('materials', 'Read Materials File'),
+            ('soils', 'Read Soil'),
+        ):
             inputs = self.find_input(lhs=lhs)
             if not inputs:
                 continue
