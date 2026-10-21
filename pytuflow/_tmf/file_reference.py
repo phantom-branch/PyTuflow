@@ -45,6 +45,10 @@ class DeferredDatabaseSource:
     path_pattern: Path
     owning_command: str = ''
     owner_control_file: Path | None = None
+    layer_pattern: str | None = None
+    source_field: str | None = None
+    requires_layer_scan: bool = False
+    requires_directory_scan: bool = False
 
 
 def make_file_reference(command: Command) -> FileReference:
