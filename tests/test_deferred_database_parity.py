@@ -756,3 +756,42 @@ def test_selected_activation_requires_deferred_mode(tmp_path):
     run = TCF(tcf).context(file_resolution="eager")
     with pytest.raises(ValueError, match="requires deferred mode"):
         run.deferred_database_sources_for_activation("any")
+
+
+@pytest.mark.parametrize(
+    ("expression", "filename", "layer"),
+    [
+        ("gis/1d_xs_model.shp", "1d_xs_model.shp", None),
+        ("gis/cross_sections.gpkg >> all", "cross_sections.gpkg", "all"),
+        ("gis/cross_sections.gpkg >> 1d_xs_model", "cross_sections.gpkg", "1d_xs_model"),
+    ],
+)
+def test_table_link_requires_shared_gis_scan_without_loading_geometry(
+    tmp_path, expression, filename, layer
+):
+    """A table-link is a GIS attribute lookup, never a source CSV database."""
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        f"Read GIS Table Links == {expression}\n",
+        encoding="utf-8",
+    )
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("file opened")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+        patch("sqlite3.connect", side_effect=AssertionError("sqlite")),
+    ):
+        run = model.context(file_resolution="deferred")
+        inp = run.find_input(lhs="Read GIS Table Links")[0]
+        (ref,) = inp.file_references
+        assert run.deferred_database_sources() == ()
+        assert run.deferred_database_activations() == ()
+    assert ref.database_kind == "gis_table_links"
+    assert ref.requires_table_link_scan
+    assert ref.requires_attribute_scan
+    assert not ref.requires_database_scan
+    assert not ref.requires_raster_metadata_scan
+    assert ref.path_pattern == tmp_path / "gis" / filename
+    assert ref.layer_pattern == layer
+    assert ref.requires_layer_scan == (layer is not None)
