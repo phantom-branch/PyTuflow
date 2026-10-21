@@ -641,8 +641,7 @@ def test_deferred_material_inline_depth_n_matches_eager(tmp_path, pairs):
     )
     model = TCF(tcf)
     eager = model.context()
-    eager_material = eager.mat_file()
-    assert eager_material.value(1) is not None
+    assert len(eager.find_input(lhs='Read Materials File')) == 1
     with (
         patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
         patch.object(Path, 'stat', side_effect=AssertionError('stat')),
