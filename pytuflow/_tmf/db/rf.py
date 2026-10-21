@@ -30,7 +30,12 @@ class RainfallDatabase(DatabaseBuildState):
         if not self.loaded:
             self._df = pd.DataFrame(columns=self.COLUMN_NAMES)
         else:
-            self._df.columns = self.COLUMN_NAMES[:len(self._df.columns)]
+            if len(self._df.columns) != 1:
+                raise ValueError(
+                    f'Rainfall grid index must have one file column after the time index; '
+                    f'found {len(self._df.columns)} columns in {self.fpath}'
+                )
+            self._df.columns = self.COLUMN_NAMES
         self._df.index.name = self.INDEX_NAME
         self._df_wrapped = DataFrameWrapper(on_change=self.record_change, data=self._df.copy())
 
