@@ -584,3 +584,19 @@ def test_deferred_gpkg_without_layer_uses_stem_named_default(tmp_path, name):
     assert refs[0].path_pattern.name == 'terrain_source.gpkg'
     assert refs[0].layer_pattern == 'terrain_source'
     assert refs[0].requires_layer_scan
+
+
+def test_duplicate_cached_control_file_for_literal_reference_fails_closed(tmp_path):
+    """A literal nested-control command must resolve to exactly one cached child."""
+    from pytuflow._tmf.abc.run_state import ResolveError
+
+    top = tmp_path / 'model.tcf'
+    child = tmp_path / 'geometry.tgc'
+    child.write_text('Read GIS Code == gis/code.shp\n', encoding='utf-8')
+    top.write_text('Geometry Control File == geometry.tgc\n', encoding='utf-8')
+    model = TCF(top)
+    inp = model.find_input(lhs='Geometry Control File')[0]
+    assert len(inp.cf) == 1
+    inp.cf.append(inp.cf[0])
+    with pytest.raises(ResolveError, match='Ambiguous cached child'):
+        model.context(file_resolution='deferred')
