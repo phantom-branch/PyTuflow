@@ -60,8 +60,20 @@ Phases are measured independently and need not sum exactly to wall time.
 
 ## Current comparison and limitations
 
-The harness compares individual deferred context resolution, uncached batch,
-and cached batch on the same parsed TCF. It compares complete immutable
+The harness compares **four modes on the same source checkout and parsed TCF**:
+
+1. Individual deferred context construction.
+2. Uncached batch (scope/command caches disabled).
+3. Cached batch **without** the compiled graph (`compile_tree=False`).
+4. Cached batch **with** the compiled graph (`compile_tree=True`).
+
+The third and fourth modes keep the same non-graph batch caches, isolating
+the graph's effect. Report their three rotating-trial wall-time medians and
+the signed graph time-reduction percentage; a negative percentage means
+the compiled tree was slower. The ratio is only for the public tutorial
+workload, NOT private distinct-run or SMB throughput.
+
+The comparator examines complete immutable
 BatchInputCommand, BatchInputReference, FileReference,
 DeferredDatabaseActivation and DeferredDatabaseSource fields, including
 UUID, command ordinal, owner, line, activation order, source row and layer.
@@ -69,19 +81,16 @@ Both **missing and extra** records, pure reordering and incomplete/error
 runs fail. Duplicated records must not be collapsed. Unresolved primary
 variables fail acceptance. Unavailable graph counters appear as null, not zero.
 
-The compiled-tree API and its instrumentation belong to
-[PR #9](https://github.com/phantom-branch/PyTuflow/pull/9).
-**Reconcile the PR #9 commits into #7 before final benchmarking.**
-In the current PR #9 implementation, the cached batch mode also compiles
-the control tree, and the report captures its actual graph counters when
-that implementation is present. On a checkout without #9 those counters
-remain unavailable. Retargeting the PR alone does not move its Git commits.
+The compiled-tree API, instrumentation and safe per-call graph opt-out
+are implemented in [PR #9](https://github.com/phantom-branch/PyTuflow/pull/9).
+This PR inherits that implementation. Its `compile_tree=False` option keeps
+the other cached-batch optimisations enabled. Graph counters are measured
+separately and are not inferred from elapsed time. The benchmark does not
+claim that the graph eliminates all InputRunState constructions; the P2
+run-state allocator retains its conservative correctness fallback.
 
-To measure old cached (without compiled tree) versus compiled cached
-**on the same source head**, P2 needs a safe per-call graph opt-out,
-while preserving the existing cached semantics. Until that interface
-is supplied, report uncached and compiled-cached as separate modes, but
-do not invent an additional cached-without-graph measurement.
+If PR #9 advances again, incorporate those commits and recheck exact-head
+CI before final same-source-head benchmarking.
 
 Syntactic equality does NOT prove physical file existence, wildcard
 expansion, GeoPackage layers, Shapefile/GPKG feature attributes, BC row
