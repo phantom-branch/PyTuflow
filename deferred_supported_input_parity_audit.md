@@ -60,3 +60,59 @@ Sources: https://docs.tuflow.com/classic-hpc/manual/2026.3/075-Advection-Dispers
   tracked in a separate follow-up draft PR to be considered after Windows parity passes.
 - Earlier cross-platform CI and Linux example results remain historical information in
   GitHub Actions logs; they are not used to approve or reject the Windows feature.
+
+## 22 October continuation — Windows-only parser API handoff
+
+- Required AD BC, pit inlet, depth-discharge and cross-section Source fields
+  containing numeric-looking values now **fail closed** rather than silently
+  disappearing from the inventory (Codex P2 review; regression matrix).
+  BC/material inline constants retain their separate documented semantics.
+- Multiple BC database declarations must not be combined into an invented
+  database. `deferred_database_activations()` returns ordered declaration UUIDs;
+  the new `deferred_database_sources_for_activation(input_uuid)` returns only
+  the corresponding cached row sources, with `DeferredDatabaseSource.input_uuid`
+  preserving declaration ownership. The caller must decide which declaration
+  was active for each GIS/boundary command and which Source row identifiers
+  were actually referenced. Fetching all row sources is **not itself parity**.
+  Unknown UUIDs, duplicate inputs and unsupported database schemas fail closed.
+- `Read GIS Table Links` primary references retain
+  `requires_table_link_scan` and `requires_attribute_scan` for SHP and
+  GPKG (explicit layers and `>> all`); they do **not** require CSV database
+  parsing. Eager public `CrossSectionDatabase` behaviour is retained. Feature
+  attribute reading and materialisation remain downstream Agent 1's work,
+  not extra operations during a deferred context.
+- CI/acceptance remains **Windows Python 3.12 and 3.14**; Linux checks are
+  deferred to [tracking PR #4](https://github.com/phantom-branch/PyTuflow/pull/4).
+- An exact-head Windows 161-TCF/174-run validation is still necessary after
+  consumer integration, including missing *and* extra linked files.
+
+## Latest Windows diagnostic — comparison provenance issue (22 October)
+
+- The first read-only **Windows Python 3.14** sweep after integration
+  of the upstream declaration-specific Source API ran
+  [Actions 39661375507](https://github.com/phantom-branch/PyTuflow/actions/runs/39661375507)
+  against upstream `d3c5a57e`, ryan-tools `42e3086` and its permanent
+  verified test-data submodule: all 161 TCFs / 174 runs were visited,
+  1,464 archive members verified, zero whole-context parser exception cases,
+  **158 TCFs passed preflight**.
+- The strict identity comparator nevertheless marked **0/174 accepted**
+  (304 eager-only and 363 deferred-only identities). This is **not**
+  proof that 174 runs have missing dependencies: the comparator includes
+  eager-vs-deferred *textual provenance annotations* as if they were different
+  file references.
+- A focused exact-diff trace in
+  [Actions 39662850069](https://github.com/phantom-branch/PyTuflow/actions/runs/39662850069)
+  confirmed identical file and layer paths for the mismatches in EG02_013,
+  whose eager origin is `bc source: <ID>` and deferred is
+  `bc database source: <ID>`. In EG03_012, raster paths likewise agree,
+  but eager `read grid rf` differs from deferred
+  `read grid rf source: <timestep>`.
+- **Downstream Agent 1** must normalise provenance to a shared semantic
+  source role for strict identity comparisons, keeping raw labels for
+  diagnostics. Then re-run both missing and extra sets. Real extra AD BC
+  and pit/database rows and active identifier/row selection must still
+  be investigated independently; do not hide these in a path-only diff.
+- The temporary diff trace was removed from the upstream workflow.
+  Windows full-matrix sweeps are explicit opt-in with `[run examples]`
+  and `[full]` or manual dispatch, to avoid repeated minutes-long runs
+  during upstream iteration.

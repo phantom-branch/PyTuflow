@@ -659,3 +659,139 @@ def test_invalid_fews_source_fails_closed(tmp_path, selector):
     )
     with pytest.raises(DeferredDatabaseResolutionError, match="Invalid FEWS"):
         TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
+
+
+
+@pytest.mark.parametrize(
+    ("command", "filename", "header", "row", "kind"),
+    [
+        (
+            "AD BC Database", "ad.csv",
+            "Name,Source,Column 1,Column 2",
+            "Ocean__Tracer,123,Time,Concentration", "ad_bc",
+        ),
+        (
+            "Pit Inlet Database", "pit.csv",
+            "Name,Source,Depth_Col,Flow_Col,Area,Width",
+            "Inlet_A,123,Depth,Flow,0,0", "pit_inlet",
+        ),
+        (
+            "Depth Discharge Database", "curves.csv",
+            "Name,Source,Depth_Col,Flow_Col,Area,Width",
+            "Curve_A,123,Depth,Flow,0,0", "depth_discharge",
+        ),
+        (
+            "XS Database", "xs.csv",
+            "Name,Source,Type,Flags",
+            "XS_A,123,XZ,", "cross_section",
+        ),
+    ],
+)
+def test_numeric_required_secondary_source_fails_closed(
+    tmp_path, command, filename, header, row, kind
+):
+    """A numeric-looking required Source must not vanish from the inventory."""
+    tcf = tmp_path / "model.tcf"
+    prefix = ""
+    if kind == "ad_bc":
+        (tmp_path / "global.csv").write_text(
+            "Name,Initial Condition,Minimum Dispersion\nTracer,0,0\n",
+            encoding="utf-8",
+        )
+        prefix = "AD Global Database == global.csv\n"
+    tcf.write_text(
+        prefix + f"{command} == {filename}\n", encoding="utf-8",
+    )
+    (tmp_path / filename).write_text(
+        header + "\n" + row + "\n", encoding="utf-8",
+    )
+    with pytest.raises(
+        DeferredDatabaseResolutionError,
+        match=f"Numeric {kind} Source",
+    ):
+        TCF(tcf).context(file_resolution="deferred").deferred_database_sources()
+
+
+def test_deferred_database_sources_for_selected_bc_activation(tmp_path):
+    """The consumer chooses an active table by UUID; unused tables stay distinct."""
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "BC Database == upstream.csv\n"
+        "Read GIS BC == gis/2d_bc_upstream.shp\n"
+        "BC Database == downstream.csv\n"
+        "Read GIS BC == gis/2d_bc_downstream.shp\n",
+        encoding="utf-8",
+    )
+    _bc_csv(tmp_path / "upstream.csv", "upstream_hydrograph.csv")
+    _bc_csv(tmp_path / "downstream.csv", "downstream_hydrograph.csv")
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("file opened")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+        patch("sqlite3.connect", side_effect=AssertionError("sqlite")),
+    ):
+        run = model.context(file_resolution="deferred")
+        bc = [entry for entry in run.deferred_database_activations()
+              if entry.database_kind == "bc"]
+        assert len(bc) == 2
+        first = run.deferred_database_sources_for_activation(bc[0].input_uuid)
+        second = run.deferred_database_sources_for_activation(bc[1].input_uuid)
+    assert [ref.path_pattern.name for ref in first] == ["upstream_hydrograph.csv"]
+    assert [ref.path_pattern.name for ref in second] == ["downstream_hydrograph.csv"]
+    assert all(ref.input_uuid == bc[0].input_uuid for ref in first)
+    assert all(ref.input_uuid == bc[1].input_uuid for ref in second)
+    assert first[0].database_path == bc[0].database_path
+    assert second[0].database_path == bc[1].database_path
+    with pytest.raises(ValueError, match="Expected exactly one"):
+        run.deferred_database_sources_for_activation("missing")
+    with pytest.raises(ValueError, match="Multiple active bc"):
+        run.deferred_database_sources()
+
+
+def test_selected_activation_requires_deferred_mode(tmp_path):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("BC Database == bc.csv\n", encoding="utf-8")
+    _bc_csv(tmp_path / "bc.csv", "hydrograph.csv")
+    run = TCF(tcf).context(file_resolution="eager")
+    with pytest.raises(ValueError, match="requires deferred mode"):
+        run.deferred_database_sources_for_activation("any")
+
+
+@pytest.mark.parametrize(
+    ("expression", "filename", "layer"),
+    [
+        ("gis/1d_xs_model.shp", "1d_xs_model.shp", None),
+        ("gis/cross_sections.gpkg >> all", "cross_sections.gpkg", "all"),
+        ("gis/cross_sections.gpkg >> 1d_xs_model", "cross_sections.gpkg", "1d_xs_model"),
+    ],
+)
+def test_table_link_requires_shared_gis_scan_without_loading_geometry(
+    tmp_path, expression, filename, layer
+):
+    """A table-link is a GIS attribute lookup, never a source CSV database."""
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        f"Read GIS Table Links == {expression}\n",
+        encoding="utf-8",
+    )
+    model = TCF(tcf)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("file opened")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+        patch("sqlite3.connect", side_effect=AssertionError("sqlite")),
+    ):
+        run = model.context(file_resolution="deferred")
+        inp = run.find_input(lhs="Read GIS Table Links")[0]
+        (ref,) = inp.file_references
+        assert run.deferred_database_sources() == ()
+        assert run.deferred_database_activations() == ()
+    assert ref.database_kind == "gis_table_links"
+    assert ref.requires_table_link_scan
+    assert ref.requires_attribute_scan
+    assert not ref.requires_database_scan
+    assert not ref.requires_raster_metadata_scan
+    assert ref.path_pattern == tmp_path / "gis" / filename
+    assert ref.layer_pattern == layer
+    assert ref.requires_layer_scan == (layer is not None)

@@ -70,6 +70,7 @@ class DeferredDatabaseSource:
     requires_layer_scan: bool = False
     requires_directory_scan: bool = False
     requires_raster_metadata_scan: bool = False
+    input_uuid: str = ''
 
 
 def make_file_reference(command: Command) -> FileReference:
