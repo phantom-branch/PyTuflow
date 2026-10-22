@@ -92,7 +92,8 @@ foreach ($pair in $links) {
     if ($LASTEXITCODE -ne 0) { throw "Broken PR ancestry: $($pair -join ' -> ')" }
 }
 # Refresh PR #10 only when its parent PR #7 has changed.
-git merge --no-ff origin/test/batch-tutorial-benchmarks
+# Native GitHub stacks require linear history: rebase this layer on its parent.
+gh stack rebase --upstack --no-trunk --remote origin
 # PR #8 is already contained in PR #9. Do not merge it again.
 git rev-parse HEAD
 py -3.14 -m pip install -e . pytest
@@ -135,3 +136,22 @@ tests and 68 consumer tests pass**; compileall and whitespace checks pass. Publi
 four-mode tutorial replay, materialised consumer replay and native SMB benchmarks
 are rerun against a retained snapshot of the resulting integration commit. Older
 4b9505a/1d022c2 results remain revision-specific, not acceptance for this merge.
+
+### Native stack repair
+
+The initial integration merge was retained locally as `backup/pr10-5053a07`.
+GitHub still rejected the stack because PR #7 was based on an older PR #9.
+PR #7 was rebased onto PR #9 (`204c9e0`), preserving its 30 benchmark commits;
+PR #10 was then rebased onto PR #7. The two conditional-proof conflicts were
+resolved with the tested integration contents. Explicit lease-protected pushes
+published PR #7 `66872d5` and PR #10 `5b11415`. Both now report mergeable.
+No PR was merged. Original PR #7 is retained as `backup/pr7-8367c90`.
+
+PR #10 `5b11415` has exactly the same Git tree as retained benchmark snapshot
+`5053a07`: `53f09c3d7f97d356c4f1ca3f258c5657afbceb8f`.
+The full verified public 161-TCF / 174-run parser replay passes in all four
+modes (three rotated trials), and the separate materialised consumer
+eager/deferred/batch replay passes. Native SMB trials are still in progress;
+do not infer native performance from the public fixture. Hosted exact-head
+checks are queued, not yet accepted. Subsequent documentation commits do not
+change the parser source used for these checks.
