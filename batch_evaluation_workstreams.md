@@ -15,6 +15,14 @@ eager and individual deferred APIs and all fail-closed behaviour.
 - **No persistent or cross-invocation cache.** A model edit between batch calls
   must be visible. Compile/cache only within one synchronous batch or consumer
   preflight invocation.
+- **The private engineering datasets reside only on the SMB share.** No agent
+  may copy, upload, archive, embed, commit or publish any native model files,
+  fragments, identifying directory paths or derived model content in GitHub,
+  test fixtures, logs, CI artifacts or PR attachments. Validate them in place
+  using read-only code on the authorised workstation.
+- **Public performance fixtures are restricted to the TUFLOW tutorial dataset.**
+  Minimal in-memory/temporary synthetic unit fixtures may still test correctness,
+  but must not be used to claim representative production speedups.
 - No solver, launcher, writes to engineering models, automatic merging, PyPI
   publishing, production pin changes or Linux acceptance work.
 - Initial control-file reads and consumer materialisation may perform I/O.
@@ -45,7 +53,7 @@ and leave descendants based on their immediate parent branches.
 | **P0 — foundation (this PR)** | PR #5: `feat/batch-dependency-context-cache` | `batch_dependencies.py`, `test_batch_ordered_inputs.py`, this plan | Add ordered, immutable active-input descriptors, including commands with no files. Reuse one `find_input()` traversal when projecting references. No consumer default changes. | Complete before dependent PRs |
 | **P1 — active input/activation indexing** | P0: `feat/batch-ordered-dependency-plan` | `cf/tcf_run_state.py`, optional new private run-index module; focused tests | Replace repeated `find_input()` and UUID-by-UUID scans within one evaluated context with a stable ordinal/UUID lookup. Preserve database activation sequence; no global reuse of mutable run state. | Yes, alongside P2 (different files) |
 | **P2 — immutable compiled control tree** | P0: `feat/batch-ordered-dependency-plan` | New `compiled_control_tree.py`, `compiled_dependency_plan.py`, `batch_dependencies.py`; own graph tests | Compile control/input nodes once, annotate exact relevant variables/scopes/events/settings, evaluate equivalent nodes per distinct relevant signature rather than reconstructing unchanged inputs 500 times. Keep conservative fallback and per-run provenance. | Yes, alongside P1; integration after each passes |
-| **P3 — synthetic differential/performance harness** | P0: `feat/batch-ordered-dependency-plan` (rebase/retarget onto P2 before merge) | `tests/benchmark_batch_dependencies.py`, `tests/profile_batch_dependencies.py`, new test fixture modules only | Stable 120/240/440/500 distinct-flag synthetic fixtures, counters, identical-work comparison, memory peak, same-runner rotating three trials, exact reference/provenance diff. Measure parse separately. | Yes; no SMB access required |
+| **P3 — public tutorial differential/performance harness** | P0: `feat/batch-ordered-dependency-plan` (rebase/retarget onto P2 before merge) | `tests/benchmark_batch_dependencies.py`, `tests/profile_batch_dependencies.py`, public TUFLOW tutorial fixture adapters/tests only | Benchmark only checked-in/licensed TUFLOW tutorial data and valid tutorial configurations; record actual distinct-context count, unique dependencies, memory, CPU/phase timings and exact provenance parity. If scaling to 120/240/440/500 requested runs by repeating valid tutorial flag combinations, label these as *repeated-run stress tests* rather than 120/240/440/500 distinct runs. Unit tests may use tiny synthetic inputs, but not as representative speedup evidence. | Yes; no SMB access required |
 | **P4 — integration of P1/P2/P3** | P2 branch once ready | Integrator resolves any P1/P2 conflicts, extends parity tests | Consolidate validated parser optimisation stack. Never silently discard P1 fixes while adopting P2. | After P1/P2 implementation |
 
 **Shared-file ownership:** Only P2 modifies `batch_dependencies.py` after P0.
@@ -73,24 +81,33 @@ per-run origin information. Do not introduce a second TUFLOW parser.
 ## One SMB agent and staged real-world benchmarks
 
 **Exactly one agent has access to the network drive.** Reserve all native
-SMB measurements and native-model differential checks for that agent.
-Other agents use synthetic local Windows fixtures or existing archived
-161-TCF/174-run CI evidence. No other agent should attempt SMB access or
-make claims about native speedups.
+SMB measurements and native-model differential checks for that agent. Native
+models **stay on SMB**; benchmark code may be pulled to the workstation but
+private inputs, identifiable model fragments, paths and generated data must
+never be uploaded to GitHub. A native result is publishable only as a
+non-identifying aggregate (timings, counts, settings and source SHAs) when
+approved; keep detailed/local reports private. Other agents use only the
+public TUFLOW tutorial dataset for performance benchmarks, plus small synthetic
+fixtures for focused correctness tests. No other agent should attempt SMB
+access or make claims about native speedups.
 
-1. **B0 — baseline capture (SMB agent, after the next benchmark upload):**
-   record exact PyTUFLOW and ryan-tools SHAs, run flags, network path context
-   (redacted when necessary), Windows/Python versions, trial order, warm-cache
-   policy, and three repeated equal-work runs. Separate initial parse,
+1. **B0 — interim baseline and remaining private checks (SMB agent):**
+   the 22 October 2026 three-trial results are already recorded in ryan-tools
+   PR #143 and PyTUFLOW PR #5. Use those revision-labelled results as the
+   interim baseline; do not wait for or request any upload of native model data.
+   Keep the exact private run flags, paths and local reports on SMB; record
+   source SHAs, non-identifying run counts, Windows/Python versions, trial
+   order, warm-cache policy, and three repeated equal-work runs. Separate initial parse,
    contexts/batch compilation, reference collection, wildcard resolution,
    GIS/database/raster inspection, final inventory and reporting. Capture
    operation counts and peak RSS. Keep the existing 440-run historical
    single-pair result explicitly revision-labelled; do not mix revisions.
 2. **B1 — parser-only comparison (SMB agent, after P1/P2/P4 stabilise):**
-   benchmark identical P/B/440/500 flag sets using baseline individual
-   deferred, current PR #5 cached batch and optimised compiled batch, with
-   byte/identity-equivalent references and activation streams.
-3. **B2 — end-to-end consumer comparison (SMB agent, after C1–C3):**
+   benchmark the same authorised native P/B/M480 (and any separately approved
+   further model) flags using baseline individual deferred, PR #5 cached batch
+   and optimised compiled batch, with exact per-run reference and activation
+   identity. Do not upload models to CI or fabricate unavailable native sizes.
+3. **B2 — end-to-end private consumer comparison (SMB agent, after C1–C3):**
    benchmark identical full preflight including primary and secondary GIS,
    layers, active BC feature/declaration joins, raster/NetCDF and wildcard
    sources. No partial subset can be accepted as parity.
@@ -101,9 +118,46 @@ make claims about native speedups.
    if evidence is inconclusive or slower.
 
 These are **separate benchmarking sessions**, not simultaneous tests by
-multiple agents. New evidence uploaded while P1/P2/C1 are underway should
-first update the benchmark ledger, then inform prioritisation; it should not
-retroactively change baseline figures or block independent coding.
+multiple agents. New benchmark **summary results**, not datasets, may update
+this workstream after the authorised agent finishes each stage. Do not
+retroactively alter the interim baseline or block independent coding.
+
+### Recorded interim benchmark (22 October 2026; not PR #6 timings)
+
+As published in [ryan-tools PR #143](https://github.com/Chain-Frost/ryan-tools/pull/143#issuecomment-6343549927)
+(and the PyTUFLOW PR #5 evaluation record), source parser `a9f654c1`,
+consumer `2e03c0b1`, Python 3.14, three alternating warm-cache trials:
+
+| Model | Storage | Runs | Eager median | Individual deferred median | Batch median |
+| --- | --- | ---: | ---: | ---: | ---: |
+| P | local SSD | 4 | 1.234 s | 0.852 s | 0.688 s |
+| B | local SSD | 240 | 62.640 s | 40.876 s | 26.285 s |
+| M480 | local SSD | 480 | 118.843 s | 65.007 s | 45.223 s |
+| M480 | private SMB | 480 | 229.062 s | 91.844 s | 70.014 s |
+
+All four *diagnostic* suites matched materialised
+`(run, flags, normalised command, physical path, layer)` identities and had
+zero collection/inventory findings. At the time of publication the **M480 SMB
+separate public-preflight comparison was still pending**; local P/B/M480 public
+comparisons passed. These timings include parse, reference materialisation,
+identity normalisation and shared inventory, but exclude process startup,
+report writing and separate public-preflight raster-header checks. They are
+not full launcher timings. Do not relabel these as timings from this PR or
+assume later code-head parity. The original 42-run external requirement was
+withdrawn; a later distinct 42-command network experiment must be explicitly
+labelled rather than silently restored as a required gate.
+
+### Public TUFLOW tutorial benchmark protocol
+
+Use only the existing tutorial dataset already permitted in the public test
+repository. Do not copy SMB sources into test-data, even in ZIP/GPKG form.
+Preserve genuine tutorial TCFs and supported event/scenario combinations.
+For repeated-run throughput tests, record both **requested runs** and
+**distinct complete/relevant context signatures**; duplicate flags primarily
+exercise whole-run memoisation and cannot establish speedups for 500 distinct
+simulations. Attribute scans, BC rows, GeoPackage and raster headers must be
+covered by the tutorial cases that truly exercise them; report any uncovered
+native-only behaviour as a deferred SMB gate.
 
 ## Should dependency evaluation and network inspection run on separate threads?
 
@@ -135,8 +189,9 @@ and explicit completion barriers would be sufficient.
 - Every changed PR carries focused tests and exact-head Windows checks.
 - Maintain eager / individual deferred / batch equality for exact
   **per-run** identities and issue results (including missing *and* extra
-  entries). Confirm 161-TCF/174-run archived replay and native P/B/440/500
-  as available, recording unavailable native checks as deferred.
+  entries). Confirm the public 161-TCF/174-run tutorial replay; the authorised
+  SMB agent performs native P/B/M480 checks at scheduled checkpoints. Do not
+  invent availability of additional native models or use CI as a proxy.
 - No filesystem/GIS probes during PyTUFLOW post-parse compilation; no repeated
   consumer physical opens when a per-session cache can safely share them.
 - Track command constructors/clones and invariant-node evaluations, relevant
@@ -154,6 +209,7 @@ and explicit completion barriers would be sufficient.
 1. Open P0 as a draft stacked on PR #5, allow focused CI to run, fix findings.
 2. Start P1/P2/P3 as separate *agent-owned* child PRs from P0 with the file
    ownership defined above; stage C1 independently in ryan-tools.
-3. Receive the next native benchmark upload, record as B0 evidence for the
-   single SMB-capable agent. Schedule further native benchmarks after the
-   corresponding implementation phases, rather than during parallel coding.
+3. Use the already-posted 22 October aggregate benchmark evidence as the
+   interim B0 baseline. The designated SMB agent completes its remaining
+   checks in place and carries out B1/B2/B3 at later implementation milestones.
+   **There is no planned upload of private SMB model data.**
