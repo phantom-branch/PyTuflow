@@ -124,6 +124,14 @@ python -m unittest discover -s tests/integration_tests
 python -m build --wheel
 ```
 
+## Local implementation review notes
+
+- [Eager source completeness fixes](eager_source_completeness_fixes.md): eager corrections,
+  shared API additions and downstream consumer scope, recorded separately for upstream review.
+- [Deferred reference implementation](deferred_file_resolution_implementation.md): deferred parsing status.
+
+These notes describe local implementation work awaiting review, not released functionality.
+
 ## LICENCE
 
 MIT LICENCE (see `LICENSE` file for details).

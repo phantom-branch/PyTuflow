@@ -117,8 +117,15 @@ class InputRunState(RunState, Input):
             ):
                 raise ValueError('Cannot identify a resolved AD Global Database path')
             source_base = primaries[0].path_pattern
+        source_config = self._command.config
+        if source_config.file_resolution != 'deferred':
+            # A source projection is syntax-only even for an eager context.
+            # Command.parts() must not glob or open GIS while classifying rows.
+            source_config = from_config(source_config)
+            source_config.file_resolution = 'deferred'
+            source_config.variables = self.ctx.translate
         return database_source_references(
-            self.bs, self.ctx, kind, self._command.config,
+            self.bs, self.ctx, kind, source_config,
             source_base=source_base,
         )
 
@@ -155,25 +162,21 @@ class InputRunState(RunState, Input):
             run_config.file_resolution = 'deferred'
             run_config.variables = self.ctx.translate
         source_command = self.bs.command()
-        if deferred:
-            from ..parsers.command import EventCommand
-            # The owning control file may differ from config.control_file,
-            # notably for nested geometry/BC/event and TRD commands.
-            if isinstance(source_command, EventCommand):
-                # EventCommand does not accept Command's line_number argument.
-                self._command = EventCommand(
-                    cmd_txt, run_config, source_command.parent, source_command.part_index,
-                )
-                self._command.event_name = source_command.event_name
-            else:
-                self._command = source_command.__class__(
-                    cmd_txt, run_config, source_command.parent,
-                    source_command.part_index, source_command.line_number,
-                )
-            self._command.define_blocks = source_command.define_blocks
-            self._command.reload_value()
+        from ..parsers.command import EventCommand
+        # Preserve the actual nested owner in both modes. Database source
+        # provenance must not fall back to the root TCF configuration.
+        if isinstance(source_command, EventCommand):
+            self._command = EventCommand(
+                cmd_txt, run_config, source_command.parent, source_command.part_index,
+            )
+            self._command.event_name = source_command.event_name
         else:
-            self._command = source_command.__class__(cmd_txt, run_config)
+            self._command = source_command.__class__(
+                cmd_txt, run_config, source_command.parent,
+                source_command.part_index, source_command.line_number,
+            )
+        self._command.define_blocks = source_command.define_blocks
+        self._command.reload_value()
         self._command.config.variables = self.ctx.translate
         self._rs = get_input_class(self._command)(self.bs.parent, self._command, load_control_files=False)  # Input representing the RunState
         # check all variable names in file have been resolved
