@@ -78,6 +78,12 @@ def benchmark(runs: int, trials: int, static_inputs: int = 0) -> dict[str, objec
             'individual': [], 'batch_uncached': [], 'batch_cached': [],
         }
         counts: dict[str, int] = {}
+        cached_phases: dict[str, list[float]] = {
+            'compilation': [],
+            'context_construction': [],
+            'reference_collection': [],
+            'database_projection': [],
+        }
         for trial in range(trials):
             # Rotate the order to reduce simple warm-cache order bias.
             order = ('individual', 'batch_uncached', 'batch_cached')
@@ -101,7 +107,21 @@ def benchmark(runs: int, trials: int, static_inputs: int = 0) -> dict[str, objec
                             'cross_run_scope_misses': report.cross_run_scope_misses,
                             'cross_run_reference_hits': report.cross_run_reference_hits,
                             'cross_run_reference_misses': report.cross_run_reference_misses,
+                            'cross_run_reference_bypasses': report.cross_run_reference_bypasses,
+                            'within_run_reference_hits': report.within_run_reference_hits,
+                            'unique_reference_signatures': report.unique_reference_signatures,
+                            'commands_constructed': report.commands_constructed,
                         }
+                        cached_phases['compilation'].append(report.compilation_seconds)
+                        cached_phases['context_construction'].append(
+                            report.context_construction_seconds
+                        )
+                        cached_phases['reference_collection'].append(
+                            report.reference_collection_seconds
+                        )
+                        cached_phases['database_projection'].append(
+                            report.database_projection_seconds
+                        )
                 baselines[mode] = values
                 timings[mode].append(elapsed)
             assert baselines['individual'] == baselines['batch_uncached']
@@ -118,6 +138,10 @@ def benchmark(runs: int, trials: int, static_inputs: int = 0) -> dict[str, objec
             'timings_seconds': {mode: {'trials': values, 'median': median(values)}
                                 for mode, values in timings.items()},
             'cached_context_counters': counts,
+            'cached_phase_timings_seconds': {
+                name: {'trials': values, 'median': median(values)}
+                for name, values in cached_phases.items()
+            },
             'parity': 'exact syntactic identity across tested modes',
         }
 
