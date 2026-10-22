@@ -276,3 +276,40 @@ def test_variable_derived_paths_never_share_static_reference_cache(tmp_path):
     ]
     # Only the variable-derived READ exists: never reuse it as literal static.
     assert cached.cross_run_reference_hits == 0
+
+
+def test_variable_templates_parsed_once_but_scopes_evaluated_per_run(tmp_path):
+    source = tmp_path / 'compiled_variables.tcf'
+    source.write_text(
+        'IF Scenario == DEV\n'
+        '  Set Variable InputFolder == dev\n'
+        'ELSE\n'
+        '  Set Variable InputFolder == exg\n'
+        'END IF\n'
+        'Read GIS Code == gis/<<InputFolder>>/code.shp\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    definitions = model.find_input(lhs='set variable', recursive=True)
+    assert len(definitions) == 2
+    from contextlib import ExitStack
+
+    flags = tuple(f'-s1 {"DEV" if i % 2 else "EXG"} -e1 TP{i:03d}' for i in range(30))
+    with ExitStack() as stack:
+        spies = [
+            stack.enter_context(
+                patch.object(item.command(), 'parse_variable', wraps=item.command().parse_variable)
+            )
+            for item in definitions
+        ]
+        batch = model.collect_batch_dependencies(flags)
+    assert batch.passed
+    assert all(spy.call_count == 1 for spy in spies)
+    assert batch.contexts_constructed == 30
+    for i, case in enumerate(batch.runs):
+        folder = 'dev' if i % 2 else 'exg'
+        assert any(folder in ref.path_pattern.parts for ref in case.file_references)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert [case.file_references for case in batch.runs] == [
+        case.file_references for case in baseline.runs
+    ]
