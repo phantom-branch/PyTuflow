@@ -55,7 +55,7 @@ def test_bundle_verification_and_temporary_extraction(tmp_path: Path) -> None:
     extracted = tmp_path / "temporary"
     extracted.mkdir()
     extract_verified(bundle, extracted)
-    assert discover_cases(extracted, baseline) == {"runs/sample.tcf": ("",)}
+    assert discover_cases(extracted, baseline) == {"runs/sample.tcf": ({},)}
     assert not (bundle / "runs").exists()
 
 
@@ -173,3 +173,44 @@ def test_reordered_commands_fail_even_when_multiset_is_identical(tmp_path: Path)
         ordered_inputs=tuple(reversed(expected[0].ordered_inputs)),
     )
     assert compare_runs(expected, (reordered,)) == {"missing": 1, "extra": 1}
+
+def test_launcher_quoted_flags_keep_exact_values(tmp_path: Path) -> None:
+    """A quoted multiword scenario is passed intact to Context as a dictionary."""
+    source = tmp_path / "runs"
+    source.mkdir()
+    (source / "quoted.tcf").write_text(
+        "If Scenario == Scenario One\\n"
+        "  Read GIS Code == gis/multiword.shp\\n"
+        "Else\\n"
+        "  Read GIS Code == gis/other.shp\\n"
+        "End If\\n", encoding="utf-8",
+    )
+    (source / "launcher.bat").write_text(
+        'TUFLOW.exe -b -s1 "Scenario One" quoted.tcf\\n', encoding="utf-8",
+    )
+    cases = discover_cases(tmp_path, {"runs/quoted.tcf": 1})
+    assert cases == {"runs/quoted.tcf": ({"s1": "Scenario One"},)}
+    expected, _ = individual(TCF(source / "quoted.tcf"), cases["runs/quoted.tcf"])
+    actual, graph = batch(
+        TCF(source / "quoted.tcf"), cases["runs/quoted.tcf"],
+        cached=True, compile_tree=True,
+    )
+    assert expected[0].error is None
+    assert compare_runs(expected, actual) == {"missing": 0, "extra": 0}
+    assert graph["counters"]["input_runstates_elided"] is not None
+    assert "multiword.shp" in {
+        ref.path_pattern.name for ref in actual[0].file_references
+    }
+
+
+def test_distinct_flag_signature_keeps_quoted_values_separate(tmp_path: Path) -> None:
+    tcf = tmp_path / "flags.tcf"
+    tcf.write_text("Read GRID Zpts == grid/terrain.tif\\n", encoding="utf-8")
+    report = measure(
+        tcf,
+        ({"s1": "Scenario One"}, {"s1": "Scenario Two"}),
+        requested_runs=4, trials=1,
+    )
+    assert report["status"] == "passed_syntactic_parity"
+    assert report["distinct_complete_flag_signatures"] == 2
+    assert report["original_documented_combinations"] == 2
