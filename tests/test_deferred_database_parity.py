@@ -1,11 +1,20 @@
 """Upstream deferred database-kind and secondary-source regression cases."""
+import ntpath
+import os
+import posixpath
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 
 from pytuflow import TCF
-from pytuflow._tmf.deferred_database import DeferredDatabaseResolutionError
+from pytuflow._tmf.deferred_database import (
+    DeferredDatabaseResolutionError,
+    _cached_database_path_key,
+    database_source_references,
+)
 from pytuflow._tmf.file_reference import make_file_reference
 from pytuflow._tmf.parsers.command import Command
 from pytuflow._tmf.settings import TCFConfig
@@ -90,12 +99,128 @@ def _cfg(tmp_path: Path) -> TCFConfig:
     )
 
 
+@pytest.mark.parametrize('mode', ['eager', 'deferred', 'batch'])
+def test_single_context_selects_one_of_multiple_preloaded_database_files(tmp_path, mode):
+    """One declaration can preload scenario candidates; do not combine their rows."""
+    tcf = tmp_path / 'model.tcf'
+    tcf.write_text('BC Database == bc_<<~s1~>>.csv\n', encoding='utf-8')
+    _bc_csv(tmp_path / 'bc_A.csv', 'a_source.csv')
+    _bc_csv(tmp_path / 'bc_B.csv', 'b_source.csv')
+    model = TCF(tcf)
+    assert len(model.find_input(lhs='BC Database')[0].cf) == 2
+    for scenario in ('A', 'B'):
+        if mode == 'eager':
+            context = model.context(f'-s1 {scenario}', file_resolution=mode)
+        with (
+            patch.object(Path, 'open', side_effect=AssertionError('file opened')),
+            patch.object(Path, 'stat', side_effect=AssertionError('stat')),
+            patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
+            patch('sqlite3.connect', side_effect=AssertionError('SQLite')),
+        ):
+            if mode == 'batch':
+                result = model.collect_batch_dependencies((f'-s1 {scenario}',))
+                assert result.passed, [run.error for run in result.runs]
+                sources = result.runs[0].database_sources
+            else:
+                if mode == 'deferred':
+                    context = model.context(f'-s1 {scenario}', file_resolution=mode)
+                sources = context.database_sources()
+        assert [source.path_pattern.name for source in sources] == [f'{scenario.lower()}_source.csv']
+
+
+def test_cached_database_path_key_uses_platform_case_rules(tmp_path):
+    path = tmp_path / "bc_A.csv"
+    assert _cached_database_path_key(path) == os.path.normcase(
+        os.path.normpath(str(path))
+    )
+    # The two relevant platform policies differ intentionally. The loaded
+    # cache must never apply an unconditional casefold on POSIX.
+    assert posixpath.normcase("bc_A.csv") != posixpath.normcase("bc_a.csv")
+    assert ntpath.normcase("bc_A.csv") == ntpath.normcase("bc_a.csv")
+
+
+@pytest.mark.parametrize(
+    ("chosen_name", "expected_source"),
+    [("bc_A.csv", "upper_source.csv"), ("bc_a.csv", "lower_source.csv")],
+)
+def test_cached_database_selector_preserves_posix_case_distinctions_without_io(
+    tmp_path, chosen_name, expected_source,
+):
+    """Simulate POSIX matching even on Windows-only CI runners.
+
+    Both already-loaded objects are distinct: a casefold match would select
+    both and fail closed, rather than returning the explicitly chosen one.
+    """
+    paths = (tmp_path / "bc_A.csv", tmp_path / "bc_a.csv")
+    build_input = SimpleNamespace(
+        _database_loaded_paths=paths,
+        cf=tuple(
+            SimpleNamespace(
+                fpath=path,
+                loaded=True,
+                df=pd.DataFrame(
+                    {"Source": [source]},
+                    index=["Boundary"],
+                ),
+            )
+            for path, source in zip(
+                paths, ("upper_source.csv", "lower_source.csv"), strict=True,
+            )
+        ),
+    )
+    context = SimpleNamespace(
+        translate=lambda value: value,
+        is_resolved=lambda value: True,
+    )
+    with (
+        patch(
+            "pytuflow._tmf.deferred_database._cached_database_path_key",
+            side_effect=lambda path: posixpath.normcase(
+                posixpath.normpath(str(path))
+            ),
+        ),
+        patch.object(Path, "open", side_effect=AssertionError("file opened")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+    ):
+        result = database_source_references(
+            build_input, context, "bc", _cfg(tmp_path),
+            primary_path=tmp_path / chosen_name,
+        )
+    assert len(result) == 1
+    assert result[0].path_pattern.name == expected_source
+
+
 def _bc_csv(path: Path, source: str) -> None:
     path.write_text(
         "Name,Source,Column 1,Column 2,Add Col 1,Mult Col 2,Add Col 2,Column 3,Column 4\n"
         + "FC01," + source + ",time,flow,,,,,\n",
         encoding="utf-8",
     )
+
+
+@pytest.mark.parametrize('mode', ['eager', 'deferred', 'batch'])
+def test_missing_context_database_does_not_reuse_another_cached_candidate(tmp_path, mode):
+    tcf = tmp_path / 'model.tcf'
+    tcf.write_text('BC Database == bc_<<~s1~>>.csv\n', encoding='utf-8')
+    _bc_csv(tmp_path / 'bc_A.csv', 'a_source.csv')
+    model = TCF(tcf)
+    if mode == 'eager':
+        context = model.context('-s1 MISSING', file_resolution=mode)
+    with (
+        patch.object(Path, 'open', side_effect=AssertionError('file opened')),
+        patch.object(Path, 'stat', side_effect=AssertionError('stat')),
+        patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
+        patch('sqlite3.connect', side_effect=AssertionError('SQLite')),
+    ):
+        if mode == 'batch':
+            result = model.collect_batch_dependencies(('-s1 MISSING',))
+            assert not result.passed
+            assert 'found 0' in result.runs[0].error
+        else:
+            if mode == 'deferred':
+                context = model.context('-s1 MISSING', file_resolution=mode)
+            with pytest.raises(DeferredDatabaseResolutionError, match='found 0'):
+                context.database_sources()
 
 
 def test_hydraulic_and_ad_bc_databases_are_independent(tmp_path):
@@ -865,3 +990,36 @@ def test_table_link_requires_shared_gis_scan_without_loading_geometry(
     assert ref.path_pattern == tmp_path / "gis" / filename
     assert ref.layer_pattern == layer
     assert ref.requires_layer_scan == (layer is not None)
+
+
+def test_material_csv_separator_and_comment_rows_do_not_become_records(tmp_path):
+    from pytuflow._tmf.db.mat import MatDatabase
+    path = tmp_path / 'materials.csv'
+    path.write_text(
+        "Material ID,Manning's n,Losses,Description\n"
+        '1,0.05,,first\n'
+        ',,,\n'
+        '! Documentation,,,\n'
+        '2,0.06,,second\n', encoding='utf-8',
+    )
+    database = MatDatabase(path)
+    assert database.loaded
+    assert list(database.df.index) == [1, 2]
+    assert {int(key) for key in database.entries} == {1, 2}
+    source = tmp_path / 'material.tcf'
+    source.write_text('Read Materials File == materials.csv\n', encoding='utf-8')
+    model = TCF(source)
+    for mode in ('eager', 'deferred'):
+        state = model.context('-s1 Base', file_resolution=mode)
+        assert all(not inp.database_source_references for inp in state.find_input())
+    batch = model.collect_batch_dependencies(('-s1 Base',))
+    assert batch.passed
+    assert batch.runs[0].database_sources == ()
+
+
+def test_material_csv_nonempty_row_without_id_remains_invalid(tmp_path):
+    from pytuflow._tmf.db.mat import MatDatabase
+    path = tmp_path / 'invalid.csv'
+    path.write_text("Material ID,Manning's n\n1,0.05\n,0.06\n", encoding='utf-8')
+    with pytest.raises(ValueError):
+        MatDatabase(path)

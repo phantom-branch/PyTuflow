@@ -147,7 +147,8 @@ class InputBuildState(BuildState, Input):
         """Describe required source inputs without testing the filesystem."""
         cmd = self._command
         name = (cmd.command or '').upper()
-        if (not cmd.value_orig or name.startswith(('WRITE ', 'OUTPUT ', 'LOG ', 'CHECK '))
+        if (not cmd.value_orig or cmd.is_value_a_folder()
+                or name.startswith(('WRITE ', 'OUTPUT ', 'LOG ', 'CHECK '))
                 or name in ('SPATIAL DATABASE', 'BC EVENT SOURCE')
                 or name.startswith('SET VARIABLE ')):
             return ()

@@ -179,3 +179,11 @@ def test_context_from_string():
     assert ctx.S2 == '5m'
     assert ctx.E1 == '100y'
     assert ctx.context_args == ['-s1', 'EXG', '-s2', '5m', '-e1', '100y']
+
+
+@pytest.mark.parametrize("identifier,scope_kind", [("s", "SCENARIO"), ("e", "EVENT")])
+def test_ninth_flag_participates_in_scope_selection(identifier, scope_kind):
+    ctx = Context(f'-{identifier}1 Base -{identifier}9 Ninth')
+    assert ctx.in_context_by_scope([Scope(scope_kind, 'Ninth')])
+    assert not ctx.in_context_by_scope([Scope(scope_kind, 'Other')])
+    assert ctx.translate(f'<<~{identifier}9~>>') == 'Ninth'

@@ -467,7 +467,7 @@ class TuflowCrossSectionDatabaseDriver(DatabaseDriver):
             d['Column_6'].append(xs.col6)
 
         df = pd.DataFrame(d)
-        df.set_index('ID', inplace=True)
+        df = df.set_index('ID')
         return df
 
     def name(self) -> str:
