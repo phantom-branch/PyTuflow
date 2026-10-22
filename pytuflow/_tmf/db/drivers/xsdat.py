@@ -97,7 +97,7 @@ class FmCrossSectionDatabaseDriver(DatabaseDriver):
             d['Name'].append(xs.id)
             d['Type'].append(xs.type)
         df = pd.DataFrame(d)
-        df.set_index('ID', inplace=True)
+        df = df.set_index('ID')
         return df
 
     def cross_sections(self) -> list[FmCrossSection]:
