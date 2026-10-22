@@ -8,6 +8,7 @@ immutable cross-run dependency graph remains future work.
 
 from __future__ import annotations
 
+from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
@@ -43,6 +44,8 @@ class BatchContext(Context):
         # No event, TEF or user-defined variable scopes can enter this cache.
         self._shared_scope_decisions = shared_scope_decisions
         self._shared_file_references = None
+        self._shared_command_templates = None
+        self._batch_run_index: int | None = None
         self._batch_run_index: int | None = None
         self.shared_reference_hits = 0
         self.within_run_reference_hits = 0
@@ -58,6 +61,8 @@ class BatchContext(Context):
         self.translation_hits = 0
         self.translation_misses = 0
         self.commands_constructed = 0
+        self.commands_cloned = 0
+        self.command_template_bypasses = 0
         super().__init__(run_flags, config=config)
         self._batch_active = True
 
@@ -191,6 +196,81 @@ class BatchContext(Context):
         self.shared_reference_misses += 1
         return refs
 
+    def batch_command(self, build_input, source_command, command_text, run_config):
+        """Produce an independent command, avoiding repeated safe literal parsing.
+
+        Only plain GIS/GRID READ commands with literal RHS and no DEFINE/event
+        constructs may use this optimisation. Per-run mutable command/config/
+        expander objects are *never* shared; the cached prototype is not
+        returned to callers. Other inputs retain the normal constructor.
+        """
+        from .parsers.command import Command
+        from .settings import from_config
+
+        eligible = (
+            self._batch_active
+            and self._shared_command_templates is not None
+            and type(source_command) is Command
+            and source_command.command is not None
+            and source_command.command.startswith(('READ GIS ', 'READ GRID '))
+            and not source_command.define_blocks
+            and bool(source_command.value_orig)
+            and not any(token in str(source_command.value_orig) for token in ('<<', '~', '>>'))
+            and '<<' not in command_text
+            and '~' not in command_text
+        )
+        if eligible:
+            # The same parsed input provides a frozen configuration snapshot
+            # for each batch. Include all settings used by path classification,
+            # not just the run flags; preserve the original input identity.
+            signature = (
+                id(build_input),
+                command_text,
+                str(source_command.parent),
+                source_command.part_index,
+                source_command.line_number,
+                str(run_config.control_file),
+                str(run_config.spatial_database),
+                str(run_config.root_folder),
+                str(run_config.gis_format),
+                str(run_config.grid_format),
+                tuple(map(str, run_config.wildcards)),
+            )
+            entry = self._shared_command_templates.get(signature)
+            if entry is not None and entry[0] is build_input:
+                prototype = entry[1]
+                fresh = copy(prototype)
+                fresh.config = from_config(run_config)
+                fresh._define_blocks = []
+                # The cached expander holds its last expansion. Give each
+                # run an independent copy, rebound to its own settings.
+                fresh._expander = copy(prototype._expander)
+                fresh._expander.variables = fresh.config.variables
+                fresh._expander.database = fresh.config.spatial_database
+                self.commands_cloned += 1
+                return fresh
+
+        from .parsers.command import EventCommand
+        if isinstance(source_command, EventCommand):
+            command = EventCommand(
+                command_text, run_config, source_command.parent, source_command.part_index,
+            )
+            command.event_name = source_command.event_name
+        else:
+            command = source_command.__class__(
+                command_text, run_config, source_command.parent,
+                source_command.part_index, source_command.line_number,
+            )
+        self.commands_constructed += 1
+        if eligible:
+            if len(self._shared_command_templates) < 10_000:
+                self._shared_command_templates[signature] = (build_input, command)
+            else:
+                self.command_template_bypasses += 1
+        else:
+            self.command_template_bypasses += 1
+        return command
+
     def translate(self, item):
         if not self._batch_active or not isinstance(item, (str, TuflowPath)):
             return super().translate(item)
@@ -252,6 +332,9 @@ class BatchDependencyResult:
     context_construction_seconds: float = 0.0
     reference_collection_seconds: float = 0.0
     database_projection_seconds: float = 0.0
+    commands_cloned: int = 0
+    command_template_bypasses: int = 0
+    unique_command_templates: int = 0
 
     @property
     def passed(self) -> bool:
@@ -281,11 +364,14 @@ def collect_batch_dependencies(
     cross_run_reference_bypasses = 0
     within_run_reference_hits = 0
     commands_constructed = 0
+    commands_cloned = 0
+    command_template_bypasses = 0
     context_construction_seconds = 0.0
     reference_collection_seconds = 0.0
     database_projection_seconds = 0.0
     shared_scope_decisions = {} if cache_scopes else None
     shared_file_references = {} if cache_scopes else None
+    shared_command_templates = {} if cache_scopes else None
     # Control-file traversal to locate Set Variable declarations was previously
     # repeated for every run. The parsed input objects and their scopes are
     # shared; active-variable values are still computed independently per run.
@@ -338,6 +424,7 @@ def collect_batch_dependencies(
                    if cache_scopes else Context(flags, config=model.config))
             if isinstance(ctx, BatchContext):
                 ctx._shared_file_references = shared_file_references
+                ctx._shared_command_templates = shared_command_templates
                 ctx._batch_run_index = index
                 ctx._batch_variable_assignments = variable_assignments
             context_started = perf_counter()
@@ -393,6 +480,8 @@ def collect_batch_dependencies(
             cross_run_reference_bypasses += ctx.shared_reference_bypasses
             within_run_reference_hits += ctx.within_run_reference_hits
             commands_constructed += ctx.commands_constructed
+            commands_cloned += ctx.commands_cloned
+            command_template_bypasses += ctx.command_template_bypasses
 
     if not results:
         raise ValueError('At least one simulation context is required')
@@ -410,4 +499,7 @@ def collect_batch_dependencies(
         context_construction_seconds,
         reference_collection_seconds,
         database_projection_seconds,
+        commands_cloned,
+        command_template_bypasses,
+        len(shared_command_templates) if shared_command_templates is not None else 0,
     )
