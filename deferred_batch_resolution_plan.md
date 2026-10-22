@@ -250,3 +250,49 @@ three alternating warm-cache trials of the same workloads on the same runner;
 these are parser/reference timings only, not native 240/440/500-run or network
 drive performance. An immutable graph with transitive context/variable
 signatures and elimination of input run-state allocation remain unimplemented.
+
+
+### Immutable Set Variable lineage — staged dependency graph
+
+Further work compiles a per-batch **immutable variable-dependency graph** from
+the already parsed `Set Variable` declarations. Each name collects edges
+from **all** its possible scenario/event-scoped declarations; this is a
+conservative union, not a claim that every declaration is active. The
+bottom-up safe set excludes cycles, unknown names, reserved scenario/event
+flag slots, malformed placeholders, `~` wildcards and GeoPackage `>>`
+syntax. A READ command's immutable node captures direct and **transitive**
+variable names. Read nodes are compiled once per parsed input, retained with
+input identity, and not shared with subsequent batch calls.
+
+During each run, the original `Context` still evaluates scopes, applies
+ordered variable assignments and expands the command. A compiled READ may
+reuse a private command template only if **all** relevant variables have
+ordinary string values, the translated command is fully resolved and
+idempotent, and its signature matches the previously evaluated input,
+command, control-file/GIS settings and **relevant values**. Irrelevant event
+flags do not enter that signature. Different actual transitive values cannot
+collide. Scope evaluation, database activation selection and provenance are
+not elided. Malformed, cyclic and ambiguous cases use existing deferred
+resolution instead of emitting guessed references.
+
+New independent tests verify graph immutability, multiple declarations,
+transitive scenario-dependent paths, unknown names, cyclic assignments,
+event wildcards and GeoPackage syntax, and exact cached/uncached input
+provenance. A separate synthetic benchmark exercises 120 distinct event
+contexts with eight variable-derived READs using three alternating warm-cache
+trials. It compares complete syntactic results before reporting timings.
+
+Additional counters include `compiled_variable_nodes`,
+`compiled_read_nodes`, `command_plan_hits` and
+`variable_template_clones`. All plans and command templates live only
+inside one synchronous `collect_batch_dependencies` call; re-invocation
+after a model edit compiles a fresh plan. **Modifying the model during one
+collection call is unsupported.**
+
+This is a **partial immutable dependency DAG**, not the complete parsed
+control-tree / event / GIS / database graph specified by deliverable B.
+Inputs with side effects, uncertain context provenance and secondary GIS
+dependencies remain handled by the original run-state and downstream
+materialisation paths. The current-head Windows CI, strict 174-run replay,
+and new variable-heavy timing must be verified before signing off. No
+merger, publication, production repin, or solver execution is authorised.
