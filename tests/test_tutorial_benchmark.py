@@ -48,7 +48,7 @@ def _bundle(tmp_path: Path, *, filename: str = "runs/sample.tcf") -> Path:
 
 def test_bundle_verification_and_temporary_extraction(tmp_path: Path) -> None:
     bundle = _bundle(tmp_path)
-    manifest, baseline = verify_bundle(bundle)
+    manifest, baseline = verify_bundle(bundle, expected_archive_sha256=None, expected_inventory=None)
     assert manifest["files"][0]["path"] == "runs/sample.tcf"
     assert baseline == {"runs/sample.tcf": 1}
     extracted = tmp_path / "temporary"
@@ -58,18 +58,24 @@ def test_bundle_verification_and_temporary_extraction(tmp_path: Path) -> None:
     assert not (bundle / "runs").exists()
 
 
+def test_unapproved_bundle_is_rejected_by_default(tmp_path: Path) -> None:
+    bundle = _bundle(tmp_path)
+    with pytest.raises(ValueError, match="pinned public tutorial"):
+        verify_bundle(bundle)
+
+
 def test_bad_archive_checksum_is_rejected(tmp_path: Path) -> None:
     bundle = _bundle(tmp_path)
     with (bundle / "examples.zip").open("ab") as stream:
         stream.write(b"altered")
     with pytest.raises(ValueError, match="SHA-256"):
-        verify_bundle(bundle)
+        verify_bundle(bundle, expected_archive_sha256=None, expected_inventory=None)
 
 
 def test_unsafe_archive_entry_is_rejected_before_extraction(tmp_path: Path) -> None:
     bundle = _bundle(tmp_path, filename="../escape.tcf")
     with pytest.raises(ValueError, match="Unsafe"):
-        verify_bundle(bundle)
+        verify_bundle(bundle, expected_archive_sha256=None, expected_inventory=None)
     assert not (tmp_path / "escape.tcf").exists()
 
 
