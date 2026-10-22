@@ -299,9 +299,19 @@ def individual(model: TCF, flags: tuple[str, ...]) -> tuple[tuple[BatchDependenc
     }
 
 
-def batch(model: TCF, flags: tuple[str, ...], *, cached: bool):
+def batch(
+    model: TCF, flags: tuple[str, ...], *,
+    cached: bool, compile_tree: bool = True,
+):
+    """Measure a batch with the graph explicitly enabled or bypassed.
+
+    compile_tree=False retains all other invocation-local batch caches,
+    isolating the graph's effect on this exact source revision.
+    """
     started = perf_counter()
-    report = model.collect_batch_dependencies(flags, cache_scopes=cached)
+    report = model.collect_batch_dependencies(
+        flags, cache_scopes=cached, compile_tree=compile_tree,
+    )
     return report.runs, {
         "total_seconds": perf_counter() - started,
         "internal_total_seconds": report.elapsed_seconds,
@@ -330,7 +340,12 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
         if requested_runs is None else
         tuple(original_flags[i % len(original_flags)] for i in range(requested_runs))
     )
-    modes = ("individual_deferred", "batch_uncached", "batch_cached")
+    modes = (
+        "individual_deferred",
+        "batch_uncached",
+        "batch_cached_no_graph",
+        "batch_cached",
+    )
     results: dict[str, list[dict]] = {mode: [] for mode in modes}
     differences: dict[str, dict[str, int]] = {}
     errors: dict[str, int] = {}
@@ -349,7 +364,11 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
                 if mode == "individual_deferred":
                     projection, stats = individual(model, flags)
                 else:
-                    projection, stats = batch(model, flags, cached=(mode == "batch_cached"))
+                    projection, stats = batch(
+                        model, flags,
+                        cached=(mode != "batch_uncached"),
+                        compile_tree=(mode == "batch_cached"),
+                    )
             stats["sampled_peak_rss"] = memory.copy()
             projections[mode] = projection
             results[mode].append(stats)
@@ -384,6 +403,27 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
                  difference == {"missing": 0, "extra": 0}
                  for difference in differences.values()
              ))
+    comparison = None
+    if valid:
+        old_median = median(
+            row["total_seconds"] for row in results["batch_cached_no_graph"]
+        )
+        graph_median = median(
+            row["total_seconds"] for row in results["batch_cached"]
+        )
+        comparison = {
+            "cached_without_graph_median_seconds": old_median,
+            "compiled_graph_median_seconds": graph_median,
+            "compiled_graph_minus_old_seconds": graph_median - old_median,
+            "compiled_graph_time_reduction_pct": (
+                (1.0 - graph_median / old_median) * 100.0
+                if old_median > 0 else None
+            ),
+            "interpretation": (
+                "Same-source-head tutorial workload only; negative reduction "
+                "means compiled evaluation is slower. No SMB/native speedup claim."
+            ),
+        }
     primary_paths = {
         str(ref.path_pattern)
         for case in observed for ref in case.file_references
@@ -442,6 +482,7 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
             )
             else "not available on checked-out parser source"
         ),
+        "same_head_graph_effect": comparison,
         "materialised_parity_status": "not evaluated by this syntactic harness",
         "distinct_relevant_context_signatures": None,
     }
