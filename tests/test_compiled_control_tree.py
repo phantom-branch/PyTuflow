@@ -106,7 +106,7 @@ def test_500_distinct_events_have_complete_per_run_parity(tmp_path: Path):
     assert cached.contexts_reused == 0
     assert cached.compiled_graph_nodes == len(model.find_input())
     assert cached.compiled_graph_eligible_reads == 2
-    assert cached.graph_node_lookups >= 1000
+    assert cached.graph_node_lookups >= 500  # reused states do not cause a lookup
     assert cached.commands_cloned >= 900
     assert cached.input_runstates_elided >= 499  # invariant grid in mixed model
     assert cached.input_runstates_constructed < baseline.input_runstates_constructed
@@ -349,8 +349,8 @@ def test_scenario_literal_tree_reuses_across_500_distinct_events(tmp_path: Path)
     assert graph.contexts_constructed == 500
     assert graph.contexts_reused == 0
     assert graph.invariant_projection_reuses == 498
-    assert graph.input_runstates_constructed == 4
-    assert graph.input_runstates_elided == 996
+    assert graph.input_runstates_constructed == 3
+    assert graph.input_runstates_elided == 997  # group reuse in second scenario
     assert old_cached.input_runstates_elided == 0
     assert _identities(graph) == _identities(old_cached) == _identities(uncached)
     assert 'exg.shp' in {
