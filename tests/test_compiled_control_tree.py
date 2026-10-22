@@ -285,3 +285,36 @@ def test_static_graph_rebuilds_and_disables_projection_after_model_edit(tmp_path
     assert edited.invariant_projection_reuses == 0
     assert edited.input_runstates_elided == 0
     assert _identities(edited) == _identities(baseline)
+
+
+def test_compiled_read_counter_tracks_active_plan_encounters(tmp_path: Path):
+    """Whole-tree node totals must not contaminate same-head plan counts."""
+    model = _source(
+        tmp_path,
+        'If Scenario == DEV\n'
+        '  Read GIS Code == gis/dev.shp\n'
+        'Else\n'
+        '  Read GIS Code == gis/exg.shp\n'
+        'End If\n'
+        'Read Grid Zpts == terrain/static.tif\n',
+    )
+    for flags in (
+        ('-s1 DEV -e1 A',),
+        ('-s1 DEV -e1 A', '-s1 DEV -e1 B'),
+        ('-s1 EXG -e1 A',),
+        ('-s1 DEV -e1 A', '-s1 EXG -e1 B'),
+    ):
+        graph = model.collect_batch_dependencies(flags)
+        graph_off = model.collect_batch_dependencies(flags, compile_tree=False)
+        uncached = model.collect_batch_dependencies(flags, cache_scopes=False)
+        assert graph.passed and graph_off.passed and uncached.passed
+        assert _identities(graph) == _identities(graph_off) == _identities(uncached)
+        assert graph.compiled_graph_nodes == len(model.find_input())
+        assert graph.compiled_read_nodes == graph_off.compiled_read_nodes
+        assert graph.compiled_read_nodes < sum(
+            node.role == 'READ'
+            for node in CompiledControlTree.compile(
+                model, CompiledVariablePlan.from_assignments(())
+            ).nodes
+        )
+        assert graph_off.compiled_graph_nodes == 0
