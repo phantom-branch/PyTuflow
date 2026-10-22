@@ -21,6 +21,22 @@ logger = logging.getLogger('pytuflow')
 
 class ControlFileInputRunState(InputRunState):
 
+    @property
+    def files(self) -> list[Path]:
+        """Include already-parsed rainfall-index grid dependencies in eager mode.
+
+        The original eager DatabaseInput loaded the CSV as a primary file
+        but returned only that index, silently omitting every grid listed
+        inside it. This uses the cached build-state dataframe and active
+        context; no raster file is re-opened or re-parsed.
+        """
+        primary = InputRunState.files.fget(self)
+        if (getattr(self.ctx, 'file_resolution', 'eager') != 'eager'
+                or not self._command.is_rainfall_grid_csv()):
+            return primary
+        secondary = [ref.path_pattern for ref in self.database_source_references]
+        return list(dict.fromkeys([*primary, *secondary]))
+
     def _resolve_scope_in_context(self):
         super()._resolve_scope_in_context()
         deferred = getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'

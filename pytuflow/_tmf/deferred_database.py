@@ -103,13 +103,64 @@ def _validate_soil_rows(frame, context):
                         ) from exc
 
 
-def database_source_references(build_input, context, kind: str | None, config) -> tuple[FileReference, ...]:
+def _ad_global_references(frame, context, config, database_path: Path) -> tuple[FileReference, ...]:
+    """Project spatial AD constituent fields from an already-loaded CSV.
+
+    The TUFLOW AD global database permits a numeric value or GIS file for
+    Initial Condition and Minimum Dispersion. Blank initial values mean zero;
+    blank minimum dispersion is invalid. GIS validation is a later stage.
+    """
+    columns = {str(column).strip().casefold(): column for column in frame.columns}
+    required = ('initial condition', 'minimum dispersion')
+    if any(name not in columns for name in required):
+        raise DeferredDatabaseResolutionError(
+            'AD Global Database is missing Initial Condition or Minimum Dispersion'
+        )
+    result = []
+    for key, row in frame.iterrows():
+        for field in required:
+            value = _expanded(row[columns[field]], context, kind='ad_global', row=key)
+            if not value:
+                if field == 'minimum dispersion':
+                    raise DeferredDatabaseResolutionError(
+                        f'AD constituent {key} requires Minimum Dispersion'
+                    )
+                continue
+            try:
+                float(value)
+            except ValueError:
+                pass
+            else:
+                continue
+            command = Command(f'Read GIS == {value}', config, parent=database_path)
+            found = tuple(
+                replace(
+                    make_file_reference(part),
+                    origin=f'ad_global database row {key} / {field}',
+                    database_kind=None,
+                )
+                for part in command.parts() if part.is_value_a_file()
+            )
+            if len(found) != 1:
+                raise DeferredDatabaseResolutionError(
+                    f'Invalid AD {field} GIS source at constituent {key}: {value}'
+                )
+            result.extend(found)
+    return tuple(result)
+
+
+def database_source_references(
+    build_input, context, kind: str | None, config,
+    *, source_base: Path | None = None,
+) -> tuple[FileReference, ...]:
     """Describe context-specific secondary sources with no additional file I/O.
 
     The build-state already contains database rows from initial TCF parsing.
-    BC databases use the Source column; materials and soil rows follow\n    the same inline/source classifications supported by eager processing.
+    BC databases use the Source column; rainfall indexes supply grid paths;
+    materials and soils follow the inline/source classifications supported
+    by eager processing.
     """
-    if kind not in ('bc', 'materials', 'soils'):
+    if kind not in ('bc', 'ad_bc', 'ad_global', 'pit_inlet', 'depth_discharge', 'cross_section', 'materials', 'soils', 'rainfall'):
         raise DeferredDatabaseResolutionError(
             f'Unsupported deferred database schema: {kind!r}'
         )
@@ -121,24 +172,60 @@ def database_source_references(build_input, context, kind: str | None, config) -
     database = databases[0]
     if not getattr(database, 'loaded', False) or database.fpath is None:
         raise DeferredDatabaseResolutionError(f'{kind} database has not been loaded')
+    # Flood Modeller DAT stores its cross-section units directly in the
+    # primary file. There is no Source filename column to expand.
+    if kind == 'cross_section' and database.driver.name() == 'dat_cross_section':
+        return ()
     frame = database.df
     columns = list(frame.columns)
     if kind == 'soils':
         _validate_soil_rows(frame, context)
         return ()
-    if kind == 'bc':
+    if kind == 'ad_global':
+        return _ad_global_references(frame, context, config, Path(database.fpath))
+    if kind in ('bc', 'ad_bc', 'pit_inlet', 'depth_discharge', 'cross_section'):
         column = next((col for col in columns if str(col).strip().casefold() == 'source'), None)
         if column is None:
-            raise DeferredDatabaseResolutionError('BC database has no Source column')
+            raise DeferredDatabaseResolutionError(f'{kind} database has no Source column')
+    elif kind == 'rainfall':
+        if len(columns) != 1 or str(columns[0]).strip().casefold() != 'rainfall_file':
+            raise DeferredDatabaseResolutionError('Rainfall index requires one Rainfall_File column')
+        column = columns[0]
     else:
         if not columns:
             raise DeferredDatabaseResolutionError('Materials database has no value column')
         column = columns[0]
 
     refs = []
-    for key, raw in frame[column].items():
-        value = _expanded(raw, context, kind=kind, row=key)
+    for key, record in frame.iterrows():
+        value = _expanded(record[column], context, kind=kind, row=key)
         if not value:
+            if kind == 'bc':
+                # TUFLOW BC Database allows a blank Source *only* for a
+                # constant boundary with a numeric Column 2 (Value). Do not
+                # invent a source filename, or silently accept an incomplete
+                # constant without a value (2026.3 manual Table 8.13).
+                constant_column = next(
+                    (col for col in columns if str(col).strip().casefold()
+                     in ('column 2', 'value', 'column 2 or value')),
+                    None,
+                )
+                if constant_column is None:
+                    raise DeferredDatabaseResolutionError(
+                        f'Blank BC Source at row {key} without Column 2'
+                    )
+                constant = _expanded(
+                    record[constant_column], context, kind=kind, row=key,
+                )
+                try:
+                    float(constant)
+                except ValueError as exc:
+                    raise DeferredDatabaseResolutionError(
+                        f'Blank BC Source at row {key} lacks numeric Column 2: {constant!r}'
+                    ) from exc
+                continue
+            if kind in ('rainfall', 'ad_bc', 'pit_inlet', 'depth_discharge', 'cross_section'):
+                raise DeferredDatabaseResolutionError(f'Empty {kind} source path at row {key}')
             continue
         if kind == 'materials' and _inline_material(value, key):
             continue
@@ -147,11 +234,36 @@ def database_source_references(build_input, context, kind: str | None, config) -
         except ValueError:
             pass
         else:
+            if kind == 'rainfall':
+                raise DeferredDatabaseResolutionError(f'Numeric rainfall grid path at time {key}: {value}')
+            if kind in ('ad_bc', 'pit_inlet', 'depth_discharge', 'cross_section'):
+                # These database types need an actual Source. A numeric
+                # string is not a documented inline curve value; skipping
+                # it silently loses the dependency. Fail closed rather
+                # than silently omitting a potentially extensionless file.
+                raise DeferredDatabaseResolutionError(
+                    f'Numeric {kind} Source at row {key} cannot be classified: {value}'
+                )
+            # BC and materials support documented inline constants.
             continue
-        command = Command(f'Read File == {value}', config, parent=Path(database.fpath))
+        if kind == 'bc' and value.split('|', 1)[0].strip().casefold() == 'fews':
+            # The BC Database FEWS form is "FEWS | filename.csv/.xml".
+            # FEWS is a format selector, never a missing input file.
+            fields = [item.strip() for item in value.split('|')]
+            if (len(fields) != 2 or not fields[1]
+                    or Path(fields[1]).suffix.casefold() not in ('.csv', '.xml')):
+                raise DeferredDatabaseResolutionError(
+                    f'Invalid FEWS BC Source at row {key}: {value}'
+                )
+            value = fields[1]
+        command = Command(
+            f'Read File == {value}', config,
+            parent=source_base if source_base is not None else Path(database.fpath),
+        )
         found = tuple(
             replace(make_file_reference(part),
-                    origin=f'{kind} database row {key!s}', database_kind=None)
+                    origin=f'{kind} database row {key!s}', database_kind=None,
+                    requires_raster_metadata_scan=(kind == 'rainfall'))
             for part in command.parts() if part.is_value_a_file()
         )
         if not found:

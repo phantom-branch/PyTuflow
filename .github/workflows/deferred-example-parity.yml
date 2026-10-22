@@ -1,0 +1,110 @@
+name: Deferred example-model parity (read-only)
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/deferred-example-parity.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  example-parity:
+    # Expensive sweep only when explicitly enabled in this PR's title.
+    # Maintainers can append [run examples] and push a test commit to rerun.
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 2 && contains(github.event.pull_request.title, '[run examples]'))
+    # Windows-only parity gate with explicit diagnostic runs on pinned inputs.
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout upstream parser
+        uses: actions/checkout@v5
+        with:
+          path: upstream
+      - name: Checkout pinned diagnostic consumer and temporary fixture
+        uses: actions/checkout@v5
+        with:
+          repository: Chain-Frost/ryan-tools
+          ref: 42e3086bed7f258d3461a491b672f7d6ea07075a
+          path: ryan-tools
+      - name: Checkout pinned example-data submodule (without other submodules)
+        working-directory: ryan-tools
+        run: git submodule update --init tests/test_data
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+          cache-dependency-path: upstream/pyproject.toml
+      - name: Install upstream and isolated runner dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ./upstream
+          python -m pip install -e ./ryan-tools --no-deps
+          python -m pip install pyshp loguru colorama
+      - name: Record exact checkouts and bundle integrity
+        run: |
+          git -C ../upstream rev-parse HEAD
+          git rev-parse HEAD
+          python -m tests.fixtures.tuflow_example_repro.run_checks --verify-only
+        working-directory: ryan-tools
+      - name: Run focused rainfall, AD BC, table-link and curve examples
+        continue-on-error: true
+        working-directory: ryan-tools
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path ../reports/focused -Force | Out-Null
+          python -m tests.fixtures.tuflow_example_repro.run_checks `
+            --pytuflow-checkout ../upstream `
+            --output ../reports/focused `
+            --tcf EG03_011.tcf --tcf EG03_012.tcf `
+            --tcf EG17_001.tcf --tcf EG17_002.tcf --tcf EG17_003.tcf `
+            --tcf EG18_002.tcf --tcf EG02_013.tcf --tcf EG04_004.tcf `
+            --tcf EG04_005.tcf --tcf EG04_006.tcf `
+            --tcf EG11_006.tcf --tcf EG15_007.tcf --tcf EG15_008.tcf
+      - name: Run complete 174-run example sweep
+        # Run the expensive full matrix only on explicitly requested sweeps.
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.title, '[full]')
+        continue-on-error: true
+        working-directory: ryan-tools
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path ../reports/full -Force | Out-Null
+          python -m tests.fixtures.tuflow_example_repro.run_checks `
+            --pytuflow-checkout ../upstream --output ../reports/full
+      - name: Summarise actual accepted, unresolved and mismatch counts
+        if: always()
+        shell: pwsh
+        run: |
+          $lines = @("## Windows deferred example-model parity (read-only)", "")
+          foreach ($group in @("focused", "full")) {
+            $path = Join-Path "reports" (Join-Path $group "results.json")
+            if (-not (Test-Path -LiteralPath $path)) {
+              $lines += "- ${group}: no results file generated"
+              continue
+            }
+            $rows = @(Get-Content -LiteralPath $path -Raw | ConvertFrom-Json)
+            $accepted = @($rows | Where-Object { $_.accepted_parity }).Count
+            $acceptedRuns = ($rows | Where-Object { $_.accepted_parity } | Measure-Object -Property runs -Sum).Sum
+            $totalRuns = ($rows | Measure-Object -Property runs -Sum).Sum
+            $missing = ($rows | Measure-Object -Property missing -Sum).Sum
+            $extra = ($rows | Measure-Object -Property extra -Sum).Sum
+            $errors = @($rows | Where-Object { $_.eager.error -or $_.deferred.error }).Count
+            $lines += "- ${group}: $accepted/$($rows.Count) TCFs and $acceptedRuns/$totalRuns runs accepted; missing $missing; extra $extra; parser error cases $errors"
+            foreach ($row in ($rows | Where-Object { $_.eager.error -or $_.deferred.error } | Select-Object -First 20)) {
+              $lines += "- $($row.tcf): eager=$($row.eager.error); deferred=$($row.deferred.error)"
+            }
+          }
+          $lines | Set-Content -Path parity-summary.md -Encoding utf8
+          $lines | Add-Content -Path $env:GITHUB_STEP_SUMMARY -Encoding utf8
+          $lines | ForEach-Object { Write-Output $_ }
+      - name: Upload full diagnostics without modifying fixture archive
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytuflow-deferred-example-parity
+          path: |
+            reports
+            parity-summary.md
+          if-no-files-found: warn
+          retention-days: 14
