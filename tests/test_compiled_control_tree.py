@@ -444,3 +444,107 @@ def test_unproven_scenario_models_never_shortcut(tmp_path: Path, source_text: st
     assert compiled.invariant_projection_reuses == 0
     assert compiled.input_runstates_elided == 0
     assert _identities(compiled) == _identities(baseline)
+
+
+
+def test_literal_group_is_reused_inside_mixed_nested_scenario_model(tmp_path: Path):
+    model = _source(
+        tmp_path,
+        'Set Variable ROOT == gis\n'
+        'Read Grid Zpts == terrain/constant.tif\n'
+        'If Scenario == DEV\n'
+        '  If Scenario == TEST\n'
+        '    Read GIS Code == <<ROOT>>/dev.shp\n'
+        '  End If\n'
+        'Else\n'
+        '  Read GIS Code == <<ROOT>>/exg.shp\n'
+        'End If\n',
+    )
+    flags = ('-s1 DEV -s2 TEST -e1 A', '-s1 EXG -e1 B',
+             '-s1 DEV -s2 TEST -e1 C', '-s1 EXG -e1 D')
+    graph = model.collect_batch_dependencies(flags)
+    off = model.collect_batch_dependencies(flags, compile_tree=False)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert graph.passed and off.passed and baseline.passed
+    assert graph.invariant_projection_reuses == 0
+    assert graph.reusable_input_groups >= 1
+    assert graph.input_runstates_elided >= len(flags) - 1
+    assert off.input_runstates_elided == 0
+    assert graph.input_runstates_constructed < off.input_runstates_constructed
+    assert _identities(graph) == _identities(off) == _identities(baseline)
+
+
+def test_failed_context_cannot_certify_literal_group(tmp_path: Path):
+    model = _source(
+        tmp_path,
+        'Read Grid Zpts == terrain/constant.tif\n'
+        'If Scenario == BAD\n'
+        '  Pause == stop\n'
+        'End If\n',
+    )
+    flags = ('-s1 BAD -e1 A', '-s1 GOOD -e1 B', '-s1 GOOD -e1 C')
+    graph = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert not graph.passed
+    assert graph.runs[0].error
+    assert graph.runs[0].ordered_inputs == ()
+    assert graph.reusable_input_groups == 1
+    assert graph.input_runstates_elided == 1
+    assert _identities(graph) == _identities(baseline)
+
+
+def test_reused_input_state_is_independent_of_previous_run(tmp_path: Path):
+    model = _source(
+        tmp_path,
+        'Set Variable ROOT == gis\n'
+        'Read GIS Code == gis/constant.shp\n'
+        'Read GIS Code == <<ROOT>>/dynamic.shp\n',
+    )
+    original = model.context
+    built = []
+
+    def inspect_context(*args, **kwargs):
+        state = original(*args, **kwargs)
+        built.append(state)
+        if len(built) == 2:
+            first = built[0].find_input(lhs='read gis code')[0]
+            second = built[1].find_input(lhs='read gis code')[0]
+            assert first is not second
+            assert first._rs is not second._rs
+            assert first._command is not second._command
+            assert first._command.config is not second._command.config
+            assert first.ctx is not second.ctx
+            assert first.parent is not second.parent
+            # Mutating a caller-visible earlier RunState must never affect
+            # the private template or a later independent projection.
+            first._rs._rhs.append('caller mutation')
+            first._command.value = 'caller mutation'
+        return state
+
+    flags = ('-e1 A', '-e1 B', '-e1 C')
+    with patch.object(model, 'context', side_effect=inspect_context):
+        graph = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert graph.passed and baseline.passed
+    assert graph.input_runstates_elided == 2
+    assert graph.reusable_input_groups == 1
+    assert _identities(graph) == _identities(baseline)
+
+
+def test_literal_group_changes_between_invocations(tmp_path: Path):
+    model = _source(
+        tmp_path,
+        'Set Variable ROOT == gis\n'
+        'Read Grid Zpts == terrain/old.tif\n',
+    )
+    flags = ('-e1 A', '-e1 B', '-e1 C')
+    old = model.collect_batch_dependencies(flags)
+    assert old.input_runstates_elided == 2
+    model.find_input(lhs='read grid zpts')[0].rhs = 'terrain/new.tif'
+    changed = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert changed.passed
+    assert changed.input_runstates_elided == 2
+    assert old.runs[0].file_references[-1].path_pattern.name == 'old.tif'
+    assert changed.runs[0].file_references[-1].path_pattern.name == 'new.tif'
+    assert _identities(changed) == _identities(baseline)
