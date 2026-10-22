@@ -29,6 +29,14 @@ def test_batch_matches_individual_deferred_contexts(tmp_path):
     batch = model.collect_batch_dependencies(flags)
     assert batch.passed
     assert len(batch.runs) == len(flags)
+    assert batch.commands_constructed > 0
+    assert batch.compilation_seconds >= 0.0
+    assert batch.context_construction_seconds > 0.0
+    assert batch.reference_collection_seconds >= 0.0
+    assert batch.database_projection_seconds >= 0.0
+    assert (batch.compilation_seconds + batch.context_construction_seconds
+            + batch.reference_collection_seconds
+            + batch.database_projection_seconds) <= batch.elapsed_seconds * 1.01
     for case, options in zip(batch.runs, flags, strict=True):
         old = model.context(options, file_resolution='deferred')
         expected = tuple(ref for inp in old.find_input() for ref in inp.file_references)
@@ -92,6 +100,23 @@ def test_batch_500_contexts_keep_correct_per_run_dependencies(tmp_path):
         paths = {ref.path_pattern.name for ref in case.file_references}
         assert f'2d_code_{scenario}.shp' in paths
         assert 'terrain_*.tif' in paths
+
+
+def test_command_construction_counts_are_not_reference_cache_hits(tmp_path):
+    model = _make_model(tmp_path)
+    flags = tuple(f'-s1 DEV -e1 TP{n:03d}' for n in range(20))
+    cached = model.collect_batch_dependencies(flags)
+    plain = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert cached.passed and plain.passed
+    assert cached.contexts_constructed == 20
+    assert cached.cross_run_reference_hits > 0
+    # Reference memoisation avoids rediscovery but cannot yet skip mutable
+    # Command/RunState reconstruction. Do not count this as graph compilation.
+    assert cached.commands_constructed > 0
+    assert cached.commands_constructed == plain.commands_constructed
+    assert [x.input_references for x in cached.runs] == [
+        x.input_references for x in plain.runs
+    ]
 
 
 def test_single_context_default_stays_eager(tmp_path):
