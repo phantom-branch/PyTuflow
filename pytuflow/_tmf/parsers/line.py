@@ -22,7 +22,10 @@ class TuflowLine:
         self.part_index = -1
         self.value = self.original_text.strip()
         self.value_expanded_path = self.value  # This will be expanded later
-        self._expander = TuflowValueExpander(self.config.variables, self.config.spatial_database)
+        self._expander = TuflowValueExpander(
+            self.config.variables, self.config.spatial_database,
+            deferred=self.config.file_resolution == 'deferred',
+        )
 
     def __repr__(self):
         return self.original_text
@@ -85,6 +88,12 @@ class TuflowLine:
         else:
             rel_path = TuflowPath(self.value)
         rel_path = globify(rel_path, self.config.wildcards)
+        if self.config.file_resolution == 'deferred':
+            # A deferred reference deliberately preserves '>> all'. Only when
+            # .files is explicitly requested should it expand to every layer.
+            db, layer = TuflowPath(rel_path)._split_db_and_lyr()
+            if layer is not None and layer.casefold() == 'all':
+                rel_path = f'{db} >> *'
         try:
             for file in TuflowPath(parent).glob(rel_path):
                 yield file

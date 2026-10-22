@@ -8,7 +8,7 @@ from pathlib import Path
 from .file import FileInput
 from .. import const
 from ..tfpathlib import TuflowPath
-from ..gis import tuflow_type_requires_feature_iter
+from ..gis import tuflow_type_requires_feature_iter, network_attribute_file_sources
 from ..parsers.command import Command
 from ..parsers.expand_tuflow_value import TuflowValueExpander
 
@@ -86,7 +86,8 @@ class GisInputRunState(InputRunState):
         #: GisInput: the BuildState object that the RunState object is based on.
         self.bs = build_state
         #: int: index of the attribute column to use for the GIS input.
-        self.attr_idx = build_state.attr_idx
+        self.attr_idx = (0 if getattr(context, 'file_resolution', 'eager') == 'deferred'
+                         else build_state.attr_idx)
 
         self._geoms = []
 
@@ -103,6 +104,9 @@ class GisInputRunState(InputRunState):
 
     def _resolve_scope_in_context(self):
         super()._resolve_scope_in_context()
+        if getattr(self.ctx, 'file_resolution', 'eager') == 'deferred':
+            self.attr_idx = self._rs.attr_idx
+            return  # GIS attribute/geometry inspection belongs to materialisation.
         self._geoms = self._rs.geoms if has_gdal or has_geopandas else []
         for cf in self.bs.cf:
             if cf.fpath.resolve() == self.value.resolve():
@@ -205,6 +209,10 @@ class GisInput(GisInputBase):
         if not self._command.is_table_link():
             self._cf_loaded = True
             return
+        # The cross-section database driver detects the GIS provider and
+        # creates the supported cached table-link view during initial parse.
+        # Deferred contexts skip additional GIS reads, but cannot discard
+        # this eager API or its already-parsed build-state database.
         for file in self._rhs_files:
             try:
                 db = xs.CrossSectionDatabase(file, self.config, self.parent, self.scope)
@@ -260,19 +268,21 @@ class GisInput(GisInputBase):
                     attrs = feat if has_gdal or has_geopandas else list(feat.values())
                     if field_count <= i or not attrs[i] or isinstance(attrs[i], float):
                         continue
-                    if '|' in str(attrs[i]):
-                        op, file_ref = [x.strip() for x in attrs[i].split('|', 1)]  # operational control | file
-                    else:
-                        op, file_ref = None, attrs[i]
-                    if 'NETWORK' in cmd.command and attrs[1] and attrs[1].lower()[0] == 'm' and op is not None:  # both are files
-                        files = [Path(op), Path(file_ref)]
-                    elif (has_gdal or has_geopandas) and 'NETWORK' in cmd.command and (not attrs[1] or attrs[1].lower()[0] not in ['m', 'q'] or
-                            gis_lyr.geometry_type not in ['LineString', 'MultiLineString']):  # has to be either 'm' or 'q' line channel for this attribute to be a file
+                    layer_name = str(file.lyrname).casefold()
+                    if layer_name.startswith(('1d_nwk_', '1d_nwke_', '1d_nwkb_')):
+                        if ((has_gdal or has_geopandas)
+                                and gis_lyr.geometry_type not in ['LineString', 'MultiLineString']):
+                            continue
+                        # M matrices and QO operational matrices are files.
+                        # Q/P curves and other control IDs are *database keys*.
+                        files = [Path(value) for value in network_attribute_file_sources(attrs)]
+                    elif layer_name.startswith('1d_pit_'):
+                        # Inlet_Type holds pit/depth-discharge database IDs,
+                        # not filenames. Database Source CSVs are inspected
+                        # by the cached database materialisation API.
                         continue
-                    elif not (has_gdal or has_geopandas) and 'NETWORK' in cmd.command and (not attrs[1] or attrs[1].lower()[0] not in ['m', 'q'] or not Path(file_ref).suffix):
-                        continue
                     else:
-                        files = [Path(file_ref)]
+                        files = [Path(attrs[i])]
                     for f in files:
                         # tuflow treats "/path/to/file" the same as "./path/to/file" - therefore, so must this parser
                         abs_path = re.findall(r'(([A-Za-z]:\\)|\\\\)', str(f)) and sys.platform == 'win32'
