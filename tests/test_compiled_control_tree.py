@@ -315,5 +315,10 @@ def test_compiled_read_counter_tracks_active_plan_encounters(tmp_path: Path):
                 and any('EXG' in flag for flag in flags)):
             # For a single active branch, a full-tree total must be larger
             # than the number of encountered plans.
-            assert graph.compiled_read_nodes < graph.compiled_graph_eligible_reads
+            assert graph.compiled_read_nodes < sum(
+                node.role == 'READ'
+                for node in CompiledControlTree.compile(
+                    model, CompiledVariablePlan.from_assignments(())
+                ).nodes
+            )
         assert graph_off.compiled_graph_nodes == 0
