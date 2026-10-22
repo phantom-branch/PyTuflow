@@ -322,3 +322,119 @@ def test_compiled_read_counter_tracks_active_plan_encounters(tmp_path: Path):
                 ).nodes
             )
         assert graph_off.compiled_graph_nodes == 0
+
+
+def test_scenario_literal_tree_reuses_across_500_distinct_events(tmp_path: Path):
+    """Scenario-dependent READ streams may be shared only within a scenario."""
+    model = _source(
+        tmp_path,
+        'If Scenario == DEV\n'
+        '  Read GIS Code == gis/dev.shp\n'
+        'Else\n'
+        '  Read GIS Code == gis/exg.shp\n'
+        'End If\n'
+        'Read Grid Zpts == terrain/dem.tif\n',
+    )
+    flags = tuple(
+        f'-s1 {"DEV" if index % 2 else "EXG"} -e1 TP{index:03d}'
+        for index in range(500)
+    )
+    graph = model.collect_batch_dependencies(flags)
+    old_cached = model.collect_batch_dependencies(flags, compile_tree=False)
+    uncached = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert graph.passed and old_cached.passed and uncached.passed
+    assert graph.contexts_constructed == 500
+    assert graph.contexts_reused == 0
+    assert graph.invariant_projection_reuses == 498
+    assert graph.input_runstates_constructed == 4
+    assert graph.input_runstates_elided == 996
+    assert old_cached.input_runstates_elided == 0
+    assert _identities(graph) == _identities(old_cached) == _identities(uncached)
+    assert 'exg.shp' in {
+        ref.path_pattern.name for ref in graph.runs[0].file_references
+    }
+    assert 'dev.shp' in {
+        ref.path_pattern.name for ref in graph.runs[1].file_references
+    }
+
+
+def test_scenario_projection_preserves_exact_selected_slots(tmp_path: Path):
+    model = _source(
+        tmp_path,
+        'If Scenario == DEV\n'
+        '  Read GIS Code == gis/dev.shp\n'
+        'Else\n'
+        '  Read GIS Code == gis/exg.shp\n'
+        'End If\n',
+    )
+    flags = (
+        '-s1 EXG -e1 A',
+        '-s1 DEV -e1 B',
+        '-s1 DEV -e1 C',
+        '-s1 EXG -e1 D',
+        '-s1 DEV -s2 EXG -e1 E',
+        '-s1 DEV -s2 EXG -e1 F',
+        '-s1 EXG -s2 DEV -e1 G',
+        '-s1 EXG -s2 DEV -e1 H',
+    )
+    graph = model.collect_batch_dependencies(flags)
+    graph_off = model.collect_batch_dependencies(flags, compile_tree=False)
+    uncached = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert graph.passed and graph_off.passed and uncached.passed
+    assert graph.invariant_projection_reuses == 4
+    assert graph.input_runstates_elided > 0
+    assert _identities(graph) == _identities(graph_off) == _identities(uncached)
+
+
+def test_scenario_projection_failure_does_not_seed_other_branch(tmp_path: Path):
+    model = _source(
+        tmp_path,
+        'If Scenario == DEV\n'
+        '  Read GIS Code == dev.shp\n'
+        'Else\n'
+        '  Read GIS Code == exg.shp\n'
+        'End If\n',
+    )
+    original = model.context
+    calls = []
+
+    def fail_dev_first(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            raise ValueError('first scenario failed')
+        return original(*args, **kwargs)
+
+    flags = ('-s1 DEV -e1 A', '-s1 EXG -e1 A',
+             '-s1 DEV -e1 B', '-s1 EXG -e1 B',
+             '-s1 DEV -e1 C')
+    with patch.object(model, 'context', side_effect=fail_dev_first):
+        graph = model.collect_batch_dependencies(flags)
+    assert not graph.passed
+    assert graph.runs[0].error == 'ValueError: first scenario failed'
+    assert graph.runs[0].ordered_inputs == ()
+    assert all(run.error is None for run in graph.runs[1:])
+    assert len(calls) == 3  # failure, EXG first, DEV first success
+    assert graph.invariant_projection_reuses == 2
+    baseline = model.collect_batch_dependencies(flags[1:], cache_scopes=False)
+    assert _identities(graph)[1:] == _identities(baseline)
+
+
+@pytest.mark.parametrize('source_text', [
+    'If Event == A\nRead GIS Code == a.shp\n'
+    'Else\nRead GIS Code == b.shp\nEnd If\n',
+    'If Scenario == <<UNKNOWN>>\nRead GIS Code == a.shp\n'
+    'End If\n',
+    'Set Variable PART == x\n'
+    'If Scenario == DEV\nRead GIS Code == dev.shp\nEnd If\n',
+    'If Scenario == DEV\nRead GIS Code == gis/<<E1>>.shp\n'
+    'Else\nRead GIS Code == exg.shp\nEnd If\n',
+    'If Scenario == DEV\nRead GIS BC == bc.shp\nEnd If\n',
+])
+def test_unproven_scenario_models_never_shortcut(tmp_path: Path, source_text: str):
+    model = _source(tmp_path, source_text)
+    flags = ('-s1 DEV -e1 A', '-s1 DEV -e1 B')
+    compiled = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert compiled.invariant_projection_reuses == 0
+    assert compiled.input_runstates_elided == 0
+    assert _identities(compiled) == _identities(baseline)
