@@ -86,13 +86,17 @@ class ControlFileRunState(RunState, ControlFile):
             # Batch dependency collection precomputes the immutable list of
             # variable declarations once per parsed TCF. Each run still
             # independently evaluates scopes and the active variable values.
-            var_inputs = getattr(self.ctx, '_batch_variable_inputs', None)
-            if var_inputs is None:
-                var_inputs = self.bs.find_input(lhs='set variable', recursive=True)
+            compiled_assignments = getattr(self.ctx, '_batch_variable_assignments', None)
+            if compiled_assignments is None:
+                var_inputs = getattr(self.ctx, '_batch_variable_inputs', None)
+                if var_inputs is None:
+                    var_inputs = self.bs.find_input(lhs='set variable', recursive=True)
+                compiled_assignments = (
+                    (item, item.command().parse_variable()) for item in var_inputs
+                )
             var_map = {}
-            for var_input in var_inputs:
+            for var_input, (var_name, var_val) in compiled_assignments:
                 if self.ctx.in_context_by_scope(var_input.scope):
-                    var_name, var_val = var_input.command().parse_variable()
                     var_map[var_name] = var_val
             self.ctx.load_variables(var_map)
 
