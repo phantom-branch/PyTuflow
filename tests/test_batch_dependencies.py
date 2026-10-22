@@ -179,3 +179,52 @@ def test_batch_reuses_variable_declaration_scan_not_variable_values(tmp_path):
     ] == [
         item.file_references for item in batch.runs
     ]
+
+
+def test_cross_run_scenario_scope_cache_preserves_distinct_events(tmp_path):
+    model = _make_model(tmp_path)
+    flags = tuple(
+        f'-s1 {"DEV" if index % 2 else "EXG"} -e1 TEST{index:03d}'
+        for index in range(50)
+    )
+    batch = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert batch.passed and baseline.passed
+    assert batch.contexts_constructed == 50
+    assert batch.contexts_reused == 0
+    assert batch.cross_run_scope_hits > 0
+    assert [(run.file_references, run.database_sources, run.database_activations)
+            for run in batch.runs] == [
+        (run.file_references, run.database_sources, run.database_activations)
+        for run in baseline.runs
+    ]
+
+
+def test_cross_run_scope_cache_never_reuses_event_conditions(tmp_path):
+    source = tmp_path / 'events.tcf'
+    source.write_text(
+        'IF Event == EVENT000\n'
+        '  Read GIS Code == gis/code_EVENT000.shp\n'
+        'ELSE\n'
+        '  Read GIS Code == gis/code_other.shp\n'
+        'END IF\n'
+        'IF Scenario == DEV\n'
+        '  Read GIS Mat == gis/2d_mat_DEV.shp\n'
+        'END IF\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    flags = ('-s1 DEV -e1 EVENT000', '-s1 DEV -e1 EVENT001',
+             '-s1 DEV -e1 EVENT002', '-s1 DEV -e1 EVENT000')
+    cached = model.collect_batch_dependencies(flags)
+    plain = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert cached.passed and plain.passed
+    assert cached.cross_run_scope_hits > 0
+    assert [run.file_references for run in cached.runs] == [
+        run.file_references for run in plain.runs
+    ]
+    names = [{ref.path_pattern.name for ref in run.file_references} for run in cached.runs]
+    assert 'code_EVENT000.shp' in names[0]
+    assert 'code_other.shp' in names[1]
+    assert 'code_other.shp' in names[2]
+    assert 'code_EVENT000.shp' in names[3]
