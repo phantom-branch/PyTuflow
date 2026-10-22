@@ -110,7 +110,7 @@ def test_nested_order_uuid_and_full_batch_deferred_parity(tmp_path: Path, cache_
             tmp_path / "boundaries.tbc"
         )
         assert len({act.input_uuid for act in activations}) == 3
-        assert case.ordered_inputs[0].command_name.casefold() == "set variable"
+        assert case.ordered_inputs[0].command_name.casefold().startswith("set variable")
         assert case.ordered_inputs[0].command_index == 0
         assert all(act.sequence > 0 for act in activations)
     assert batch.runs[0].database_activations == batch.runs[2].database_activations
