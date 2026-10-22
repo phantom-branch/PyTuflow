@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from pytuflow import TCF
 from pytuflow._tmf.batch_dependencies import BatchContext, collect_batch_dependencies
+from pytuflow._tmf.compiled_dependency_plan import CompiledVariablePlan
 from pytuflow._tmf.context import Context
 from pytuflow._tmf.tfpathlib import TuflowPath
 
@@ -128,12 +129,20 @@ def test_command_templates_keep_mutable_objects_private(tmp_path):
     source.write_text('Read GIS Code == gis/static.shp\n', encoding='utf-8')
     model = TCF(source)
 
-    first_ctx = BatchContext('-e1 A', config=model.config)
     shared_templates = {}
-    first_ctx._shared_command_templates = shared_templates
+    shared_nodes = {}
+    immutable_plan = CompiledVariablePlan.from_assignments(())
+
+    def make_context(event):
+        ctx = BatchContext(f'-e1 {event}', config=model.config)
+        ctx._shared_command_templates = shared_templates
+        ctx._shared_read_plans = shared_nodes
+        ctx._batch_variable_plan = immutable_plan
+        return ctx
+
+    first_ctx = make_context('A')
     first = model.context(context=first_ctx, file_resolution='deferred')
-    second_ctx = BatchContext('-e1 B', config=model.config)
-    second_ctx._shared_command_templates = shared_templates
+    second_ctx = make_context('B')
     second = model.context(context=second_ctx, file_resolution='deferred')
     first_cmd = first.find_input(lhs='read gis code')[0]._command
     second_cmd = second.find_input(lhs='read gis code')[0]._command
@@ -158,8 +167,7 @@ def test_command_templates_keep_mutable_objects_private(tmp_path):
     # Editing the first run's command must not corrupt the cached prototype
     # used to create any later run.
     first_cmd.value = 'corrupted'
-    third_ctx = BatchContext('-e1 C', config=model.config)
-    third_ctx._shared_command_templates = shared_templates
+    third_ctx = make_context('C')
     third = model.context(context=third_ctx, file_resolution='deferred')
     assert third_ctx.commands_cloned >= 1
     assert third.find_input(lhs='read gis code')[0].file_references[0].path_pattern.name == 'static.shp'
