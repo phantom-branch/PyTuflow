@@ -13,6 +13,7 @@ from time import perf_counter
 from typing import TYPE_CHECKING
 
 from .context import Context
+from .scope import GlobalScope, ScenarioScope
 from .tfpathlib import TuflowPath
 
 if TYPE_CHECKING:
@@ -31,11 +32,17 @@ class BatchContext(Context):
     variables may become visible successively while evaluating event scopes.
     """
 
-    def __init__(self, run_flags: str | dict[str, str] = (), *, config=None, variable_inputs=None):
+    def __init__(self, run_flags: str | dict[str, str] = (), *, config=None,
+                 variable_inputs=None, shared_scope_decisions=None):
         self._batch_active = False
         # Build-state inputs are immutable during this single synchronous batch.
         # Only their traversal is shared; scopes and values stay per-run.
         self._batch_variable_inputs = variable_inputs
+        # Share only decisions depending exclusively on scenario membership.
+        # No event, TEF or user-defined variable scopes can enter this cache.
+        self._shared_scope_decisions = shared_scope_decisions
+        self.shared_scope_hits = 0
+        self.shared_scope_misses = 0
         self._batch_scopes = None
         self._batch_scope_decisions: dict[int, tuple[object, bool]] = {}
         self._batch_translations: dict[str, str] = {}
@@ -95,8 +102,25 @@ class BatchContext(Context):
         cached = self._batch_scope_decisions.get(id(req_scope))
         if cached is not None and cached[0] is req_scope:
             return cached[1]
+        shareable = (self._shared_scope_decisions is not None and req_scope
+                     and all(isinstance(scope, (ScenarioScope, GlobalScope))
+                             for scope in req_scope))
+        shared_key = None
+        if shareable:
+            # TUFLOW tests scenario membership regardless of the flag slot.
+            # An event-only change cannot alter a pure scenario decision.
+            # Retain the scope object to protect against id reuse.
+            shared_key = (id(req_scope), tuple(self._create_list('S')))
+            shared = self._shared_scope_decisions.get(shared_key)
+            if shared is not None and shared[0] is req_scope:
+                self.shared_scope_hits += 1
+                self._batch_scope_decisions[id(req_scope)] = (req_scope, shared[1])
+                return shared[1]
+            self.shared_scope_misses += 1
         active = super().in_context_by_scope(req_scope)
         self._batch_scope_decisions[id(req_scope)] = (req_scope, active)
+        if shared_key is not None:
+            self._shared_scope_decisions[shared_key] = (req_scope, active)
         return active
 
     def translate(self, item):
@@ -136,6 +160,8 @@ class BatchDependencyResult:
     translation_misses: int
     contexts_constructed: int
     contexts_reused: int
+    cross_run_scope_hits: int
+    cross_run_scope_misses: int
 
     @property
     def passed(self) -> bool:
@@ -160,6 +186,8 @@ def collect_batch_dependencies(
     seen_flags: dict[str, BatchDependencyRun] = {}
     contexts_constructed = contexts_reused = 0
     scope_builds = scope_hits = translation_hits = translation_misses = 0
+    cross_run_scope_hits = cross_run_scope_misses = 0
+    shared_scope_decisions = {} if cache_scopes else None
     # Control-file traversal to locate Set Variable declarations was previously
     # repeated for every run. The parsed input objects and their scopes are
     # shared; active-variable values are still computed independently per run.
@@ -190,7 +218,8 @@ def collect_batch_dependencies(
         try:
             # Even an invalid flag combination is one failed run, not an
             # uncaught exception that aborts the remaining batch.
-            ctx = (BatchContext(flags, config=model.config, variable_inputs=variable_inputs)
+            ctx = (BatchContext(flags, config=model.config, variable_inputs=variable_inputs,
+                                shared_scope_decisions=shared_scope_decisions)
                    if cache_scopes else Context(flags, config=model.config))
             run = model.context(context=ctx, file_resolution='deferred')
             refs = tuple(ref for inp in run.find_input() for ref in inp.file_references)
@@ -217,6 +246,8 @@ def collect_batch_dependencies(
             scope_hits += ctx.scope_hits
             translation_hits += ctx.translation_hits
             translation_misses += ctx.translation_misses
+            cross_run_scope_hits += ctx.shared_scope_hits
+            cross_run_scope_misses += ctx.shared_scope_misses
 
     if not results:
         raise ValueError('At least one simulation context is required')
@@ -224,4 +255,5 @@ def collect_batch_dependencies(
         tuple(results), perf_counter() - started,
         scope_builds, scope_hits, translation_hits, translation_misses,
         contexts_constructed, contexts_reused,
+        cross_run_scope_hits, cross_run_scope_misses,
     )
