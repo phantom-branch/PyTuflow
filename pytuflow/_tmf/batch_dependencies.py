@@ -43,7 +43,9 @@ class BatchContext(Context):
         # No event, TEF or user-defined variable scopes can enter this cache.
         self._shared_scope_decisions = shared_scope_decisions
         self._shared_file_references = None
+        self._batch_run_index: int | None = None
         self.shared_reference_hits = 0
+        self.within_run_reference_hits = 0
         self.shared_reference_misses = 0
         self.shared_reference_bypasses = 0
         self.shared_scope_hits = 0
@@ -167,7 +169,10 @@ class BatchContext(Context):
         )
         cached = self._shared_file_references.get(key)
         if cached is not None and cached[0] is build_input:
-            self.shared_reference_hits += 1
+            if cached[2] == self._batch_run_index:
+                self.within_run_reference_hits += 1
+            else:
+                self.shared_reference_hits += 1
             return cached[1]
         refs = materialised_input.file_references
         if not refs:
@@ -179,7 +184,9 @@ class BatchContext(Context):
             # batches. Correctness takes precedence over cache retention.
             self.shared_reference_bypasses += 1
             return refs
-        self._shared_file_references[key] = (build_input, refs)
+        self._shared_file_references[key] = (
+            build_input, refs, self._batch_run_index,
+        )
         self.shared_reference_misses += 1
         return refs
 
@@ -238,6 +245,7 @@ class BatchDependencyResult:
     cross_run_scope_misses: int
     cross_run_reference_bypasses: int = 0
     unique_reference_signatures: int = 0
+    within_run_reference_hits: int = 0
 
     @property
     def passed(self) -> bool:
@@ -265,6 +273,7 @@ def collect_batch_dependencies(
     cross_run_scope_hits = cross_run_scope_misses = 0
     cross_run_reference_hits = cross_run_reference_misses = 0
     cross_run_reference_bypasses = 0
+    within_run_reference_hits = 0
     shared_scope_decisions = {} if cache_scopes else None
     shared_file_references = {} if cache_scopes else None
     # Control-file traversal to locate Set Variable declarations was previously
@@ -317,6 +326,7 @@ def collect_batch_dependencies(
                    if cache_scopes else Context(flags, config=model.config))
             if isinstance(ctx, BatchContext):
                 ctx._shared_file_references = shared_file_references
+                ctx._batch_run_index = index
                 ctx._batch_variable_assignments = variable_assignments
             run = model.context(context=ctx, file_resolution='deferred')
             # Retain input UUID + command order for downstream active-database
@@ -363,6 +373,7 @@ def collect_batch_dependencies(
             cross_run_reference_hits += ctx.shared_reference_hits
             cross_run_reference_misses += ctx.shared_reference_misses
             cross_run_reference_bypasses += ctx.shared_reference_bypasses
+            within_run_reference_hits += ctx.within_run_reference_hits
 
     if not results:
         raise ValueError('At least one simulation context is required')
@@ -374,4 +385,5 @@ def collect_batch_dependencies(
         cross_run_scope_hits, cross_run_scope_misses,
         cross_run_reference_bypasses,
         len(shared_file_references) if shared_file_references is not None else 0,
+        within_run_reference_hits,
     )
