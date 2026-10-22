@@ -81,12 +81,13 @@ conservative. This is a downstream materialisation limitation, not proof of full
 feature-level selection. Keep it visible during final review; a passing example
 comparison is not independent evidence that this selection has been implemented.
 
-The owner confirms that the **42-run and 440-run models are on another network**
-and will run those separately after this local work. Their current-head acceptance
-is still outstanding. Use the versioned downstream native-model runner documented
+The owner confirmed that the 42-run and 440-run models are on another network.
+The later update below records completed 440-run evidence. **The owner withdrew
+the 42-run external check as a merge requirement on 2026-10-22; it is not an
+outstanding acceptance gate.** Use the versioned downstream native-model runner documented
 in `tests/fixtures/tuflow_example_repro/README.md` (consumer commit `c80afd3` or later),
-with the unchanged model TCF and launcher-exported command file, `--expect-runs 42`
-or `440`, and private output outside the checkout. Check the representative gate
+with the unchanged model TCF and launcher-exported command file, the expected run
+count, and private output outside the checkout. Check the representative gate
 before all runs; retain exact heads, anonymous summaries and actual storage/cache
 conditions. No engine execution or project-data upload is needed. Keep the PR open
 for final external acceptance/review; no merge or release is performed here.
@@ -120,7 +121,9 @@ One warm-cache eager/deferred dependency-generation pair measured 110.359 s and
 29.650 s, respectively. These are externally recorded results on the stated
 revisions, before the accessor repair; this workstation did not access or rerun
 that network model. Do not combine those timings with the local SSD samples.
-The **42-run external check is still outstanding**. The owner retains the final
+The **42-run external check is no longer required**, at the owner's explicit
+instruction on 2026-10-22. Historical references to that gate are superseded.
+The owner retains the final
 external acceptance decision, including whether a repair-head network recheck is
 required. Feature-to-BC-activation selection remains the documented consumer
 limitation above. No merge or release is performed.
