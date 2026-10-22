@@ -23,6 +23,7 @@ from tests.benchmark_tutorial_dependencies import (
     extract_flag_pairs,
     extract_verified,
     individual,
+    measure,
     verify_bundle,
 )
 
@@ -114,3 +115,61 @@ def test_failed_context_is_never_partial(tmp_path: Path) -> None:
     assert baseline[0].file_references == ()
     assert baseline[0].input_references == ()
     assert baseline[0].ordered_inputs == ()
+
+def test_four_mode_same_head_compiler_and_cache_differential(tmp_path: Path) -> None:
+    """No synthetic wall-time speedup assertion; exact identity and graph counters only."""
+    tcf = tmp_path / "modes.tcf"
+    tcf.write_text(
+        "IF Scenario == DEV\\n"
+        "  Read GIS Code == gis/dev.shp\\n"
+        "ELSE\\n"
+        "  Read GIS Code == gis/exg.shp\\n"
+        "END IF\\n"
+        "Read GRID Zpts == grid/static.tif\\n",
+        encoding="utf-8",
+    )
+    flags = tuple(
+        f'-s1 {"DEV" if i % 2 else "EXG"} -e1 TP{i:02d}'
+        for i in range(6)
+    )
+    model = TCF(tcf)
+    expected, _ = individual(model, flags)
+    uncached, _ = batch(model, flags, cached=False, compile_tree=False)
+    old_cached, old_stats = batch(model, flags, cached=True, compile_tree=False)
+    compiled, graph_stats = batch(model, flags, cached=True, compile_tree=True)
+    assert all(run.error is None for run in expected)
+    for actual in (uncached, old_cached, compiled):
+        assert compare_runs(expected, actual) == {"missing": 0, "extra": 0}
+    assert old_stats["counters"]["compiled_graph_nodes"] == 0
+    assert graph_stats["counters"]["compiled_graph_nodes"] > 0
+    assert graph_stats["counters"]["graph_node_lookups"] > 0
+
+    report = measure(tcf, flags[:2], requested_runs=8, trials=1)
+    assert report["status"] == "passed_syntactic_parity"
+    assert report["requested_runs"] == 8
+    assert report["distinct_complete_flag_signatures"] == 2
+    assert set(report["modes"]) == {
+        "individual_deferred", "batch_uncached",
+        "batch_cached_no_graph", "batch_cached",
+    }
+    assert report["same_head_graph_effect"] is not None
+    assert report["same_head_graph_effect"]["cached_without_graph_median_seconds"] >= 0
+    assert report["differences_across_trials"]["batch_cached_no_graph"] == {
+        "missing": 0, "extra": 0,
+    }
+
+
+def test_reordered_commands_fail_even_when_multiset_is_identical(tmp_path: Path) -> None:
+    tcf = tmp_path / "order.tcf"
+    tcf.write_text(
+        "Read GIS Code == gis/first.shp\\n"
+        "Read GIS Code == gis/second.shp\\n", encoding="utf-8",
+    )
+    expected, _ = individual(TCF(tcf), ("-e1 A",))
+    assert expected[0].error is None
+    assert len(expected[0].ordered_inputs) == 2
+    reordered = replace(
+        expected[0],
+        ordered_inputs=tuple(reversed(expected[0].ordered_inputs)),
+    )
+    assert compare_runs(expected, (reordered,)) == {"missing": 1, "extra": 1}
