@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 from .compiled_control_tree import CompiledControlTree
 from .compiled_dependency_plan import CompiledVariablePlan
+from .group_input_reuse import LiteralInputGroupCache
 from .context import Context
 from .scope import GlobalScope, ScenarioScope
 from .tfpathlib import TuflowPath
@@ -50,6 +51,9 @@ class BatchContext(Context):
         self._shared_read_plans = None
         self._batch_variable_plan: CompiledVariablePlan | None = None
         self._batch_compiled_tree: CompiledControlTree | None = None
+        self._batch_input_group_cache: LiteralInputGroupCache | None = None
+        self._batch_pending_input_groups: list[tuple[tuple[object, ...], object, object]] = []
+        self.graph_input_state_reuses = 0
         self.graph_node_lookups = 0
         self.graph_node_fallbacks = 0
         self._active_declaration_cache: dict[str, tuple[str, ...]] = {}
@@ -382,6 +386,27 @@ class BatchContext(Context):
             self.command_template_bypasses += 1
         return command
 
+    def batch_input_state(self, build_input, parent):
+        """Return a fresh state; skip construction only for a certified group."""
+        cache = self._batch_input_group_cache if self._batch_active else None
+        if cache is not None:
+            reused, key = cache.try_reuse(build_input, self, parent)
+            if reused is not None:
+                self.graph_input_state_reuses += 1
+                return reused
+        else:
+            key = None
+        state = build_input.context(context=self, parent=parent)
+        if key is not None:
+            self._batch_pending_input_groups.append((key, build_input, state))
+        return state
+
+    def commit_input_groups(self) -> None:
+        """Publish templates only after the *entire* run has passed."""
+        if self._batch_input_group_cache is not None:
+            self._batch_input_group_cache.commit(self._batch_pending_input_groups)
+        self._batch_pending_input_groups.clear()
+
     def translate(self, item):
         if not self._batch_active or not isinstance(item, (str, TuflowPath)):
             return super().translate(item)
@@ -476,6 +501,7 @@ class BatchDependencyResult:
     input_runstates_elided: int = 0
     input_runstates_constructed: int = 0
     invariant_projection_reuses: int = 0
+    reusable_input_groups: int = 0
 
     @property
     def passed(self) -> bool:
@@ -561,6 +587,7 @@ def collect_batch_dependencies(
         and not can_reuse_invariant_projection
         and compiled_tree.is_scenario_literal_model(model)
     )
+    input_groups = LiteralInputGroupCache(compiled_tree) if compiled_tree is not None else None
     compilation_seconds = perf_counter() - started
 
     for index, flags in enumerate(run_flags):
@@ -601,6 +628,7 @@ def collect_batch_dependencies(
                 ctx._shared_read_plans = shared_read_plans
                 ctx._batch_variable_plan = variable_plan
                 ctx._batch_compiled_tree = compiled_tree
+                ctx._batch_input_group_cache = input_groups
                 ctx._batch_run_index = index
                 ctx._batch_variable_assignments = variable_assignments
             scenario_key = None
@@ -639,7 +667,9 @@ def collect_batch_dependencies(
             # particular, commands without FileReference must not disappear:
             # consumers need the original ordinals for database activation.
             active_inputs = tuple(run.find_input())
-            input_runstates_constructed += len(active_inputs)
+            skipped = ctx.graph_input_state_reuses if isinstance(ctx, BatchContext) else 0
+            input_runstates_constructed += len(active_inputs) - skipped
+            input_runstates_elided += skipped
             ordered_inputs = tuple(
                 BatchInputCommand(
                     input_uuid=str(inp.uuid),
@@ -675,6 +705,9 @@ def collect_batch_dependencies(
                 for source in run.deferred_database_sources_for_activation(activation.input_uuid)
             )
             database_projection_seconds += perf_counter() - database_started
+            # Do not let a failed/partial projection seed a reusable group.
+            if isinstance(ctx, BatchContext):
+                ctx.commit_input_groups()
         except Exception as exc:
             # Fail closed. Never return the partial references accumulated
             # before an unknown database or malformed control-file failure.
@@ -747,4 +780,5 @@ def collect_batch_dependencies(
         input_runstates_elided=input_runstates_elided,
         input_runstates_constructed=input_runstates_constructed,
         invariant_projection_reuses=invariant_projection_reuses,
+        reusable_input_groups=input_groups.unique_groups if input_groups is not None else 0,
     )
