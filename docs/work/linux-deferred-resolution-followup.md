@@ -2,7 +2,7 @@
 
 **Deferred work only.** This is a tracking-only draft PR, not an implementation
 or acceptance prerequisite for [PyTUFLOW #1](https://github.com/phantom-branch/PyTuflow/pull/1)
-or its Windows-focused supporting [PR #2](https://github.com/phantom-branch/PyTuflow/pull/2).
+(which now contains merged supporting [PR #2](https://github.com/phantom-branch/PyTuflow/pull/2)).
 
 ## Start condition
 
@@ -51,7 +51,7 @@ Windows.
 5. After Windows is green, run the complete 161-TCF / 174-run example suite
    on Linux and report failures by root cause alongside Windows results.
 6. Introduce Linux CI **in this future PR only**. No Linux jobs are
-   required in the Windows-focused PR #1/#2 validation workflows.
+   required in the consolidated Windows-focused PR #1 validation workflows.
 
 ## Exit criteria
 
