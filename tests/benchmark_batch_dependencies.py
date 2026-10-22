@@ -47,9 +47,9 @@ def _batch(model: TCF, flags: tuple[str, ...], *, cache_scopes: bool):
     ], report
 
 
-def benchmark(runs: int, trials: int) -> dict[str, object]:
-    if runs < 1 or trials < 1:
-        raise ValueError('runs and trials must be positive')
+def benchmark(runs: int, trials: int, static_inputs: int = 0) -> dict[str, object]:
+    if runs < 1 or trials < 1 or static_inputs < 0:
+        raise ValueError('runs/trials must be positive and static_inputs nonnegative')
     with TemporaryDirectory(prefix='pytuflow-batch-benchmark-') as directory:
         tcf_file = Path(directory) / 'ensemble.tcf'
         tcf_file.write_text(
@@ -59,7 +59,9 @@ def benchmark(runs: int, trials: int) -> dict[str, object]:
             '    Read GIS Mat == gis/2d_mat_DEV.gpkg >> 2d_mat_DEV\n'
             'ELSE\n'
             '    Read GIS Mat == gis/2d_mat_EXG.gpkg >> 2d_mat_EXG\n'
-            'END IF\n',
+            'END IF\n' + ''.join(
+                f'Read GIS Code == gis/static_{n:03d}.shp\n' for n in range(static_inputs)
+            ),
             encoding='utf-8',
         )
         parsing = perf_counter()
@@ -95,6 +97,10 @@ def benchmark(runs: int, trials: int) -> dict[str, object]:
                             'translation_misses': report.translation_misses,
                             'contexts_constructed': report.contexts_constructed,
                             'contexts_reused': report.contexts_reused,
+                            'cross_run_scope_hits': report.cross_run_scope_hits,
+                            'cross_run_scope_misses': report.cross_run_scope_misses,
+                            'cross_run_reference_hits': report.cross_run_reference_hits,
+                            'cross_run_reference_misses': report.cross_run_reference_misses,
                         }
                 baselines[mode] = values
                 timings[mode].append(elapsed)
@@ -105,6 +111,7 @@ def benchmark(runs: int, trials: int) -> dict[str, object]:
         return {
             'runs': runs,
             'trials': trials,
+            'static_inputs': static_inputs,
             'parse_seconds': parse_seconds,
             'storage': 'local temporary directory, syntactic references only',
             'note': 'No physical GIS/file materialisation; do not claim end-to-end preflight speedup',
@@ -119,5 +126,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--runs', type=int, default=500)
     parser.add_argument('--trials', type=int, default=3)
+    parser.add_argument('--static-inputs', type=int, default=0)
     options = parser.parse_args()
-    print(json.dumps(benchmark(options.runs, options.trials), indent=2))
+    print(json.dumps(benchmark(options.runs, options.trials, options.static_inputs), indent=2))
