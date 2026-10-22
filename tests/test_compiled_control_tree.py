@@ -335,6 +335,15 @@ def test_scenario_literal_tree_reuses_across_500_distinct_events(tmp_path: Path)
         'End If\n'
         'Read Grid Zpts == terrain/dem.tif\n',
     )
+    eligibility = CompiledControlTree.compile(
+        model, CompiledVariablePlan.from_assignments(())
+    )
+    assert eligibility.is_scenario_literal_model(model), (
+        model.config.scenarios, model.config.variables,
+        str(model.config.spatial_database),
+        [(node.command_name, node.bypass_reason, node.branch_conditions)
+         for node in eligibility.nodes],
+    )
     flags = tuple(
         f'-s1 {"DEV" if index % 2 else "EXG"} -e1 TP{index:03d}'
         for index in range(500)
