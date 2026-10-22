@@ -57,7 +57,14 @@ class CompiledVariablePlan:
         for _, (raw_name, raw_value) in assignments or ():
             name = str(raw_name).upper()
             value = str(raw_value)
-            if not name or not name.replace("_", "A").replace("-", "A").isalnum():
+            # Context flag slots and event placeholders have special
+            # semantics and may be supplied outside Set Variable. Never
+            # certify their lineage solely from parsed declarations.
+            if (
+                not name
+                or not name.replace("_", "A").replace("-", "A").isalnum()
+                or re.fullmatch(r"[ES][0-9]?", name) is not None
+            ):
                 invalid.add(name)
             refs = _references(value)
             dependencies.setdefault(name, set())
