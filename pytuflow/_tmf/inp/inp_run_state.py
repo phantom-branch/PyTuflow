@@ -169,23 +169,22 @@ class InputRunState(RunState, Input):
             run_config.file_resolution = 'deferred'
             run_config.variables = self.ctx.translate
         source_command = self.bs.command()
-        if getattr(self.ctx, '_batch_active', False):
-            # Count actual command reconstruction, not file-reference accessor
-            # calls or cache hits. A per-run context still owns its commands.
-            self.ctx.commands_constructed += 1
-        from ..parsers.command import EventCommand
-        # Preserve the actual nested owner in both modes. Database source
-        # provenance must not fall back to the root TCF configuration.
-        if isinstance(source_command, EventCommand):
-            self._command = EventCommand(
-                cmd_txt, run_config, source_command.parent, source_command.part_index,
-            )
-            self._command.event_name = source_command.event_name
+        batch_factory = getattr(self.ctx, 'batch_command', None) if deferred else None
+        if batch_factory is not None:
+            self._command = batch_factory(self.bs, source_command, cmd_txt, run_config)
         else:
-            self._command = source_command.__class__(
-                cmd_txt, run_config, source_command.parent,
-                source_command.part_index, source_command.line_number,
-            )
+            from ..parsers.command import EventCommand
+            # Preserve nested ownership in both eager and single-run deferred.
+            if isinstance(source_command, EventCommand):
+                self._command = EventCommand(
+                    cmd_txt, run_config, source_command.parent, source_command.part_index,
+                )
+                self._command.event_name = source_command.event_name
+            else:
+                self._command = source_command.__class__(
+                    cmd_txt, run_config, source_command.parent,
+                    source_command.part_index, source_command.line_number,
+                )
         self._command.define_blocks = source_command.define_blocks
         # A plain Command expands its value in the constructor. On the
         # opt-in deferred batch path, avoid repeating that work only when
