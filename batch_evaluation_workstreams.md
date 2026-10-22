@@ -53,16 +53,19 @@ and leave descendants based on their immediate parent branches.
 | **P0 — foundation (this PR)** | PR #5: `feat/batch-dependency-context-cache` | `batch_dependencies.py`, `test_batch_ordered_inputs.py`, this plan | Add ordered, immutable active-input descriptors, including commands with no files. Reuse one `find_input()` traversal when projecting references. No consumer default changes. | Complete before dependent PRs |
 | **P1 — active input/activation indexing** | P0: `feat/batch-ordered-dependency-plan` | `cf/tcf_run_state.py`, optional new private run-index module; focused tests | Replace repeated `find_input()` and UUID-by-UUID scans within one evaluated context with a stable ordinal/UUID lookup. Preserve database activation sequence; no global reuse of mutable run state. | Yes, alongside P2 (different files) |
 | **P2 — immutable compiled control tree** | P0: `feat/batch-ordered-dependency-plan` | New `compiled_control_tree.py`, `compiled_dependency_plan.py`, `batch_dependencies.py`; own graph tests | Compile control/input nodes once, annotate exact relevant variables/scopes/events/settings, evaluate equivalent nodes per distinct relevant signature rather than reconstructing unchanged inputs 500 times. Keep conservative fallback and per-run provenance. | Yes, alongside P1; integration after each passes |
-| **P3 — public tutorial differential/performance harness** | P0: `feat/batch-ordered-dependency-plan` (rebase/retarget onto P2 before merge) | `tests/benchmark_batch_dependencies.py`, `tests/profile_batch_dependencies.py`, public TUFLOW tutorial fixture adapters/tests only | Benchmark only checked-in/licensed TUFLOW tutorial data and valid tutorial configurations; record actual distinct-context count, unique dependencies, memory, CPU/phase timings and exact provenance parity. If scaling to 120/240/440/500 requested runs by repeating valid tutorial flag combinations, label these as *repeated-run stress tests* rather than 120/240/440/500 distinct runs. Unit tests may use tiny synthetic inputs, but not as representative speedup evidence. | Yes; no SMB access required |
-| **P4 — integration of P1/P2/P3** | P2 branch once ready | Integrator resolves any P1/P2 conflicts, extends parity tests | Consolidate validated parser optimisation stack. Never silently discard P1 fixes while adopting P2. | After P1/P2 implementation |
+| **P3 — public tutorial differential/performance harness** | P2: `feat/batch-compiled-control-tree` (PR #9); initial harness work can proceed in parallel | `tests/benchmark_batch_dependencies.py`, `tests/profile_batch_dependencies.py`, public TUFLOW tutorial fixture adapters/tests only | Benchmark only checked-in/licensed TUFLOW tutorial data and valid tutorial configurations; record actual distinct-context count, unique dependencies, memory, CPU/phase timings and exact provenance parity. If scaling to 120/240/440/500 requested runs by repeating valid tutorial flag combinations, label these as *repeated-run stress tests* rather than 120/240/440/500 distinct runs. Unit tests may use tiny synthetic inputs, but not as representative speedup evidence. | Yes; no SMB access required |
+| **P4 — integration of P1/P2/P3** | P3: `test/batch-tutorial-benchmarks` (PR #7), after P2; merge independent P1/PR #8 | Integrator resolves any P1/P2 conflicts, extends parity tests | Consolidate validated parser optimisation stack. Never silently discard P1 fixes while adopting P2. | After P1/P2 implementation |
 
 **Shared-file ownership:** Only P2 modifies `batch_dependencies.py` after P0.
 P1 owns `tcf_run_state.py` run-index internals and should not touch the
 compiled graph. P3 owns measurement harness files. Avoid parallel pushes to
-the same branch. Start P1/P2/P3 as independent siblings above P0; when
-assembling a linear chain, rebase and retarget P1/P3 against the nominated
-parent, reviewing exact changed files. This retains independent agent work
-without prematurely serialising all development.
+the same branch. Start P1/PR #8 and P2/PR #9 as independent sibling branches above P0.
+P3/PR #7 is **now stacked on P2** so its final compiler benchmarks test
+actual P2 behaviour; an independent agent can develop the public tutorial
+harness concurrently, then merge P2's latest implementation before comparing.
+P4/PR #10 is stacked on P3 and later merges the independent P1 branch.
+Review exact changed files throughout. This retains parallel coding without
+prematurely claiming a compiled-tree benchmark.
 
 ### ryan-tools consumer stack (separate repository)
 
@@ -207,8 +210,10 @@ and explicit completion barriers would be sufficient.
 ## Immediate next tasks
 
 1. Open P0 as a draft stacked on PR #5, allow focused CI to run, fix findings.
-2. Start P1/P2/P3 as separate *agent-owned* child PRs from P0 with the file
-   ownership defined above; stage C1 independently in ryan-tools.
+2. P1/PR #8 and P2/PR #9 are sibling child PRs from P0; P3/PR #7 is now
+   based on P2/PR #9 and can build its harness while graph work progresses.
+   P4/PR #10 is based on P3/PR #7 and later merges P1. Stage C1
+   independently in ryan-tools.
 3. Use the already-posted 22 October aggregate benchmark evidence as the
    interim B0 baseline. The designated SMB agent completes its remaining
    checks in place and carries out B1/B2/B3 at later implementation milestones.

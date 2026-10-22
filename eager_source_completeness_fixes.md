@@ -5,6 +5,7 @@
 The replacement model also exposed an existing materials loader error: CSV
 separator rows (`',,,'`) and whole-line comment records reached integer material-ID
 conversion, producing a NaN/string conversion error and leaving no cached table.
+The integer conversion is also pre-existing in commit `dbc3cb40`.
 Materials loading now excludes wholly empty separator rows and rows whose ID
 starts with `!` or `#`, before building entries. A nonempty row without an ID still
 fails validation. This repairs original eager/shared initial loading, not deferred
@@ -17,6 +18,7 @@ Native replacement-model validation exposed an existing off-by-one error in
 `Context._create_list`: it enumerated numbered scenario/event slots 0 through 8,
 although argument loading supports slots 1 through 9. As a result `-s9` / `-e9`
 were available for placeholder translation but omitted from conditional scopes.
+Git blame traces the defective loop to pre-existing commit `dbc3cb40`.
 This affects original eager contexts as well as deferred and batch contexts;
 it is an existing behaviour fix, **not new deferred functionality**. Scope
 collection now includes slots 1 through 9. Synthetic regressions cover ninth

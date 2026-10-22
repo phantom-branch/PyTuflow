@@ -296,3 +296,194 @@ dependencies remain handled by the original run-state and downstream
 materialisation paths. The current-head Windows CI, strict 174-run replay,
 and new variable-heavy timing must be verified before signing off. No
 merger, publication, production repin, or solver execution is authorised.
+
+
+### Native downstream evaluation checkpoint - 22 October 2026
+
+Parser source `b1c9cfd4712b2ee7a7bd35ef0ec7ca32c9de6b92` passes the affected local
+218-test regression selection and both exact-head Windows workflows:
+[deferred references](https://github.com/phantom-branch/PyTuflow/actions/runs/39788800172)
+and [strict example replay](https://github.com/phantom-branch/PyTuflow/actions/runs/39788800177).
+The downstream diagnostic at `4ad6f1407e9ecf44a4c61bd3dc230520cf6ac58a` also passes
+its exact-source local strict 161-TCF / 174-run eager/deferred/batch materialisation
+comparison and the dedicated hosted batch smoke.
+
+Native SSD and SMB three-mode rechecks are in progress. The larger SMB launcher
+was read without execution: its requested parameter product has 792 combinations,
+rather than the active text-file mode's 14 commands. A separate read-only PO-source
+existence check finds 787/792 expected files absent, affecting both catchments.
+Keep these input-data findings separate from parser defects and do not claim an
+accepted overall speedup for that incomplete workload. Private model paths and
+reports remain outside either repository.
+
+This revision excludes output/check/log folder destinations from required-input
+validation, matching existing eager behaviour, and selects a contextual cached
+source table under one primary declaration without new filesystem reads. The
+latter repairs the new shared source-inspection API for eager callers too; it is
+not an original eager `.files` fix. See `eager_source_completeness_fixes.md` for the
+separate compatibility account. The owner's two-BC-declaration investigation is
+explicitly deferred. Repeated run-state construction remains; the broader
+immutable control-file graph is future work, not part of these compatibility fixes.
+
+
+### Replacement native model and existing eager fixes
+
+The owner replaced the incomplete 792-combination model with a saved 480-command
+model on local SSD, then copied that model to an SMB share for matched-storage
+comparison. The command-file bytes and all 480 parsed flag dictionaries match.
+The owner intentionally omitted unrelated files; acceptance uses the required-input
+inventory, not equality of project directory contents. Large binaries are size-checked,
+not claimed byte-hashed. Detailed manifests and model identifiers remain private.
+
+Source `a9f654c1ec0812fc70035e227fb2f9f12290f449` separately repairs existing slot-nine
+conditional scopes and material CSV separator/comment handling. Both are original
+eager/shared behaviour fixes, explicitly separated from deferred functionality in
+`eager_source_completeness_fixes.md`. The affected local selection passes 223 tests;
+exact-head deferred reference and strict archive workflows both pass:
+[reference CI](https://github.com/phantom-branch/PyTuflow/actions/runs/39791230176),
+[archive CI](https://github.com/phantom-branch/PyTuflow/actions/runs/39791230068).
+The replacement model passes the representative eager/deferred/batch materialisation
+and matching public inventory checks with no findings. Full trials are in progress.
+
+
+## Interim native benchmark results (2026-10-22)
+
+PyTUFLOW **1.2.6**, source `a9f654c1ec0812fc70035e227fb2f9f12290f449`; consumer diagnostic
+`2e03c0b110a272d9c6a05cc6da3bc08817130164`, Windows Python 3.14. Three sequential warm-cache
+trials per model, rotating eager/deferred/batch order. The 480-run local and SMB tests use identical saved
+command-file bytes and flags. The owner intentionally removed irrelevant files from the network copy.
+
+| Model | Storage | Runs | Eager median, s | Deferred median, s | Batch median, s |
+| --- | --- | ---: | ---: | ---: | ---: |
+| P | SSD | 4 | 1.234 | 0.852 | 0.688 |
+| B | SSD | 240 | 62.640 | 40.876 | 26.285 |
+| M480 | SSD | 480 | 118.843 | 65.007 | 45.223 |
+| M480 | SMB | 480 | 229.062 | 91.844 | 70.014 |
+
+All listed full trials have identical materialised `(run, flags, normalised command, physical path, layer)`
+sets across modes and **zero collection/inventory findings**. P/B and M480 SSD also pass the separate full
+public individual/batch preflight with matching checked paths and issue sets. **Still running:** M480 SMB's
+final public comparison, followed by the newly supplied 42-command network model. Do not describe those
+pending gates as passed.
+
+Timings include parsing, reference materialisation, diagnostic physical-path identity normalisation and
+shared inventory. They exclude process startup, report writing and the separately repeated public-preflight
+comparison (which validates raster headers). These are diagnostic timings, not complete launcher wall times.
+No native data or identifying P/B paths are committed; no model simulation is launched.
+
+Source fixes are split explicitly: `a9f654c` repairs existing eager/shared ninth-slot conditional scopes and
+materials CSV blank/comment loading; `b1c9cfd` repairs the new shared cached-source accessor (including eager
+callers) and deferred/batch output-folder compatibility. The UNC/mapped-drive inventory fix is diagnostic-only.
+The affected upstream selection passes **223 tests**; dedicated consumer checks pass **59 deferred + 9
+batch/diagnostic tests** and strict **161-TCF / 174-run** replay. The general Python workflow separately fails
+one Nmx snapshot column-axis pandas StringDtype comparison (`<NA>` versus `nan`); do not claim all CI green.
+
+Batch still constructs one context per run (480 for M480). The broader immutable control-file graph remains
+future optimisation. The owner explicitly deferred the two-BC model. The incomplete 792-run model was replaced;
+its direct expected PO-file existence check found GD08 393/396 and GD14 394/396 absent, not a valid benchmark.
+
+The consumer work record is the authoritative native-evaluation status:
+https://github.com/Chain-Frost/ryan-tools/blob/feat/tuflow-run-preflight/docs/work/2026-10-22-tuflow-batch-preflight-optimisation.md
+
+
+## Final native benchmark results (2026-10-22)
+
+All supplied native workloads pass **three full rotated trials**, with zero missing/unresolved input findings,
+identical eager/deferred/batch materialised identity sets, and matching successful public individual/batch
+checked-path and issue sets. The 480-run network copy retains all inputs needed by this benchmark after the
+owner's removal of irrelevant files. No TUFLOW simulation was launched.
+
+PyTUFLOW **1.2.6**, parser source `a9f654c1ec0812fc70035e227fb2f9f12290f449`; consumer diagnostic
+`2e03c0b110a272d9c6a05cc6da3bc08817130164`. Windows Python 3.14. Model names P/B and all native paths
+remain private. The M480 command-file bytes and 480 flag dictionaries match between SSD and SMB copies.
+
+| Model | Storage | Runs | Eager median (min-max), s | Deferred median (min-max), s | Batch median (min-max), s |
+| --- | --- | ---: | ---: | ---: | ---: |
+| P | SSD | 4 | 1.234 (1.229-1.264) | 0.852 (0.847-0.887) | 0.688 (0.685-0.689) |
+| B | SSD | 240 | 62.640 (62.504-66.919) | 40.876 (40.779-44.050) | 26.285 (25.781-26.549) |
+| M480 | SSD | 480 | 118.843 (114.569-122.171) | 65.007 (64.672-67.559) | 45.223 (43.873-45.557) |
+| M480 | SMB | 480 | 229.062 (228.122-230.345) | 91.844 (90.437-96.858) | 70.014 (69.540-71.085) |
+| N42 | SMB | 42 | 80.892 (80.308-82.257) | 40.232 (39.470-43.397) | 16.818 (16.817-19.501) |
+
+For M480, batch reduces diagnostic elapsed time versus individual deferred by **30.4% on SSD** and **23.8%
+on SMB**. Network elapsed remains higher in every mode. These are sequential warm-cache observations,
+not cold-cache guarantees. Each repeat rotates mode order; no timed model workloads run concurrently.
+
+Timings include fresh parsing, reference materialisation, physical-identity normalisation and shared inventory.
+They exclude process startup, report writing and the separate public-preflight replay (including raster-header
+validation). They are **diagnostic timings**, not complete launcher wall times. Native identity keys compare
+`(run index, flags, normalised command, physical path, layer)`; upstream UUID/control-line provenance has
+separate synthetic cached/uncached tests. Required-input inventory, not equality of all project files, gates
+acceptance. Large copied binaries were size-checked, not exhaustively byte-hashed.
+
+M480 retains **12,480 compared identities / 49 distinct physical paths** per copy in every mode;
+N42 retains **1,922 identities / 196 paths**. Median timing phases for the matched 480-run copies:
+
+| Storage / mode | Parse, s | Context or batch call, s | Remaining materialisation/identity/inventory, s |
+| --- | ---: | ---: | ---: |
+| SSD / eager | 0.572 | 95.865 | 22.406 |
+| SSD / deferred | 0.556 | 56.850 | 7.601 |
+| SSD / batch | 0.560 | 43.708 | 0.928 |
+| SMB / eager | 0.701 | 181.811 | 46.741 |
+| SMB / deferred | 0.716 | 58.676 | 32.458 |
+| SMB / batch | 0.710 | 43.595 | 25.946 |
+
+Column medians are computed separately and need not sum to the median total. Last-trial M480 eager-context
+audit counts are 6,253 SQLite connects, 13,454 glob events and 1,440 scandir events in each storage case;
+individual deferred contexts and the batch call record none of these selected events. This does not measure
+all native I/O: in particular, physical path identity normalisation remains in the residual diagnostic phase,
+which is noticeably more expensive on SMB. Do not misattribute that entire residual to the production parser.
+
+### Accounting and limits
+
+Process RSS is sampled every 20 ms with GC between modes; it includes native allocations but is not an exact
+peak or an isolated allocator regression proof. Maximum sampled RSS across the three full trials:
+
+| Model / storage | Eager MiB | Deferred MiB | Batch MiB |
+| --- | ---: | ---: | ---: |
+| P / SSD | 263.4 | 263.4 | 263.4 |
+| B / SSD | 332.7 | 331.2 | 332.1 |
+| M480 / SSD | 344.3 | 341.9 | 341.5 |
+| M480 / SMB | 342.1 | 339.5 | 341.0 |
+| N42 / SMB | 353.1 | 353.7 | 350.4 |
+
+The M480 SSD last batch trial still constructs **480 contexts / 28,327 commands**, reusing 3,353 command
+templates. Its 43.708 s batch call includes 34.597 s context construction, 2.936 s reference collection and
+4.480 s database projection. A broader immutable control-file graph remains future optimisation, not work
+completed by this evaluation. Phase categories differ across modes; individual database projection is part
+of residual collection, whereas batch projection is inside the batch call. Python audit events count selected
+open/directory/SQLite/glob calls, not all native/stat I/O; retain independent no-I/O spy tests.
+
+### Delivery and remaining scope
+
+- Parser source a9f654c passes 223 affected local tests, exact-head reference CI and strict archive CI.
+  Consumer code 2e03c0b passes **68 focused local tests** against a9f654c with both real fork integration
+  gates enabled. Hosted batch smoke passes 9 tests and strict 161-TCF / 174-run three-mode replay on a9f654c.
+  The earlier hosted 59-test dedicated deferred job used its older 8e7bc30 pin; that workflow is now aligned
+  to a9f654c as well. Its new hosted result must be checked separately rather than attributing the old green
+  result to the new parser revision.
+- Existing eager/shared fixes are recorded separately upstream: ninth-slot conditional scopes and materials
+  CSV blank/comment loading (a9f654c). New shared cached-source accessor repair, deferred/batch output-folder
+  compatibility (b1c9cfd), and diagnostic mapped-drive SQLite handling remain separately identified.
+- The replaced 792-run workload is not accepted: direct PO-file existence checks found GD08 393/396 and
+  GD14 394/396 absent. This is not a reason to suppress findings or silently skip both catchments.
+- N42 is the 42-command network benchmark. The historical external 440-run evidence is revision-specific
+  and was not rerun on this machine.
+- The owner explicitly postponed the two-BC-model investigation. No new two-BC functionality is claimed.
+- General Python CI separately fails the Nmx snapshot column-axis StringDtype NA-value comparison
+  (`<NA>` versus `nan`): 1380 passed, 6 skipped, 7 deselected, one failure on source 2e03c0b.
+  Dedicated parser checks are green; the whole PR is not all-checks-green or ready for automatic merge.
+- No solver run, default-on switch, production dependency repin, merge or release. Raw native data and reports
+  remain outside Git; only anonymised findings and benchmark information are published.
+
+
+### Benchmark revision boundary after publication
+
+Concurrent follow-up commits `37a69b3` (host filesystem case handling for cached database paths) and
+`f3325b8` (POSIX case-sensitive selection regressions) landed in PyTUFLOW during publication and are
+preserved. **The native benchmark evidence above is for a9f654c, not those later source changes.**
+All five recorded native source snapshots match retained a9f654c Git contents with normal checkout
+LF/CRLF conversion accounted for. A retained a9f654c source extraction independently passes all 68
+focused consumer tests with both real-fork gates enabled. The later case-handling source was not rerun
+through the native performance matrix. Benchmark figures must remain associated with their recorded
+source rather than being relabelled as current branch-head timings.
