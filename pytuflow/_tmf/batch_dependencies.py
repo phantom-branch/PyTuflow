@@ -9,6 +9,7 @@ compilation can replace the individual contexts after full parity validation.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 from time import perf_counter
 from typing import TYPE_CHECKING
 
@@ -168,6 +169,17 @@ class BatchContext(Context):
 
 
 @dataclass(frozen=True, slots=True)
+class BatchInputReference:
+    """One dependency with stable input identity and owning command position."""
+
+    input_uuid: str
+    command_index: int
+    owner_control_file: Path | None
+    line_number: int
+    reference: FileReference
+
+
+@dataclass(frozen=True, slots=True)
 class BatchDependencyRun:
     """One requested context. An error invalidates its entire reference set."""
 
@@ -177,6 +189,7 @@ class BatchDependencyRun:
     database_sources: tuple[DeferredDatabaseSource, ...]
     database_activations: tuple[DeferredDatabaseActivation, ...]
     error: str | None = None
+    input_references: tuple[BatchInputReference, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -253,6 +266,7 @@ def collect_batch_dependencies(
             results.append(BatchDependencyRun(
                 index, flag_text, previous.file_references, previous.database_sources,
                 previous.database_activations, previous.error,
+                previous.input_references,
             ))
             contexts_reused += 1
             continue
@@ -262,6 +276,7 @@ def collect_batch_dependencies(
         refs = ()
         sources = ()
         activations = ()
+        input_refs = ()
         error = None
         try:
             # Even an invalid flag combination is one failed run, not an
@@ -273,7 +288,20 @@ def collect_batch_dependencies(
                 ctx._shared_file_references = shared_file_references
                 ctx._batch_variable_assignments = variable_assignments
             run = model.context(context=ctx, file_resolution='deferred')
-            refs = tuple(ref for inp in run.find_input() for ref in inp.file_references)
+            # Retain input UUID + command order for downstream active-database
+            # selection; merely flattening paths would lose provenance.
+            input_refs = tuple(
+                BatchInputReference(
+                    input_uuid=str(inp.uuid),
+                    command_index=sequence,
+                    owner_control_file=inp._command.parent,
+                    line_number=inp.line_number,
+                    reference=ref,
+                )
+                for sequence, inp in enumerate(run.find_input())
+                for ref in inp.file_references
+            )
+            refs = tuple(item.reference for item in input_refs)
             activations = run.deferred_database_activations()
             # Keep rows attached to the exact declaration UUID. The consumer
             # selects the database active at each boundary/GIS command; simply
@@ -286,9 +314,11 @@ def collect_batch_dependencies(
         except Exception as exc:
             # Fail closed. Never return the partial references accumulated
             # before an unknown database or malformed control-file failure.
-            refs = sources = activations = ()
+            refs = sources = activations = input_refs = ()
             error = f'{type(exc).__name__}: {exc}'
-        projected = BatchDependencyRun(index, flag_text, refs, sources, activations, error)
+        projected = BatchDependencyRun(
+            index, flag_text, refs, sources, activations, error, input_refs,
+        )
         results.append(projected)
         if cache_scopes:
             seen_flags[flag_text] = projected
