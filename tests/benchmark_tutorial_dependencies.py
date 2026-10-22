@@ -48,6 +48,9 @@ COUNTERS = (
     "graph_node_evaluations", "graph_nodes_skipped", "graph_hits",
     "graph_bypasses", "run_state_constructors",
     "relevant_context_signatures",
+    "compiled_graph_nodes", "compiled_graph_eligible_reads",
+    "compiled_graph_bypassed_reads", "graph_node_lookups",
+    "graph_node_fallbacks",
     "cross_run_scope_hits", "cross_run_scope_misses", "translation_hits",
     "translation_misses", "cross_run_reference_hits",
     "cross_run_reference_misses", "cross_run_reference_bypasses",
@@ -402,7 +405,14 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
                 "trials_detail": rows,
             } for mode, rows in results.items()
         },
-        "compiled_tree_status": "not benchmarked: PR #9 implementation required",
+        "compiled_tree_status": (
+            "compiled control tree instrumented in cached batch"
+            if any(
+                row["counters"].get("compiled_graph_nodes")
+                for row in results["batch_cached"]
+            )
+            else "not available on checked-out parser source"
+        ),
         "materialised_parity_status": "not evaluated by this syntactic harness",
         "distinct_relevant_context_signatures": None,
     }
