@@ -263,7 +263,15 @@ class BatchContext(Context):
         self.commands_constructed += 1
         if eligible:
             if len(self._shared_command_templates) < 10_000:
-                self._shared_command_templates[signature] = (build_input, command)
+                # Do not retain the first run's mutable command or the bound
+                # Context.translate method. Keep a neutral private prototype
+                # which cannot be changed through any returned RunState.
+                prototype = copy(command)
+                prototype.config = from_config(command.config)
+                prototype.config.variables = {}
+                prototype._expander = copy(command._expander)
+                prototype._expander.variables = {}
+                self._shared_command_templates[signature] = (build_input, prototype)
             else:
                 self.command_template_bypasses += 1
         else:
