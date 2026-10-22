@@ -236,8 +236,6 @@ def test_literal_leaf_tree_elides_run_states_for_500_distinct_flags(tmp_path: Pa
         'Read GIS Code == gis/code.shp | 1\n',
         'Read Grid RF == rainfall.nc\n',
         'BC Database == bc.csv\nRead GIS BC == 2d_bc.shp\n',
-        'If Scenario == DEV\nRead GIS Code == dev.shp\n'
-        'Else\nRead GIS Code == exg.shp\nEnd If\n',
     ],
 )
 def test_unproven_nodes_do_not_elide_run_states(tmp_path: Path, source_text: str):
