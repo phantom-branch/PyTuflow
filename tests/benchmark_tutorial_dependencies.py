@@ -318,6 +318,7 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
     differences: dict[str, dict[str, int]] = {}
     errors: dict[str, int] = {}
     error_totals: Counter[str] = Counter()
+    failure_examples: dict[str, list[dict[str, object]]] = {}
     observed: tuple[BatchDependencyRun, ...] = ()
     gc.collect()
     initial = perf_counter()
@@ -340,6 +341,16 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
         for mode in modes:
             errors[mode] = sum(case.error is not None for case in projections[mode])
             error_totals[mode] += errors[mode]
+            if errors[mode]:
+                failure_examples.setdefault(mode, [])
+                failure_examples[mode].extend(
+                    {"index": case.index, "flags": case.flags,
+                     "error": case.error.replace(str(tcf.parent), "<tutorial>")
+                     if case.error else None}
+                    for case in projections[mode]
+                    if case.error is not None
+                )
+                failure_examples[mode] = failure_examples[mode][:10]
             diff = compare_runs(baseline, projections[mode])
             previous = differences.get(mode, {"missing": 0, "extra": 0})
             differences[mode] = {
@@ -377,6 +388,7 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
         "differences_across_trials": differences,
         "failed_runs_last_trial": errors,
         "failed_runs_across_trials": dict(error_totals),
+        "error_samples": failure_examples,
         "per_run_reference_total": sum(len(case.file_references) for case in observed),
         "per_run_secondary_source_total": sum(len(case.database_sources) for case in observed),
         "unresolved_primary_references": unresolved,
@@ -455,8 +467,9 @@ def main(argv: list[str] | None = None) -> int:
                                  requested_runs=options.runs, trials=options.trials)
             except Exception as exc:
                 # No failed/unsupported case may disappear from the report.
+                message = f"{type(exc).__name__}: {exc}"
                 record = {"model": Path(name).name, "status": "failed_or_unsupported",
-                          "reason": f"{type(exc).__name__}: {exc}"}
+                          "reason": message.replace(str(root), "<tutorial>")}
             records.append(record)
         gc.collect()
     complete = bool(records) and all(r["status"] == "passed_syntactic_parity" for r in records)
