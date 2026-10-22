@@ -29,6 +29,13 @@ A missing fixture returns **status=unavailable, exit 2**, never PASS.
 Malformed archive/launcher/baseline contents fail visibly. Output must not
 be written into the fixture checkout.
 
+Launchers are **read as text, never executed**. Their event/scenario flag
+values are stored as dictionaries and passed directly into PyTUFLOW, so
+quoted multiword values survive without lossy whitespace tokenisation.
+The displayed `-s1 value` label is diagnostic text only, not reparsed input.
+The JSON counters include P2's `input_runstates_elided`; an observed zero
+must not be confused with an unavailable (`null`) metric.
+
 For CPU hotspot profiling (cProfile **distorts** wall time and is not
 valid speedup evidence), use the same public TCF, from the PyTUFLOW checkout:
 
