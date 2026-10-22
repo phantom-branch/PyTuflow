@@ -11,6 +11,30 @@ that every published PyTUFLOW version has the same defect.
 
 ## Change classification
 
+### Earlier eager changes already included in PR #1
+
+The distinction also applies to work committed before `22e2413`. Compared with
+upstream base `cf908cc`, these affect existing eager behaviour and must appear
+explicitly in the upstream review/release summary:
+
+| Existing eager surface | Before / after | Relevant files and coverage |
+| --- | --- | --- |
+| Hydraulic BC lookup | Substring lookup could include AD BC; hydraulic and AD accessors now use distinct exact command roles | `abc/tcf_base.py`; `test_hydraulic_and_ad_bc_databases_are_independent` |
+| Rainfall CSV inventory | Eager `.files` exposed only the index; now includes context-expanded grids from cached rows | `inp/cf.py`; `test_eager_rainfall_csv_inventory_includes_cached_grid_sources`, `test_eager_rainfall_grid_projection_is_cached_in_memory` |
+| Rainfall context compatibility | Pandas string-array assignment could fail; cached rows use object dtype before context substitution | `db/db_run_state.py`; affected database/context tests and unmodified rainfall examples |
+| NetCDF rainfall loading | Created a placeholder database with no physical path; now treats NetCDF as a terminal rainfall input | `inp/db.py`; `test_netcdf_rainfall_is_terminal_primary_not_database` |
+| Assignment classification | File-looking BC Event Source / Set Variable values could be classified as inputs; now assignments are excluded and their actual consumers remain checked | `parsers/command.py`; `test_nested_output_variables_are_assignments_not_input_files` and BC event tests |
+| Network/pit attribute interpretation | File-like curve/control identifiers could become false paths; M/QO file components, Ignore flags and Q/P/pit database identifiers now have distinct rules | `gis.py`, `inp/gis.py`; positional network-role tests and full example replay |
+
+AD Global cached-table loading and typed database roles are added source-inspection
+capabilities, even though eager consumers can use them. The multipart materials
+lazy loader and deferred `>> all` expansion restore compatibility after changes
+introduced while implementing deferred resolution; describe them as PR regression
+repairs, not independently proven defects in the original upstream base. Rainfall
+index column validation is an explicit new schema check, not just a performance change.
+
+### Latest shared-source/eager correction
+
 | Change | Classification | Review boundary |
 | --- | --- | --- |
 | Preserve nested command parent, part index, line number, definition blocks and event name when reconstructing eager commands | Eager behaviour correction | `pytuflow/_tmf/inp/inp_run_state.py`; deferred mode already preserved this metadata |
