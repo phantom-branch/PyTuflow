@@ -475,3 +475,15 @@ open/directory/SQLite/glob calls, not all native/stat I/O; retain independent no
   Dedicated parser checks are green; the whole PR is not all-checks-green or ready for automatic merge.
 - No solver run, default-on switch, production dependency repin, merge or release. Raw native data and reports
   remain outside Git; only anonymised findings and benchmark information are published.
+
+
+### Benchmark revision boundary after publication
+
+Concurrent follow-up commits `37a69b3` (host filesystem case handling for cached database paths) and
+`f3325b8` (POSIX case-sensitive selection regressions) landed in PyTUFLOW during publication and are
+preserved. **The native benchmark evidence above is for a9f654c, not those later source changes.**
+All five recorded native source snapshots match retained a9f654c Git contents with normal checkout
+LF/CRLF conversion accounted for. A retained a9f654c source extraction independently passes all 68
+focused consumer tests with both real-fork gates enabled. The later case-handling source was not rerun
+through the native performance matrix. Benchmark figures must remain associated with their recorded
+source rather than being relabelled as current branch-head timings.
