@@ -76,7 +76,15 @@ class InputRunState(RunState, Input):
     @property
     def file_references(self) -> tuple[FileReference, ...]:
         """Immutable syntactic references; does not probe files or GIS layers."""
-        return self._rs.file_references if self._rs else ()
+        if not self._rs:
+            return ()
+        # An opt-in batch context may share references from literal, static
+        # source expressions. This leaves normal eager/deferred contexts and
+        # every dynamic input on the original PyTUFLOW resolution path.
+        cache = getattr(self.ctx, 'cached_file_references', None)
+        if cache is not None:
+            return cache(self.bs, self._rs)
+        return self._rs.file_references
 
     @property
     def database_source_references(self) -> tuple[FileReference, ...]:
