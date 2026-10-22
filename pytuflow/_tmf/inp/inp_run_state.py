@@ -169,6 +169,10 @@ class InputRunState(RunState, Input):
             run_config.file_resolution = 'deferred'
             run_config.variables = self.ctx.translate
         source_command = self.bs.command()
+        if getattr(self.ctx, '_batch_active', False):
+            # Count actual command reconstruction, not file-reference accessor
+            # calls or cache hits. A per-run context still owns its commands.
+            self.ctx.commands_constructed += 1
         from ..parsers.command import EventCommand
         # Preserve the actual nested owner in both modes. Database source
         # provenance must not fall back to the root TCF configuration.
