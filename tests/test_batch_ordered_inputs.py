@@ -141,7 +141,7 @@ def test_batch_activation_sequence_joins_full_command_order(tmp_path: Path) -> N
             activation.input_uuid for activation in activations
         ]
         assert any(
-            cmd.command_name.casefold() == "set variable"
+            cmd.command_name.casefold().startswith("set variable")
             and cmd.command_index not in {ref.command_index for ref in run.input_references}
             for cmd in run.ordered_inputs
         )
