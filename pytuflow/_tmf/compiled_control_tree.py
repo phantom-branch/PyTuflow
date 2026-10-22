@@ -163,7 +163,8 @@ class CompiledControlTree:
         """
         config = model.config
         if (not self.nodes or config.event_db or config.variables
-                or config.scenarios or config.spatial_database):
+                or config.scenarios
+                or str(config.spatial_database) not in ('', '.', 'None')):
             return False
         safe_suffixes = {'.shp', '.tif', '.asc', '.flt'}
         for node in self.nodes:
