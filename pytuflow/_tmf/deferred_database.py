@@ -1,6 +1,7 @@
 """Opt-in secondary source discovery using cached TUFLOW database rows."""
 from dataclasses import replace
 from pathlib import Path
+import os
 
 from .file_reference import FileReference, make_file_reference
 from .parsers.command import Command
@@ -151,7 +152,7 @@ def _ad_global_references(frame, context, config, database_path: Path) -> tuple[
 
 def database_source_references(
     build_input, context, kind: str | None, config,
-    *, source_base: Path | None = None,
+    *, source_base: Path | None = None, primary_path: Path | None = None,
 ) -> tuple[FileReference, ...]:
     """Describe context-specific secondary sources with no additional file I/O.
 
@@ -165,6 +166,17 @@ def database_source_references(
             f'Unsupported deferred database schema: {kind!r}'
         )
     databases = tuple(build_input.cf)
+    loaded_paths = tuple(getattr(build_input, '_database_loaded_paths', ()))
+    if primary_path is not None and loaded_paths:
+        if len(loaded_paths) != len(databases):
+            raise DeferredDatabaseResolutionError(f'Incomplete cached {kind} database path index')
+        # Match the paths captured during initial loading, not physical fpath:
+        # resolve() here would probe storage and could change mapped/UNC aliases.
+        selected = os.path.normpath(str(primary_path)).casefold()
+        databases = tuple(
+            database for database, original in zip(databases, loaded_paths)
+            if os.path.normpath(str(original)).casefold() == selected
+        )
     if len(databases) != 1:
         raise DeferredDatabaseResolutionError(
             f'Expected one cached {kind} database, found {len(databases)}'

@@ -101,6 +101,11 @@ class InputRunState(RunState, Input):
         if len(kinds) != 1:
             raise ValueError(f'Ambiguous deferred database kinds: {kinds}')
         kind = next(iter(kinds))
+        primaries = [ref for ref in self.file_references
+                     if ref.requires_database_scan and ref.database_kind == kind]
+        if len(primaries) != 1:
+            raise ValueError(f'Cannot identify one primary {kind} database')
+        primary_path = primaries[0].path_pattern
         source_base = None
         if kind == 'ad_bc':
             # TUFLOW AD specifies its BC Source paths relative to the
@@ -133,7 +138,7 @@ class InputRunState(RunState, Input):
             source_config.variables = self.ctx.translate
         return database_source_references(
             self.bs, self.ctx, kind, source_config,
-            source_base=source_base,
+            source_base=source_base, primary_path=primary_path,
         )
 
     @property
@@ -203,7 +208,12 @@ class InputRunState(RunState, Input):
             # Check only the contextual command expression. An absolute
             # parent folder may contain a literal TEF token such as _event_
             # and must never be mistaken for an unresolved command.
-            command_resolved = self.ctx.is_resolved(str(self.ctx.translate(self.bs.rhs)))
+            # Eager contexts do not require output/check/log directories to
+            # resolve as inputs. Preserve that boundary for syntax-only mode,
+            # including nested ECF destinations with late-bound output aliases.
+            command_resolved = self._command.is_value_a_folder() or self.ctx.is_resolved(
+                str(self.ctx.translate(self.bs.rhs))
+            )
             unresolved = [ref for ref in self.file_references if ref.unresolved_variables]
             if not command_resolved:
                 unresolved.append(str(self._command.value))

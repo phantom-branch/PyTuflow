@@ -40,6 +40,31 @@ def test_bc_event_source_is_not_a_file(tmp_path):
     assert not cmd.is_value_a_file()
 
 
+@pytest.mark.parametrize('mode', ['eager', 'deferred', 'batch'])
+def test_nested_output_directory_variables_are_not_required_inputs(tmp_path, mode):
+    """Destination-only nested placeholders cannot invalidate input projection."""
+    tcf = tmp_path / 'model.tcf'
+    (tmp_path / 'source.asc').touch()
+    (tmp_path / 'model.ecf').write_text('1D Output Folder == ../<<OutputBase>>/<<OutputSuffix>>/1D\n', encoding='utf-8')
+    tcf.write_text(
+        'Set Variable version == v07\n'
+        'ESTRY Control File == model.ecf\n'
+        'Set Variable OutputBase == results/<<version>>/<<~s2~>>/<<~e1~>>\n'
+        'Set Variable OutputRoot == ../<<OutputBase>>\n'
+        '1D Output Folder == <<OutputRoot>>/<<OutputSuffix>>/1D\n'
+        'Read Grid Zpts == source.asc\n', encoding='utf-8',
+    )
+    model = TCF(tcf)
+    if mode == 'batch':
+        result = model.collect_batch_dependencies(('-s1 BASE -s2 EXG -e1 Q100',))
+        assert result.passed, [run.error for run in result.runs]
+        refs = result.runs[0].file_references
+    else:
+        run = model.context('-s1 BASE -s2 EXG -e1 Q100', file_resolution=mode)
+        refs = tuple(ref for inp in run.find_input() for ref in inp.file_references)
+    assert {ref.path_pattern.name for ref in refs} == {'source.asc', 'model.ecf'}
+
+
 def test_deferred_context_does_not_glob_missing_input(tmp_path):
     fpath = tmp_path / 'model.tcf'
     fpath.write_text('Read GIS Code == gis/missing.shp\n', encoding='utf-8')

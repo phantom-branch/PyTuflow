@@ -90,12 +90,66 @@ def _cfg(tmp_path: Path) -> TCFConfig:
     )
 
 
+@pytest.mark.parametrize('mode', ['eager', 'deferred', 'batch'])
+def test_single_context_selects_one_of_multiple_preloaded_database_files(tmp_path, mode):
+    """One declaration can preload scenario candidates; do not combine their rows."""
+    tcf = tmp_path / 'model.tcf'
+    tcf.write_text('BC Database == bc_<<~s1~>>.csv\n', encoding='utf-8')
+    _bc_csv(tmp_path / 'bc_A.csv', 'a_source.csv')
+    _bc_csv(tmp_path / 'bc_B.csv', 'b_source.csv')
+    model = TCF(tcf)
+    assert len(model.find_input(lhs='BC Database')[0].cf) == 2
+    for scenario in ('A', 'B'):
+        if mode == 'eager':
+            context = model.context(f'-s1 {scenario}', file_resolution=mode)
+        with (
+            patch.object(Path, 'open', side_effect=AssertionError('file opened')),
+            patch.object(Path, 'stat', side_effect=AssertionError('stat')),
+            patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
+            patch('sqlite3.connect', side_effect=AssertionError('SQLite')),
+        ):
+            if mode == 'batch':
+                result = model.collect_batch_dependencies((f'-s1 {scenario}',))
+                assert result.passed, [run.error for run in result.runs]
+                sources = result.runs[0].database_sources
+            else:
+                if mode == 'deferred':
+                    context = model.context(f'-s1 {scenario}', file_resolution=mode)
+                sources = context.database_sources()
+        assert [source.path_pattern.name for source in sources] == [f'{scenario.lower()}_source.csv']
+
+
 def _bc_csv(path: Path, source: str) -> None:
     path.write_text(
         "Name,Source,Column 1,Column 2,Add Col 1,Mult Col 2,Add Col 2,Column 3,Column 4\n"
         + "FC01," + source + ",time,flow,,,,,\n",
         encoding="utf-8",
     )
+
+
+@pytest.mark.parametrize('mode', ['eager', 'deferred', 'batch'])
+def test_missing_context_database_does_not_reuse_another_cached_candidate(tmp_path, mode):
+    tcf = tmp_path / 'model.tcf'
+    tcf.write_text('BC Database == bc_<<~s1~>>.csv\n', encoding='utf-8')
+    _bc_csv(tmp_path / 'bc_A.csv', 'a_source.csv')
+    model = TCF(tcf)
+    if mode == 'eager':
+        context = model.context('-s1 MISSING', file_resolution=mode)
+    with (
+        patch.object(Path, 'open', side_effect=AssertionError('file opened')),
+        patch.object(Path, 'stat', side_effect=AssertionError('stat')),
+        patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
+        patch('sqlite3.connect', side_effect=AssertionError('SQLite')),
+    ):
+        if mode == 'batch':
+            result = model.collect_batch_dependencies(('-s1 MISSING',))
+            assert not result.passed
+            assert 'found 0' in result.runs[0].error
+        else:
+            if mode == 'deferred':
+                context = model.context('-s1 MISSING', file_resolution=mode)
+            with pytest.raises(DeferredDatabaseResolutionError, match='found 0'):
+                context.database_sources()
 
 
 def test_hydraulic_and_ad_bc_databases_are_independent(tmp_path):

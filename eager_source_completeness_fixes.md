@@ -1,5 +1,34 @@
 # Eager source completeness: separate review record
 
+## Network evaluation corrections (2026-10-22)
+
+Two further parser blockers were found while evaluating batch/deferred resolution
+on supplied native network models. They are distinct from the existing two-BC
+declaration/feature-selection issue, which the owner has deferred.
+
+- **Deferred/batch compatibility repair:** an unresolved output/check/log directory
+  expression could abort context creation even though eager mode does not require
+  those destinations as source inputs. Destination-only folder expressions now
+  retain that eager boundary; actual READ dependencies still require resolution.
+  This is not a general relaxation of unresolved input checks and does not establish
+  that an engine output destination is valid.
+- **Shared source-accessor repair, including eager callers:** one BC declaration
+  can preload several scenario-specific database files during initial parsing.
+  The new source projection previously demanded one table across all cached
+  candidates. It now chooses the cached file matching the context's resolved
+  primary path. Initial loading retains lexical paths before canonicalisation,
+  allowing selection without stat/open/glob or mapped-drive/UNC conversion.
+  This corrects the source-inspection API introduced by the deferred work; it is
+  not a redefinition of original eager `.files` or a multi-declaration BC join.
+
+Nine eager/deferred/batch regressions exercise output-folder exclusion, two
+scenario candidate tables, and refusal to substitute another table when the
+selected candidate is absent. Accessor tests prohibit open/stat/glob/SQLite I/O.
+The affected local batch/reference/database/context/GIS selection passes **218
+tests**. Native evaluation and its exact revisions are recorded separately; no
+broader immutable control-file graph or elimination of run-state allocation is
+implemented by these corrections. No proprietary model data is included.
+
 Updated: 2026-10-22. Status: shared/eager changes committed as `22e2413`, followed
 by the eager EventCommand accessor repair in `8e7bc30`. Strict Windows hosted
 example parity passes on that repair; remaining external acceptance/final review

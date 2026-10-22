@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 import typing
 
 from .file import FileInput
@@ -47,6 +48,9 @@ class DatabaseInput(FileInput):
         self._files_loaded = True
 
     def _load_database_files(self):
+        # Retain initial lexical paths before database constructors canonicalise
+        # fpath. Context selection can then match cached candidates without I/O.
+        self._database_loaded_paths = []
         for file in self._rhs_files:
             try:
                 if self._command.is_bc_dbase_file():
@@ -75,6 +79,7 @@ class DatabaseInput(FileInput):
                     logger.error(f'Unknown database type for {file}')
                     raise ValueError(f'Unknown database type for {file}')
                 self.cf.append(cf)
+                self._database_loaded_paths.append(Path(file))
             except Exception as e:
                 logger.error(f'Error loading database {file}. Command: {self._command}. Error: {e}')
 
