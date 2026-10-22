@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - "tests/benchmark_tutorial_dependencies.py"
+      - "tests/profile_tutorial_dependencies.py"
       - "tests/test_tutorial_benchmark.py"
       - "tests/TUTORIAL_BENCHMARK.md"
       - ".github/workflows/tutorial-benchmark-contracts.yml"
@@ -29,6 +30,6 @@ jobs:
       - name: Install PyTUFLOW and pytest
         run: python -m pip install -e . pytest
       - name: Compile public benchmark
-        run: python -m compileall -q tests/benchmark_tutorial_dependencies.py tests/test_tutorial_benchmark.py
+        run: python -m compileall -q tests/benchmark_tutorial_dependencies.py tests/profile_tutorial_dependencies.py tests/test_tutorial_benchmark.py
       - name: Run archive and differential correctness contracts
         run: python -m pytest -q tests/test_tutorial_benchmark.py
