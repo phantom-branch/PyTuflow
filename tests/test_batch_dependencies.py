@@ -306,7 +306,7 @@ def test_variable_derived_paths_never_share_static_reference_cache(tmp_path):
     assert cached.unique_reference_signatures == 2
 
 
-def test_resolved_path_signature_separates_variable_values_and_layers(tmp_path):
+def test_variable_derived_gpkg_layers_use_conservative_cache_bypass(tmp_path):
     source = tmp_path / 'layers.tcf'
     source.write_text(
         'IF Scenario == DEV\n'
@@ -325,9 +325,11 @@ def test_resolved_path_signature_separates_variable_values_and_layers(tmp_path):
     cached = model.collect_batch_dependencies(flags)
     plain = model.collect_batch_dependencies(flags, cache_scopes=False)
     assert cached.passed and plain.passed
-    assert cached.cross_run_reference_hits >= 28
-    assert cached.cross_run_reference_misses == 2
-    assert cached.unique_reference_signatures == 2
+    # The GeoPackage layer syntax is not proven eligible for this narrow
+    # resolved-command cache. Preserve existing per-run layer interpretation.
+    assert cached.cross_run_reference_hits == 0
+    assert cached.cross_run_reference_bypasses > 0
+    assert cached.unique_reference_signatures == 0
     assert [case.input_references for case in cached.runs] == [
         case.input_references for case in plain.runs
     ]
