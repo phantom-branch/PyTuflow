@@ -93,6 +93,42 @@ for final external acceptance/review; no merge or release is performed here.
 
 ## Shared database-source projection (2026-10-22)
 
+## Review follow-up and external evidence (2026-10-22)
+
+The later eager `file_references` EventCommand constructor finding is repaired
+in `8e7bc303aa7306cbdc0a6760bc089f84121e3f6e`. This repairs the new accessor added
+by this PR, not an independently established original `.files` defect. The
+[separate eager record](eager_source_completeness_fixes.md#review-repair-eager-eventcommand-reference-accessor-2026-10-22)
+contains the before/after evidence and two zero-I/O metadata regressions.
+Local affected selections now pass **183 upstream tests / 72 downstream tests**.
+P/B representative checks, one fresh full pair and public preflight were repeated
+on the repair and still pass with the same 68/4,560 records and 17/32 files.
+The three-trial SSD timing table above remains attached to the earlier source;
+it is not relabelled as a new three-trial measurement of this follow-up.
+
+At repair head `8e7bc30`, both the
+[Windows 3.12/3.14 matrix](https://github.com/phantom-branch/PyTuflow/actions/runs/39713500347)
+and [strict full example replay](https://github.com/phantom-branch/PyTuflow/actions/runs/39713500346)
+pass. The latter again enforces **161 TCFs/174 runs accepted, zero differences**;
+[artifact 12397837069](https://github.com/phantom-branch/PyTuflow/actions/runs/39713500346/artifacts/12397837069)
+has SHA-256 `08859da6a0154c6a2101adcdf620fcb264261a4de52a0a34628d4f79bf6acb6e`.
+The review thread was answered with the repair/regression evidence and resolved.
+
+The other workstation has now committed the **440-run** external result in
+consumer commit `e4518499`: consumer `b68f4ada`, parser `fb103a1`, Python 3.14.4,
+mapped/network storage. It records zero preflight findings, 62 physical paths,
+8,360 materialised identity records and zero eager-only/deferred-only entries.
+One warm-cache eager/deferred dependency-generation pair measured 110.359 s and
+29.650 s, respectively. These are externally recorded results on the stated
+revisions, before the accessor repair; this workstation did not access or rerun
+that network model. Do not combine those timings with the local SSD samples.
+The **42-run external check is still outstanding**. The owner retains the final
+external acceptance decision, including whether a repair-head network recheck is
+required. Feature-to-BC-activation selection remains the documented consumer
+limitation above. No merge or release is performed.
+
+## Shared database-source API details (2026-10-22)
+
 Eager behaviour corrections, the additive eager/shared API and the downstream
 consumer completeness fix are recorded separately in
 [Eager source completeness](eager_source_completeness_fixes.md). They must not be

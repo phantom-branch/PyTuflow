@@ -1,7 +1,9 @@
 # Eager source completeness: separate review record
 
-Updated: 2026-10-22. Status: implementation committed and pushed as `22e2413`;
-exact-head hosted acceptance and final review remain pending.
+Updated: 2026-10-22. Status: shared/eager changes committed as `22e2413`, followed
+by the eager EventCommand accessor repair in `8e7bc30`. Strict Windows hosted
+example parity passes on that repair; remaining external acceptance/final review
+is described in the implementation status record.
 Base: `546ab20`, branch `feat/deferred-file-resolution`.
 
 This record separates changes affecting eager consumers from the
