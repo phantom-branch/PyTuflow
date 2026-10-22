@@ -124,3 +124,25 @@ After the first benchmark, `BatchContext` was supplied with the parsed `Set Vari
 [Windows CI 39662701759](https://github.com/phantom-branch/PyTuflow/actions/runs/39662701759) passed Python 3.12 and 3.14, including the added variable-scope regression. The 500-distinct-flag synthetic benchmark remained exactly equal across modes (zero missing/extra references); medians were individual **4.8233 s**, batch without caching **4.9150 s**, cached batch **4.8025 s**. The ~0.4% nominal cached-versus-individual difference is too small to establish a meaningful speedup, and the synthetic benchmark TCF contains **no Set Variable declarations**, so it does not measure the new traversal optimisation.
 
 Before claiming faster real-world batches, add a benchmark fixture containing substantial nested control files and scenario/event-dependent variable declarations; then implement cross-run immutable command compilation. Maintain parity first and do not promote the code to ryan-tools #148 just to report an inconclusive timing.
+
+
+## 22 October subsequent checkpoint — initial cross-run benefit and CPU profile
+
+**Branch dependency:** PyTUFLOW PR #2 has now merged into #1; this optimisation PR #5 targets #1's `feat/deferred-file-resolution` branch. No changes are merged into `master`, and no publication is authorised. Python Windows 3.12/3.14 validation only; Linux parity is deliberately deferred to separate PR #4.
+
+**Implemented:** batch-scoped reuse of immutable file references from literal inputs (not unresolved placeholders/TEF tokens), cross-event reuse of decisions depending exclusively on scenario scopes, once-per-batch parse of immutable Set Variable name/value templates, and UUID/command-index/owner/line metadata in `BatchInputReference`. Event-scoped, dynamically translated and unknown commands still use ordinary per-context resolution. The default `TCF.context()` path is unchanged.
+
+**Verified synthetic workload at commit `ce1286008`:** [Windows CI 39708797831](https://github.com/phantom-branch/PyTuflow/actions/runs/39708797831) passed both matrix jobs, and Python 3.14 produced these **three warm-cache** medians (identical syntactic references and database activation records in all modes):
+
+| Workload | Individual deferred | Cached batch | Change |
+| --- | ---: | ---: | ---: |
+| 500 distinct event-flag strings; 2 shared scenario branches | 2.3273 s | 1.2271 s | approximately 47% lower |
+| 120 distinct event flags and 20 additional static GIS READ commands | 4.0646 s | 2.2282 s | approximately 45% lower |
+
+Counts for first fixture: 500 distinct contexts constructed; **0 whole-run reuse**, 1,992 cross-run scope hits, 4,496 cross-run reference hits, 8 scope misses and 4 reference misses. These measurements cover **syntactic dependency collection only**, excluding initial parse, filesystem/GIS/raster materialisation, real project data and the network drive. Do not extrapolate to a 440/500-run production speedup without exact materialised parity and real-model timings.
+
+**Profile:** [Windows CI 39709059027](https://github.com/phantom-branch/PyTuflow/actions/runs/39709059027) passed and ran cProfile with 120 distinct runs/20 extra static READs. The top overlapping cumulative hotspots were `TCF.context` (~25.15 profiled seconds across all benchmark modes), `InputRunState` (~24.49), `Command.__init__` (~19.27), `Command.parts` (~15.17), `InputBuildState.file_references` (~11.58) and `from_config` (~8.09). Cumulative values overlap and are not separately additive. This supports further reductions in redundant parsing/config copies rather than directory stat tuning.
+
+**Current further work:** A narrow batch-only short circuit avoids `Command.reload_value()` for plain commands already expanded in `Command.__init__`, excluding EventCommand and any non-empty DEFINE blocks. Await the **exact-head** Windows regression and benchmark outcome before attributing any additional improvement to this change. New tests cover duplicate path UUID provenance, nested TGC owner/line metadata, invalid-context fail-closed clearing and dynamic event source separation.
+
+**Outstanding high-priority gates:** Exact eager/deferred/batch materialised parity for all valid supported inputs (including GIS attributes, active database rows, rainfall and raster metadata) remains owned by #1/#143. #5 still constructs one mutable context for each distinct complete flag combination: it does **not yet** compile a complete immutable cross-run dependency graph, skip all unchanged command constructors or provide end-to-end speedup evidence. The downstream ryan-tools #148 remains a separate draft, not merged into #143 or main.
