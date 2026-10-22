@@ -50,7 +50,9 @@ class LiteralInputGroupCache:
         if (not raw or "_event_" in raw.casefold()
                 or any(token in raw for token in "<>~*?|#$%")
                 or Path(raw).suffix.lower() not in _SAFE_SUFFIXES
-                or ctx.translate(raw) != raw):
+                or ctx.translate(raw) != raw
+                or not ctx.is_resolved(raw)
+                or getattr(ctx, 'file_resolution', None) != 'deferred'):
             return None
         cfg = build_input.config
         # A spatial database, layer selector or late-bound wildcard may change
