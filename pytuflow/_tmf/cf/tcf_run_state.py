@@ -2,7 +2,10 @@ import logging
 import os
 import typing
 import subprocess
+from collections.abc import Mapping
+from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 
 from .cf_run_state import ControlFileRunState
 from ..abc.tcf_base import TCFBase
@@ -16,9 +19,29 @@ from .model_run_mixin import ModelRunMixin
 
 logger = logging.getLogger('pytuflow')
 
+
+@dataclass(frozen=True, slots=True)
+class _IndexedRunInput:
+    """One input in find_input() order, including reference-free commands.
+
+    The input is borrowed, never shared across runs. Only a synchronous batch
+    may reuse this identity snapshot: InputRunState remains publicly mutable.
+    """
+    sequence: int
+    input_uuid: str
+    input_state: 'InputRunState'
+
+
+@dataclass(frozen=True, slots=True)
+class _RunInputIndex:
+    ordered: tuple[_IndexedRunInput, ...]
+    by_uuid: Mapping[str, tuple[_IndexedRunInput, ...]]
+
+
 if typing.TYPE_CHECKING:
     from pytuflow import TPC
     from ..file_reference import DeferredDatabaseSource
+    from ..inp.inp_run_state import InputRunState
     from .tcf import TCF
     from .tef_run_state import TEFRunState
     from ..db.bc_dbase_run_state import BCDatabaseRunState
@@ -232,6 +255,40 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
         """
         return super().rainfall_dbase()
 
+    def _deferred_run_input_index(self) -> _RunInputIndex:
+        """Create an ordered UUID index, with batch-only reuse.
+
+        The public run-state API permits input/command mutation, so ordinary
+        eager/deferred contexts always take a fresh snapshot per operation.
+        During collect_batch_dependencies the per-run state is private, read
+        synchronously, and discarded at the end of that run. Only in that
+        explicitly bounded lifecycle can the index safely be reused. No
+        InputRunState, index or cache is shared across contexts or batches.
+
+        A UUID maps to *all* matching entries, not just the last one. This
+        retains the existing rejection of ambiguous/missing activation IDs.
+        """
+        batch_lifecycle = getattr(self.ctx, '_batch_run_index', None) is not None
+        if batch_lifecycle:
+            cached = getattr(self, '_batch_deferred_run_input_index', None)
+            if cached is not None:
+                return cached
+
+        ordered = tuple(
+            _IndexedRunInput(sequence, str(inp.uuid), inp)
+            for sequence, inp in enumerate(self.find_input())
+        )
+        grouped: dict[str, list[_IndexedRunInput]] = {}
+        for entry in ordered:
+            grouped.setdefault(entry.input_uuid, []).append(entry)
+        index = _RunInputIndex(
+            ordered,
+            MappingProxyType({uuid: tuple(entries) for uuid, entries in grouped.items()}),
+        )
+        if batch_lifecycle:
+            self._batch_deferred_run_input_index = index
+        return index
+
     def deferred_database_activations(self):
         """List scoped database declarations in syntactic control-file order.
 
@@ -250,7 +307,8 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
             raise ValueError('deferred_database_activations requires deferred mode')
 
         activations = []
-        for sequence, inp in enumerate(self.find_input()):
+        for entry in self._deferred_run_input_index().ordered:
+            inp = entry.input_state
             for ref in inp.file_references:
                 if not ref.requires_database_scan:
                     continue
@@ -263,8 +321,8 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
                         f'Unclassified database activation: {ref.path_pattern}'
                     )
                 activations.append(DeferredDatabaseActivation(
-                    sequence=sequence,
-                    input_uuid=str(inp.uuid),
+                    sequence=entry.sequence,
+                    input_uuid=entry.input_uuid,
                     database_kind=ref.database_kind,
                     database_path=ref.path_pattern,
                     owning_command=ref.origin,
@@ -316,13 +374,13 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
         """
         if getattr(self.ctx, 'file_resolution', 'eager') != 'deferred':
             raise ValueError('deferred_database_sources_for_activation requires deferred mode')
-        matches = [inp for inp in self.find_input() if str(inp.uuid) == str(input_uuid)]
+        matches = self._deferred_run_input_index().by_uuid.get(str(input_uuid), ())
         if len(matches) != 1:
             raise ValueError(
                 f'Expected exactly one database input for activation {input_uuid}, '
                 f'found {len(matches)}'
             )
-        inp = matches[0]
+        inp = matches[0].input_state
         primaries = [ref for ref in inp.file_references if ref.requires_database_scan]
         if len(primaries) != 1:
             raise ValueError(f'Cannot identify database for activation {input_uuid}')
