@@ -78,9 +78,8 @@ class InputRunState(RunState, Input):
         """Immutable syntactic references; does not probe files or GIS layers."""
         if not self._rs:
             return ()
-        # An opt-in batch context may share references from literal, static
-        # source expressions. This leaves normal eager/deferred contexts and
-        # every dynamic input on the original PyTUFLOW resolution path.
+        # An opt-in batch context may share immutable references from static,
+        # literal commands. Dynamic commands use the original resolver.
         cache = getattr(self.ctx, 'cached_file_references', None)
         if cache is not None:
             return cache(self.bs, self._rs)
@@ -125,8 +124,15 @@ class InputRunState(RunState, Input):
             ):
                 raise ValueError('Cannot identify a resolved AD Global Database path')
             source_base = primaries[0].path_pattern
+        source_config = self._command.config
+        if source_config.file_resolution != 'deferred':
+            # A source projection is syntax-only even for an eager context.
+            # Command.parts() must not glob or open GIS while classifying rows.
+            source_config = from_config(source_config)
+            source_config.file_resolution = 'deferred'
+            source_config.variables = self.ctx.translate
         return database_source_references(
-            self.bs, self.ctx, kind, self._command.config,
+            self.bs, self.ctx, kind, source_config,
             source_base=source_base,
         )
 
@@ -163,33 +169,27 @@ class InputRunState(RunState, Input):
             run_config.file_resolution = 'deferred'
             run_config.variables = self.ctx.translate
         source_command = self.bs.command()
-        if deferred:
-            from ..parsers.command import EventCommand
-            # The owning control file may differ from config.control_file,
-            # notably for nested geometry/BC/event and TRD commands.
-            if isinstance(source_command, EventCommand):
-                # EventCommand does not accept Command's line_number argument.
-                self._command = EventCommand(
-                    cmd_txt, run_config, source_command.parent, source_command.part_index,
-                )
-                self._command.event_name = source_command.event_name
-            else:
-                self._command = source_command.__class__(
-                    cmd_txt, run_config, source_command.parent,
-                    source_command.part_index, source_command.line_number,
-                )
-            self._command.define_blocks = source_command.define_blocks
-            # A plain Command has already expanded its value in __init__.
-            # Repeating reload_value() re-runs path/part expansion for every
-            # static command in every batch context. Only the opt-in batch
-            # path skips this redundant expansion, and only where adding
-            # DEFINE blocks or EventCommand state cannot change its result.
-            if not (getattr(self.ctx, '_batch_active', False)
-                    and type(source_command) is Command
-                    and not source_command.define_blocks):
-                self._command.reload_value()
+        from ..parsers.command import EventCommand
+        # Preserve the actual nested owner in both modes. Database source
+        # provenance must not fall back to the root TCF configuration.
+        if isinstance(source_command, EventCommand):
+            self._command = EventCommand(
+                cmd_txt, run_config, source_command.parent, source_command.part_index,
+            )
+            self._command.event_name = source_command.event_name
         else:
-            self._command = source_command.__class__(cmd_txt, run_config)
+            self._command = source_command.__class__(
+                cmd_txt, run_config, source_command.parent,
+                source_command.part_index, source_command.line_number,
+            )
+        self._command.define_blocks = source_command.define_blocks
+        # A plain Command expands its value in the constructor. On the
+        # opt-in deferred batch path, avoid repeating that work only when
+        # no event or DEFINE blocks can change the expansion.
+        if not (deferred and getattr(self.ctx, '_batch_active', False)
+                and type(source_command) is Command
+                and not source_command.define_blocks):
+            self._command.reload_value()
         self._command.config.variables = self.ctx.translate
         self._rs = get_input_class(self._command)(self.bs.parent, self._command, load_control_files=False)  # Input representing the RunState
         # check all variable names in file have been resolved

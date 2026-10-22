@@ -18,6 +18,7 @@ logger = logging.getLogger('pytuflow')
 
 if typing.TYPE_CHECKING:
     from pytuflow import TPC
+    from ..file_reference import DeferredDatabaseSource
     from .tcf import TCF
     from .tef_run_state import TEFRunState
     from ..db.bc_dbase_run_state import BCDatabaseRunState
@@ -345,6 +346,18 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
         if getattr(self.ctx, 'file_resolution', 'eager') != 'deferred':
             raise ValueError('deferred_database_sources requires deferred mode')
 
+        return self.database_sources()
+
+    def database_sources(self) -> tuple['DeferredDatabaseSource', ...]:
+        """Return typed secondary sources from context-resolved cached databases.
+
+        Available in eager and deferred contexts. Input.files enumerates the
+        input's own files; this explicit projection additionally describes AD
+        sources and candidate curve rows. Consumers must select curve IDs from
+        active GIS features instead of requiring every candidate curve file.
+        Parsing, variable expansion and source ownership stay in PyTUFLOW.
+        This accessor does not open source files or inspect GIS features.
+        """
         result = []
         for kind, names in (
             ('bc', ('bc database',)),

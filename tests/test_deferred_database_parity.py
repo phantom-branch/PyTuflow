@@ -12,6 +12,76 @@ from pytuflow._tmf.settings import TCFConfig
 from pytuflow._tmf.tfpathlib import TuflowPath
 
 
+@pytest.mark.parametrize("mode", ["eager", "deferred"])
+def test_shared_database_sources_preserve_nested_ad_ownership_without_io(tmp_path, mode):
+    """AD ownership and global-relative paths are identical in both APIs."""
+    for directory in ("controls", "global", "tables"):
+        (tmp_path / directory).mkdir()
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("AD Control File == controls/model.adcf\n", encoding="utf-8")
+    owner = tmp_path / "controls" / "model.adcf"
+    owner.write_text(
+        "AD Global Database == ../global/constituents.csv\n"
+        "AD BC Database == ../tables/boundaries.csv\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "global" / "constituents.csv").write_text(
+        "Name,Initial Condition,Minimum Dispersion\nTracer,initial.shp,0\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "tables" / "boundaries.csv").write_text(
+        "Name,Source,Column 1,Column 2\n"
+        "West__Tracer,concentration.csv,time,west\n"
+        "East__Tracer,concentration.csv,time,east\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "global" / "concentration.csv").write_text("time,west,east\n0,1,2\n", encoding="utf-8")
+    (tmp_path / "global" / "initial.shp").touch()
+    run = TCF(tcf).context(file_resolution=mode)
+    with (
+        patch.object(Path, "open", side_effect=AssertionError("file opened")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+        patch.object(TuflowPath, "glob", side_effect=AssertionError("glob")),
+        patch("sqlite3.connect", side_effect=AssertionError("SQLite")),
+    ):
+        sources = run.database_sources()
+        if mode == "deferred":
+            assert run.deferred_database_sources() == sources
+    assert {(s.database_kind, s.entry_name) for s in sources} == {
+        ("ad_bc", "West__Tracer"), ("ad_bc", "East__Tracer"), ("ad_global", "Tracer"),
+    }
+    # Physical comparison follows the relative ../ components in nested owners.
+    assert all(s.owner_control_file.resolve() == owner.resolve() for s in sources)
+    assert {s.path_pattern.resolve() for s in sources if s.database_kind == "ad_bc"} == {
+        (tmp_path / "global" / "concentration.csv").resolve(),
+    }
+    assert {s.owning_command.casefold() for s in sources} == {"ad bc database", "ad global database"}
+
+
+@pytest.mark.parametrize("mode", ["eager", "deferred"])
+@pytest.mark.parametrize("role", ["BC Database", "AD BC Database"])
+def test_shared_database_sources_exclude_inactive_scenario_inputs(tmp_path, mode, role):
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "AD Global Database == global.csv\n"
+        f"If Scenario == A\n{role} == first.csv\n"
+        f"Else\n{role} == second.csv\nEnd If\n",
+        encoding="utf-8",
+    )
+    _bc_csv(tmp_path / "first.csv", "first_source.csv")
+    _bc_csv(tmp_path / "second.csv", "second_source.csv")
+    (tmp_path / "global.csv").write_text(
+        "Name,Initial Condition,Minimum Dispersion\nTracer,0,0\n", encoding="utf-8",
+    )
+    model = TCF(tcf)
+    assert [s.path_pattern.name for s in model.context('-s1 A', file_resolution=mode).database_sources()] == [
+        "first_source.csv",
+    ]
+    assert [s.path_pattern.name for s in model.context('-s1 B', file_resolution=mode).database_sources()] == [
+        "second_source.csv",
+    ]
+
+
 def _cfg(tmp_path: Path) -> TCFConfig:
     return TCFConfig(
         control_file=tmp_path / "model.tcf",
