@@ -1,11 +1,20 @@
 """Upstream deferred database-kind and secondary-source regression cases."""
+import ntpath
+import os
+import posixpath
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
+import pandas as pd
 import pytest
 
 from pytuflow import TCF
-from pytuflow._tmf.deferred_database import DeferredDatabaseResolutionError
+from pytuflow._tmf.deferred_database import (
+    DeferredDatabaseResolutionError,
+    _cached_database_path_key,
+    database_source_references,
+)
 from pytuflow._tmf.file_reference import make_file_reference
 from pytuflow._tmf.parsers.command import Command
 from pytuflow._tmf.settings import TCFConfig
@@ -117,6 +126,68 @@ def test_single_context_selects_one_of_multiple_preloaded_database_files(tmp_pat
                     context = model.context(f'-s1 {scenario}', file_resolution=mode)
                 sources = context.database_sources()
         assert [source.path_pattern.name for source in sources] == [f'{scenario.lower()}_source.csv']
+
+
+def test_cached_database_path_key_uses_platform_case_rules(tmp_path):
+    path = tmp_path / "bc_A.csv"
+    assert _cached_database_path_key(path) == os.path.normcase(
+        os.path.normpath(str(path))
+    )
+    # The two relevant platform policies differ intentionally. The loaded
+    # cache must never apply an unconditional casefold on POSIX.
+    assert posixpath.normcase("bc_A.csv") != posixpath.normcase("bc_a.csv")
+    assert ntpath.normcase("bc_A.csv") == ntpath.normcase("bc_a.csv")
+
+
+@pytest.mark.parametrize(
+    ("chosen_name", "expected_source"),
+    [("bc_A.csv", "upper_source.csv"), ("bc_a.csv", "lower_source.csv")],
+)
+def test_cached_database_selector_preserves_posix_case_distinctions_without_io(
+    tmp_path, chosen_name, expected_source,
+):
+    """Simulate POSIX matching even on Windows-only CI runners.
+
+    Both already-loaded objects are distinct: a casefold match would select
+    both and fail closed, rather than returning the explicitly chosen one.
+    """
+    paths = (tmp_path / "bc_A.csv", tmp_path / "bc_a.csv")
+    build_input = SimpleNamespace(
+        _database_loaded_paths=paths,
+        cf=tuple(
+            SimpleNamespace(
+                fpath=path,
+                loaded=True,
+                df=pd.DataFrame(
+                    {"Source": [source]},
+                    index=["Boundary"],
+                ),
+            )
+            for path, source in zip(
+                paths, ("upper_source.csv", "lower_source.csv"), strict=True,
+            )
+        ),
+    )
+    context = SimpleNamespace(
+        translate=lambda value: value,
+        is_resolved=lambda value: True,
+    )
+    with (
+        patch(
+            "pytuflow._tmf.deferred_database._cached_database_path_key",
+            side_effect=lambda path: posixpath.normcase(
+                posixpath.normpath(str(path))
+            ),
+        ),
+        patch.object(Path, "open", side_effect=AssertionError("file opened")),
+        patch.object(Path, "stat", side_effect=AssertionError("stat")),
+    ):
+        result = database_source_references(
+            build_input, context, "bc", _cfg(tmp_path),
+            primary_path=tmp_path / chosen_name,
+        )
+    assert len(result) == 1
+    assert result[0].path_pattern.name == expected_source
 
 
 def _bc_csv(path: Path, source: str) -> None:

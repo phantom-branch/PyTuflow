@@ -11,6 +11,15 @@ class DeferredDatabaseResolutionError(ValueError):
     """Database sources cannot be completely inspected by the deferred API."""
 
 
+def _cached_database_path_key(path: Path) -> str:
+    """Compare cached paths lexically using the host filesystem's case rules.
+
+    Do not resolve or stat paths: mapped drives and UNC aliases must retain
+    their original spelling, while POSIX case distinctions must be preserved.
+    """
+    return os.path.normcase(os.path.normpath(str(path)))
+
+
 def _expanded(value, context, *, kind, row):
     """Expand model variables before classifying a table cell."""
     if value is None:
@@ -172,10 +181,10 @@ def database_source_references(
             raise DeferredDatabaseResolutionError(f'Incomplete cached {kind} database path index')
         # Match the paths captured during initial loading, not physical fpath:
         # resolve() here would probe storage and could change mapped/UNC aliases.
-        selected = os.path.normpath(str(primary_path)).casefold()
+        selected = _cached_database_path_key(primary_path)
         databases = tuple(
             database for database, original in zip(databases, loaded_paths)
-            if os.path.normpath(str(original)).casefold() == selected
+            if _cached_database_path_key(original) == selected
         )
     if len(databases) != 1:
         raise DeferredDatabaseResolutionError(
