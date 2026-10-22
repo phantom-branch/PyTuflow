@@ -313,3 +313,33 @@ def test_variable_templates_parsed_once_but_scopes_evaluated_per_run(tmp_path):
     assert [case.file_references for case in batch.runs] == [
         case.file_references for case in baseline.runs
     ]
+
+
+def test_batch_input_references_preserve_uuid_command_order_and_owner(tmp_path):
+    source = tmp_path / 'provenance.tcf'
+    source.write_text(
+        'Read GIS Code == gis/same.shp\n'
+        'Read GIS Code == gis/same.shp\n'
+        'Read Grid Zpts == grids/terrain.tif\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    first, second = model.collect_batch_dependencies(('-e1 A', '-e1 B')).runs
+    assert first.error is None and second.error is None
+    assert first.input_references == second.input_references
+    assert tuple(item.reference for item in first.input_references) == first.file_references
+    assert len(first.input_references) == 3
+    assert len({item.input_uuid for item in first.input_references}) == 3
+    assert [item.command_index for item in first.input_references] == sorted(
+        item.command_index for item in first.input_references
+    )
+    assert all(item.owner_control_file == source for item in first.input_references)
+    assert [item.line_number for item in first.input_references] == [1, 2, 3]
+
+
+def test_invalid_batch_context_discards_input_provenance(tmp_path):
+    model = _make_model(tmp_path)
+    failed = model.collect_batch_dependencies(('-s1 DEV -s1 EXG',)).runs[0]
+    assert failed.error is not None
+    assert failed.input_references == ()
+    assert failed.file_references == ()
