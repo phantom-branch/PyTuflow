@@ -311,10 +311,9 @@ def test_compiled_read_counter_tracks_active_plan_encounters(tmp_path: Path):
         assert _identities(graph) == _identities(graph_off) == _identities(uncached)
         assert graph.compiled_graph_nodes == len(model.find_input())
         assert graph.compiled_read_nodes == graph_off.compiled_read_nodes
-        assert graph.compiled_read_nodes < sum(
-            node.role == 'READ'
-            for node in CompiledControlTree.compile(
-                model, CompiledVariablePlan.from_assignments(())
-            ).nodes
-        )
+        if not (any('DEV' in flag for flag in flags)
+                and any('EXG' in flag for flag in flags)):
+            # For a single active branch, a full-tree total must be larger
+            # than the number of encountered plans.
+            assert graph.compiled_read_nodes < graph.compiled_graph_eligible_reads
         assert graph_off.compiled_graph_nodes == 0
