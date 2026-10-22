@@ -460,6 +460,8 @@ class BatchDependencyResult:
     graph_node_lookups: int = 0
     graph_node_fallbacks: int = 0
     input_runstates_elided: int = 0
+    input_runstates_constructed: int = 0
+    invariant_projection_reuses: int = 0
 
     @property
     def passed(self) -> bool:
@@ -497,6 +499,9 @@ def collect_batch_dependencies(
     variable_template_clones = 0
     graph_node_lookups = 0
     graph_node_fallbacks = 0
+    input_runstates_constructed = input_runstates_elided = 0
+    invariant_projection_reuses = 0
+    invariant_projection: BatchDependencyRun | None = None
     context_construction_seconds = 0.0
     reference_collection_seconds = 0.0
     database_projection_seconds = 0.0
@@ -528,6 +533,12 @@ def collect_batch_dependencies(
     # Uncached mode remains cache_scopes=False, regardless of compile_tree.
     compiled_tree = (CompiledControlTree.compile(model, variable_plan)
                      if compile_tree and variable_plan is not None else None)
+    # Only completely literal, scope-free, variable-free, BC-free leaf READs
+    # are certified equivalent across *distinct* flags. Never infer a
+    # shortcut from identical FileReference outputs of partial evaluations.
+    can_reuse_invariant_projection = (
+        compiled_tree is not None and compiled_tree.is_invariant_literal_model(model)
+    )
     compilation_seconds = perf_counter() - started
 
     for index, flags in enumerate(run_flags):
@@ -570,6 +581,24 @@ def collect_batch_dependencies(
                 ctx._batch_compiled_tree = compiled_tree
                 ctx._batch_run_index = index
                 ctx._batch_variable_assignments = variable_assignments
+            if can_reuse_invariant_projection and invariant_projection is not None:
+                # Construct Context first: malformed run flags must still fail
+                # for THIS run. The first complete, successfully resolved
+                # immutable projection is reused; neither mutable RunState nor
+                # its Command objects ever escape or cross run boundaries.
+                projected = BatchDependencyRun(
+                    index, flag_text, invariant_projection.file_references,
+                    invariant_projection.database_sources,
+                    invariant_projection.database_activations,
+                    None, invariant_projection.input_references,
+                    invariant_projection.ordered_inputs,
+                )
+                results.append(projected)
+                if cache_scopes:
+                    seen_flags[flag_text] = projected
+                invariant_projection_reuses += 1
+                input_runstates_elided += len(projected.ordered_inputs)
+                continue
             context_started = perf_counter()
             run = model.context(context=ctx, file_resolution='deferred')
             context_construction_seconds += perf_counter() - context_started
@@ -580,6 +609,7 @@ def collect_batch_dependencies(
             # particular, commands without FileReference must not disappear:
             # consumers need the original ordinals for database activation.
             active_inputs = tuple(run.find_input())
+            input_runstates_constructed += len(active_inputs)
             ordered_inputs = tuple(
                 BatchInputCommand(
                     input_uuid=str(inp.uuid),
@@ -627,6 +657,9 @@ def collect_batch_dependencies(
         results.append(projected)
         if cache_scopes:
             seen_flags[flag_text] = projected
+        if can_reuse_invariant_projection and invariant_projection is None and error is None:
+            # A failed first run must never certify a reusable projection.
+            invariant_projection = projected
         if isinstance(ctx, BatchContext):
             scope_builds += ctx.scope_builds
             scope_hits += ctx.scope_hits
@@ -676,4 +709,7 @@ def collect_batch_dependencies(
         compiled_graph_bypassed_reads=compiled_tree.bypassed_read_nodes if compiled_tree is not None else 0,
         graph_node_lookups=graph_node_lookups,
         graph_node_fallbacks=graph_node_fallbacks,
+        input_runstates_elided=input_runstates_elided,
+        input_runstates_constructed=input_runstates_constructed,
+        invariant_projection_reuses=invariant_projection_reuses,
     )
