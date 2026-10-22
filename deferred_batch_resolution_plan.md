@@ -146,3 +146,42 @@ Counts for first fixture: 500 distinct contexts constructed; **0 whole-run reuse
 **Current further work:** A narrow batch-only short circuit avoids `Command.reload_value()` for plain commands already expanded in `Command.__init__`, excluding EventCommand and any non-empty DEFINE blocks. Await the **exact-head** Windows regression and benchmark outcome before attributing any additional improvement to this change. New tests cover duplicate path UUID provenance, nested TGC owner/line metadata, invalid-context fail-closed clearing and dynamic event source separation.
 
 **Outstanding high-priority gates:** Exact eager/deferred/batch materialised parity for all valid supported inputs (including GIS attributes, active database rows, rainfall and raster metadata) remains owned by #1/#143. #5 still constructs one mutable context for each distinct complete flag combination: it does **not yet** compile a complete immutable cross-run dependency graph, skip all unchanged command constructors or provide end-to-end speedup evidence. The downstream ryan-tools #148 remains a separate draft, not merged into #143 or main.
+
+
+## 22 October continuation — resolved-reference signature and master sync
+
+After PR #1 merged into `master`, this branch was reconciled with its final
+merge commit; the six files added/changed upstream since the earlier development
+merge were verified to have **identical Git blob SHAs** in the batch branch.
+The merge synchronised ancestry without changing those file contents. PR #5
+now directly targets `master` and is kept **draft**.
+
+The opt-in cache now additionally supports fully resolved variable-derived READ
+commands **when the originating build input, expanded command text, owner,
+parts and relevant file/GIS configuration are identical**. The cache is bounded
+to 10,000 distinct resolved signatures per batch. Dynamic or incompletely
+resolved cases, DEFINE/EventCommand specialisations, unresolved event wildcards
+and unproven translations bypass caching and use the existing resolver.
+
+The result distinguishes genuine cross-run reference hits from repeated
+accesses within the same run and exposes
+`cross_run_reference_bypasses`, `unique_reference_signatures` and
+`within_run_reference_hits`. These counts describe syntactic reference
+projection only. No immutable run states or filesystem/GIS content are cached.
+A new collection call constructs a new cache; edited build-state commands
+cannot accidentally reuse results from an earlier call.
+
+New regression cases compare cached and uncached projections for scenario
+variables under distinct event flags, variable-derived GeoPackage layer names,
+distinct event-dependent file names and a subsequently edited loaded TCF.
+The latest Windows Python 3.12/3.14 jobs and complete example-model parity
+must pass before any acceptance or speedup claims for this work. Historical
+benchmark results in this document were recorded on earlier commits and do
+**not** measure the new cache or represent end-to-end performance.
+
+**Still outstanding:** compile the complete immutable cross-run dependency
+graph, including proven transitive variable/scope signatures; instrument
+command evaluation and bypass counts; obtain three-trial representative
+same-drive timing and exact materialised preflight parity on the new head
+through ryan-tools #148. Linux remains separate PR #4. No release, merge,
+consumer default switch or solver execution is part of this work.
