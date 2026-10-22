@@ -1,16 +1,18 @@
 # P5: Reduce repeated run-state construction in mixed control-file graphs
 
-**Status:** Agent implementation handoff; no P5 parser changes implemented yet.
+**Status:** Conservative P5 literal input-group implementation committed; CI and native acceptance pending.
 **Baseline:** `master` at `3de5cd954a5bf6739377937c8ff2fe3341e86bfc`.
 **Delivery:** PRs #6/#8/#9/#7/#10 were squash-merged as one atomic stack operation.
 **Updated:** 2026-10-23. **Next review:** 2026-10-30.
 
 ## Task for the implementing agent
 
-Improve the compiled graph so proven invariant command groups can avoid repeated
-input run-state construction inside otherwise dynamic models. Continue on this
-handoff branch and replace the draft PR description with the resulting code,
-validation and measured outcomes. Do not merge or publish the follow-up PR.
+Implement reusable groups only where inputs have independently proven invariant
+semantics; retain conservative fallback elsewhere. The first implementation on
+this branch elides repeated construction for eligible literal GIS CODE and GRID
+ZPTS leaf inputs even if the remainder of the model has variable/scenario/event
+commands. It does not yet certify general dynamic, DEFINE or database groups.
+Do not merge or publish until validation is complete.
 
 The merged graph is a conservative foundation, not a completed implementation of
 the broader optimisation. Native measurements below show graph traversal without
@@ -113,8 +115,35 @@ before choosing a design; the outline below is a proposal, not a proof.
   fixture hashes, parity findings, work-elision counters, measured performance,
   supported scope and remaining fallbacks. No engine/launcher run or release.
 
-## Delivery state
+## Implementation and delivery state
 
-This PR initially contains this handoff and a discovery link only. P5 optimisation
-is unfinished. Next action: implementing agent investigates group-level proofs,
-implements bounded reuse, and supplies the acceptance evidence above.
+- Introduced `group_input_reuse.py`, an invocation-local, at-most-10,000-entry
+  prototype cache. Eligible reads must have an exact compiled node identity,
+  global scope, literal `.shp/.tif/.asc/.flt` path, supported READ command,
+  matching source text and settings, no event/wildcard/DEFINE/variable syntax,
+  and no spatial database. The normal Context still checks activation before
+  attempting reuse. An entire successful run must seed the cache; failed runs
+  do not certify prototypes.
+- Cloned states get separate RunState, Command, expander, config and mutable
+  GIS/grid state. Normal constructor/resolver fallback remains available.
+  The existing immutable ordered input/reference/database provenance and
+  deferred materialisation still run for every distinct context.
+- New tests check mixed/nested branch parity, failure isolation, earlier-state
+  mutations and model edits between invocations. Windows hosted tests and
+  public tutorial differential are the ongoing acceptance gates.
+- Observed in preliminary Windows Python 3.12/3.14 focused runs: the 500-run
+  mixed model now elides 499 input constructors while keeping full reference
+  parity; scenario-only whole-run reuse additionally avoids one constructor.
+  These are correctness counts, **not** evidence of a speedup.
+- Native SMB parser/consumer parity and three rotated same-head timings have
+  **not** been rerun for this implementation; they remain restricted to the
+  designated SMB agent. Never copy native model data to CI or GitHub.
+- Consumer topology: ryan-tools [#143](https://github.com/Chain-Frost/ryan-tools/pull/143)
+  has a separate stacked child [#156](https://github.com/Chain-Frost/ryan-tools/pull/156)
+  for ordered input/BC activation ownership. Neither consumer branch is being
+  merged or repinned by this PR.
+
+**Remaining:** complete passing exact-head CI and public tutorial parity; validate
+native materialisation and measure any actual benefit; investigate broader
+scenario-group eligibility only when it can be proven without losing provenance.
+This PR remains draft; do not merge or publish.
