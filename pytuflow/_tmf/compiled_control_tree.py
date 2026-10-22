@@ -42,6 +42,7 @@ class CompiledControlNode:
     line_number: int
     command_name: str
     original_text: str
+    raw_value: str | None
     scope: tuple[str, ...]
     branch_conditions: tuple[CompiledBranchDependency, ...]
     role: str
@@ -109,6 +110,7 @@ class CompiledControlTree:
                 line_number=inp.line_number,
                 command_name=name,
                 original_text=str(command.original_text),
+                raw_value=str(command.value_orig) if command.value_orig is not None else None,
                 scope=tuple(str(s) for s in inp.scope),
                 branch_conditions=tuple(
                     CompiledBranchDependency(
@@ -148,3 +150,38 @@ class CompiledControlTree:
             node.role == 'READ' and node.bypass_reason is not None
             for node in self.nodes
         )
+
+    def is_invariant_literal_model(self, model: TCF) -> bool:
+        """Prove one narrow class of entire models is independent of run flags.
+
+        A completely literal, top-level GIS/code or grid READ-only model
+        cannot change its active command stream, variable map, or BC source
+        activations with event/scenario flags. No INCLUDE, DEFINE, TEF, global
+        substitutions, spatial database or non-READ commands are permitted.
+        This deliberately excludes most real TCFs; all others use the
+        ordinary per-run resolver. A valid first projection is still required.
+        """
+        config = model.config
+        if (not self.nodes or config.event_db or config.variables
+                or config.scenarios or config.spatial_database):
+            return False
+        safe_suffixes = {'.shp', '.tif', '.asc', '.flt'}
+        for node in self.nodes:
+            if (node.role != 'READ' or node.bypass_reason is not None
+                    or node.read_dependency is None
+                    or node.read_dependency.relevant_variables
+                    or node.command_name not in ('READ GIS CODE', 'READ GRID ZPTS')
+                    or not node.raw_value
+                    or any(branch.scope_type != 'GLOBAL'
+                           or branch.negated or branch.else_branch
+                           for branch in node.branch_conditions)):
+                return False
+            raw = node.raw_value.strip()
+            # No event marker, variable, wildcard, GPkg selector, multipart
+            # command, or other parser-dependent path syntax is provably
+            # context invariant across flags.
+            if (raw.casefold().find('_event_') != -1
+                    or any(token in raw for token in '<>~*?|#$%')
+                    or Path(raw).suffix.lower() not in safe_suffixes):
+                return False
+        return True
