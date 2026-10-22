@@ -8,6 +8,8 @@ on:
       - "tests/test_deferred_file_references.py"
       - "tests/test_deferred_database_parity.py"
       - "tests/test_batch_dependencies.py"
+      - "tests/benchmark_batch_dependencies.py"
+      - "tests/profile_batch_dependencies.py"
       - ".github/workflows/deferred-file-references.yml"
   workflow_dispatch:
 
