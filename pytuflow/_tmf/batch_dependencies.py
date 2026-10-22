@@ -41,6 +41,9 @@ class BatchContext(Context):
         # Share only decisions depending exclusively on scenario membership.
         # No event, TEF or user-defined variable scopes can enter this cache.
         self._shared_scope_decisions = shared_scope_decisions
+        self._shared_file_references = None
+        self.shared_reference_hits = 0
+        self.shared_reference_misses = 0
         self.shared_scope_hits = 0
         self.shared_scope_misses = 0
         self._batch_scopes = None
@@ -123,6 +126,30 @@ class BatchContext(Context):
             self._shared_scope_decisions[shared_key] = (req_scope, active)
         return active
 
+    def cached_file_references(self, build_input, materialised_input):
+        """Reuse literal immutable references from this batch's parsed TCF.
+
+        A context-dependent command must use PyTUFLOW's existing resolver.
+        The cache holds the original build-state input to prevent id reuse.
+        No mutable command, config or run-state is shared between contexts.
+        """
+        if not self._batch_active or self._shared_file_references is None:
+            return materialised_input.file_references
+        rhs = str(build_input.rhs)
+        # The tilde and variable forms include TEF/event wildcards. Avoid
+        # guessing how they resolve; the standard resolver remains authoritative.
+        if not rhs or '<<' in rhs or '~' in rhs or self.translate(rhs) != rhs:
+            return materialised_input.file_references
+        key = (id(build_input), rhs)
+        cached = self._shared_file_references.get(key)
+        if cached is not None and cached[0] is build_input:
+            self.shared_reference_hits += 1
+            return cached[1]
+        refs = materialised_input.file_references
+        self._shared_file_references[key] = (build_input, refs)
+        self.shared_reference_misses += 1
+        return refs
+
     def translate(self, item):
         if not self._batch_active or not isinstance(item, (str, TuflowPath)):
             return super().translate(item)
@@ -160,6 +187,8 @@ class BatchDependencyResult:
     translation_misses: int
     contexts_constructed: int
     contexts_reused: int
+    cross_run_reference_hits: int
+    cross_run_reference_misses: int
     cross_run_scope_hits: int
     cross_run_scope_misses: int
 
@@ -187,7 +216,9 @@ def collect_batch_dependencies(
     contexts_constructed = contexts_reused = 0
     scope_builds = scope_hits = translation_hits = translation_misses = 0
     cross_run_scope_hits = cross_run_scope_misses = 0
+    cross_run_reference_hits = cross_run_reference_misses = 0
     shared_scope_decisions = {} if cache_scopes else None
+    shared_file_references = {} if cache_scopes else None
     # Control-file traversal to locate Set Variable declarations was previously
     # repeated for every run. The parsed input objects and their scopes are
     # shared; active-variable values are still computed independently per run.
@@ -221,6 +252,8 @@ def collect_batch_dependencies(
             ctx = (BatchContext(flags, config=model.config, variable_inputs=variable_inputs,
                                 shared_scope_decisions=shared_scope_decisions)
                    if cache_scopes else Context(flags, config=model.config))
+            if isinstance(ctx, BatchContext):
+                ctx._shared_file_references = shared_file_references
             run = model.context(context=ctx, file_resolution='deferred')
             refs = tuple(ref for inp in run.find_input() for ref in inp.file_references)
             activations = run.deferred_database_activations()
@@ -248,6 +281,8 @@ def collect_batch_dependencies(
             translation_misses += ctx.translation_misses
             cross_run_scope_hits += ctx.shared_scope_hits
             cross_run_scope_misses += ctx.shared_scope_misses
+            cross_run_reference_hits += ctx.shared_reference_hits
+            cross_run_reference_misses += ctx.shared_reference_misses
 
     if not results:
         raise ValueError('At least one simulation context is required')
@@ -255,5 +290,6 @@ def collect_batch_dependencies(
         tuple(results), perf_counter() - started,
         scope_builds, scope_hits, translation_hits, translation_misses,
         contexts_constructed, contexts_reused,
+        cross_run_reference_hits, cross_run_reference_misses,
         cross_run_scope_hits, cross_run_scope_misses,
     )
