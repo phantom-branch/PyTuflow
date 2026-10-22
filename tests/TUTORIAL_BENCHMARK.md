@@ -65,6 +65,28 @@ phase timings, and ~20 ms sampled RSS **if psutil is installed**.
 Sampled RSS is not an exact allocation peak or proof of memory savings.
 Phases are measured independently and need not sum exactly to wall time.
 
+## Optional full public CI replay
+
+PR unit-test CI checks syntactic fixture safety and four-mode parity on
+minimal correctness fixtures, **not** the full 161-TCF tutorial dataset.
+
+To run the complete approved public replay without an SMB workstation,
+apply the `run-public-tutorial` label to PR #7. Its
+`public-tutorial-replay` Windows Python 3.14 job checks out a specific
+public ryan-tools-test-data revision
+(`d2dae3ecf9a7ed306e1340de54a8d12ca9f53f58`), verifies the pinned
+ZIP/member hashes and manifest, then benchmarks all documented TCF/run
+combinations with three rotated trials and attaches a JSON report.
+Any unsupported case, missing/extra identity, unresolved primary path or
+run error fails the job. No solver is started. The job is opt-in to avoid
+unnecessary Windows CI cost. Once the workflow exists on the default branch,
+it can also be triggered via `workflow_dispatch` with its
+`run_public_tutorial` option.
+
+The uploaded JSON is **public tutorial syntactic evidence only**; materialised
+GIS/BC/attribute checks require the independent ryan-tools public preflight
+runner, and the native SMB benchmark remains a later separate agent task.
+
 ## Current comparison and limitations
 
 The harness compares **four modes on the same source checkout and parsed TCF**:
