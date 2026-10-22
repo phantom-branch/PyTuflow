@@ -37,6 +37,9 @@ from pytuflow._tmf.batch_dependencies import (
     BatchInputReference,
 )
 
+PUBLIC_ARCHIVE_SHA256 = "e374c8e072679fc6c4dc11e63b270caa1101b6aebb84d70060872cdd1b0aa7d6"
+PUBLIC_INVENTORY = (1464, 161, 174)  # source files, TCFs, documented combinations
+
 FLAG = re.compile(r'(?<!\S)-([es]\d)\s+(?:"([^"]+)"|(\S+))', re.IGNORECASE)
 TCF_NAME = re.compile(r'([^\s"/\\]+\.tcf)', re.IGNORECASE)
 IGNORED = ("set ", "rem ", "@rem ", "::", "echo ", "@echo ")
@@ -62,9 +65,20 @@ PHASES = (
 )
 
 
-def verify_bundle(bundle: Path) -> tuple[dict, dict[str, int]]:
-    """Verify checksum, size, all members and traversal safety before extraction."""
+def verify_bundle(
+    bundle: Path, *,
+    expected_archive_sha256: str | None = PUBLIC_ARCHIVE_SHA256,
+    expected_inventory: tuple[int, int, int] | None = PUBLIC_INVENTORY,
+) -> tuple[dict, dict[str, int]]:
+    """Verify approved archive identity, member hashes and traversal safety.
+
+    Overrides are for tiny correctness-test fixtures only. Production
+    benchmark entry points always enforce the pinned public archive.
+    """
     manifest = json.loads((bundle / "manifest.json").read_text(encoding="utf-8"))
+    if (expected_archive_sha256 is not None
+            and manifest["archive_sha256"] != expected_archive_sha256):
+        raise ValueError("This is not the pinned public tutorial archive SHA-256")
     archive_path = bundle / "examples.zip"
     archive_hash = hashlib.sha256()
     with archive_path.open("rb") as handle:
@@ -101,6 +115,9 @@ def verify_bundle(bundle: Path) -> tuple[dict, dict[str, int]]:
     baseline = {row["tcf"]: int(row["runs"]) for row in rows}
     if len(baseline) != len(rows) or not baseline:
         raise ValueError("Duplicate or empty tutorial baseline")
+    if (expected_inventory is not None
+            and (len(expected), len(baseline), sum(baseline.values())) != expected_inventory):
+        raise ValueError("Public tutorial baseline or member-count mismatch")
     return manifest, baseline
 
 
