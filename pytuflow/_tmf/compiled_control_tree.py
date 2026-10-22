@@ -15,6 +15,19 @@ from typing import TYPE_CHECKING, Mapping
 
 from .compiled_dependency_plan import CompiledReadDependency, CompiledVariablePlan
 
+
+@dataclass(frozen=True, slots=True)
+class CompiledBranchDependency:
+    """Snapshot of an ordered scope/branch, including ELSE and negation."""
+
+    scope_type: str
+    names: tuple[str, ...]
+    variable: str | None
+    negated: bool
+    else_branch: bool
+    known: bool
+
+
 if TYPE_CHECKING:
     from .cf.tcf import TCF
 
@@ -30,6 +43,7 @@ class CompiledControlNode:
     command_name: str
     original_text: str
     scope: tuple[str, ...]
+    branch_conditions: tuple[CompiledBranchDependency, ...]
     role: str
     read_dependency: CompiledReadDependency | None
     bypass_reason: str | None
@@ -96,6 +110,17 @@ class CompiledControlTree:
                 command_name=name,
                 original_text=str(command.original_text),
                 scope=tuple(str(s) for s in inp.scope),
+                branch_conditions=tuple(
+                    CompiledBranchDependency(
+                        scope_type=str(scope.type).upper(),
+                        names=tuple(map(str, scope.names)),
+                        variable=str(scope.var) if scope.var is not None else None,
+                        negated=scope.is_neg(),
+                        else_branch=bool(getattr(scope, '_else', False)),
+                        known=bool(scope.known),
+                    )
+                    for scope in inp.scope
+                ),
                 role=role,
                 read_dependency=read,
                 bypass_reason=reason,
