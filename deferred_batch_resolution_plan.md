@@ -208,3 +208,45 @@ The full immutable dependency graph and any elimination of redundant
 `InputRunState`/`Command` allocations remain outstanding; the new command
 counter explicitly measures this cost. Windows exact-head validation and
 materialised parity must be checked before final review.
+
+### Literal command template compilation — further development
+
+An additional **batch-only** compiled-command pathway now avoids constructing
+a full `Command` parser object on every run for the same proven-literal
+`READ GIS ...` or `READ GRID ...` input. The first eligible evaluation
+creates a normal deferred `Command` and retains a private prototype under a
+per-batch signature comprising input identity, expanded command text, parent,
+part/line provenance and relevant GIS/grid/control-file settings. Subsequent
+equivalent evaluations create an independent shallow copy with a **fresh
+configuration snapshot and expander**. A prototype is never directly returned.
+This is a limited *command-template cache*, **not yet a compiled dependency
+graph** and not a means of sharing mutable run-state objects.
+
+Eligibility intentionally excludes EventCommand or other specialisations,
+variable-substituted expressions, DEFINE blocks, event wildcards, GeoPackage
+`>>` expressions, and other cases whose semantics are not proven static.
+These use the established constructor. Command-template entries are bounded
+to 10,000 per invocation; all caches are discarded after
+`collect_batch_dependencies` returns. A second invocation after editing the
+loaded build state therefore starts fresh. Existing eager and individual
+deferred contexts are unchanged.
+
+Added batch counters:
+
+- `commands_constructed`: normal command constructors executed along the
+  opt-in batch path, including bypassed commands.
+- `commands_cloned`: template-copy operations replacing eligible constructors.
+- `command_template_bypasses`: commands not eligible, or excluded by capacity.
+- `unique_command_templates`: retained prototype count.
+
+Regression coverage verifies cached-versus-uncached immutable dependency
+identities, retained input UUID/owner/command order, independent per-run
+mutable command/config/expander state, safe fallback for event-dependent
+paths and absence of stat/glob/open probes after initial parse.
+
+**Acceptance:** record current-head Windows 3.12/3.14 CI and strict
+161-TCF/174-run read-only example parity before claiming validation. Compare
+three alternating warm-cache trials of the same workloads on the same runner;
+these are parser/reference timings only, not native 240/440/500-run or network
+drive performance. An immutable graph with transitive context/variable
+signatures and elimination of input run-state allocation remain unimplemented.
