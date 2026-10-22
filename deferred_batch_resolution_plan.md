@@ -296,3 +296,91 @@ dependencies remain handled by the original run-state and downstream
 materialisation paths. The current-head Windows CI, strict 174-run replay,
 and new variable-heavy timing must be verified before signing off. No
 merger, publication, production repin, or solver execution is authorised.
+
+
+### Native downstream evaluation checkpoint - 22 October 2026
+
+Parser source `b1c9cfd4712b2ee7a7bd35ef0ec7ca32c9de6b92` passes the affected local
+218-test regression selection and both exact-head Windows workflows:
+[deferred references](https://github.com/phantom-branch/PyTuflow/actions/runs/39788800172)
+and [strict example replay](https://github.com/phantom-branch/PyTuflow/actions/runs/39788800177).
+The downstream diagnostic at `4ad6f1407e9ecf44a4c61bd3dc230520cf6ac58a` also passes
+its exact-source local strict 161-TCF / 174-run eager/deferred/batch materialisation
+comparison and the dedicated hosted batch smoke.
+
+Native SSD and SMB three-mode rechecks are in progress. The larger SMB launcher
+was read without execution: its requested parameter product has 792 combinations,
+rather than the active text-file mode's 14 commands. A separate read-only PO-source
+existence check finds 787/792 expected files absent, affecting both catchments.
+Keep these input-data findings separate from parser defects and do not claim an
+accepted overall speedup for that incomplete workload. Private model paths and
+reports remain outside either repository.
+
+This revision excludes output/check/log folder destinations from required-input
+validation, matching existing eager behaviour, and selects a contextual cached
+source table under one primary declaration without new filesystem reads. The
+latter repairs the new shared source-inspection API for eager callers too; it is
+not an original eager `.files` fix. See `eager_source_completeness_fixes.md` for the
+separate compatibility account. The owner's two-BC-declaration investigation is
+explicitly deferred. Repeated run-state construction remains; the broader
+immutable control-file graph is future work, not part of these compatibility fixes.
+
+
+### Replacement native model and existing eager fixes
+
+The owner replaced the incomplete 792-combination model with a saved 480-command
+model on local SSD, then copied that model to an SMB share for matched-storage
+comparison. The command-file bytes and all 480 parsed flag dictionaries match.
+The owner intentionally omitted unrelated files; acceptance uses the required-input
+inventory, not equality of project directory contents. Large binaries are size-checked,
+not claimed byte-hashed. Detailed manifests and model identifiers remain private.
+
+Source `a9f654c1ec0812fc70035e227fb2f9f12290f449` separately repairs existing slot-nine
+conditional scopes and material CSV separator/comment handling. Both are original
+eager/shared behaviour fixes, explicitly separated from deferred functionality in
+`eager_source_completeness_fixes.md`. The affected local selection passes 223 tests;
+exact-head deferred reference and strict archive workflows both pass:
+[reference CI](https://github.com/phantom-branch/PyTuflow/actions/runs/39791230176),
+[archive CI](https://github.com/phantom-branch/PyTuflow/actions/runs/39791230068).
+The replacement model passes the representative eager/deferred/batch materialisation
+and matching public inventory checks with no findings. Full trials are in progress.
+
+
+## Interim native benchmark results (2026-10-22)
+
+PyTUFLOW **1.2.6**, source `a9f654c1ec0812fc70035e227fb2f9f12290f449`; consumer diagnostic
+`2e03c0b110a272d9c6a05cc6da3bc08817130164`, Windows Python 3.14. Three sequential warm-cache
+trials per model, rotating eager/deferred/batch order. The 480-run local and SMB tests use identical saved
+command-file bytes and flags. The owner intentionally removed irrelevant files from the network copy.
+
+| Model | Storage | Runs | Eager median, s | Deferred median, s | Batch median, s |
+| --- | --- | ---: | ---: | ---: | ---: |
+| P | SSD | 4 | 1.234 | 0.852 | 0.688 |
+| B | SSD | 240 | 62.640 | 40.876 | 26.285 |
+| M480 | SSD | 480 | 118.843 | 65.007 | 45.223 |
+| M480 | SMB | 480 | 229.062 | 91.844 | 70.014 |
+
+All listed full trials have identical materialised `(run, flags, normalised command, physical path, layer)`
+sets across modes and **zero collection/inventory findings**. P/B and M480 SSD also pass the separate full
+public individual/batch preflight with matching checked paths and issue sets. **Still running:** M480 SMB's
+final public comparison, followed by the newly supplied 42-command network model. Do not describe those
+pending gates as passed.
+
+Timings include parsing, reference materialisation, diagnostic physical-path identity normalisation and
+shared inventory. They exclude process startup, report writing and the separately repeated public-preflight
+comparison (which validates raster headers). These are diagnostic timings, not complete launcher wall times.
+No native data or identifying P/B paths are committed; no model simulation is launched.
+
+Source fixes are split explicitly: `a9f654c` repairs existing eager/shared ninth-slot conditional scopes and
+materials CSV blank/comment loading; `b1c9cfd` repairs the new shared cached-source accessor (including eager
+callers) and deferred/batch output-folder compatibility. The UNC/mapped-drive inventory fix is diagnostic-only.
+The affected upstream selection passes **223 tests**; dedicated consumer checks pass **59 deferred + 9
+batch/diagnostic tests** and strict **161-TCF / 174-run** replay. The general Python workflow separately fails
+one Nmx snapshot column-axis pandas StringDtype comparison (`<NA>` versus `nan`); do not claim all CI green.
+
+Batch still constructs one context per run (480 for M480). The broader immutable control-file graph remains
+future optimisation. The owner explicitly deferred the two-BC model. The incomplete 792-run model was replaced;
+its direct expected PO-file existence check found GD08 393/396 and GD14 394/396 absent, not a valid benchmark.
+
+The consumer work record is the authoritative native-evaluation status:
+https://github.com/Chain-Frost/ryan-tools/blob/feat/tuflow-run-preflight/docs/work/2026-10-22-tuflow-batch-preflight-optimisation.md
