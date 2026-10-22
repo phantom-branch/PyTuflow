@@ -45,6 +45,9 @@ COUNTERS = (
     "commands_cloned", "command_template_bypasses", "unique_command_templates",
     "compiled_variable_nodes", "compiled_read_nodes", "command_plan_hits",
     "variable_template_clones", "scope_builds", "scope_hits",
+    "graph_node_evaluations", "graph_nodes_skipped", "graph_hits",
+    "graph_bypasses", "run_state_constructors",
+    "relevant_context_signatures",
     "cross_run_scope_hits", "cross_run_scope_misses", "translation_hits",
     "translation_misses", "cross_run_reference_hits",
     "cross_run_reference_misses", "cross_run_reference_bypasses",
@@ -199,6 +202,11 @@ def compare_runs(reference: tuple[BatchDependencyRun, ...],
             b = Counter(json.dumps(item, sort_keys=True) for item in right[key])
             missing += sum((a - b).values())
             extra += sum((b - a).values())
+            # A pure reorder is still a parity failure, even when
+            # both multisets contain exactly the same identities.
+            if a == b and left[key] != right[key]:
+                missing += 1
+                extra += 1
     return {"missing": missing, "extra": extra}
 
 
@@ -306,6 +314,8 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
     results: dict[str, list[dict]] = {mode: [] for mode in modes}
     differences: dict[str, dict[str, int]] = {}
     errors: dict[str, int] = {}
+    error_totals: Counter[str] = Counter()
+    observed: tuple[BatchDependencyRun, ...] = ()
     gc.collect()
     initial = perf_counter()
     model = TCF(tcf)
@@ -323,8 +333,10 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
             projections[mode] = projection
             results[mode].append(stats)
         baseline = projections["individual_deferred"]
+        observed = baseline
         for mode in modes:
             errors[mode] = sum(case.error is not None for case in projections[mode])
+            error_totals[mode] += errors[mode]
             diff = compare_runs(baseline, projections[mode])
             previous = differences.get(mode, {"missing": 0, "extra": 0})
             differences[mode] = {
@@ -334,6 +346,14 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
     valid = all(count == 0 for count in errors.values()) and all(
         difference == {"missing": 0, "extra": 0} for difference in differences.values()
     )
+    primary_paths = {
+        str(ref.path_pattern)
+        for case in observed for ref in case.file_references
+    }
+    secondary_paths = {
+        str(source.path_pattern)
+        for case in observed for source in case.database_sources
+    }
     return {
         "model": tcf.name,
         "status": "passed_syntactic_parity" if valid else "failed_or_unsupported",
@@ -346,6 +366,13 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
         "trials": trials,
         "differences_across_trials": differences,
         "failed_runs_last_trial": errors,
+        "failed_runs_across_trials": dict(error_totals),
+        "per_run_reference_total": sum(len(case.file_references) for case in observed),
+        "per_run_secondary_source_total": sum(len(case.database_sources) for case in observed),
+        "physically_unique_paths": None,
+        "unique_lexical_primary_paths": len(primary_paths),
+        "unique_lexical_primary_and_secondary_paths": len(primary_paths | secondary_paths),
+        "note_unique_paths": "Lexical syntactic only; physical aliases and GIS materialisation not checked",
         "modes": {
             mode: {
                 "total_seconds": {
