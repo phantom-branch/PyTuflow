@@ -471,13 +471,15 @@ def collect_batch_dependencies(
     run_flags: Iterable[str | dict[str, str]],
     *,
     cache_scopes: bool = True,
+    compile_tree: bool = True,
 ) -> BatchDependencyResult:
     """Collect **syntactic** dependencies without inspecting physical inputs.
 
     The caller must still bulk materialise wildcard paths, GIS attributes,
     database/table links and raster metadata, and check every unique input.
     Unsupported or malformed contexts are returned as explicit per-run errors;
-    their partial references must never be accepted.
+    their partial references must never be accepted. With compile_tree=False,
+    the original per-batch caches remain on, isolating the graph's contribution.
     """
     started = perf_counter()
     results: list[BatchDependencyRun] = []
@@ -521,7 +523,11 @@ def collect_batch_dependencies(
             variable_assignments = None
 
     variable_plan = CompiledVariablePlan.from_assignments(variable_assignments) if cache_scopes else None
-    compiled_tree = CompiledControlTree.compile(model, variable_plan) if variable_plan is not None else None
+    # Same-revision P3 differential baseline: opt out of the graph only,
+    # retaining all pre-existing per-batch scope/reference/command caches.
+    # Uncached mode remains cache_scopes=False, regardless of compile_tree.
+    compiled_tree = (CompiledControlTree.compile(model, variable_plan)
+                     if compile_tree and variable_plan is not None else None)
     compilation_seconds = perf_counter() - started
 
     for index, flags in enumerate(run_flags):
