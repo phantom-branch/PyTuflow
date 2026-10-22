@@ -260,9 +260,23 @@ class BatchContext(Context):
                 node = self._batch_compiled_tree.node_for(build_input)
                 if node is not None and node.original_text == source_command.original_text:
                     self.graph_node_lookups += 1
-                    if node.role == 'READ' and node.bypass_reason is None:
-                        plan = node.read_dependency
-                        self.command_plan_hits += 1
+                    if node.role == 'READ':
+                        # The original compiled_read_nodes metric counts
+                        # plans *encountered by active runs*, including
+                        # conservative bypasses.  Precompiling inactive
+                        # branches must not inflate that counter; separate
+                        # compiled_graph_* fields describe the whole tree.
+                        key = id(build_input)
+                        saved = self._shared_read_plans.get(key)
+                        if saved is None or saved[0] is not build_input:
+                            if len(self._shared_read_plans) < 10_000:
+                                self._shared_read_plans[key] = (
+                                    build_input, str(source_command.value_orig),
+                                    node.read_dependency,
+                                )
+                        if node.bypass_reason is None:
+                            plan = node.read_dependency
+                            self.command_plan_hits += 1
                 else:
                     # In-batch model mutation or unindexed inputs must use
                     # the original constructor and resolver, never stale data.
@@ -699,9 +713,9 @@ def collect_batch_dependencies(
         command_template_bypasses,
         len(shared_command_templates) if shared_command_templates is not None else 0,
         len(variable_plan.dependencies) if variable_plan is not None else 0,
-        (sum(node.role == 'READ' for node in compiled_tree.nodes)
-         if compiled_tree is not None else
-         len(shared_read_plans) if shared_read_plans is not None else 0),
+        # Same semantics with or without precompilation: unique READ plans
+        # encountered by evaluated (active) commands, not every graph node.
+        len(shared_read_plans) if shared_read_plans is not None else 0,
         command_plan_hits,
         variable_template_clones,
         compiled_graph_nodes=len(compiled_tree.nodes) if compiled_tree is not None else 0,
