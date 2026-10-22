@@ -467,8 +467,8 @@ open/directory/SQLite/glob calls, not all native/stat I/O; retain independent no
   compatibility (b1c9cfd), and diagnostic mapped-drive SQLite handling remain separately identified.
 - The replaced 792-run workload is not accepted: direct PO-file existence checks found GD08 393/396 and
   GD14 394/396 absent. This is not a reason to suppress findings or silently skip both catchments.
-- N42 here is the newly supplied 42-command network benchmark. It does not reinstate the withdrawn external
-  42-run gate. The historical external 440-run evidence is revision-specific and was not rerun on this machine.
+- N42 is the 42-command network benchmark. The historical external 440-run evidence is revision-specific
+  and was not rerun on this machine.
 - The owner explicitly postponed the two-BC-model investigation. No new two-BC functionality is claimed.
 - General Python CI separately fails the Nmx snapshot column-axis StringDtype NA-value comparison
   (`<NA>` versus `nan`): 1380 passed, 6 skipped, 7 deselected, one failure on source 2e03c0b.
