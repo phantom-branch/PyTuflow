@@ -176,9 +176,11 @@ class CompiledControlTree:
                 return False
             if any(
                 scope.scope_type not in ('GLOBAL', 'SCENARIO')
-                or not scope.known
-                or scope.variable is not None
-                and str(scope.variable).startswith('<<')
+                or (scope.scope_type == 'SCENARIO' and (
+                    not scope.known
+                    or (scope.variable is not None
+                        and str(scope.variable).startswith('<<'))
+                ))
                 for scope in node.branch_conditions
             ):
                 return False
