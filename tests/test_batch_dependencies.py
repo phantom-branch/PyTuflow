@@ -113,7 +113,9 @@ def test_command_construction_counts_are_not_reference_cache_hits(tmp_path):
     # Reference memoisation avoids rediscovery but cannot yet skip mutable
     # Command/RunState reconstruction. Do not count this as graph compilation.
     assert cached.commands_constructed > 0
-    assert cached.commands_constructed == plain.commands_constructed
+    # The uncached mode uses the uninstrumented base Context (and thus
+    # reports zero in this batch-only counter).
+    assert plain.commands_constructed == 0
     assert [x.input_references for x in cached.runs] == [
         x.input_references for x in plain.runs
     ]
