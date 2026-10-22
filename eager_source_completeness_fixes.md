@@ -1,6 +1,7 @@
 # Eager source completeness: separate review record
 
-Updated: 2026-10-22. Status: implemented locally, unstaged and uncommitted.
+Updated: 2026-10-22. Status: implementation committed and pushed as `22e2413`;
+exact-head hosted acceptance and final review remain pending.
 Base: `546ab20`, branch `feat/deferred-file-resolution`.
 
 This record separates changes affecting eager consumers from the
@@ -109,6 +110,9 @@ or published-package acceptance. The comparator was not relaxed.
 No default-mode change, redefinition of `.files`, upstream eager GIS feature join,
 new performance benchmark or engine execution is included. Review the eager
 correction and additive API explicitly when preparing commits/release notes;
-deferred parsing acceptance remains a separate work item. Both repositories need
-review/commit, then the consumer's immutable upstream CI pin needs updating before
-hosted validation can cover these changes.
+deferred parsing acceptance remains a separate work item. The tested source is now
+committed as upstream `22e2413` and consumer `09dfd502`. The upstream example workflow
+pins that fixed consumer and requires all 161 TCFs/174 runs with zero missing/extra
+identities. The downstream upstream-parser pin is updated separately. A successful
+exact-head hosted replay and the native-model/activation checks remain merge gates;
+the local results above are not relabelled as hosted results.
