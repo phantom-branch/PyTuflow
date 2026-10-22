@@ -376,6 +376,7 @@ class TCF(ControlFileLoadMixin, TuflowControlFileMixin, TCFBuildState):
         run_flags: typing.Iterable[str | dict[str, str]],
         *,
         cache_scopes: bool = True,
+        compile_tree: bool = True,
     ) -> 'BatchDependencyResult':
         """Project many deferred run dependencies without materialising files.
 
@@ -385,4 +386,6 @@ class TCF(ControlFileLoadMixin, TuflowControlFileMixin, TCFBuildState):
         """
         from ..batch_dependencies import collect_batch_dependencies
 
-        return collect_batch_dependencies(self, run_flags, cache_scopes=cache_scopes)
+        return collect_batch_dependencies(
+            self, run_flags, cache_scopes=cache_scopes, compile_tree=compile_tree,
+        )
