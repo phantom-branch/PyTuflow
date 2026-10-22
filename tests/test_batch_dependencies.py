@@ -112,13 +112,73 @@ def test_command_construction_counts_are_not_reference_cache_hits(tmp_path):
     assert cached.cross_run_reference_hits > 0
     # Reference memoisation avoids rediscovery but cannot yet skip mutable
     # Command/RunState reconstruction. Do not count this as graph compilation.
-    assert cached.commands_constructed > 0
-    # The uncached mode uses the uninstrumented base Context (and thus
-    # reports zero in this batch-only counter).
+    assert cached.commands_constructed >= 1
+    assert cached.commands_cloned > 0
+    assert cached.unique_command_templates >= 1
+    assert cached.commands_constructed + cached.commands_cloned == 40
+    # The uncached mode uses the uninstrumented base Context.
     assert plain.commands_constructed == 0
     assert [x.input_references for x in cached.runs] == [
         x.input_references for x in plain.runs
     ]
+
+
+def test_command_templates_keep_mutable_objects_private(tmp_path):
+    source = tmp_path / 'static.tcf'
+    source.write_text('Read GIS Code == gis/static.shp\\n', encoding='utf-8')
+    model = TCF(source)
+
+    first_ctx = BatchContext('-e1 A', config=model.config)
+    shared_templates = {}
+    first_ctx._shared_command_templates = shared_templates
+    first = model.context(context=first_ctx, file_resolution='deferred')
+    second_ctx = BatchContext('-e1 B', config=model.config)
+    second_ctx._shared_command_templates = shared_templates
+    second = model.context(context=second_ctx, file_resolution='deferred')
+    first_cmd = first.find_input(lhs='read gis code')[0]._command
+    second_cmd = second.find_input(lhs='read gis code')[0]._command
+    assert first_cmd is not second_cmd
+    assert first_cmd.config is not second_cmd.config
+    assert first_cmd._expander is not second_cmd._expander
+    assert first_ctx.commands_constructed >= 1
+    assert second_ctx.commands_cloned >= 1
+
+    second_cmd.config.file_resolution = 'eager'
+    second_cmd.value = 'corrupted'
+    second_cmd._expander._expanded_value = 'corrupted'
+    assert first_cmd.config.file_resolution == 'deferred'
+    assert first_cmd.value != 'corrupted'
+    assert first_cmd._expander._expanded_value != 'corrupted'
+    assert first.find_input(lhs='read gis code')[0].file_references[0].path_pattern.name == 'static.shp'
+
+
+def test_event_dependent_read_command_bypasses_compiled_template(tmp_path):
+    source = tmp_path / 'event.tcf'
+    source.write_text('Read GIS Code == gis/<<E1>>.shp\\n', encoding='utf-8')
+    model = TCF(source)
+    flags = tuple(f'-e1 TP{i:03d}' for i in range(12))
+    batch = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert batch.passed and baseline.passed
+    assert batch.commands_cloned == 0
+    assert batch.command_template_bypasses > 0
+    assert [r.input_references for r in batch.runs] == [
+        r.input_references for r in baseline.runs
+    ]
+
+
+def test_compiled_commands_do_not_probe_disk_after_parse(tmp_path):
+    model = _make_model(tmp_path)
+    flags = tuple(f'-s1 DEV -e1 TP{i:03d}' for i in range(12))
+    with (
+        patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
+        patch.object(Path, 'stat', side_effect=AssertionError('stat')),
+        patch.object(Path, 'open', side_effect=AssertionError('open')),
+    ):
+        batch = model.collect_batch_dependencies(flags)
+    assert batch.passed
+    assert batch.commands_cloned > 0
+    assert batch.unique_command_templates >= 1
 
 
 def test_single_context_default_stays_eager(tmp_path):
