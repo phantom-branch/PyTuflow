@@ -185,3 +185,26 @@ command evaluation and bypass counts; obtain three-trial representative
 same-drive timing and exact materialised preflight parity on the new head
 through ryan-tools #148. Linux remains separate PR #4. No release, merge,
 consumer default switch or solver execution is part of this work.
+
+### Phase instrumentation and safe GIS fallback
+
+The batch result now reports measured one-time variable/declaration
+`compilation_seconds`, `context_construction_seconds`,
+`reference_collection_seconds` and `database_projection_seconds`,
+as well as `commands_constructed` (actual batch command reconstructions).
+The isolated benchmark emits three-trial median and individual phase samples,
+including cache misses, safe bypasses, genuine cross-run hits and
+within-run reference accessor hits. These phases are not comprehensive OS/GIS
+operation counts and do not include downstream physical inspection.
+
+In regression testing, a variable-derived GeoPackage layer did not satisfy
+the conservative signature eligibility guard. It correctly uses the original
+deferred resolver. The test now requires exact cached-versus-uncached
+provenance and asserts the bypass instead of forcing an unsafe memoisation.
+This is an intentional correctness boundary, **not** a completed GPKG
+layer-signature optimiser.
+
+The full immutable dependency graph and any elimination of redundant
+`InputRunState`/`Command` allocations remain outstanding; the new command
+counter explicitly measures this cost. Windows exact-head validation and
+materialised parity must be checked before final review.
