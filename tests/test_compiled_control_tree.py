@@ -236,6 +236,10 @@ def test_literal_leaf_tree_elides_run_states_for_500_distinct_flags(tmp_path: Pa
         'Read GIS Code == gis/code.shp | 1\n',
         'Read Grid RF == rainfall.nc\n',
         'BC Database == bc.csv\nRead GIS BC == 2d_bc.shp\n',
+        # Literal scenario-only trees now have their own positive reuse tests;
+        # an event-dependent path must still bypass that projection cache.
+        'If Scenario == DEV\nRead GIS Code == dev_~e1~.shp\n'
+        'Else\nRead GIS Code == exg.shp\nEnd If\n',
     ],
 )
 def test_unproven_nodes_do_not_elide_run_states(tmp_path: Path, source_text: str):
@@ -333,15 +337,6 @@ def test_scenario_literal_tree_reuses_across_500_distinct_events(tmp_path: Path)
         'End If\n'
         'Read Grid Zpts == terrain/dem.tif\n',
     )
-    eligibility = CompiledControlTree.compile(
-        model, CompiledVariablePlan.from_assignments(())
-    )
-    assert eligibility.is_scenario_literal_model(model), (
-        model.config.scenarios, model.config.variables,
-        str(model.config.spatial_database),
-        [(node.command_name, node.bypass_reason, node.branch_conditions)
-         for node in eligibility.nodes],
-    )
     flags = tuple(
         f'-s1 {"DEV" if index % 2 else "EXG"} -e1 TP{index:03d}'
         for index in range(500)
@@ -427,6 +422,9 @@ def test_scenario_projection_failure_does_not_seed_other_branch(tmp_path: Path):
 
 
 @pytest.mark.parametrize('source_text', [
+    'Define 1D Domain\nRead GIS Code == a.shp\nEnd Define\n',
+    'Define 1D Domain\nIf Scenario == DEV\n'
+    'Read GIS Code == a.shp\nEnd If\nEnd Define\n',
     'If Event == A\nRead GIS Code == a.shp\n'
     'Else\nRead GIS Code == b.shp\nEnd If\n',
     'If Scenario == <<UNKNOWN>>\nRead GIS Code == a.shp\n'

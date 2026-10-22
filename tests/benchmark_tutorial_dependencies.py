@@ -1,4 +1,4 @@
-"""Read-only, public TUFLOW tutorial differential and warm-cache benchmark.
+r"""Read-only, public TUFLOW tutorial differential and warm-cache benchmark.
 
 Usage (Windows Python 3.14, from the PyTUFLOW repository root):
     py -3.14 tests/benchmark_tutorial_dependencies.py --bundle E:\test-data\tuflow\example_input_preflight
