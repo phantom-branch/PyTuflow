@@ -1,4 +1,4 @@
-"""Profile parsed-TCF deferred dependency work without launching TUFLOW.
+"""Profile SYNTHETIC parsed-TCF work; do not use these timings for native speedup claims.
 
     python tests/profile_batch_dependencies.py --runs 120 --static-inputs 20
 

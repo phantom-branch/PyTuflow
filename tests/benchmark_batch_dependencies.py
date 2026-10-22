@@ -1,4 +1,4 @@
-"""Manual CPU benchmark for read-only, same-TCF deferred dependency collection.
+"""SYNTHETIC CPU microbenchmark for developer instrumentation, NOT native performance evidence.
 
 Run from the repository root (no TUFLOW executable or external project files):
     python tests/benchmark_batch_dependencies.py --runs 500 --trials 3
