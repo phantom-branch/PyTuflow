@@ -46,7 +46,6 @@ class BatchContext(Context):
         self._shared_file_references = None
         self._shared_command_templates = None
         self._batch_run_index: int | None = None
-        self._batch_run_index: int | None = None
         self.shared_reference_hits = 0
         self.within_run_reference_hits = 0
         self.shared_reference_misses = 0
