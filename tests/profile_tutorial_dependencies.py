@@ -18,7 +18,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from tests.benchmark_tutorial_dependencies import (
+from benchmark_tutorial_dependencies import (
     discover_cases,
     extract_verified,
     measure,
