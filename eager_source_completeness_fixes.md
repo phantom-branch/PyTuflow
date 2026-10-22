@@ -1,7 +1,9 @@
 # Eager source completeness: separate review record
 
-Updated: 2026-10-22. Status: implementation committed and pushed as `22e2413`;
-exact-head hosted acceptance and final review remain pending.
+Updated: 2026-10-22. Status: shared/eager changes committed as `22e2413`, followed
+by the eager EventCommand accessor repair in `8e7bc30`. Strict Windows hosted
+example parity passes on that repair; remaining external acceptance/final review
+is described in the implementation status record.
 Base: `546ab20`, branch `feat/deferred-file-resolution`.
 
 This record separates changes affecting eager consumers from the
@@ -10,6 +12,30 @@ The findings apply to the checkout and consumer tested here; they are not a clai
 that every published PyTUFLOW version has the same defect.
 
 ## Change classification
+
+### Earlier eager changes already included in PR #1
+
+The distinction also applies to work committed before `22e2413`. Compared with
+upstream base `cf908cc`, these affect existing eager behaviour and must appear
+explicitly in the upstream review/release summary:
+
+| Existing eager surface | Before / after | Relevant files and coverage |
+| --- | --- | --- |
+| Hydraulic BC lookup | Substring lookup could include AD BC; hydraulic and AD accessors now use distinct exact command roles | `abc/tcf_base.py`; `test_hydraulic_and_ad_bc_databases_are_independent` |
+| Rainfall CSV inventory | Eager `.files` exposed only the index; now includes context-expanded grids from cached rows | `inp/cf.py`; `test_eager_rainfall_csv_inventory_includes_cached_grid_sources`, `test_eager_rainfall_grid_projection_is_cached_in_memory` |
+| Rainfall context compatibility | Pandas string-array assignment could fail; cached rows use object dtype before context substitution | `db/db_run_state.py`; affected database/context tests and unmodified rainfall examples |
+| NetCDF rainfall loading | Created a placeholder database with no physical path; now treats NetCDF as a terminal rainfall input | `inp/db.py`; `test_netcdf_rainfall_is_terminal_primary_not_database` |
+| Assignment classification | File-looking BC Event Source / Set Variable values could be classified as inputs; now assignments are excluded and their actual consumers remain checked | `parsers/command.py`; `test_nested_output_variables_are_assignments_not_input_files` and BC event tests |
+| Network/pit attribute interpretation | File-like curve/control identifiers could become false paths; M/QO file components, Ignore flags and Q/P/pit database identifiers now have distinct rules | `gis.py`, `inp/gis.py`; positional network-role tests and full example replay |
+
+AD Global cached-table loading and typed database roles are added source-inspection
+capabilities, even though eager consumers can use them. The multipart materials
+lazy loader and deferred `>> all` expansion restore compatibility after changes
+introduced while implementing deferred resolution; describe them as PR regression
+repairs, not independently proven defects in the original upstream base. Rainfall
+index column validation is an explicit new schema check, not just a performance change.
+
+### Latest shared-source/eager correction
 
 | Change | Classification | Review boundary |
 | --- | --- | --- |
@@ -94,6 +120,23 @@ Older eager parsers without the capability produce an unresolved diagnostic for
 declared AD/curve roles instead of silently certifying complete coverage.
 
 ## Validation and limits
+
+### Review repair: eager EventCommand reference accessor (2026-10-22)
+
+The fresh review identified a separate compatibility defect in the **new**
+`InputBuildState.file_references` accessor: cloning an eager TEF EventCommand used
+the ordinary Command five-argument signature and raised TypeError. This affected
+both eager build-state inputs and eager run-state reference access. It is a
+regression in functionality added by this deferred-resolution PR, not a demonstrated
+defect in the original upstream `.files` implementation.
+
+The accessor now uses EventCommand's supported four-argument constructor, retains
+its event name, owner, part index and definition blocks, and leaves the original
+eager configuration unchanged. Syntax-only inspection still uses a copied deferred
+configuration. Two regressions fail with the original TypeError before the fix and
+pass afterward, checking both access paths and metadata while prohibiting file
+open/stat/glob/SQLite operations. The affected upstream selection is now **183 passed**.
+This change adds no additional public API or materialisation feature.
 
 Synthetic regressions in `tests/test_deferred_database_parity.py` assert expected
 sources independently in eager and deferred modes: nested ownership, AD
