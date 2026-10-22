@@ -339,6 +339,23 @@ class BatchContext(Context):
 
 
 @dataclass(frozen=True, slots=True)
+class BatchInputCommand:
+    """Every active input in its original per-run command order.
+
+    Inputs with no physical references are retained because commands such as
+    database selection and settings can affect later commands. This is an
+    immutable projection, not a mutable run-state or an existence assertion.
+    """
+
+    input_uuid: str
+    command_index: int
+    owner_control_file: Path | None
+    line_number: int
+    command_name: str
+    command_text: str
+
+
+@dataclass(frozen=True, slots=True)
 class BatchInputReference:
     """One dependency with stable input identity and owning command position."""
 
@@ -360,6 +377,7 @@ class BatchDependencyRun:
     database_activations: tuple[DeferredDatabaseActivation, ...]
     error: str | None = None
     input_references: tuple[BatchInputReference, ...] = ()
+    ordered_inputs: tuple[BatchInputCommand, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -467,6 +485,7 @@ def collect_batch_dependencies(
                 index, flag_text, previous.file_references, previous.database_sources,
                 previous.database_activations, previous.error,
                 previous.input_references,
+                previous.ordered_inputs,
             ))
             contexts_reused += 1
             continue
@@ -477,6 +496,7 @@ def collect_batch_dependencies(
         sources = ()
         activations = ()
         input_refs = ()
+        ordered_inputs = ()
         error = None
         try:
             # Even an invalid flag combination is one failed run, not an
@@ -497,15 +517,30 @@ def collect_batch_dependencies(
             references_started = perf_counter()
             # Retain input UUID + command order for downstream active-database
             # selection; merely flattening paths would lose provenance.
-            input_refs = tuple(
-                BatchInputReference(
+            # Traverse active commands once for ordered ownership. In
+            # particular, commands without FileReference must not disappear:
+            # consumers need the original ordinals for database activation.
+            active_inputs = tuple(run.find_input())
+            ordered_inputs = tuple(
+                BatchInputCommand(
                     input_uuid=str(inp.uuid),
                     command_index=sequence,
                     owner_control_file=inp._command.parent,
                     line_number=inp.line_number,
+                    command_name=str(inp.lhs),
+                    command_text=str(inp._command.original_text),
+                )
+                for sequence, inp in enumerate(active_inputs)
+            )
+            input_refs = tuple(
+                BatchInputReference(
+                    input_uuid=descriptor.input_uuid,
+                    command_index=descriptor.command_index,
+                    owner_control_file=descriptor.owner_control_file,
+                    line_number=descriptor.line_number,
                     reference=ref,
                 )
-                for sequence, inp in enumerate(run.find_input())
+                for descriptor, inp in zip(ordered_inputs, active_inputs, strict=True)
                 for ref in inp.file_references
             )
             refs = tuple(item.reference for item in input_refs)
@@ -524,10 +559,11 @@ def collect_batch_dependencies(
         except Exception as exc:
             # Fail closed. Never return the partial references accumulated
             # before an unknown database or malformed control-file failure.
-            refs = sources = activations = input_refs = ()
+            refs = sources = activations = input_refs = ordered_inputs = ()
             error = f'{type(exc).__name__}: {exc}'
         projected = BatchDependencyRun(
             index, flag_text, refs, sources, activations, error, input_refs,
+            ordered_inputs,
         )
         results.append(projected)
         if cache_scopes:
