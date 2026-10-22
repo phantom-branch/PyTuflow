@@ -110,8 +110,8 @@ def test_command_construction_counts_are_not_reference_cache_hits(tmp_path):
     assert cached.passed and plain.passed
     assert cached.contexts_constructed == 20
     assert cached.cross_run_reference_hits > 0
-    # Reference memoisation avoids rediscovery but cannot yet skip mutable
-    # Command/RunState reconstruction. Do not count this as graph compilation.
+    # Shared templates skip parser construction but still allocate distinct
+    # per-run commands and RunState objects.
     assert cached.commands_constructed >= 1
     assert cached.commands_cloned > 0
     assert cached.unique_command_templates >= 1
@@ -125,7 +125,7 @@ def test_command_construction_counts_are_not_reference_cache_hits(tmp_path):
 
 def test_command_templates_keep_mutable_objects_private(tmp_path):
     source = tmp_path / 'static.tcf'
-    source.write_text('Read GIS Code == gis/static.shp\\n', encoding='utf-8')
+    source.write_text('Read GIS Code == gis/static.shp\n', encoding='utf-8')
     model = TCF(source)
 
     first_ctx = BatchContext('-e1 A', config=model.config)
@@ -154,7 +154,7 @@ def test_command_templates_keep_mutable_objects_private(tmp_path):
 
 def test_event_dependent_read_command_bypasses_compiled_template(tmp_path):
     source = tmp_path / 'event.tcf'
-    source.write_text('Read GIS Code == gis/<<E1>>.shp\\n', encoding='utf-8')
+    source.write_text('Read GIS Code == gis/<<E1>>.shp\n', encoding='utf-8')
     model = TCF(source)
     flags = tuple(f'-e1 TP{i:03d}' for i in range(12))
     batch = model.collect_batch_dependencies(flags)
