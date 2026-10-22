@@ -227,6 +227,19 @@ def collect_batch_dependencies(
     # repeated for every run. The parsed input objects and their scopes are
     # shared; active-variable values are still computed independently per run.
     variable_inputs = tuple(model.find_input(lhs='set variable', recursive=True)) if cache_scopes else None
+    # parse_variable() reads the original, parsed build-state command, not
+    # per-run substitutions. Compile the immutable name/value templates once
+    # and continue applying scenario scope checks for every individual run.
+    variable_assignments = None
+    if variable_inputs is not None:
+        try:
+            variable_assignments = tuple(
+                (inp, inp.command().parse_variable()) for inp in variable_inputs
+            )
+        except Exception:
+            # Keep the original per-context failure semantics for malformed
+            # declarations instead of failing the entire batch up front.
+            variable_assignments = None
 
     for index, flags in enumerate(run_flags):
         flag_text = flags if isinstance(flags, str) else ' '.join(
@@ -258,6 +271,7 @@ def collect_batch_dependencies(
                    if cache_scopes else Context(flags, config=model.config))
             if isinstance(ctx, BatchContext):
                 ctx._shared_file_references = shared_file_references
+                ctx._batch_variable_assignments = variable_assignments
             run = model.context(context=ctx, file_resolution='deferred')
             refs = tuple(ref for inp in run.find_input() for ref in inp.file_references)
             activations = run.deferred_database_activations()
