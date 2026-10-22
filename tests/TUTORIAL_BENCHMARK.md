@@ -33,8 +33,12 @@ Launchers are **read as text, never executed**. Their event/scenario flag
 values are stored as dictionaries and passed directly into PyTUFLOW, so
 quoted multiword values survive without lossy whitespace tokenisation.
 The displayed `-s1 value` label is diagnostic text only, not reparsed input.
-The JSON counters include P2's `input_runstates_elided`; an observed zero
-must not be confused with an unavailable (`null`) metric.
+The JSON counters distinguish `input_runstates_constructed`,
+`input_runstates_elided`, `invariant_projection_reuses` and
+`reusable_input_groups`. The first two measure actual constructor work,
+while the latter two distinguish whole-run reuse from eligible literal input
+groups in mixed models. An observed zero must not be confused with an
+unavailable (`null`) metric; no counter alone proves a speedup.
 
 For CPU hotspot profiling (cProfile **distorts** wall time and is not
 valid speedup evidence), use the same public TCF, from the PyTUFLOW checkout:
