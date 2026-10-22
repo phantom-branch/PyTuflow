@@ -284,12 +284,12 @@ def test_variable_derived_paths_never_share_static_reference_cache(tmp_path):
 def test_resolved_path_signature_separates_variable_values_and_layers(tmp_path):
     source = tmp_path / 'layers.tcf'
     source.write_text(
-        'IF Scenario == DEV\\n'
-        '  Set Variable Layer == dev\\n'
-        'ELSE\\n'
-        '  Set Variable Layer == exg\\n'
-        'END IF\\n'
-        'Read GIS Code == gis/codes.gpkg >> <<Layer>>\\n',
+        'IF Scenario == DEV\n'
+        '  Set Variable Layer == dev\n'
+        'ELSE\n'
+        '  Set Variable Layer == exg\n'
+        'END IF\n'
+        'Read GIS Code == gis/codes.gpkg >> <<Layer>>\n',
         encoding='utf-8',
     )
     model = TCF(source)
@@ -314,7 +314,7 @@ def test_resolved_path_signature_separates_variable_values_and_layers(tmp_path):
 def test_dynamic_event_paths_have_distinct_reference_signatures(tmp_path):
     source = tmp_path / 'event_paths.tcf'
     source.write_text(
-        'Read GIS Code == gis/code_<<E1>>.shp\\n',
+        'Read GIS Code == gis/code_<<E1>>.shp\n',
         encoding='utf-8',
     )
     model = TCF(source)
@@ -335,8 +335,8 @@ def test_dynamic_event_paths_have_distinct_reference_signatures(tmp_path):
 def test_new_batch_does_not_reuse_previous_model_state(tmp_path):
     source = tmp_path / 'mutable.tcf'
     source.write_text(
-        'Set Variable Root == before\\n'
-        'Read GIS Code == gis/<<Root>>/code.shp\\n',
+        'Set Variable Root == before\n'
+        'Read GIS Code == gis/<<Root>>/code.shp\n',
         encoding='utf-8',
     )
     model = TCF(source)
