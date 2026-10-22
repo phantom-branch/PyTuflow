@@ -64,6 +64,26 @@ def test_tree_is_ordered_and_immutable_with_explicit_bypass(tmp_path: Path):
     assert tree.node_for(object()) is None
 
 
+def test_branch_metadata_preserves_else_and_negation(tmp_path: Path):
+    model = _source(
+        tmp_path,
+        'If Scenario == DEV\n'
+        '  Read GIS Code == dev.shp\n'
+        'Else\n'
+        '  Read GIS Code == exg.shp\n'
+        'End If\n',
+    )
+    tree = CompiledControlTree.compile(model, CompiledVariablePlan.from_assignments(()))
+    branch_nodes = [node for node in tree.nodes if node.role == 'READ']
+    assert len(branch_nodes) == 2
+    assert all(node.branch_conditions for node in branch_nodes)
+    assert any(
+        scope.scope_type == 'SCENARIO'
+        for node in branch_nodes for scope in node.branch_conditions
+    )
+    assert branch_nodes[0].branch_conditions != branch_nodes[1].branch_conditions
+
+
 def test_500_distinct_events_have_complete_per_run_parity(tmp_path: Path):
     model = _source(
         tmp_path,
