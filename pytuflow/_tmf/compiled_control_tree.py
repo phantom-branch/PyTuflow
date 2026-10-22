@@ -45,6 +45,7 @@ class CompiledControlNode:
     raw_value: str | None
     scope: tuple[str, ...]
     branch_conditions: tuple[CompiledBranchDependency, ...]
+    control_blocks: tuple[tuple[str, str], ...]
     role: str
     read_dependency: CompiledReadDependency | None
     bypass_reason: str | None
@@ -91,6 +92,11 @@ class CompiledControlTree:
                 if type(command) is not Command:
                     reason = 'specialised-command'
                 elif command.define_blocks:
+                    # Keep the ordinary command constructor for all scoped
+                    # inputs. Record the READ expression separately so the
+                    # strictly scenario-only *whole-run* proof can inspect
+                    # it without permitting unsafe command-template cloning.
+                    read = variables.compile_read(str(command.value_orig or ''))
                     reason = 'define-or-conditional-command'
                 elif not command.value_orig:
                     reason = 'empty-read'
@@ -122,6 +128,10 @@ class CompiledControlTree:
                         known=bool(scope.known),
                     )
                     for scope in inp.scope
+                ),
+                control_blocks=tuple(
+                    (str(block.type).upper(), str(block.name))
+                    for block in command.define_blocks
                 ),
                 role=role,
                 read_dependency=read,
@@ -168,18 +178,31 @@ class CompiledControlTree:
             return False
         safe_suffixes = {'.shp', '.tif', '.asc', '.flt'}
         for node in self.nodes:
-            if (node.role != 'READ' or node.bypass_reason is not None
+            if (node.role != 'READ'
+                    or node.bypass_reason not in (None, 'define-or-conditional-command')
                     or node.read_dependency is None
+                    or not node.read_dependency.reusable
                     or node.read_dependency.relevant_variables
                     or node.command_name not in ('READ GIS CODE', 'READ GRID ZPTS')
                     or not node.raw_value):
                 return False
+            # The parser records scenario conditional branches as DEFINE
+            # blocks too. They can be reused at the *whole projection* level,
+            # but never as mutable Command templates. Other block kinds
+            # (Event/TEF/1D/Output Zone/DEFINE) remain excluded.
             if any(
-                scope.scope_type not in ('GLOBAL', 'SCENARIO')
-                or (scope.scope_type == 'SCENARIO' and (
+                kind not in ('SCENARIO', 'SCENARIO (ELSE)')
+                or any(marker in name for marker in ('<<', '>>', '~'))
+                for kind, name in node.control_blocks
+            ):
+                return False
+            if any(
+                scope.scope_type not in ('GLOBAL', 'SCENARIO', 'SCENARIO (ELSE)')
+                or (scope.scope_type.startswith('SCENARIO') and (
                     not scope.known
                     or (scope.variable is not None
-                        and str(scope.variable).startswith('<<'))
+                        and any(marker in str(scope.variable)
+                                for marker in ('<<', '>>', '~')))
                 ))
                 for scope in node.branch_conditions
             ):
