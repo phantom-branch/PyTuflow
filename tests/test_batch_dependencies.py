@@ -274,8 +274,81 @@ def test_variable_derived_paths_never_share_static_reference_cache(tmp_path):
     assert [run.file_references for run in cached.runs] == [
         run.file_references for run in plain.runs
     ]
-    # Only the variable-derived READ exists: never reuse it as literal static.
+    # The same fully resolved output from different event contexts is safe
+    # to reuse; scenario-derived DEV and EXG paths remain distinct signatures.
+    assert cached.cross_run_reference_hits == 10
+    assert cached.cross_run_reference_misses == 2
+    assert cached.unique_reference_signatures == 2
+
+
+def test_resolved_path_signature_separates_variable_values_and_layers(tmp_path):
+    source = tmp_path / 'layers.tcf'
+    source.write_text(
+        'IF Scenario == DEV\\n'
+        '  Set Variable Layer == dev\\n'
+        'ELSE\\n'
+        '  Set Variable Layer == exg\\n'
+        'END IF\\n'
+        'Read GIS Code == gis/codes.gpkg >> <<Layer>>\\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    flags = tuple(
+        f'-s1 {"DEV" if n % 2 else "EXG"} -e1 TP{n:03d}'
+        for n in range(30)
+    )
+    cached = model.collect_batch_dependencies(flags)
+    plain = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert cached.passed and plain.passed
+    assert cached.cross_run_reference_hits == 28
+    assert cached.cross_run_reference_misses == 2
+    assert cached.unique_reference_signatures == 2
+    assert [case.input_references for case in cached.runs] == [
+        case.input_references for case in plain.runs
+    ]
+    assert {
+        case.file_references[-1].layer_pattern for case in cached.runs
+    } == {'dev', 'exg'}
+
+
+def test_dynamic_event_paths_have_distinct_reference_signatures(tmp_path):
+    source = tmp_path / 'event_paths.tcf'
+    source.write_text(
+        'Read GIS Code == gis/code_<<E1>>.shp\\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    flags = tuple(f'-e1 TP{n:03d}' for n in range(30))
+    cached = model.collect_batch_dependencies(flags)
+    plain = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert cached.passed and plain.passed
     assert cached.cross_run_reference_hits == 0
+    assert cached.cross_run_reference_misses == 30
+    assert cached.unique_reference_signatures == 30
+    assert [case.file_references for case in cached.runs] == [
+        case.file_references for case in plain.runs
+    ]
+
+
+def test_new_batch_does_not_reuse_previous_model_state(tmp_path):
+    source = tmp_path / 'mutable.tcf'
+    source.write_text(
+        'Set Variable Root == before\\n'
+        'Read GIS Code == gis/<<Root>>/code.shp\\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    first = model.collect_batch_dependencies(('-e1 A', '-e1 B'))
+    assert first.passed
+    assert first.cross_run_reference_hits == 1
+    assert 'before' in first.runs[0].file_references[-1].path_pattern.parts
+    source_input = model.find_input(lhs='set variable')[0]
+    source_input.rhs = 'after'
+    second = model.collect_batch_dependencies(('-e1 A', '-e1 B'))
+    baseline = model.collect_batch_dependencies(('-e1 A', '-e1 B'), cache_scopes=False)
+    assert second.passed and baseline.passed
+    assert second.runs[0].file_references == baseline.runs[0].file_references
+    assert 'after' in second.runs[0].file_references[-1].path_pattern.parts
 
 
 def test_variable_templates_parsed_once_but_scopes_evaluated_per_run(tmp_path):
