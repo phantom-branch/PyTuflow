@@ -14,6 +14,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import TYPE_CHECKING
 
+from .compiled_control_tree import CompiledControlTree
 from .compiled_dependency_plan import CompiledVariablePlan
 from .context import Context
 from .scope import GlobalScope, ScenarioScope
@@ -48,6 +49,10 @@ class BatchContext(Context):
         self._shared_command_templates = None
         self._shared_read_plans = None
         self._batch_variable_plan: CompiledVariablePlan | None = None
+        self._batch_compiled_tree: CompiledControlTree | None = None
+        self.graph_node_lookups = 0
+        self.graph_node_fallbacks = 0
+        self._active_declaration_cache: dict[str, tuple[str, ...]] = {}
         self._batch_run_index: int | None = None
         self.shared_reference_hits = 0
         self.within_run_reference_hits = 0
@@ -74,6 +79,7 @@ class BatchContext(Context):
         self._batch_scopes = None
         self._batch_scope_decisions.clear()
         self._batch_translations.clear()
+        self._active_declaration_cache.clear()
 
     def load_context_from_dict(self, context: dict) -> None:
         was_active = self._batch_active
@@ -200,6 +206,29 @@ class BatchContext(Context):
         self.shared_reference_misses += 1
         return refs
 
+    def variable_declaration_signature(self, names: tuple[str, ...]):
+        """Identify active, *ordered* declarations feeding a reusable READ.
+
+        Matching final values alone does not prove equivalent variable
+        provenance when several scoped Set Variable commands can win.  Keep
+        the identity of every active declaration, in build traversal order.
+        """
+        assignments = getattr(self, '_batch_variable_assignments', None)
+        if not assignments or not names:
+            return ()
+        required = frozenset(names)
+        missing = required.difference(self._active_declaration_cache)
+        if missing:
+            found = {name: [] for name in missing}
+            for inp, (name, _) in assignments:
+                key = str(name).upper()
+                if key in found and self.in_context_by_scope(inp.scope):
+                    found[key].append(str(inp.uuid))
+            self._active_declaration_cache.update(
+                (name, tuple(values)) for name, values in found.items()
+            )
+        return tuple((name, self._active_declaration_cache[name]) for name in sorted(required))
+
     def batch_command(self, build_input, source_command, command_text, run_config):
         """Produce an independent command, avoiding repeated safe literal parsing.
 
@@ -224,19 +253,32 @@ class BatchContext(Context):
         )
         plan = None
         if eligible_read:
-            # Compile only once per parsed input. Retain the original input
-            # identity to prevent an id() collision. The snapshot is scoped
-            # to one batch; a new batch rebuilds this graph after model edits.
-            raw_expression = str(source_command.value_orig)
-            key = id(build_input)
-            saved = self._shared_read_plans.get(key)
-            if saved is not None and saved[0] is build_input and saved[1] == raw_expression:
-                plan = saved[2]
-                self.command_plan_hits += 1
+            # The compiled tree is an immutable snapshot of ALL parsed inputs,
+            # including inactive branches.  Validate source identity/text
+            # before using its precompiled transitive READ dependencies.
+            if self._batch_compiled_tree is not None:
+                node = self._batch_compiled_tree.node_for(build_input)
+                if node is not None and node.original_text == source_command.original_text:
+                    self.graph_node_lookups += 1
+                    if node.role == 'READ' and node.bypass_reason is None:
+                        plan = node.read_dependency
+                        self.command_plan_hits += 1
+                else:
+                    # In-batch model mutation or unindexed inputs must use
+                    # the original constructor and resolver, never stale data.
+                    self.graph_node_fallbacks += 1
             else:
-                plan = self._batch_variable_plan.compile_read(raw_expression)
-                if key in self._shared_read_plans or len(self._shared_read_plans) < 10_000:
-                    self._shared_read_plans[key] = (build_input, raw_expression, plan)
+                # Compatibility with standalone BatchContext use (no tree).
+                raw_expression = str(source_command.value_orig)
+                key = id(build_input)
+                saved = self._shared_read_plans.get(key)
+                if saved is not None and saved[0] is build_input and saved[1] == raw_expression:
+                    plan = saved[2]
+                    self.command_plan_hits += 1
+                else:
+                    plan = self._batch_variable_plan.compile_read(raw_expression)
+                    if key in self._shared_read_plans or len(self._shared_read_plans) < 10_000:
+                        self._shared_read_plans[key] = (build_input, raw_expression, plan)
 
         # The existing context resolver remains authoritative. We never
         # reuse an expression with unresolved tokens, special layer syntax,
@@ -279,6 +321,7 @@ class BatchContext(Context):
                 str(run_config.grid_format),
                 tuple(map(str, run_config.wildcards)),
                 relevant_values,
+                self.variable_declaration_signature(plan.relevant_variables),
             )
             entry = self._shared_command_templates.get(signature)
             if entry is not None and entry[0] is build_input:
@@ -411,6 +454,12 @@ class BatchDependencyResult:
     compiled_read_nodes: int = 0
     command_plan_hits: int = 0
     variable_template_clones: int = 0
+    compiled_graph_nodes: int = 0
+    compiled_graph_eligible_reads: int = 0
+    compiled_graph_bypassed_reads: int = 0
+    graph_node_lookups: int = 0
+    graph_node_fallbacks: int = 0
+    input_runstates_elided: int = 0
 
     @property
     def passed(self) -> bool:
@@ -444,6 +493,8 @@ def collect_batch_dependencies(
     command_template_bypasses = 0
     command_plan_hits = 0
     variable_template_clones = 0
+    graph_node_lookups = 0
+    graph_node_fallbacks = 0
     context_construction_seconds = 0.0
     reference_collection_seconds = 0.0
     database_projection_seconds = 0.0
@@ -470,6 +521,7 @@ def collect_batch_dependencies(
             variable_assignments = None
 
     variable_plan = CompiledVariablePlan.from_assignments(variable_assignments) if cache_scopes else None
+    compiled_tree = CompiledControlTree.compile(model, variable_plan) if variable_plan is not None else None
     compilation_seconds = perf_counter() - started
 
     for index, flags in enumerate(run_flags):
@@ -509,6 +561,7 @@ def collect_batch_dependencies(
                 ctx._shared_command_templates = shared_command_templates
                 ctx._shared_read_plans = shared_read_plans
                 ctx._batch_variable_plan = variable_plan
+                ctx._batch_compiled_tree = compiled_tree
                 ctx._batch_run_index = index
                 ctx._batch_variable_assignments = variable_assignments
             context_started = perf_counter()
@@ -584,6 +637,8 @@ def collect_batch_dependencies(
             command_template_bypasses += ctx.command_template_bypasses
             command_plan_hits += ctx.command_plan_hits
             variable_template_clones += ctx.variable_template_clones
+            graph_node_lookups += ctx.graph_node_lookups
+            graph_node_fallbacks += ctx.graph_node_fallbacks
 
     if not results:
         raise ValueError('At least one simulation context is required')
@@ -605,7 +660,14 @@ def collect_batch_dependencies(
         command_template_bypasses,
         len(shared_command_templates) if shared_command_templates is not None else 0,
         len(variable_plan.dependencies) if variable_plan is not None else 0,
-        len(shared_read_plans) if shared_read_plans is not None else 0,
+        (sum(node.role == 'READ' for node in compiled_tree.nodes)
+         if compiled_tree is not None else
+         len(shared_read_plans) if shared_read_plans is not None else 0),
         command_plan_hits,
         variable_template_clones,
+        compiled_graph_nodes=len(compiled_tree.nodes) if compiled_tree is not None else 0,
+        compiled_graph_eligible_reads=compiled_tree.eligible_read_nodes if compiled_tree is not None else 0,
+        compiled_graph_bypassed_reads=compiled_tree.bypassed_read_nodes if compiled_tree is not None else 0,
+        graph_node_lookups=graph_node_lookups,
+        graph_node_fallbacks=graph_node_fallbacks,
     )
