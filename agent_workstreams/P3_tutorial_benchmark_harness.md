@@ -1,6 +1,21 @@
 # P3 agent prompt — Public TUFLOW tutorial differential and performance harness
 
-**Target draft PR:** this branch targets `feat/batch-ordered-dependency-plan` (PR #6). A separate agent implements P1 and another P2; do not edit their source files.
+**Target draft PR:** this branch targets `feat/batch-compiled-control-tree` (PR #9), which in turn targets PyTUFLOW PR #6. PR #7 is a **dependent benchmark PR** and is not to merge before #9. A separate agent implements P1; P2 owns the compiled-tree source files, so do not edit those files here.
+
+## Sequencing and early parallel work
+
+**Begin preparing the reusable public tutorial harness now**, without waiting for
+PR #9 to finish: archive verification, safe temporary extraction, valid
+tutorial combination discovery, canonical per-run identity comparison,
+memory/timing instrumentation, privacy controls, CLI and focused unit tests.
+This work has its own file ownership and need not block P2 development.
+
+**Do not publish comparative optimised-graph performance results or declare
+this PR complete until PR #9 has finished implementation, this branch has
+integrated its latest head, and exact same-revision/dataset differential
+checks pass.** PR #9 is the implementation prerequisite, not a reason to
+delay the independent harness infrastructure. PR #10 remains a later
+integration gate for P1 + P2 + P3.
 
 ## Agent instruction (execute without further clarification)
 
@@ -195,13 +210,14 @@ git status --short
 
 Assume the `ryan-tools` checkout is available only if it actually is; otherwise
 fetch the public test data in an approved non-proprietary location and report
-any setup limitation. There is no dependency on the private SMB share. Once
-P2 completes, restack/rebase this PR onto P2 (with coordination) before
-integration; do not independently merge this benchmark PR.
+any setup limitation. There is no dependency on the private SMB share. **This
+branch is already stacked on P2/PR #9**; once P2 implementation stabilises,
+merge its latest head into this branch and rerun all comparative checks
+before integration. Do not independently merge this benchmark PR.
 
 ### Mandatory constraints
 
-- Base this work on **PyTUFLOW PR #6**, branch `feat/batch-ordered-dependency-plan`; do **not** target `master` or commit to PR #5/#6.
+- Base this work on **PyTUFLOW PR #9**, branch `feat/batch-compiled-control-tree`, which is based on PR #6; do **not** target `master` or commit to PR #5/#6/#9.
 - Keep this PR **draft** while developing. Do not merge, publish, repin a consumer dependency, run a TUFLOW executable or modify project inputs.
 - Maintain eager and single-run deferred API behaviour, including per-run error/fail-closed semantics.
 - Retain input UUIDs, original sequence/line/control-file owner, event/scenario/TEF scope and active BC declaration ordering.
@@ -217,6 +233,6 @@ Every implementation commit/PR update must include what changed, exact-head SHA,
 focused test and CI links, exact parity results (including missing AND extra
 records), counted constructor/lookup operations where applicable, known
 limitations, and the next action. Do not merge and do not request Codex review
-until the code scope is implementation-complete. If PR #6 advances while
-working, fetch/reconcile it without overwriting parallel agents' files.
+until the code scope is implementation-complete. If PR #9 (or its ancestor PR #6) advances while working, fetch/reconcile
+its latest code without overwriting parallel agents' files.
 
