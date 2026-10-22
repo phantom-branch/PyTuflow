@@ -73,11 +73,12 @@ class LiteralInputGroupCache:
         """Construct independently mutable wrappers without re-evaluating READ."""
         from .inp.gis import GisInput, GisInputRunState
         from .inp.grid import GridInput
+        from .inp.inp_run_state import InputRunState
 
-        if (type(prototype._rs) not in (GisInput, GridInput)
-                or type(prototype) not in (GisInputRunState, )
-                and not (type(prototype._rs) is GridInput
-                         and type(prototype).__name__ == "InputRunState")):
+        if not (
+            (type(prototype._rs) is GisInput and type(prototype) is GisInputRunState)
+            or (type(prototype._rs) is GridInput and type(prototype) is InputRunState)
+        ):
             return None
         result = copy(prototype)
         result.bs = build_input
@@ -118,13 +119,18 @@ class LiteralInputGroupCache:
         return result
 
     def try_reuse(self, build_input, ctx: Context, parent):
-        key = self._key(build_input, ctx)
-        if key is None:
+        try:
+            key = self._key(build_input, ctx)
+            if key is None:
+                return None, None
+            entry = self._prototypes.get(key)
+            if entry is None or entry[0] is not build_input:
+                return None, key
+            result = self._clone(entry[1], build_input, ctx, parent)
+            return (result, key) if result is not None else (None, None)
+        except Exception:
+            # Optimisation failures cannot change normal parser behaviour.
             return None, None
-        entry = self._prototypes.get(key)
-        if entry is None or entry[0] is not build_input:
-            return None, key
-        return self._clone(entry[1], build_input, ctx, parent), key
 
     def commit(self, pending) -> None:
         """Only fully successful run projections may certify later reuse."""
@@ -133,7 +139,10 @@ class LiteralInputGroupCache:
                 continue
             # The retained exemplar cannot be mutated through the returned
             # projection or its original run tree.
-            exemplar = self._clone(state, build_input, state.ctx, None)
+            try:
+                exemplar = self._clone(state, build_input, state.ctx, None)
+            except Exception:
+                continue
             if exemplar is None:
                 continue
             exemplar.ctx = None
