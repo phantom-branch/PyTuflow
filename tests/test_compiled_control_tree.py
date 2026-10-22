@@ -108,7 +108,8 @@ def test_500_distinct_events_have_complete_per_run_parity(tmp_path: Path):
     assert cached.compiled_graph_eligible_reads == 2
     assert cached.graph_node_lookups >= 1000
     assert cached.commands_cloned >= 900
-    assert cached.input_runstates_elided == 0
+    assert cached.input_runstates_elided >= 499  # invariant grid in mixed model
+    assert cached.input_runstates_constructed < baseline.input_runstates_constructed
     assert _identities(cached) == _identities(baseline)
 
 
