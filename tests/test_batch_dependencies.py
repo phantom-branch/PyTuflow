@@ -343,3 +343,24 @@ def test_invalid_batch_context_discards_input_provenance(tmp_path):
     assert failed.error is not None
     assert failed.input_references == ()
     assert failed.file_references == ()
+
+
+def test_batch_preserves_nested_tgc_control_file_provenance(tmp_path):
+    geom = tmp_path / 'geometry.tgc'
+    geom.write_text('Read GIS Z Shape == gis/2d_zsh.shp\n', encoding='utf-8')
+    top = tmp_path / 'model.tcf'
+    top.write_text('Geometry Control File == geometry.tgc\n', encoding='utf-8')
+    model = TCF(top)
+    batch = model.collect_batch_dependencies(('-s1 EXG -e1 10p',))
+    assert batch.passed
+    case = batch.runs[0]
+    nested = [
+        item for item in case.input_references
+        if item.reference.path_pattern.name == '2d_zsh.shp'
+    ]
+    assert len(nested) == 1
+    assert nested[0].owner_control_file == geom
+    assert nested[0].line_number == 1
+    assert any(
+        item.owner_control_file == top for item in case.input_references
+    )
