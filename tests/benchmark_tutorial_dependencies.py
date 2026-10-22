@@ -49,7 +49,7 @@ COUNTERS = (
     "compiled_variable_nodes", "compiled_read_nodes", "command_plan_hits",
     "variable_template_clones", "scope_builds", "scope_hits",
     "graph_node_evaluations", "graph_nodes_skipped", "graph_hits",
-    "graph_bypasses", "run_state_constructors",
+    "graph_bypasses", "input_runstates_elided",
     "relevant_context_signatures",
     "compiled_graph_nodes", "compiled_graph_eligible_reads",
     "compiled_graph_bypassed_reads", "graph_node_lookups",
@@ -140,9 +140,11 @@ def extract_flag_pairs(line: str) -> tuple[tuple[str, str], ...]:
     return tuple(entries)
 
 
-def discover_cases(root: Path, baseline: dict[str, int]) -> dict[str, tuple[str, ...]]:
-    """Enumerate batch-described runs and unparameterised standalone TCFs."""
-    found: dict[str, list[str]] = {}
+def discover_cases(
+    root: Path, baseline: dict[str, int],
+) -> dict[str, tuple[dict[str, str], ...]]:
+    """Preserve literal launcher values, including quoted multiword scenarios."""
+    found: dict[str, list[dict[str, str]]] = {}
     for launcher in sorted((root / "runs").glob("*.bat")):
         for line in launcher.read_text(encoding="utf-8-sig").splitlines():
             line = line.strip()
@@ -154,15 +156,16 @@ def discover_cases(root: Path, baseline: dict[str, int]) -> dict[str, tuple[str,
             rel = "runs/" + match[1]
             if rel not in baseline:
                 raise ValueError("Launcher references a TCF absent from the baseline")
-            pairs = extract_flag_pairs(line)
-            flags = " ".join(f"-{key} {value}" for key, value in pairs)
+            # Passing the original dictionary directly to PyTUFLOW avoids
+            # stripping meaningful quoting from multiword flag values.
+            flags = dict(extract_flag_pairs(line))
             if flags not in found.setdefault(rel, []):
                 found[rel].append(flags)
     for rel in baseline:
         if rel not in found:
             if re.search(r"~[es]\d~", Path(rel).name, re.IGNORECASE):
                 raise ValueError("Unexpanded parameterised TCF has no launcher combination")
-            found[rel] = [""]
+            found[rel] = [{}]
         if not (root / rel).is_file():
             raise ValueError("TCF named in baseline is missing from verified archive")
         if len(found[rel]) != baseline[rel]:
@@ -254,7 +257,23 @@ def sampled_rss():
         reading["bytes"] = max(reading["bytes"], proc.memory_info().rss)
 
 
-def individual(model: TCF, flags: tuple[str, ...]) -> tuple[tuple[BatchDependencyRun, ...], dict]:
+def flag_text(flags: str | dict[str, str]) -> str:
+    """Mirror batch API's displayed flag label without using it as parser input."""
+    if isinstance(flags, str):
+        return flags
+    return " ".join(f"-{key.lstrip('-')} {value}" for key, value in flags.items())
+
+
+def flag_signature(flags: str | dict[str, str]) -> tuple[tuple[str, str], ...]:
+    """Value-preserving distinct-context key, independent of dict insertion order."""
+    if isinstance(flags, str):
+        return tuple(sorted(extract_flag_pairs(flags)))
+    return tuple(sorted((str(k).lower().lstrip("-"), str(v)) for k, v in flags.items()))
+
+
+def individual(
+    model: TCF, flags: tuple[str | dict[str, str], ...],
+) -> tuple[tuple[BatchDependencyRun, ...], dict]:
     results: list[BatchDependencyRun] = []
     phases = {key: 0.0 for key in PHASES}
     started = perf_counter()
@@ -286,11 +305,11 @@ def individual(model: TCF, flags: tuple[str, ...]) -> tuple[tuple[BatchDependenc
             )
             phases["database_projection_seconds"] += perf_counter() - t
             results.append(BatchDependencyRun(
-                index, flag, refs, sources, activations, None, input_refs, ordered
+                index, flag_text(flag), refs, sources, activations, None, input_refs, ordered
             ))
         except Exception as exc:
             results.append(BatchDependencyRun(
-                index, flag, (), (), (), f"{type(exc).__name__}: {exc}"
+                index, flag_text(flag), (), (), (), f"{type(exc).__name__}: {exc}"
             ))
     return tuple(results), {
         "total_seconds": perf_counter() - started,
@@ -300,7 +319,7 @@ def individual(model: TCF, flags: tuple[str, ...]) -> tuple[tuple[BatchDependenc
 
 
 def batch(
-    model: TCF, flags: tuple[str, ...], *,
+    model: TCF, flags: tuple[str | dict[str, str], ...], *,
     cached: bool, compile_tree: bool = True,
 ):
     """Measure a batch with the graph explicitly enabled or bypassed.
@@ -331,7 +350,7 @@ def _git_sha() -> str | None:
     return result.stdout.strip()
 
 
-def measure(tcf: Path, original_flags: tuple[str, ...], *,
+def measure(tcf: Path, original_flags: tuple[str | dict[str, str], ...], *,
             requested_runs: int | None, trials: int) -> dict:
     if requested_runs is not None and requested_runs < 1:
         raise ValueError("--runs must be positive")
@@ -437,7 +456,7 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
         "status": "passed_syntactic_parity" if valid else "failed_or_unsupported",
         "requested_runs": len(flags),
         "original_documented_combinations": len(original_flags),
-        "distinct_complete_flag_signatures": len(set(flags)),
+        "distinct_complete_flag_signatures": len({flag_signature(flag) for flag in flags}),
         "workload_type": "documented_combinations" if requested_runs is None
                          else "repeated-combination throughput stress test",
         "parse_seconds": parse_seconds,
