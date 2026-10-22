@@ -228,3 +228,51 @@ def test_cross_run_scope_cache_never_reuses_event_conditions(tmp_path):
     assert 'code_other.shp' in names[1]
     assert 'code_other.shp' in names[2]
     assert 'code_EVENT000.shp' in names[3]
+
+
+def test_static_references_shared_across_distinct_event_flags(tmp_path):
+    source = tmp_path / 'static_dynamic.tcf'
+    source.write_text(
+        'Read GIS Code == gis/static_code.shp\n'
+        'Read GIS Code == gis/event_<<E1>>.shp\n'
+        'Read Grid Zpts == terrain/static_*.tif\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    flags = tuple(f'-e1 TP{i:03d}' for i in range(40))
+    shared = model.collect_batch_dependencies(flags)
+    plain = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert shared.passed and plain.passed
+    assert shared.contexts_constructed == 40
+    assert shared.contexts_reused == 0
+    assert shared.cross_run_reference_hits > 0
+    assert shared.cross_run_reference_misses > 0
+    assert [case.file_references for case in shared.runs] == [
+        case.file_references for case in plain.runs
+    ]
+    for i, case in enumerate(shared.runs):
+        names = {ref.path_pattern.name for ref in case.file_references}
+        assert names == {'static_code.shp', 'static_*.tif', f'event_TP{i:03d}.shp'}
+
+
+def test_variable_derived_paths_never_share_static_reference_cache(tmp_path):
+    source = tmp_path / 'scenario_variable.tcf'
+    source.write_text(
+        'IF Scenario == DEV\n'
+        '  Set Variable Root == geometry/DEV\n'
+        'ELSE\n'
+        '  Set Variable Root == geometry/EXG\n'
+        'END IF\n'
+        'Read GIS Code == <<Root>>/2d_code.shp\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    flags = tuple(f'-s1 {"DEV" if i % 2 else "EXG"} -e1 TP{i:02d}' for i in range(12))
+    cached = model.collect_batch_dependencies(flags)
+    plain = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert cached.passed and plain.passed
+    assert [run.file_references for run in cached.runs] == [
+        run.file_references for run in plain.runs
+    ]
+    # Only the variable-derived READ exists: never reuse it as literal static.
+    assert cached.cross_run_reference_hits == 0
