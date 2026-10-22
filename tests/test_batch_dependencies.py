@@ -142,6 +142,11 @@ def test_command_templates_keep_mutable_objects_private(tmp_path):
     assert first_cmd._expander is not second_cmd._expander
     assert first_ctx.commands_constructed >= 1
     assert second_ctx.commands_cloned >= 1
+    prototype = next(iter(shared_templates.values()))[1]
+    assert prototype is not first_cmd
+    assert prototype.config is not first_cmd.config
+    assert prototype.config.variables == {}
+    assert prototype._expander.variables == {}
 
     second_cmd.config.file_resolution = 'eager'
     second_cmd.value = 'corrupted'
@@ -150,6 +155,14 @@ def test_command_templates_keep_mutable_objects_private(tmp_path):
     assert first_cmd.value != 'corrupted'
     assert first_cmd._expander._expanded_value != 'corrupted'
     assert first.find_input(lhs='read gis code')[0].file_references[0].path_pattern.name == 'static.shp'
+    # Editing the first run's command must not corrupt the cached prototype
+    # used to create any later run.
+    first_cmd.value = 'corrupted'
+    third_ctx = BatchContext('-e1 C', config=model.config)
+    third_ctx._shared_command_templates = shared_templates
+    third = model.context(context=third_ctx, file_resolution='deferred')
+    assert third_ctx.commands_cloned >= 1
+    assert third.find_input(lhs='read gis code')[0].file_references[0].path_pattern.name == 'static.shp'
 
 
 def test_event_dependent_read_command_bypasses_compiled_template(tmp_path):
