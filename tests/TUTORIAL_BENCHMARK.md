@@ -64,11 +64,17 @@ variables fail acceptance. Unavailable graph counters appear as null, not zero.
 
 The compiled-tree API and its instrumentation belong to
 [PR #9](https://github.com/phantom-branch/PyTuflow/pull/9).
-**Restack this PR on #9 before final performance validation.**
-The existing cached mode is NOT the compiled-tree mode. The P3 integration
-must add the genuine opt-in compiled mode to the same-head differential
-comparison after P2's interface is fixed. Until then output explicitly
-states compiled measurements were not benchmarked.
+**Reconcile the PR #9 commits into #7 before final benchmarking.**
+In the current PR #9 implementation, the cached batch mode also compiles
+the control tree, and the report captures its actual graph counters when
+that implementation is present. On a checkout without #9 those counters
+remain unavailable. Retargeting the PR alone does not move its Git commits.
+
+To measure old cached (without compiled tree) versus compiled cached
+**on the same source head**, P2 needs a safe per-call graph opt-out,
+while preserving the existing cached semantics. Until that interface
+is supplied, report uncached and compiled-cached as separate modes, but
+do not invent an additional cached-without-graph measurement.
 
 Syntactic equality does NOT prove physical file existence, wildcard
 expansion, GeoPackage layers, Shapefile/GPKG feature attributes, BC row
