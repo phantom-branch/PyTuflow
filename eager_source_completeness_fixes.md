@@ -119,6 +119,23 @@ declared AD/curve roles instead of silently certifying complete coverage.
 
 ## Validation and limits
 
+### Review repair: eager EventCommand reference accessor (2026-10-22)
+
+The fresh review identified a separate compatibility defect in the **new**
+`InputBuildState.file_references` accessor: cloning an eager TEF EventCommand used
+the ordinary Command five-argument signature and raised TypeError. This affected
+both eager build-state inputs and eager run-state reference access. It is a
+regression in functionality added by this deferred-resolution PR, not a demonstrated
+defect in the original upstream `.files` implementation.
+
+The accessor now uses EventCommand's supported four-argument constructor, retains
+its event name, owner, part index and definition blocks, and leaves the original
+eager configuration unchanged. Syntax-only inspection still uses a copied deferred
+configuration. Two regressions fail with the original TypeError before the fix and
+pass afterward, checking both access paths and metadata while prohibiting file
+open/stat/glob/SQLite operations. The affected upstream selection is now **183 passed**.
+This change adds no additional public API or materialisation feature.
+
 Synthetic regressions in `tests/test_deferred_database_parity.py` assert expected
 sources independently in eager and deferred modes: nested ownership, AD
 Global-relative paths, distinct entries sharing a CSV, inactive scenario exclusion,

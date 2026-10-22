@@ -313,6 +313,42 @@ def test_event_command_deferred_reconstruction_preserves_event_name(tmp_path):
     assert run.file_references == ()
 
 
+@pytest.mark.parametrize('state', ['build', 'eager_run'])
+def test_eager_event_file_references_preserve_metadata_without_io(tmp_path, state):
+    """The new accessor supports EventCommand's four-argument constructor."""
+    from pytuflow._tmf.inp.inp_build_state import InputBuildState
+    from pytuflow._tmf.parsers.command import EventCommand
+    from pytuflow._tmf.parsers.block import DefineBlock
+
+    cfg = TCFConfig(control_file=tmp_path / 'model.tcf', init_from_tcf=False)
+    owner = tmp_path / 'events' / 'model.tef'
+    command = EventCommand('Read Grid Zpts == terrain.asc', cfg, owner, 0)
+    command.event_name = 'Q100'
+    command.define_blocks = [DefineBlock('EVENT DEFINE', 'Q100')]
+    original = InputBuildState(None, command)
+    inp = original if state == 'build' else original.context()
+    parts = EventCommand.parts
+    observed = []
+
+    def checked_parts(clone):
+        observed.append((clone.event_name, clone.parent, clone.part_index, clone.define_blocks))
+        yield from parts(clone)
+
+    with (
+        patch.object(EventCommand, 'parts', checked_parts),
+        patch.object(Path, 'open', side_effect=AssertionError('file opened')),
+        patch.object(Path, 'stat', side_effect=AssertionError('stat')),
+        patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')),
+        patch('sqlite3.connect', side_effect=AssertionError('SQLite')),
+    ):
+        refs = inp.file_references
+    assert len(refs) == 1
+    assert refs[0].path_pattern.name == 'terrain.asc'
+    assert observed == [('Q100', owner, 0, command.define_blocks)]
+    assert command.config.file_resolution == 'eager'
+    assert inp._command.config.file_resolution == 'eager'
+
+
 def test_deferred_gpkg_all_materialises_when_files_requested(tmp_path):
     import sqlite3
     from pytuflow._tmf.inp.gis import GisInput

@@ -160,8 +160,15 @@ class InputBuildState(BuildState, Input):
         else:
             ref_config = from_config(cmd.config)
             ref_config.file_resolution = 'deferred'
-            ref_command = cmd.__class__(cmd.original_text, ref_config, cmd.parent,
-                                        cmd.part_index, cmd.line_number)
+            from ..parsers.command import EventCommand
+            if isinstance(cmd, EventCommand):
+                # EventCommand has no line-number constructor argument.
+                ref_command = EventCommand(cmd.original_text, ref_config, cmd.parent,
+                                           cmd.part_index)
+                ref_command.event_name = cmd.event_name
+            else:
+                ref_command = cmd.__class__(cmd.original_text, ref_config, cmd.parent,
+                                            cmd.part_index, cmd.line_number)
             ref_command.define_blocks = cmd.define_blocks
             ref_command.reload_value()
         return tuple(make_file_reference(part) for part in ref_command.parts() if part.is_value_a_file())
