@@ -57,6 +57,7 @@ class BatchContext(Context):
         self.scope_hits = 0
         self.translation_hits = 0
         self.translation_misses = 0
+        self.commands_constructed = 0
         super().__init__(run_flags, config=config)
         self._batch_active = True
 
@@ -246,6 +247,11 @@ class BatchDependencyResult:
     cross_run_reference_bypasses: int = 0
     unique_reference_signatures: int = 0
     within_run_reference_hits: int = 0
+    commands_constructed: int = 0
+    compilation_seconds: float = 0.0
+    context_construction_seconds: float = 0.0
+    reference_collection_seconds: float = 0.0
+    database_projection_seconds: float = 0.0
 
     @property
     def passed(self) -> bool:
@@ -274,6 +280,10 @@ def collect_batch_dependencies(
     cross_run_reference_hits = cross_run_reference_misses = 0
     cross_run_reference_bypasses = 0
     within_run_reference_hits = 0
+    commands_constructed = 0
+    context_construction_seconds = 0.0
+    reference_collection_seconds = 0.0
+    database_projection_seconds = 0.0
     shared_scope_decisions = {} if cache_scopes else None
     shared_file_references = {} if cache_scopes else None
     # Control-file traversal to locate Set Variable declarations was previously
@@ -293,6 +303,8 @@ def collect_batch_dependencies(
             # Keep the original per-context failure semantics for malformed
             # declarations instead of failing the entire batch up front.
             variable_assignments = None
+
+    compilation_seconds = perf_counter() - started
 
     for index, flags in enumerate(run_flags):
         flag_text = flags if isinstance(flags, str) else ' '.join(
@@ -328,7 +340,10 @@ def collect_batch_dependencies(
                 ctx._shared_file_references = shared_file_references
                 ctx._batch_run_index = index
                 ctx._batch_variable_assignments = variable_assignments
+            context_started = perf_counter()
             run = model.context(context=ctx, file_resolution='deferred')
+            context_construction_seconds += perf_counter() - context_started
+            references_started = perf_counter()
             # Retain input UUID + command order for downstream active-database
             # selection; merely flattening paths would lose provenance.
             input_refs = tuple(
@@ -343,6 +358,8 @@ def collect_batch_dependencies(
                 for ref in inp.file_references
             )
             refs = tuple(item.reference for item in input_refs)
+            reference_collection_seconds += perf_counter() - references_started
+            database_started = perf_counter()
             activations = run.deferred_database_activations()
             # Keep rows attached to the exact declaration UUID. The consumer
             # selects the database active at each boundary/GIS command; simply
@@ -352,6 +369,7 @@ def collect_batch_dependencies(
                 for activation in activations
                 for source in run.deferred_database_sources_for_activation(activation.input_uuid)
             )
+            database_projection_seconds += perf_counter() - database_started
         except Exception as exc:
             # Fail closed. Never return the partial references accumulated
             # before an unknown database or malformed control-file failure.
@@ -374,6 +392,7 @@ def collect_batch_dependencies(
             cross_run_reference_misses += ctx.shared_reference_misses
             cross_run_reference_bypasses += ctx.shared_reference_bypasses
             within_run_reference_hits += ctx.within_run_reference_hits
+            commands_constructed += ctx.commands_constructed
 
     if not results:
         raise ValueError('At least one simulation context is required')
@@ -386,4 +405,9 @@ def collect_batch_dependencies(
         cross_run_reference_bypasses,
         len(shared_file_references) if shared_file_references is not None else 0,
         within_run_reference_hits,
+        commands_constructed,
+        compilation_seconds,
+        context_construction_seconds,
+        reference_collection_seconds,
+        database_projection_seconds,
     )
