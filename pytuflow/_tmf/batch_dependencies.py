@@ -516,6 +516,7 @@ def collect_batch_dependencies(
     input_runstates_constructed = input_runstates_elided = 0
     invariant_projection_reuses = 0
     invariant_projection: BatchDependencyRun | None = None
+    scenario_projections: dict[tuple[str, ...], BatchDependencyRun] = {}
     context_construction_seconds = 0.0
     reference_collection_seconds = 0.0
     database_projection_seconds = 0.0
@@ -552,6 +553,13 @@ def collect_batch_dependencies(
     # shortcut from identical FileReference outputs of partial evaluations.
     can_reuse_invariant_projection = (
         compiled_tree is not None and compiled_tree.is_invariant_literal_model(model)
+    )
+    # A scenario-only READ tree can be reused for different events, but only
+    # when the complete selected scenario-slot sequence matches exactly.
+    can_reuse_scenario_projection = (
+        compiled_tree is not None
+        and not can_reuse_invariant_projection
+        and compiled_tree.is_scenario_literal_model(model)
     )
     compilation_seconds = perf_counter() - started
 
@@ -595,17 +603,25 @@ def collect_batch_dependencies(
                 ctx._batch_compiled_tree = compiled_tree
                 ctx._batch_run_index = index
                 ctx._batch_variable_assignments = variable_assignments
-            if can_reuse_invariant_projection and invariant_projection is not None:
-                # Construct Context first: malformed run flags must still fail
-                # for THIS run. The first complete, successfully resolved
-                # immutable projection is reused; neither mutable RunState nor
-                # its Command objects ever escape or cross run boundaries.
+            scenario_key = None
+            if can_reuse_scenario_projection:
+                selected = ctx._create_list('S')
+                if all(isinstance(value, str) for value in selected):
+                    # Context evaluation is case-insensitive for scenario
+                    # membership. Preserve slot ordering conservatively;
+                    # event differences are irrelevant to scenario-only READs.
+                    scenario_key = tuple(value.casefold() for value in selected)
+            prior = (invariant_projection if can_reuse_invariant_projection
+                     else scenario_projections.get(scenario_key)
+                     if scenario_key is not None else None)
+            if prior is not None:
+                # Context has already validated this run's flags. Reuse only
+                # a fully successful immutable projection of the same proven
+                # scenario signature; no mutable RunState crosses runs.
                 projected = BatchDependencyRun(
-                    index, flag_text, invariant_projection.file_references,
-                    invariant_projection.database_sources,
-                    invariant_projection.database_activations,
-                    None, invariant_projection.input_references,
-                    invariant_projection.ordered_inputs,
+                    index, flag_text, prior.file_references,
+                    prior.database_sources, prior.database_activations,
+                    None, prior.input_references, prior.ordered_inputs,
                 )
                 results.append(projected)
                 if cache_scopes:
@@ -671,9 +687,14 @@ def collect_batch_dependencies(
         results.append(projected)
         if cache_scopes:
             seen_flags[flag_text] = projected
-        if can_reuse_invariant_projection and invariant_projection is None and error is None:
-            # A failed first run must never certify a reusable projection.
-            invariant_projection = projected
+        if error is None:
+            if can_reuse_invariant_projection and invariant_projection is None:
+                # A failed first run must never certify a reusable projection.
+                invariant_projection = projected
+            elif (can_reuse_scenario_projection and scenario_key is not None
+                  and scenario_key not in scenario_projections
+                  and len(scenario_projections) < 10_000):
+                scenario_projections[scenario_key] = projected
         if isinstance(ctx, BatchContext):
             scope_builds += ctx.scope_builds
             scope_hits += ctx.scope_hits
