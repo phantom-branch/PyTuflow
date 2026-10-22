@@ -29,6 +29,13 @@ A missing fixture returns **status=unavailable, exit 2**, never PASS.
 Malformed archive/launcher/baseline contents fail visibly. Output must not
 be written into the fixture checkout.
 
+For CPU hotspot profiling (cProfile **distorts** wall time and is not
+valid speedup evidence), use the same public TCF, from the PyTUFLOW checkout:
+
+~~~powershell
+py -3.14 tests/profile_tutorial_dependencies.py --bundle $Bundle --tcf "EG16_~s1~_~s2~_002.tcf"
+~~~
+
 For a genuine multi-context tutorial case:
 
 ~~~powershell
