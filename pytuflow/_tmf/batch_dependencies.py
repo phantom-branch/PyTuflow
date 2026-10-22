@@ -14,6 +14,7 @@ from pathlib import Path
 from time import perf_counter
 from typing import TYPE_CHECKING
 
+from .compiled_dependency_plan import CompiledVariablePlan
 from .context import Context
 from .scope import GlobalScope, ScenarioScope
 from .tfpathlib import TuflowPath
@@ -45,6 +46,8 @@ class BatchContext(Context):
         self._shared_scope_decisions = shared_scope_decisions
         self._shared_file_references = None
         self._shared_command_templates = None
+        self._shared_read_plans = None
+        self._batch_variable_plan: CompiledVariablePlan | None = None
         self._batch_run_index: int | None = None
         self.shared_reference_hits = 0
         self.within_run_reference_hits = 0
@@ -62,6 +65,8 @@ class BatchContext(Context):
         self.commands_constructed = 0
         self.commands_cloned = 0
         self.command_template_bypasses = 0
+        self.variable_template_clones = 0
+        self.command_plan_hits = 0
         super().__init__(run_flags, config=config)
         self._batch_active = True
 
@@ -206,17 +211,56 @@ class BatchContext(Context):
         from .parsers.command import Command
         from .settings import from_config
 
-        eligible = (
+        eligible_read = (
             self._batch_active
             and self._shared_command_templates is not None
+            and self._shared_read_plans is not None
+            and self._batch_variable_plan is not None
             and type(source_command) is Command
             and source_command.command is not None
             and source_command.command.startswith(('READ GIS ', 'READ GRID '))
             and not source_command.define_blocks
             and bool(source_command.value_orig)
-            and not any(token in str(source_command.value_orig) for token in ('<<', '~', '>>'))
+        )
+        plan = None
+        if eligible_read:
+            # Compile only once per parsed input. Retain the original input
+            # identity to prevent an id() collision. The snapshot is scoped
+            # to one batch; a new batch rebuilds this graph after model edits.
+            raw_expression = str(source_command.value_orig)
+            key = id(build_input)
+            saved = self._shared_read_plans.get(key)
+            if saved is not None and saved[0] is build_input and saved[1] == raw_expression:
+                plan = saved[2]
+                self.command_plan_hits += 1
+            else:
+                plan = self._batch_variable_plan.compile_read(raw_expression)
+                if key in self._shared_read_plans or len(self._shared_read_plans) < 10_000:
+                    self._shared_read_plans[key] = (build_input, raw_expression, plan)
+
+        # The existing context resolver remains authoritative. We never
+        # reuse an expression with unresolved tokens, special layer syntax,
+        # or a context-dependent second expansion. A relevant-variable
+        # signature also distinguishes different transitive assignments even
+        # when unrelated event flags vary.
+        relevant_values = ()
+        if plan is not None and plan.reusable and plan.relevant_variables:
+            if all(
+                isinstance(self.var_map.get(name), str)
+                for name in plan.relevant_variables
+            ):
+                relevant_values = tuple(
+                    (name, self.var_map[name]) for name in plan.relevant_variables
+                )
+            else:
+                plan = None
+        eligible = (
+            plan is not None and plan.reusable
             and '<<' not in command_text
+            and '>>' not in command_text
             and '~' not in command_text
+            and (not plan.direct_variables
+                 or self.translate(command_text) == command_text)
         )
         if eligible:
             # The same parsed input provides a frozen configuration snapshot
@@ -234,6 +278,7 @@ class BatchContext(Context):
                 str(run_config.gis_format),
                 str(run_config.grid_format),
                 tuple(map(str, run_config.wildcards)),
+                relevant_values,
             )
             entry = self._shared_command_templates.get(signature)
             if entry is not None and entry[0] is build_input:
@@ -247,6 +292,8 @@ class BatchContext(Context):
                 fresh._expander.variables = fresh.config.variables
                 fresh._expander.database = fresh.config.spatial_database
                 self.commands_cloned += 1
+                if plan.direct_variables:
+                    self.variable_template_clones += 1
                 return fresh
 
         from .parsers.command import EventCommand
@@ -342,6 +389,10 @@ class BatchDependencyResult:
     commands_cloned: int = 0
     command_template_bypasses: int = 0
     unique_command_templates: int = 0
+    compiled_variable_nodes: int = 0
+    compiled_read_nodes: int = 0
+    command_plan_hits: int = 0
+    variable_template_clones: int = 0
 
     @property
     def passed(self) -> bool:
@@ -373,12 +424,15 @@ def collect_batch_dependencies(
     commands_constructed = 0
     commands_cloned = 0
     command_template_bypasses = 0
+    command_plan_hits = 0
+    variable_template_clones = 0
     context_construction_seconds = 0.0
     reference_collection_seconds = 0.0
     database_projection_seconds = 0.0
     shared_scope_decisions = {} if cache_scopes else None
     shared_file_references = {} if cache_scopes else None
     shared_command_templates = {} if cache_scopes else None
+    shared_read_plans = {} if cache_scopes else None
     # Control-file traversal to locate Set Variable declarations was previously
     # repeated for every run. The parsed input objects and their scopes are
     # shared; active-variable values are still computed independently per run.
@@ -397,6 +451,7 @@ def collect_batch_dependencies(
             # declarations instead of failing the entire batch up front.
             variable_assignments = None
 
+    variable_plan = CompiledVariablePlan.from_assignments(variable_assignments) if cache_scopes else None
     compilation_seconds = perf_counter() - started
 
     for index, flags in enumerate(run_flags):
@@ -432,6 +487,8 @@ def collect_batch_dependencies(
             if isinstance(ctx, BatchContext):
                 ctx._shared_file_references = shared_file_references
                 ctx._shared_command_templates = shared_command_templates
+                ctx._shared_read_plans = shared_read_plans
+                ctx._batch_variable_plan = variable_plan
                 ctx._batch_run_index = index
                 ctx._batch_variable_assignments = variable_assignments
             context_started = perf_counter()
@@ -489,6 +546,8 @@ def collect_batch_dependencies(
             commands_constructed += ctx.commands_constructed
             commands_cloned += ctx.commands_cloned
             command_template_bypasses += ctx.command_template_bypasses
+            command_plan_hits += ctx.command_plan_hits
+            variable_template_clones += ctx.variable_template_clones
 
     if not results:
         raise ValueError('At least one simulation context is required')
@@ -509,4 +568,8 @@ def collect_batch_dependencies(
         commands_cloned,
         command_template_bypasses,
         len(shared_command_templates) if shared_command_templates is not None else 0,
+        len(variable_plan.dependencies) if variable_plan is not None else 0,
+        len(shared_read_plans) if shared_read_plans is not None else 0,
+        command_plan_hits,
+        variable_template_clones,
     )
