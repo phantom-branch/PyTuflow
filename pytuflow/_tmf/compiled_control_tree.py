@@ -151,6 +151,44 @@ class CompiledControlTree:
             for node in self.nodes
         )
 
+    def is_scenario_literal_model(self, model: TCF) -> bool:
+        """Certify read-only inputs controlled *only* by literal scenarios.
+
+        Unlike the completely invariant subset, this may contain IF Scenario
+        branches and ELSE/negated scenario conditions.  Reuse is permitted
+        only within the exact same selected scenario-slot signature, so the
+        existing context evaluator remains authoritative for branch choices.
+        All non-READ, variable/event, DEFINE, include, BC, GIS database and
+        dynamic selector constructs deliberately bypass this fast path.
+        """
+        config = model.config
+        if (not self.nodes or config.event_db or config.variables
+                or config.scenarios
+                or str(config.spatial_database) not in ('', '.', 'None')):
+            return False
+        safe_suffixes = {'.shp', '.tif', '.asc', '.flt'}
+        for node in self.nodes:
+            if (node.role != 'READ' or node.bypass_reason is not None
+                    or node.read_dependency is None
+                    or node.read_dependency.relevant_variables
+                    or node.command_name not in ('READ GIS CODE', 'READ GRID ZPTS')
+                    or not node.raw_value):
+                return False
+            if any(
+                scope.scope_type not in ('GLOBAL', 'SCENARIO')
+                or not scope.known
+                or scope.variable is not None
+                and str(scope.variable).startswith('<<')
+                for scope in node.branch_conditions
+            ):
+                return False
+            raw = node.raw_value.strip()
+            if (not raw or '_event_' in raw.casefold()
+                    or any(token in raw for token in '<>~*?|#$%')
+                    or Path(raw).suffix.lower() not in safe_suffixes):
+                return False
+        return True
+
     def is_invariant_literal_model(self, model: TCF) -> bool:
         """Prove one narrow class of entire models is independent of run flags.
 
