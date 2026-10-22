@@ -146,6 +146,10 @@ class BatchContext(Context):
             self.shared_reference_hits += 1
             return cached[1]
         refs = materialised_input.file_references
+        if not refs:
+            # Set Variable, output and other non-source commands have no
+            # physical input references; do not count or store empty entries.
+            return refs
         self._shared_file_references[key] = (build_input, refs)
         self.shared_reference_misses += 1
         return refs
