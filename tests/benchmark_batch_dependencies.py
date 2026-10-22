@@ -114,6 +114,10 @@ def benchmark(runs: int, trials: int, static_inputs: int = 0) -> dict[str, objec
                             'commands_cloned': report.commands_cloned,
                             'command_template_bypasses': report.command_template_bypasses,
                             'unique_command_templates': report.unique_command_templates,
+                            'compiled_variable_nodes': report.compiled_variable_nodes,
+                            'compiled_read_nodes': report.compiled_read_nodes,
+                            'command_plan_hits': report.command_plan_hits,
+                            'variable_template_clones': report.variable_template_clones,
                         }
                         cached_phases['compilation'].append(report.compilation_seconds)
                         cached_phases['context_construction'].append(
