@@ -179,3 +179,109 @@ def test_compiled_tree_does_not_probe_resources_after_parse(tmp_path: Path):
         batch = model.collect_batch_dependencies(('-e1 A', '-e1 B'))
     assert batch.passed
     assert batch.compiled_graph_nodes >= 2
+
+
+def test_compile_tree_opt_out_keeps_other_caches_and_provenance(tmp_path: Path):
+    model = _source(
+        tmp_path,
+        'Set Variable ROOT == gis\n'
+        'Read GIS Code == <<ROOT>>/code.shp\n'
+        'Read Grid Zpts == terrain/static.tif\n',
+    )
+    flags = tuple(f'-e1 TP{i:03d}' for i in range(25))
+    graph = model.collect_batch_dependencies(flags)
+    older_cached = model.collect_batch_dependencies(flags, compile_tree=False)
+    uncached = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert graph.passed and older_cached.passed and uncached.passed
+    assert graph.compiled_graph_nodes == 3
+    assert older_cached.compiled_graph_nodes == 0
+    assert older_cached.compiled_read_nodes >= 2
+    assert older_cached.commands_cloned > 0
+    assert older_cached.contexts_constructed == 25
+    assert graph.invariant_projection_reuses == 0
+    assert _identities(graph) == _identities(older_cached) == _identities(uncached)
+
+
+def test_literal_leaf_tree_elides_run_states_for_500_distinct_flags(tmp_path: Path):
+    model = _source(
+        tmp_path,
+        'Read GIS Code == gis/codes.shp\n'
+        'Read Grid Zpts == terrain/dem.tif\n',
+    )
+    flags = tuple(f'-s1 DEV -e1 TP{i:03d}' for i in range(500))
+    graph = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, compile_tree=False)
+    uncached = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert graph.passed and baseline.passed and uncached.passed
+    assert graph.contexts_constructed == 500
+    assert graph.contexts_reused == 0
+    assert graph.invariant_projection_reuses == 499
+    assert graph.input_runstates_constructed == 2
+    assert graph.input_runstates_elided == 998
+    assert baseline.input_runstates_elided == 0
+    assert baseline.invariant_projection_reuses == 0
+    assert baseline.input_runstates_constructed == 1000
+    assert graph.graph_node_lookups == 2
+    assert _identities(graph) == _identities(baseline) == _identities(uncached)
+
+
+@pytest.mark.parametrize(
+    'source_text',
+    [
+        'Set Variable ROOT == gis\nRead GIS Code == <<ROOT>>/code.shp\n',
+        'Read GIS Code == gis/2d_code_<<E1>>.shp\n',
+        'Read GIS Code == gis/code_~e1~.shp\n',
+        'Read GIS Code == gis/code_*.shp\n',
+        'Read GIS Code == layers.gpkg >> all\n',
+        'Read GIS Code == gis/code.shp | 1\n',
+        'Read Grid RF == rainfall.nc\n',
+        'BC Database == bc.csv\nRead GIS BC == 2d_bc.shp\n',
+        'If Scenario == DEV\nRead GIS Code == dev.shp\n'
+        'Else\nRead GIS Code == exg.shp\nEnd If\n',
+    ],
+)
+def test_unproven_nodes_do_not_elide_run_states(tmp_path: Path, source_text: str):
+    model = _source(tmp_path, source_text)
+    flags = ('-s1 DEV -e1 A', '-s1 DEV -e1 B')
+    cached = model.collect_batch_dependencies(flags)
+    assert cached.input_runstates_elided == 0
+    assert cached.invariant_projection_reuses == 0
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert _identities(cached) == _identities(baseline)
+
+
+def test_failed_first_run_never_seeds_invariant_projection(tmp_path: Path):
+    model = _source(tmp_path, 'Read GIS Code == gis/code.shp\n')
+    real_context = model.context
+    calls = []
+
+    def flaky_context(*args, **kwargs):
+        calls.append(1)
+        if len(calls) == 1:
+            raise ValueError('deliberate one-run failure')
+        return real_context(*args, **kwargs)
+
+    with patch.object(model, 'context', side_effect=flaky_context):
+        result = model.collect_batch_dependencies(('-e1 A', '-e1 B', '-e1 C'))
+    assert not result.passed
+    assert result.runs[0].error == 'ValueError: deliberate one-run failure'
+    assert not result.runs[0].file_references
+    assert not result.runs[0].ordered_inputs
+    assert result.runs[1].error is None
+    assert result.runs[2].error is None
+    assert result.invariant_projection_reuses == 1
+    assert result.input_runstates_elided == 1
+    assert len(calls) == 2
+
+
+def test_static_graph_rebuilds_and_disables_projection_after_model_edit(tmp_path: Path):
+    model = _source(tmp_path, 'Read GIS Code == gis/code.shp\n')
+    flags = ('-e1 A', '-e1 B', '-e1 C')
+    original = model.collect_batch_dependencies(flags)
+    assert original.invariant_projection_reuses == 2
+    model.find_input(lhs='read gis code')[0].rhs = 'gis/<<E1>>.shp'
+    edited = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert edited.invariant_projection_reuses == 0
+    assert edited.input_runstates_elided == 0
+    assert _identities(edited) == _identities(baseline)
