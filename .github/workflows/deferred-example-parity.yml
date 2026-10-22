@@ -13,7 +13,7 @@ jobs:
   example-parity:
     # Expensive sweep only when explicitly enabled in this PR's title.
     # Maintainers can append [run examples] and push a test commit to rerun.
-    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 2 && contains(github.event.pull_request.title, '[run examples]'))
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.number == 1 && contains(github.event.pull_request.title, '[run examples]'))
     # Windows-only parity gate with explicit diagnostic runs on pinned inputs.
     runs-on: windows-latest
     timeout-minutes: 30
@@ -22,11 +22,11 @@ jobs:
         uses: actions/checkout@v5
         with:
           path: upstream
-      - name: Checkout pinned diagnostic consumer and temporary fixture
+      - name: Checkout pinned Windows diagnostic consumer
         uses: actions/checkout@v5
         with:
           repository: Chain-Frost/ryan-tools
-          ref: 42e3086bed7f258d3461a491b672f7d6ea07075a
+          ref: 5fca71e3cea3563fc278f891ca15e74c35e04b42
           path: ryan-tools
       - name: Checkout pinned example-data submodule (without other submodules)
         working-directory: ryan-tools
