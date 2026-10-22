@@ -47,9 +47,11 @@ def _batch(model: TCF, flags: tuple[str, ...], *, cache_scopes: bool):
     ], report
 
 
-def benchmark(runs: int, trials: int, static_inputs: int = 0) -> dict[str, object]:
-    if runs < 1 or trials < 1 or static_inputs < 0:
-        raise ValueError('runs/trials must be positive and static_inputs nonnegative')
+def benchmark(
+    runs: int, trials: int, static_inputs: int = 0, variable_inputs: int = 0,
+) -> dict[str, object]:
+    if runs < 1 or trials < 1 or static_inputs < 0 or variable_inputs < 0:
+        raise ValueError('runs/trials must be positive and input counts nonnegative')
     with TemporaryDirectory(prefix='pytuflow-batch-benchmark-') as directory:
         tcf_file = Path(directory) / 'ensemble.tcf'
         tcf_file.write_text(
@@ -61,6 +63,13 @@ def benchmark(runs: int, trials: int, static_inputs: int = 0) -> dict[str, objec
             '    Read GIS Mat == gis/2d_mat_EXG.gpkg >> 2d_mat_EXG\n'
             'END IF\n' + ''.join(
                 f'Read GIS Code == gis/static_{n:03d}.shp\n' for n in range(static_inputs)
+            ) + (
+                'Set Variable BASE == gis\n'
+                'Set Variable ROOT == <<BASE>>/variable\n'
+                if variable_inputs else ''
+            ) + ''.join(
+                f'Read GIS Code == <<ROOT>>/source_{n:03d}.shp\n'
+                for n in range(variable_inputs)
             ),
             encoding='utf-8',
         )
@@ -139,6 +148,7 @@ def benchmark(runs: int, trials: int, static_inputs: int = 0) -> dict[str, objec
             'runs': runs,
             'trials': trials,
             'static_inputs': static_inputs,
+            'variable_inputs': variable_inputs,
             'parse_seconds': parse_seconds,
             'storage': 'local temporary directory, syntactic references only',
             'note': 'No physical GIS/file materialisation; do not claim end-to-end preflight speedup',
@@ -158,5 +168,8 @@ if __name__ == '__main__':
     parser.add_argument('--runs', type=int, default=500)
     parser.add_argument('--trials', type=int, default=3)
     parser.add_argument('--static-inputs', type=int, default=0)
+    parser.add_argument('--variable-inputs', type=int, default=0)
     options = parser.parse_args()
-    print(json.dumps(benchmark(options.runs, options.trials, options.static_inputs), indent=2))
+    print(json.dumps(benchmark(
+        options.runs, options.trials, options.static_inputs, options.variable_inputs,
+    ), indent=2))
