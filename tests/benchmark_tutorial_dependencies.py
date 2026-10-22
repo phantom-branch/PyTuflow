@@ -343,9 +343,16 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
                 "missing": previous["missing"] + diff["missing"],
                 "extra": previous["extra"] + diff["extra"],
             }
-    valid = all(count == 0 for count in errors.values()) and all(
-        difference == {"missing": 0, "extra": 0} for difference in differences.values()
+    unresolved = sum(
+        bool(ref.unresolved_variables)
+        for case in observed for ref in case.file_references
     )
+    valid = (unresolved == 0
+             and all(count == 0 for count in error_totals.values())
+             and all(
+                 difference == {"missing": 0, "extra": 0}
+                 for difference in differences.values()
+             ))
     primary_paths = {
         str(ref.path_pattern)
         for case in observed for ref in case.file_references
@@ -369,6 +376,19 @@ def measure(tcf: Path, original_flags: tuple[str, ...], *,
         "failed_runs_across_trials": dict(error_totals),
         "per_run_reference_total": sum(len(case.file_references) for case in observed),
         "per_run_secondary_source_total": sum(len(case.database_sources) for case in observed),
+        "unresolved_primary_references": unresolved,
+        "requires_attribute_scan": sum(
+            ref.requires_attribute_scan
+            for case in observed for ref in case.file_references
+        ),
+        "requires_database_scan": sum(
+            ref.requires_database_scan
+            for case in observed for ref in case.file_references
+        ),
+        "requires_raster_metadata_scan": sum(
+            ref.requires_raster_metadata_scan
+            for case in observed for ref in case.file_references
+        ),
         "physically_unique_paths": None,
         "unique_lexical_primary_paths": len(primary_paths),
         "unique_lexical_primary_and_secondary_paths": len(primary_paths | secondary_paths),
