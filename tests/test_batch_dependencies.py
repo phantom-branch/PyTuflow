@@ -549,3 +549,26 @@ def test_batch_preserves_nested_tgc_control_file_provenance(tmp_path):
     assert any(
         item.owner_control_file == top for item in case.input_references
     )
+
+
+def test_ninth_scenario_selects_same_branch_in_all_modes(tmp_path):
+    source = tmp_path / 'ninth.tcf'
+    source.write_text(
+        'If Scenario == Ninth\n'
+        '    Read Grid Zpts == selected.asc\n'
+        'Else\n'
+        '    Pause == Incorrect ninth scenario branch\n'
+        'End If\n', encoding='utf-8',
+    )
+    (tmp_path / 'selected.asc').write_text('placeholder', encoding='utf-8')
+    model = TCF(source)
+    flags = '-s1 Base -s9 Ninth'
+    paths = []
+    for mode in ('eager', 'deferred'):
+        state = model.context(flags, file_resolution=mode)
+        refs = tuple(ref for inp in state.find_input() for ref in inp.file_references)
+        paths.append(tuple(ref.path_pattern for ref in refs))
+    batch = model.collect_batch_dependencies((flags,))
+    assert batch.passed
+    assert paths[0] == paths[1] == tuple(ref.path_pattern for ref in batch.runs[0].file_references)
+    assert len(paths[0]) == 1

@@ -403,7 +403,7 @@ class Context:
         """
 
         if not hasattr(self, identifier):
-            list_ = [getattr(self, '{0}{1}'.format(identifier, i)) for i in range(9) if
+            list_ = [getattr(self, '{0}{1}'.format(identifier, i)) for i in range(1, 10) if
                       hasattr(self, '{0}{1}'.format(identifier, i)) and getattr(self, '{0}{1}'.format(identifier, i))]
         else:
             list_ = getattr(self, identifier)

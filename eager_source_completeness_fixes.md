@@ -1,5 +1,28 @@
 # Eager source completeness: separate review record
 
+## Existing materials CSV separator/comment defect (2026-10-22)
+
+The replacement model also exposed an existing materials loader error: CSV
+separator rows (`',,,'`) and whole-line comment records reached integer material-ID
+conversion, producing a NaN/string conversion error and leaving no cached table.
+Materials loading now excludes wholly empty separator rows and rows whose ID
+starts with `!` or `#`, before building entries. A nonempty row without an ID still
+fails validation. This repairs original eager/shared initial loading, not deferred
+resolution. Synthetic tests verify retained material IDs, rejection of malformed
+rows and eager/deferred/batch source-accessor parity. Native files are unchanged.
+
+## Existing eager/shared Context slot-nine defect (2026-10-22)
+
+Native replacement-model validation exposed an existing off-by-one error in
+`Context._create_list`: it enumerated numbered scenario/event slots 0 through 8,
+although argument loading supports slots 1 through 9. As a result `-s9` / `-e9`
+were available for placeholder translation but omitted from conditional scopes.
+This affects original eager contexts as well as deferred and batch contexts;
+it is an existing behaviour fix, **not new deferred functionality**. Scope
+collection now includes slots 1 through 9. Synthetic regressions cover ninth
+scenario/event selection and real parsed conditional/PAUSE parity across modes.
+No native input files or launcher flags are changed.
+
 ## Network evaluation corrections (2026-10-22)
 
 Two further parser blockers were found while evaluating batch/deferred resolution

@@ -919,3 +919,36 @@ def test_table_link_requires_shared_gis_scan_without_loading_geometry(
     assert ref.path_pattern == tmp_path / "gis" / filename
     assert ref.layer_pattern == layer
     assert ref.requires_layer_scan == (layer is not None)
+
+
+def test_material_csv_separator_and_comment_rows_do_not_become_records(tmp_path):
+    from pytuflow._tmf.db.mat import MatDatabase
+    path = tmp_path / 'materials.csv'
+    path.write_text(
+        "Material ID,Manning's n,Losses,Description\n"
+        '1,0.05,,first\n'
+        ',,,\n'
+        '! Documentation,,,\n'
+        '2,0.06,,second\n', encoding='utf-8',
+    )
+    database = MatDatabase(path)
+    assert database.loaded
+    assert list(database.df.index) == [1, 2]
+    assert {int(key) for key in database.entries} == {1, 2}
+    source = tmp_path / 'material.tcf'
+    source.write_text('Read Materials File == materials.csv\n', encoding='utf-8')
+    model = TCF(source)
+    for mode in ('eager', 'deferred'):
+        state = model.context('-s1 Base', file_resolution=mode)
+        assert all(not inp.database_source_references for inp in state.find_input())
+    batch = model.collect_batch_dependencies(('-s1 Base',))
+    assert batch.passed
+    assert batch.runs[0].database_sources == ()
+
+
+def test_material_csv_nonempty_row_without_id_remains_invalid(tmp_path):
+    from pytuflow._tmf.db.mat import MatDatabase
+    path = tmp_path / 'invalid.csv'
+    path.write_text("Material ID,Manning's n\n1,0.05\n,0.06\n", encoding='utf-8')
+    with pytest.raises(ValueError):
+        MatDatabase(path)
