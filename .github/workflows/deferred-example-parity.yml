@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: Chain-Frost/ryan-tools
-          ref: 09dfd502c8733c0cec1558a6bacadb0a112da84c
+          ref: b32adc258c63957e06b482c3280eb8a02c428a13
           path: ryan-tools
       - name: Checkout pinned example-data submodule (without other submodules)
         working-directory: ryan-tools

@@ -91,8 +91,6 @@ before all runs; retain exact heads, anonymous summaries and actual storage/cach
 conditions. No engine execution or project-data upload is needed. Keep the PR open
 for final external acceptance/review; no merge or release is performed here.
 
-## Shared database-source projection (2026-10-22)
-
 ## Review follow-up and external evidence (2026-10-22)
 
 The later eager `file_references` EventCommand constructor finding is repaired
@@ -126,6 +124,12 @@ The **42-run external check is still outstanding**. The owner retains the final
 external acceptance decision, including whether a repair-head network recheck is
 required. Feature-to-BC-activation selection remains the documented consumer
 limitation above. No merge or release is performed.
+
+The example workflow now pins consumer `b32adc258c63957e06b482c3280eb8a02c428a13`,
+including the native handoff's physical-import/version/source-hash verification
+and the preserved external 440-run record. Consumer CI pins parser repair `8e7bc30`.
+The consumer implementation itself is unchanged from the successful earlier replay;
+the new pin also fixes the diagnostic/handoff provenance for reviewer reproduction.
 
 ## Shared database-source API details (2026-10-22)
 
