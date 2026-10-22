@@ -44,3 +44,6 @@ jobs:
       - name: Benchmark shared static source commands (Windows Python 3.14)
         if: matrix.python-version == '3.14'
         run: python tests/benchmark_batch_dependencies.py --runs 120 --trials 3 --static-inputs 20
+      - name: Profile command-resolution hotspots (Windows Python 3.14)
+        if: matrix.python-version == '3.14'
+        run: python tests/profile_batch_dependencies.py --runs 120 --static-inputs 20
