@@ -190,9 +190,10 @@ def test_launcher_quoted_flags_keep_exact_values(tmp_path: Path) -> None:
     )
     cases = discover_cases(tmp_path, {"runs/quoted.tcf": 1})
     assert cases == {"runs/quoted.tcf": ({"s1": "Scenario One"},)}
-    expected, _ = individual(TCF(source / "quoted.tcf"), cases["runs/quoted.tcf"])
+    model = TCF(source / "quoted.tcf")
+    expected, _ = individual(model, cases["runs/quoted.tcf"])
     actual, graph = batch(
-        TCF(source / "quoted.tcf"), cases["runs/quoted.tcf"],
+        model, cases["runs/quoted.tcf"],
         cached=True, compile_tree=True,
     )
     assert expected[0].error is None
