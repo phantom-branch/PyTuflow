@@ -120,12 +120,12 @@ def test_four_mode_same_head_compiler_and_cache_differential(tmp_path: Path) -> 
     """No synthetic wall-time speedup assertion; exact identity and graph counters only."""
     tcf = tmp_path / "modes.tcf"
     tcf.write_text(
-        "IF Scenario == DEV\\n"
-        "  Read GIS Code == gis/dev.shp\\n"
-        "ELSE\\n"
-        "  Read GIS Code == gis/exg.shp\\n"
-        "END IF\\n"
-        "Read GRID Zpts == grid/static.tif\\n",
+        "IF Scenario == DEV\n"
+        "  Read GIS Code == gis/dev.shp\n"
+        "ELSE\n"
+        "  Read GIS Code == gis/exg.shp\n"
+        "END IF\n"
+        "Read GRID Zpts == grid/static.tif\n",
         encoding="utf-8",
     )
     flags = tuple(
@@ -162,8 +162,8 @@ def test_four_mode_same_head_compiler_and_cache_differential(tmp_path: Path) -> 
 def test_reordered_commands_fail_even_when_multiset_is_identical(tmp_path: Path) -> None:
     tcf = tmp_path / "order.tcf"
     tcf.write_text(
-        "Read GIS Code == gis/first.shp\\n"
-        "Read GIS Code == gis/second.shp\\n", encoding="utf-8",
+        "Read GIS Code == gis/first.shp\n"
+        "Read GIS Code == gis/second.shp\n", encoding="utf-8",
     )
     expected, _ = individual(TCF(tcf), ("-e1 A",))
     assert expected[0].error is None
@@ -179,14 +179,14 @@ def test_launcher_quoted_flags_keep_exact_values(tmp_path: Path) -> None:
     source = tmp_path / "runs"
     source.mkdir()
     (source / "quoted.tcf").write_text(
-        "If Scenario == Scenario One\\n"
-        "  Read GIS Code == gis/multiword.shp\\n"
-        "Else\\n"
-        "  Read GIS Code == gis/other.shp\\n"
-        "End If\\n", encoding="utf-8",
+        "If Scenario == Scenario One\n"
+        "  Read GIS Code == gis/multiword.shp\n"
+        "Else\n"
+        "  Read GIS Code == gis/other.shp\n"
+        "End If\n", encoding="utf-8",
     )
     (source / "launcher.bat").write_text(
-        'TUFLOW.exe -b -s1 "Scenario One" quoted.tcf\\n', encoding="utf-8",
+        'TUFLOW.exe -b -s1 "Scenario One" quoted.tcf\n', encoding="utf-8",
     )
     cases = discover_cases(tmp_path, {"runs/quoted.tcf": 1})
     assert cases == {"runs/quoted.tcf": ({"s1": "Scenario One"},)}
@@ -206,7 +206,7 @@ def test_launcher_quoted_flags_keep_exact_values(tmp_path: Path) -> None:
 
 def test_distinct_flag_signature_keeps_quoted_values_separate(tmp_path: Path) -> None:
     tcf = tmp_path / "flags.tcf"
-    tcf.write_text("Read GRID Zpts == grid/terrain.tif\\n", encoding="utf-8")
+    tcf.write_text("Read GRID Zpts == grid/terrain.tif\n", encoding="utf-8")
     report = measure(
         tcf,
         ({"s1": "Scenario One"}, {"s1": "Scenario Two"}),
