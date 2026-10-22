@@ -179,7 +179,15 @@ class InputRunState(RunState, Input):
                     source_command.part_index, source_command.line_number,
                 )
             self._command.define_blocks = source_command.define_blocks
-            self._command.reload_value()
+            # A plain Command has already expanded its value in __init__.
+            # Repeating reload_value() re-runs path/part expansion for every
+            # static command in every batch context. Only the opt-in batch
+            # path skips this redundant expansion, and only where adding
+            # DEFINE blocks or EventCommand state cannot change its result.
+            if not (getattr(self.ctx, '_batch_active', False)
+                    and type(source_command) is Command
+                    and not source_command.define_blocks):
+                self._command.reload_value()
         else:
             self._command = source_command.__class__(cmd_txt, run_config)
         self._command.config.variables = self.ctx.translate
