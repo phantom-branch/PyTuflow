@@ -1,9 +1,9 @@
 """Opt-in, read-only batch projection of parsed TUFLOW control-file contexts.
 
-The batch path uses a fresh Context for every run. It caches only within a
-single run, never mutable RunState objects or results from another run. This
-is the conservative first stage of batch optimisation; future dependency-plan
-compilation can replace the individual contexts after full parity validation.
+The batch path uses a fresh Context for each distinct run. It caches
+immutable references keyed by resolved command and relevant configuration
+within a single synchronous batch, never mutable RunState objects. The full
+immutable cross-run dependency graph remains future work.
 """
 
 from __future__ import annotations
@@ -45,6 +45,7 @@ class BatchContext(Context):
         self._shared_file_references = None
         self.shared_reference_hits = 0
         self.shared_reference_misses = 0
+        self.shared_reference_bypasses = 0
         self.shared_scope_hits = 0
         self.shared_scope_misses = 0
         self._batch_scopes = None
@@ -130,18 +131,40 @@ class BatchContext(Context):
     def cached_file_references(self, build_input, materialised_input):
         """Reuse literal immutable references from this batch's parsed TCF.
 
-        A context-dependent command must use PyTUFLOW's existing resolver.
-        The cache holds the original build-state input to prevent id reuse.
-        No mutable command, config or run-state is shared between contexts.
+        Reuse is permitted only for fully resolved, equivalent commands.
+        Any uncertain expansion uses PyTUFLOW's existing resolver. The cache
+        retains the build-state input to prevent id reuse; no mutable command,
+        config or run-state is shared between contexts.
         """
         if not self._batch_active or self._shared_file_references is None:
             return materialised_input.file_references
         rhs = str(build_input.rhs)
-        # The tilde and variable forms include TEF/event wildcards. Avoid
-        # guessing how they resolve; the standard resolver remains authoritative.
-        if not rhs or '<<' in rhs or '~' in rhs or self.translate(rhs) != rhs:
+        # Construct the signature from the *resolved* command, not from the
+        # complete run flags. Unrelated events can then reuse the same input
+        # even if an upstream Set Variable produced the path. This requires
+        # the same parsed input identity and all settings used by deferred
+        # command/path classification. Context-dependent or incompletely
+        # expanded commands bypass the cache rather than sharing partial work.
+        from .parsers.command import Command
+
+        cmd = materialised_input.command()
+        resolved = self.translate(rhs)
+        if (not rhs or '~' in rhs or type(cmd) is not Command
+                or cmd.define_blocks or not isinstance(resolved, str)
+                or '<<' in resolved or '>>' in resolved
+                or '<<' in str(cmd.value) or '~' in str(cmd.value)
+                or self.translate(str(cmd.value)) != str(cmd.value)):
+            self.shared_reference_bypasses += 1
             return materialised_input.file_references
-        key = (id(build_input), rhs)
+
+        config = cmd.config
+        key = (
+            id(build_input), cmd.original_text, str(cmd.value),
+            str(cmd.parent), cmd.part_index, cmd.part_count,
+            str(config.control_file), str(config.root_folder),
+            str(config.spatial_database), str(config.gis_format),
+            str(config.grid_format), tuple(map(str, config.wildcards)),
+        )
         cached = self._shared_file_references.get(key)
         if cached is not None and cached[0] is build_input:
             self.shared_reference_hits += 1
@@ -150,6 +173,11 @@ class BatchContext(Context):
         if not refs:
             # Set Variable, output and other non-source commands have no
             # physical input references; do not count or store empty entries.
+            return refs
+        if len(self._shared_file_references) >= 10_000:
+            # Bound memory growth for exceptionally large or highly dynamic
+            # batches. Correctness takes precedence over cache retention.
+            self.shared_reference_bypasses += 1
             return refs
         self._shared_file_references[key] = (build_input, refs)
         self.shared_reference_misses += 1
@@ -208,6 +236,8 @@ class BatchDependencyResult:
     cross_run_reference_misses: int
     cross_run_scope_hits: int
     cross_run_scope_misses: int
+    cross_run_reference_bypasses: int = 0
+    unique_reference_signatures: int = 0
 
     @property
     def passed(self) -> bool:
@@ -234,6 +264,7 @@ def collect_batch_dependencies(
     scope_builds = scope_hits = translation_hits = translation_misses = 0
     cross_run_scope_hits = cross_run_scope_misses = 0
     cross_run_reference_hits = cross_run_reference_misses = 0
+    cross_run_reference_bypasses = 0
     shared_scope_decisions = {} if cache_scopes else None
     shared_file_references = {} if cache_scopes else None
     # Control-file traversal to locate Set Variable declarations was previously
@@ -331,6 +362,7 @@ def collect_batch_dependencies(
             cross_run_scope_misses += ctx.shared_scope_misses
             cross_run_reference_hits += ctx.shared_reference_hits
             cross_run_reference_misses += ctx.shared_reference_misses
+            cross_run_reference_bypasses += ctx.shared_reference_bypasses
 
     if not results:
         raise ValueError('At least one simulation context is required')
@@ -340,4 +372,6 @@ def collect_batch_dependencies(
         contexts_constructed, contexts_reused,
         cross_run_reference_hits, cross_run_reference_misses,
         cross_run_scope_hits, cross_run_scope_misses,
+        cross_run_reference_bypasses,
+        len(shared_file_references) if shared_file_references is not None else 0,
     )
