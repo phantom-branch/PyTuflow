@@ -615,3 +615,25 @@ def test_group_clone_exceptions_fall_back_and_are_counted(tmp_path: Path):
     assert dict(graph.input_group_fallbacks)['prototype_exception'] == 2
     assert dict(graph.input_group_fallbacks)['ineligible'] > 0
     assert _identities(graph) == _identities(baseline)
+
+
+def test_group_reuse_exception_is_reported_without_losing_inputs(tmp_path: Path):
+    model = _source(tmp_path,
+                    'Set Variable ROOT == gis\n'
+                    'Read Grid Zpts == terrain/constant.tif\n'
+                    'Read GIS Code == <<ROOT>>/dynamic.shp\n')
+    flags = ('-e1 A', '-e1 B', '-e1 C')
+    original_clone = LiteralInputGroupCache._clone
+
+    def flaky_clone(prototype, build_input, ctx, parent):
+        if getattr(ctx, '_batch_run_index', None) == 1:
+            raise RuntimeError('simulated cached clone failure')
+        return original_clone(prototype, build_input, ctx, parent)
+
+    with patch.object(LiteralInputGroupCache, '_clone', staticmethod(flaky_clone)):
+        result = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert result.passed and baseline.passed
+    assert result.input_runstates_elided == 1
+    assert dict(result.input_group_fallbacks)['reuse_exception'] == 1
+    assert _identities(result) == _identities(baseline)
