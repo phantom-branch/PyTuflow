@@ -410,6 +410,9 @@ class BatchInputCommand:
     line_number: int
     command_name: str
     command_text: str
+    # Authoritative count retained independently of the flattened projection.
+    # A consumer can detect references that vanish from both output tuples.
+    reference_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -648,6 +651,7 @@ def collect_batch_dependencies(
                     line_number=inp.line_number,
                     command_name=str(inp.lhs),
                     command_text=str(inp._command.original_text),
+                    reference_count=len(inp.file_references),
                 )
                 for sequence, inp in enumerate(active_inputs)
             )
