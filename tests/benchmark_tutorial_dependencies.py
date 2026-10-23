@@ -53,6 +53,9 @@ COUNTERS = (
     "input_runstates_elided", "invariant_projection_reuses",
     "reusable_input_groups",
     "input_group_fallbacks",
+    "compiled_input_group_candidates", "input_group_bypass_reasons",
+    "input_group_cache_bypass_reason", "input_group_state_reuses",
+    "failed_run_input_runstates_constructed", "failed_run_input_runstates_elided",
     "relevant_context_signatures",
     "compiled_graph_nodes", "compiled_graph_eligible_reads",
     "compiled_graph_bypassed_reads", "graph_node_lookups",
@@ -65,6 +68,10 @@ COUNTERS = (
 PHASES = (
     "compilation_seconds", "context_construction_seconds",
     "reference_collection_seconds", "database_projection_seconds",
+)
+GROUP_PHASES = (
+    "input_group_key_seconds", "input_group_clone_seconds",
+    "input_group_certification_seconds", "input_state_construction_seconds",
 )
 
 
@@ -338,6 +345,8 @@ def batch(
         "total_seconds": perf_counter() - started,
         "internal_total_seconds": report.elapsed_seconds,
         "phases_seconds": {key: getattr(report, key, None) for key in PHASES},
+        # These diagnostic costs overlap other phases.
+        "input_group_costs_seconds": {key: getattr(report, key, None) for key in GROUP_PHASES},
         "counters": {key: getattr(report, key, None) for key in COUNTERS},
     }
 

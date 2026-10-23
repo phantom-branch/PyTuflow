@@ -116,7 +116,11 @@ def test_command_construction_counts_are_not_reference_cache_hits(tmp_path):
     assert cached.commands_constructed >= 1
     assert cached.commands_cloned > 0
     assert cached.unique_command_templates >= 1
-    assert cached.commands_constructed + cached.commands_cloned == 40
+    assert cached.commands_constructed == 2
+    assert cached.commands_cloned == 19  # wildcard GRID command templates
+    assert cached.input_group_state_reuses == 19  # scenario GIS input states
+    assert (cached.commands_constructed + cached.commands_cloned
+            + cached.input_group_state_reuses) == 40
     # The uncached mode uses the uninstrumented base Context.
     assert plain.commands_constructed == 0
     assert [x.input_references for x in cached.runs] == [

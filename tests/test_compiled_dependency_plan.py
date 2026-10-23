@@ -70,12 +70,16 @@ def test_variable_derived_read_reuses_command_template_across_events(tmp_path: P
     )
     model = TCF(source)
     flags = tuple(f'-s1 DEV -e1 TP{n:03d}' for n in range(30))
-    cached = model.collect_batch_dependencies(flags)
+    cached = model.collect_batch_dependencies(flags, compile_tree=False)
+    graph = model.collect_batch_dependencies(flags)
     baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
-    assert cached.passed and baseline.passed
+    assert cached.passed and graph.passed and baseline.passed
     assert cached.compiled_variable_nodes == 2
     assert cached.compiled_read_nodes >= 1
     assert cached.variable_template_clones >= 29
+    assert graph.variable_template_clones == 0
+    assert graph.input_group_state_reuses == 29
+    assert graph.runs == cached.runs
     assert cached.contexts_constructed == 30
     assert cached.contexts_reused == 0
     assert [item.input_references for item in cached.runs] == [
@@ -104,10 +108,14 @@ def test_transitive_scenario_variable_changes_do_not_collide(tmp_path: Path):
         f'-s1 {"DEV" if n % 2 else "EXG"} -e1 TP{n:03d}'
         for n in range(30)
     )
-    cached = model.collect_batch_dependencies(flags)
+    cached = model.collect_batch_dependencies(flags, compile_tree=False)
+    graph = model.collect_batch_dependencies(flags)
     baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
-    assert cached.passed and baseline.passed
+    assert cached.passed and graph.passed and baseline.passed
     assert cached.variable_template_clones >= 28
+    assert graph.variable_template_clones == 0
+    assert graph.input_group_state_reuses == 28
+    assert graph.runs == cached.runs
     assert cached.unique_command_templates >= 2
     assert [item.input_references for item in cached.runs] == [
         item.input_references for item in baseline.runs

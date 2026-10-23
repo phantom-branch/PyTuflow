@@ -1,185 +1,196 @@
-# P5: Reduce repeated run-state construction in mixed control-file graphs
+# P5: Reuse proven input groups in mixed control-file graphs
 
-**Status:** Conservative P5 implementation passes supplied public/native correctness gates; graph speedup remains limited.
-**Baseline:** `master` at `3de5cd954a5bf6739377937c8ff2fe3341e86bfc`.
-**Delivery:** PRs #6/#8/#9/#7/#10 were squash-merged as one atomic stack operation.
-**Updated:** 2026-10-23. **Next review:** 2026-10-30.
+**Updated:** 2026-10-23. **PR:** #12, remains draft.
+**Current implementation:** expanded scenario/variable proof and isolation fixes;
+245 focused/integration tests pass on each of Python 3.12.14 and 3.14.8 locally.
+Compilation and diff checks pass; Windows/public hosted CI is pending.
+**Performance status:** no native timing or speedup is established for the new
+implementation. Retained benchmarks validate an earlier source only.
+**Pre-P5 baseline:** `master` at `3de5cd954a5bf6739377937c8ff2fe3341e86bfc`.
 
-## Task for the implementing agent
+## Why the graph was avoiding so little repeated work
 
-Implement reusable groups only where inputs have independently proven invariant
-semantics; retain conservative fallback elsewhere. The first implementation on
-this branch elides repeated construction for eligible literal GIS CODE and GRID
-ZPTS leaf inputs even if the remainder of the model has variable/scenario/event
-commands. It does not yet certify general dynamic, DEFINE or database groups.
-Do not merge or publish until validation is complete.
+The graph was built and indexed, but the original partial-group proof rejected
+every conditional input and every variable-derived input. It accepted only
+literal, global `READ GIS CODE` / `READ GRID ZPTS` leaves. Whole-model shortcuts
+required the complete model to consist of supported literal READs, so ordinary
+settings, variables, includes and BC commands prevented them in mixed models.
+The broad READ eligibility count did not describe the narrower set of inputs
+whose constructors could actually be bypassed.
 
-The merged graph is a conservative foundation, not a completed implementation of
-the broader optimisation. The baseline measurements below predate P5. Current
-[workstation results and recommendations](P5_benchmark_results_2026-10-23.md)
-show 1,916 elisions on M480, zero on N42 and little measured timing change.
-Keep existing batch-cache gains separate from graph benefits and preserve APIs.
+The retained [workstation benchmark and file-sharing report](P5_benchmark_results_2026-10-23.md)
+shows that eligible M480 groups matched correctly: four seeds and 1,916 reuses.
+Other visits included 3,840 scenario-conditioned READs, all rejected despite
+fixed scenario selections, and 24,480 non-READ states. This was limited proof
+coverage rather than a demonstrated path-spelling or lookup failure. Equal
+required-file lists alone remain insufficient proof of reusable run state.
 
-## Reproducible evidence and current limitation
+## Implemented proof and isolation
 
-Benchmark source `5053a07` is tree-identical to integration source `5b11415`.
-Documentation head `099434f` passed all eight active hosted checks; the merged
-`3de5cd9` tree exactly matches `099434f`. Local Windows Python 3.14.6 validation
-passes 266 parser/integration tests and 68 focused consumer tests.
+`compiled_control_tree.py` now compiles an immutable per-input group plan once
+per invocation. It records source ownership, command part/line metadata,
+configuration, ordered branches, DEFINE-block metadata and transitive variable
+dependencies. Every node has a candidate plan or a bounded static exclusion
+reason. Non-candidates no longer repeat the full eligibility checks on each visit.
 
-Three sequential, rotating-order parser trials on the same SMB workstation:
+`group_input_reuse.py` supports these independently proven leaves in mixed models:
 
-| Workload | Distinct runs | Individual deferred median, s | Uncached batch median, s | Cached graph off median, s | Cached graph on median, s |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| M480 | 480 | 73.466 | 67.279 | 43.455 | 45.844 |
-| N42 | 42 | 32.653 | 32.988 | 10.457 | 10.766 |
+- Global literal inputs supported by the original cache.
+- Inputs under known literal scenario conditions, including nested branches,
+  ELSE and negation. Ordinary control-file traversal still decides activation;
+  reuse retains exact scenario slot numbers/order and values.
+- Variable-derived inputs where `CompiledVariablePlan` proves an acyclic
+  transitive lineage. Keys retain the resolved RHS, all relevant variable
+  values and ordered identities of their active declarations. Equal final
+  paths without matching provenance do not establish reuse.
 
-Graph-on adds 5.5% / 3.0% median overhead, respectively. Parse time is separate
-(0.751 / 2.091 s). Both workloads pass complete ordered parser identity parity,
-full eager/deferred/batch materialisation and individual/batch public preflight
-with zero issues. M480 retains 12,480 identities / 49 physical paths; N42 1,922 / 196.
+Runtime proof validates the compiled source snapshot and requires one resolved
+literal path whose expansion is stable. Event text markers are checked in the
+raw expression and relevant variable values. Uncertain or changed inputs use
+ordinary evaluation. The cache remains invocation-local, bounded to 10,000
+successfully certified signatures, and seeded only by complete successful runs.
+Failed runs return no partial dependencies.
 
-Last graph-enabled trial counters:
+The supported commands remain **`READ GIS CODE` and `READ GRID ZPTS`**, with
+single explicit `.shp`, `.tif`, `.asc` or `.flt` results. General event expressions,
+real DEFINE blocks, BC/database inputs, wildcards, multipart values, GeoPackage
+selectors and spatial databases remain outside this proof. A whole control-file
+subtree is not skipped merely because its file inventory matches.
 
-| Workload | Graph nodes | Eligible reads | Bypassed reads | Graph lookups | Contexts constructed | Input run-states elided |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| M480 | 181 | 7 | 20 | 3,360 | 480 | 0 |
-| N42 | 551 | 11 | 202 | 462 | 42 | 0 |
+Two additional isolation defects are corrected:
 
-The full verified public tutorial (161 TCFs / 174 documented runs) also passes
-all parser and materialised gates. Sum of per-model three-trial medians is
-5.746 s graph-off versus 5.794 s graph-on; no graph speedup is established.
-These are warm-cache diagnostic measurements, not launcher or solver wall times.
+- GRID's plain mutable `_rs.cf` list was still shared: resetting the outer
+  run state's `cf` or GIS's `_cf` did not reset it. Each GRID clone now owns
+  an independent empty `cf` list.
+- Ordinary construction aliases nonempty `Command.define_blocks` to the parsed
+  source. Eligible batch seeds now detach that list and every mutable block
+  before returning. Exemplars and reuse clones also independently copy blocks
+  and scopes, including `Scope.names` and exact ELSE/negation metadata.
+  `Scope` needs explicit allocation because its constructor dispatch cannot
+  be reconstructed with ordinary shallow `copy()`.
 
-[Complete benchmark protocol, trial values, RSS and provenance](https://github.com/Chain-Frost/ryan-tools/blob/2dbd5235/docs/work/2026-10-22-tuflow-batch-preflight-optimisation.md#pr-710-repair-and-benchmark-review---2026-10-23).
+Commands, expanders, configuration snapshots, contexts and lazy GIS/grid state
+are rebound or independently copied. Ordinary eager construction is unchanged.
 
-## Investigation and suggested implementation
+## Diagnostics and cache preparation
 
-Start with `pytuflow/_tmf/compiled_control_tree.py` and
-`pytuflow/_tmf/batch_dependencies.py`. Current whole-model shortcuts use
-`is_invariant_literal_model()` / `is_scenario_literal_model()`; mixed dynamic
-models still take context construction paths. Read the current implementation
-before choosing a design; the outline below is a proposal, not a proof.
+| Metric | Meaning |
+| --- | --- |
+| `compiled_graph_eligible_reads` | Broader syntax/variable command-plan eligibility |
+| `compiled_input_group_candidates` | Inputs passing the static constructor-reuse proof |
+| `input_group_bypass_reasons` | Bounded counts of static exclusions |
+| `input_group_fallbacks` | Runtime proof, isolation, clone, certification and capacity fallbacks |
+| `input_group_state_reuses` | Actual independently cloned group states |
+| `invariant_projection_reuses` | Whole-run immutable projection reuse |
+| `input_runstates_constructed` / `input_runstates_elided` | Constructor attempts and bypasses, including failed-run work |
+| `failed_run_input_runstates_*` | Work belonging to subsequently failed projections |
+| `input_group_cache_bypass_reason` | Why no prototype cache was prepared |
 
-1. Account for dominant constructed inputs and bypass reasons using public
-   tutorial data or minimal synthetic correctness fixtures. Retain stable
-   counters for actually constructed/elided input states and graph overhead;
-   do not substitute lookups, templates cloned or graph nodes for work avoided.
-2. Identify immutable command groups and their exact ordered scope, variable,
-   event/scenario slot, control ownership, settings and include dependencies.
-   Reuse groups by proven relevant signatures even if another group is dynamic.
-   One unsupported subtree must not invalidate independently proven groups, but
-   its side effects must invalidate any dependent proof.
-3. Preserve Set Variable ordering, TEF and nested scope semantics, source/control
-   line ownership, UUIDs, command ordering, database activations and secondary
-   sources. Rebind immutable per-run projections without sharing mutable
-   `Context` or input run-state objects across runs.
-4. Keep conservative fallback for unknown dependencies, DEFINE/event constructs,
-   dynamic paths, database declarations and failed projections until their
-   semantics are explicitly proven. Do not simply remove safety checks or infer
-   invariance from equal outputs on a few runs.
-5. Compile/cache only within one invocation. Model/source changes between calls
-   must be visible; bound caches and preserve failure isolation. No filesystem,
-   GIS, raster or database probes during evaluation after parse. Preserve lexical
-   mapped-drive/UNC paths.
-6. Assess graph setup overhead when no useful group is eligible. A fast bypass
-   may be appropriate, but must not hide counters or claim unimplemented elision.
+Runtime `ineligible` is the aggregate of detailed `ineligible_*` categories; do
+not add it to those categories. A lookup, candidate or prototype is not itself
+a constructor elision or a speedup. Cost diagnostics separate runtime key/proof,
+cloning, successful-run certification and normal construction. They overlap
+other phases and must not be summed into the top-level total. Normal constructor
+timing includes nested constructors and is not exclusive CPU time.
 
-## Acceptance and agent report
+Prototype-cache preparation is bypassed for zero candidates, sized batches of
+at most one run, and existing complete invariant projection shortcuts.
+Unknown-length iterators remain streaming without consuming future flags to
+find their length. Graph-off retains the established non-graph batch caches for
+the same-head differential.
 
-- Add focused executable regressions for partial-group reuse with genuinely
-  distinct flags, relevant and irrelevant changes, variable ordering, nested
-  conditions, failed projections, per-run provenance and mutation isolation.
-- Run existing parser contracts and Windows Python 3.12/3.14 CI. Keep all
-  missing/extra identities, pure ordering changes, failed runs and unsupported
-  findings visible; a matching partial inventory is not a pass.
-- Use the existing four-mode same-head harness and documented CLI in
-  [tests/TUTORIAL_BENCHMARK.md](../tests/TUTORIAL_BENCHMARK.md). Verify the complete
-  public archive and documented combinations. Repeated valid combinations are
-  stress tests, not hundreds of distinct model configurations.
-- Demonstrate actual nonzero input-state construction avoided on supported
-  mixed-model cases; publish before/after counters, three rotated trial values,
-  medians, phase costs and sampled RSS. Report regressions honestly. Profiling
-  timings are not speedup evidence.
-- Keep separate public/native materialised eager/deferred/batch acceptance.
-  The companion consumer remains PR #143; do not merge it or change production
-  dependency pins as part of this task.
-- Native reruns require the authorised workstation. Ask its operator to run the
-  retained M480/N42 protocol if unavailable to your agent. Publish anonymised
-  aggregates only; never copy/upload/embed native input files, fragments,
-  identifying paths or detailed reports in Git/CI/attachments. Public performance
-  fixtures are restricted to the tutorial set; synthetic inputs prove correctness.
-- Keep original eager/shared fixes explicitly separate from new deferred/batch
-  functionality in commits and the PR report. This handoff does not request an
-  eager behaviour change or reopen the postponed two-BC-model investigation.
-- Final report: exact source/dependency revisions, tests and terminal CI URLs,
-  fixture hashes, parity findings, work-elision counters, measured performance,
-  supported scope and remaining fallbacks. No engine/launcher run or release.
+## Earlier results and current evidence
 
-## Implementation and delivery state
+The immutable [2026-10-23 benchmark report](P5_benchmark_results_2026-10-23.md)
+records parser source `c305a6d`; its parser/benchmark code is identical at passing
+CI source `eebbb16` and results-only commit `2b8ddb9`. Those results validate the
+narrower implementation, not the expanded code above.
 
-- Introduced `group_input_reuse.py`, an invocation-local, at-most-10,000-entry
-  prototype cache. Eligible reads must have an exact compiled node identity,
-  global scope, literal `.shp/.tif/.asc/.flt` path, supported READ command,
-  matching source text and settings, no event/wildcard/DEFINE/variable syntax,
-  and no spatial database. The normal Context still checks activation before
-  attempting reuse. An entire successful run must seed the cache; failed runs
-  do not certify prototypes.
-- Cloned states get separate RunState, Command, expander, config and mutable
-  GIS/grid state. Normal constructor/resolver fallback remains available.
-  The existing immutable ordered input/reference/database provenance and
-  deferred materialisation still run for every distinct context.
-- New tests check mixed/nested branch parity, failure isolation, earlier-state
-  mutations and model edits between invocations. Windows hosted tests and
-  public tutorial differential are the ongoing acceptance gates.
-- Observed in preliminary Windows Python 3.12/3.14 focused runs: the 500-run
-  mixed model now elides 499 input constructors while keeping full reference
-  parity; scenario-only whole-run reuse additionally avoids one constructor.
-  These are correctness counts, **not** evidence of a speedup.
-- The authorised workstation rerun now passes native M480/N42 parser, full
-  eager/deferred/batch materialisation and individual/batch public preflight.
-  Three rotated same-head timings and the untimed SSD sharing/I/O investigation
-  are recorded in the linked benchmark report. Raw native artifacts remain private.
-- Consumer topology: ryan-tools [#143](https://github.com/Chain-Frost/ryan-tools/pull/143)
-  has a separate stacked child [#156](https://github.com/Chain-Frost/ryan-tools/pull/156)
-  for ordered input/BC activation ownership. Neither consumer branch is being
-  merged or repinned by this PR.
+| Earlier workload | Graph-off median, s | Graph-on median, s | Constructors elided |
+| --- | ---: | ---: | ---: |
+| M480, 480 distinct runs on SMB | 42.895 | 42.790 | 1,916 / 31,680 |
+| N42, 42 distinct runs on SMB | 11.310 | 11.367 | 0 / 4,148 |
 
-## Independent upstream compatibility review and corrective changes
+Those differences established no meaningful graph speedup. Earlier public
+161-TCF/174-run and native parser/materialised/preflight gates passed at their
+recorded sources. Existing batch-cache gains remain separate from the graph.
 
-Review against `TUFLOW-Support/PyTuflow` `master` (`cf908cc`): the PR branch
-has no upstream commits outstanding, but the deferred/batch API remains
-fork-only and ordinary eager TCF contexts must retain upstream semantics.
-Four review findings were addressed on this PR branch:
+Current confirmed local evidence is **245 passing focused/integration tests on
+each of Python 3.12.14 and 3.14.8**, including 50 graph correctness tests covering
+scenario/variable provenance, mutable-state isolation, failed contexts and
+conservative exclusions. Compilation and diff checks also pass. The expanded
+500-distinct-event mixed fixture
+elides 997 constructors through three proven signatures. This is a synthetic
+correctness/work-avoidance result, not a timing claim. Windows/public hosted CI
+is pending; record the final source and terminal CI links in the PR after completion.
 
-- Literal cache clones now reset the command's mutable DEFINE list, rebuild
-  independent GLOBAL scope objects (including their mutable `names` lists),
-  and reset GIS/GRID lazy state. Unsupported scope shapes fall back normally.
-- Constructor counters are now incremented at the actual construction call,
-  including attempts in runs that subsequently fail. Explicitly batch-tagged
-  uncached contexts count attempts as well; ordinary eager contexts are not
-  instrumented. An elision counter is work bypassed, not a speedup claim.
-- Invocation-local fixed-reason diagnostics report unsupported inputs,
-  prototype failures, clone failures, capacity and optimisation exceptions.
-  Errors in an optimisation continue to fall back to the ordinary parser.
-- Regression tests now mutate previous GIS and GRID run states, test failed
-  contexts, and inject prototype/reuse exceptions. Windows integration CI runs
-  the complete `tests/tmf` suite at three pinned points: canonical upstream
-  `cf908cc`, pre-P5 fork `3de5cd9`, and this PR. Existing upstream/fork
-  failures are exposed, and the blocking gate rejects newly introduced P5
-  failures, unexpected skips and missing test cases. The three-way differential
-  itself has small executable unit regressions.
+## Disposition of the benchmark recommendations
 
-**Validation:** Retained parser source `c305a6d` passes 273 focused local
-parser/integration tests and 67 consumer tests. Two new CI-comparator tests pass.
-All eight active hosted checks pass at `eebbb16`, whose parser and benchmark
-source match c305a6d. Public 161-TCF/174-run parser and materialised parity pass;
-both native workloads pass. The earlier `6e709538` timings are not acceptance
-for the corrective fixes. See the benchmark report for exact counters and limits.
+The implementation boundary is explicit:
 
-**Remaining:** review measured coverage and the linked recommendations; broaden
-group proofs separately if selected. No new P5 TMF compatibility regressions
-are observed against pre-P5, but three older canonical-upstream differences
-remain separate eager/shared-compatibility follow-ups. Broader dynamic/BC/DEFINE
-group reuse remains outside this PR's proven subset. Next review: 2026-10-30.
-This PR remains draft; do not merge or publish.
+- **PyTUFLOW** owns the parser dependency graph, scope/variable proofs, run-state
+  construction and isolation, and public API counters.
+- **ryan-tools** consumes that public API and owns materialisation of GIS,
+  database and file references, physical-identity diagnostics, inventory and
+  reporting. It must not duplicate parser proofs or depend on parser-private
+  graph/cache internals.
+
+| Recommendation | Current disposition |
+| --- | --- |
+| Prove fixed-scenario groups in mixed models | Implemented for supported leaves with exact slots and branch provenance |
+| Retain transitive variable/settings dependencies | Implemented with relevant values, active declarations and configuration snapshots |
+| Separate proof, certification, cloning and construction costs | Diagnostics added; command coverage remains limited to the two proven classes |
+| Avoid single-run and zero-candidate preparation | Implemented with explicit bypass reasons and preserved iterator streaming |
+| Memoise `Path.resolve()` in the temporary consumer diagnostic | Authorised companion work in progress on ryan-tools PR #143; separate from this parser change |
+| Investigate older eager/shared compatibility differences | Remains a separate workstream |
+
+The earlier consumer diagnostic's 12,480 physical-identity resolutions for 49
+normalised targets were not production graph I/O. The companion PR #143 change
+must preserve mapped-drive/UNC and linked-path identity checks and be
+invocation-local; its final validation and commit are recorded separately.
+This PR does not repin or merge consumer
+[#143](https://github.com/Chain-Frost/ryan-tools/pull/143) or its separate child
+[#156](https://github.com/Chain-Frost/ryan-tools/pull/156).
+
+Another unoptimised construction hotspot is `Inputs.append()` in
+`pytuflow/_tmf/inp/inputs.py`: every append rebuilds and searches parent UUID lists
+for edit/undo index bookkeeping, producing quadratic list work as a control-file
+input collection grows. Group cloning still traverses this append path. Profile
+its public-workload contribution and preserve editing/index semantics before
+changing it separately. No gain from that unimplemented optimisation is claimed.
+
+The pre-P5 canonical-upstream differences remain
+`test_control_file::test_load_rainfall_database`,
+`test_input::test_input_files_ref_in_gis` and
+`test_input_context::test_input_files_ref_in_gis`. Retain the three-way Windows
+comparison of canonical upstream, pre-P5 fork and current head. Earlier green
+differential CI meant no new P5 regressions, not a fully passing absolute
+upstream suite. The deferred/batch API remains fork-only.
+
+## Next workstation validation
+
+Use the final source after focused/integration checks pass and record both
+parser and consumer revisions. Follow
+[tests/TUTORIAL_BENCHMARK.md](../tests/TUTORIAL_BENCHMARK.md) for the verified
+public archive, four-mode differential, separate materialised replay and
+profiling limits. From the PyTUFLOW checkout, with `$Bundle` set to the documented
+public fixture location:
+
+~~~powershell
+py -3.14 -m pytest -q tests/test_compiled_control_tree.py tests/test_batch_integration.py tests/test_tutorial_benchmark.py
+py -3.14 tests/benchmark_tutorial_dependencies.py --bundle $Bundle --trials 3 --output "$env:TEMP\pytuflow-p5-expanded-public.json"
+~~~
+
+The designated authorised workstation must then rerun the retained M480/N42
+protocol in the [historical report](P5_benchmark_results_2026-10-23.md): identical
+distinct launcher flags, source and dataset; three sequential rotating warm-cache
+trials; parse reported separately; and full eager/deferred/batch materialisation
+plus public-preflight parity. Report missing/extra identities, order/provenance
+differences, failed runs and fallback reasons before interpreting timings.
+Compare graph-off/on at the **same new source**; old measurements are not a
+control for changed code or environments.
+
+Publish anonymised aggregates only. Native data, detailed reports, identifying
+paths and source fragments remain on the workstation. Launchers are read as
+text; no launcher or solver is executed. No merge, release or production
+dependency change is part of this PR.
