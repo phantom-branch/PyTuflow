@@ -22,6 +22,8 @@ The implementation and focused coverage are in:
 - `pytuflow/_tmf/inp/inputs.py`: private `_ContextAppendRecorder`.
 - `pytuflow/_tmf/cf/cf_run_state.py`: recorder lifetime, constructor trust and
   recursion boundary.
+- `pytuflow/_tmf/batch_dependencies.py`: definition-time canonical factory
+  alias for append-construction trust checks.
 - `pytuflow/_tmf/inp/cf.py`, `db.py`, `block.py`: original-constructor aliases.
   The baseline already supplies the GIS and base-input aliases.
 - `tests/test_input_append_accounting.py`; regression selections in
@@ -45,6 +47,9 @@ Preserve these contracts:
    constructor disables recorder use across the shared batch context before
    invocation. Perform this check only after scope selection and PAUSE handling;
    do not evaluate unsupported constructor descriptors while checking trust.
+   The actual `BatchContext.batch_input_state` factory must also be the original
+   method bound to that exact context. Retire the recorder before retrieving a
+   replaced class descriptor or invoking a noncanonical/rebound factory.
    Collection length, owner identity and exact UUID guards must fall back to
    public append when violated.
 4. Retire the enclosing recorder before invoking `ControlFileInput` or its FV
@@ -115,13 +120,49 @@ scenarios and both a custom subclass and an overridden class descriptor.
 They preserve constructor-access counts, complete input order/UUIDs and append
 history relative to individual deferred construction.
 
-The focused append/constructor/edit selection now passes **54 tests on Python
+That correction passed **54 focused append/constructor/edit tests on Python
 3.14.8**, with the same two archive-dependent cases deselected locally. The
 full integration-contract selection also passes **279 tests**: 277 passed in
 the sandbox and the two RSS-sampling tests passed when rerun with host process
 visibility (`psutil` cannot see the sandbox's process ID). Compilation and
 `git diff --check` pass.
 
+Hosted Windows checks also passed at `1acfb24d08b70b68c51995f9d4984e60871ea6f7`:
+[integration](https://github.com/phantom-branch/PyTuflow/actions/runs/39909060780),
+[reference contracts](https://github.com/phantom-branch/PyTuflow/actions/runs/39909060795),
+and [materialised parity](https://github.com/phantom-branch/PyTuflow/actions/runs/39909060977).
+That evidence predates the factory correction below and must not be presented
+as hosted acceptance of the updated code.
+
 Native performance validation remains outstanding; the recorded 500-append
 count is still component evidence only. Hosted Windows checks and refreshed
 Codex review must be checked at the updated head before native benchmarking.
+
+### Codex review follow-up: batch factory identity
+
+[Review finding](https://github.com/phantom-branch/PyTuflow/pull/14#discussion_r4356644124)
+identified that an exact `BatchContext` can still override or rebind its
+`batch_input_state` method. The input's own canonical `context` method did not
+prove that the factory actually invoked was safe. A custom factory could alter
+an earlier input's UUID without changing either collection length, leaving
+the recorder's first-position maps stale. The reproduction yielded append
+history `[(0, 0), (1, 1)]` where public append yielded `[(0, 0), (0, 0)]`.
+
+The fix captures the factory function at definition time, checks the exact
+class attribute before retrieving a replacement descriptor, and validates the
+single retrieved method's original function and bound context before invoking
+it. Unsupported factories retire the local recorder and disable recorder use
+through the shared context. Scope selection and PAUSE handling still happen
+first, and descriptor access counts remain unchanged.
+
+Six additional cases cover instance overrides, class overrides, descriptor
+overrides, a descriptor that mutates UUIDs but returns the canonical bound
+function, a canonical function rebound to another owner, and preservation of
+the canonical recorder path. The focused Python 3.14.8 selection passes **60
+tests**, with the same two archive-dependent editing cases deselected. The
+complete integration-contract selection passes **285 tests** with host process
+visibility for RSS sampling. The 500-append linear UUID-access regression,
+compilation and whitespace checks remain green. Independent cross-review
+found no further issue with this guard. Updated hosted acceptance and refreshed
+Codex review remain to be checked; no native timing claim is made by this
+correction.

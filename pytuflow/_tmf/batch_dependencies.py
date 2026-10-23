@@ -429,6 +429,10 @@ class BatchContext(Context):
         return translated
 
 
+# Retain the original factory before an extension can replace the method.
+_BATCH_INPUT_STATE = BatchContext.batch_input_state
+
+
 @dataclass(frozen=True, slots=True)
 class BatchInputCommand:
     """Every active input in its original per-run command order.

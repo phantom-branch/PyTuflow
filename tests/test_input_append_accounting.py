@@ -8,7 +8,7 @@ import pytest
 
 from pytuflow import TCF
 from pytuflow._tmf.batch_dependencies import BatchContext
-from pytuflow._tmf.cf.cf_run_state import _batch_append_context_methods
+from pytuflow._tmf.cf.cf_run_state import ControlFileRunState, _batch_append_context_methods
 from pytuflow._tmf.inp.gis import GisInput
 from pytuflow._tmf.inp.inp_build_state import InputBuildState
 from pytuflow._tmf.inp.inputs import Inputs, _ContextAppendRecorder
@@ -272,6 +272,124 @@ def test_custom_context_descriptor_is_read_only_when_constructing_selected_input
     assert [(inp.uuid, str(inp)) for inp in batch.find_input()] == [
         (inp.uuid, str(inp)) for inp in ordinary.find_input()
     ]
+
+
+@pytest.mark.parametrize('hook_target', ['instance', 'class', 'descriptor'])
+def test_custom_batch_factory_keeps_live_append_history(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, hook_target: str,
+) -> None:
+    """The invoked factory can mutate prior UUIDs without changing list lengths."""
+    source = tmp_path / 'factory_extension.tcf'
+    source.write_text(
+        'Set Code == 0\nIf Scenario == OMIT\nSet Code == 2\nEnd If\nSet Code == 1\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    original_factory = BatchContext.batch_input_state
+    calls, descriptor_reads = [], []
+
+    def custom_factory(self, build_input, parent):
+        calls.append(build_input.uuid)
+        state = original_factory(self, build_input, parent)
+        if parent.inputs:
+            parent.inputs[0].uuid = state.uuid
+        return state
+
+    def factory_descriptor(self):
+        descriptor_reads.append(self)
+        return MethodType(custom_factory, self)
+
+    if hook_target == 'class':
+        monkeypatch.setattr(BatchContext, 'batch_input_state', custom_factory)
+    elif hook_target == 'descriptor':
+        monkeypatch.setattr(BatchContext, 'batch_input_state', property(factory_descriptor))
+
+    results = []
+    for recorder_enabled in (False, True):
+        context = BatchContext('-s1 DEV', config=model.config)
+        if not recorder_enabled:
+            # Reference uses the unchanged public Inputs.append implementation.
+            context._batch_append_indexes_safe = False
+        if hook_target == 'instance':
+            context.batch_input_state = MethodType(custom_factory, context)
+        calls.clear()
+        descriptor_reads.clear()
+        result = model.context(context=context, file_resolution='deferred')
+        results.append(result)
+        assert calls == [model.inputs[0].uuid, model.inputs[-1].uuid]
+        assert descriptor_reads == ([context, context] if hook_target == 'descriptor' else [])
+
+    ordinary, optimised = results
+    assert optimised.inputs._indexes == ordinary.inputs._indexes == [(0, 0), (0, 0)]
+    assert [(inp.uuid, str(inp)) for inp in optimised.find_input()] == [
+        (inp.uuid, str(inp)) for inp in ordinary.find_input()
+    ]
+
+
+def test_factory_descriptor_retires_recorder_even_when_returning_canonical_method(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Descriptor side effects happen before bound-method identity is known."""
+    source = tmp_path / 'canonical_factory_descriptor.tcf'
+    source.write_text('Set Code == 0\nSet Code == 1\n', encoding='utf-8')
+    model = TCF(source)
+    original_factory = BatchContext.batch_input_state
+    original_resolve = ControlFileRunState._resolve_scope_in_context
+    active_parents = {}
+    descriptor_reads = []
+
+    def capture_parent(self):
+        active_parents[id(self.ctx)] = self
+        return original_resolve(self)
+
+    def factory_descriptor(self):
+        descriptor_reads.append(self)
+        parent = active_parents[id(self)]
+        if parent.inputs:
+            parent.inputs[0].uuid = model.inputs[-1].uuid
+        return MethodType(original_factory, self)
+
+    monkeypatch.setattr(ControlFileRunState, '_resolve_scope_in_context', capture_parent)
+    monkeypatch.setattr(BatchContext, 'batch_input_state', property(factory_descriptor))
+    histories = []
+    for recorder_enabled in (False, True):
+        context = BatchContext('-s1 DEV', config=model.config)
+        if not recorder_enabled:
+            context._batch_append_indexes_safe = False
+        descriptor_reads.clear()
+        result = model.context(context=context, file_resolution='deferred')
+        histories.append(result.inputs._indexes)
+        assert descriptor_reads == [context, context]
+    assert histories == [[(0, 0), (0, 0)], [(0, 0), (0, 0)]]
+
+
+@pytest.mark.parametrize('factory_owner', ['same', 'other'])
+def test_append_recorder_requires_canonical_factory_bound_to_current_context(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, factory_owner: str,
+) -> None:
+    """An original function bound to another context is still an extension."""
+    source = tmp_path / 'factory_owner.tcf'
+    source.write_text('Set Code == 0\nSet Code == 1\n', encoding='utf-8')
+    model = TCF(source)
+    context = BatchContext('-s1 DEV', config=model.config)
+    other = BatchContext('-s1 DEV', config=model.config)
+    other.file_resolution = 'deferred'
+    if factory_owner == 'other':
+        context.batch_input_state = other.batch_input_state
+    recorded_inputs = []
+    original_append = _ContextAppendRecorder.append
+
+    def counted_append(self, inp):
+        recorded_inputs.append(inp.uuid)
+        return original_append(self, inp)
+
+    monkeypatch.setattr(_ContextAppendRecorder, 'append', counted_append)
+    result = model.context(context=context, file_resolution='deferred')
+    assert result.inputs._indexes == [(0, 0), (1, 1)]
+    assert all(inp.ctx is (other if factory_owner == 'other' else context) for inp in result.inputs)
+    assert recorded_inputs == (
+        [inp.uuid for inp in result.inputs] if factory_owner == 'same' else []
+    )
 
 
 @pytest.mark.parametrize('input_class', [InputBuildState, SettingInput])

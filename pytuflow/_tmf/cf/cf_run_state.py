@@ -2,6 +2,7 @@ import logging
 import re
 import typing
 from functools import cache
+from types import MethodType
 
 from ..inp.inputs import Inputs, _ContextAppendRecorder
 from ..inp.inp_run_state import InputRunState
@@ -137,7 +138,7 @@ class ControlFileRunState(RunState, ControlFile):
         if (getattr(self.ctx, '_batch_active', False)
                 and getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'
                 and getattr(self.ctx, '_batch_append_indexes_safe', True)):
-            from ..batch_dependencies import BatchContext
+            from ..batch_dependencies import BatchContext, _BATCH_INPUT_STATE
             from ..inp.cf import ControlFileInput
             from ..parsers.command import Command, EventCommand
             from ..parsers.fvcommand import FVCommand
@@ -151,6 +152,23 @@ class ControlFileRunState(RunState, ControlFile):
 
             if inp.lhs.upper() == 'PAUSE':
                 raise ValueError('Pause command encountered: {0}'.format(inp.rhs))
+
+            if (append_recorder is not None
+                    and BatchContext.__dict__.get('batch_input_state') is not _BATCH_INPUT_STATE):
+                # A replacement descriptor can execute while the factory is
+                # retrieved. Retire first and keep the single existing lookup.
+                self.ctx._batch_append_indexes_safe = False
+                append_recorder = None
+            batch_factory = getattr(self.ctx, 'batch_input_state', None)
+            if append_recorder is not None and (
+                type(batch_factory) is not MethodType
+                or batch_factory.__func__ is not _BATCH_INPUT_STATE
+                or batch_factory.__self__ is not self.ctx
+            ):
+                # The factory actually invoked below can also be rebound per
+                # instance and mutate earlier inputs without changing length.
+                self.ctx._batch_append_indexes_safe = False
+                append_recorder = None
 
             if append_recorder is not None:
                 # An extension may mutate prior inputs during construction.
@@ -182,7 +200,6 @@ class ControlFileRunState(RunState, ControlFile):
 
             # Opt-in batch-only fast path for independently proven literal
             # inputs. Scope selection and PAUSE/failure handling stay here.
-            batch_factory = getattr(self.ctx, 'batch_input_state', None)
             if batch_factory is None:
                 # Instrument only explicitly batch-tagged uncached contexts;
                 # standalone upstream-style contexts are unchanged.
