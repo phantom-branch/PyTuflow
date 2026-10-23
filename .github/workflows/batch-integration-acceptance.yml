@@ -8,6 +8,8 @@ on:
       - "tests/verify_tutorial_integration.py"
       - "tests/benchmark_tutorial_dependencies.py"
       - "tests/test_tutorial_benchmark.py"
+      - "tests/compare_upstream_tmf_junit.py"
+      - "tests/test_upstream_tmf_comparison.py"
       - ".github/workflows/batch-integration-acceptance.yml"
   workflow_dispatch:
 
@@ -47,6 +49,7 @@ jobs:
           tests/test_deferred_file_references.py
           tests/test_deferred_database_parity.py
           tests/test_tutorial_benchmark.py
+          tests/test_upstream_tmf_comparison.py
       - name: Checkout pinned canonical upstream for TMF differential
         uses: actions/checkout@v5
         with:
