@@ -54,6 +54,7 @@ class BatchContext(Context):
         self._batch_input_group_cache: LiteralInputGroupCache | None = None
         self._batch_pending_input_groups: list[tuple[tuple[object, ...], object, object]] = []
         self.graph_input_state_reuses = 0
+        self._batch_input_states_constructed = 0
         self.graph_node_lookups = 0
         self.graph_node_fallbacks = 0
         self._active_declaration_cache: dict[str, tuple[str, ...]] = {}
@@ -396,6 +397,8 @@ class BatchContext(Context):
                 return reused
         else:
             key = None
+        # Count constructor attempts here, including those that raise.
+        self._batch_input_states_constructed += 1
         state = build_input.context(context=self, parent=parent)
         if key is not None:
             self._batch_pending_input_groups.append((key, build_input, state))
@@ -502,6 +505,7 @@ class BatchDependencyResult:
     input_runstates_constructed: int = 0
     invariant_projection_reuses: int = 0
     reusable_input_groups: int = 0
+    input_group_fallbacks: tuple[tuple[str, int], ...] = ()
 
     @property
     def passed(self) -> bool:
@@ -622,6 +626,10 @@ def collect_batch_dependencies(
             ctx = (BatchContext(flags, config=model.config, variable_inputs=variable_inputs,
                                 shared_scope_decisions=shared_scope_decisions)
                    if cache_scopes else Context(flags, config=model.config))
+            # Count attempts on the uncached differential as well. Ordinary
+            # standalone eager/deferred contexts have no instrumentation.
+            if not isinstance(ctx, BatchContext):
+                ctx._batch_input_states_constructed = 0
             if isinstance(ctx, BatchContext):
                 ctx._shared_file_references = shared_file_references
                 ctx._shared_command_templates = shared_command_templates
@@ -667,9 +675,7 @@ def collect_batch_dependencies(
             # particular, commands without FileReference must not disappear:
             # consumers need the original ordinals for database activation.
             active_inputs = tuple(run.find_input())
-            skipped = ctx.graph_input_state_reuses if isinstance(ctx, BatchContext) else 0
-            input_runstates_constructed += len(active_inputs) - skipped
-            input_runstates_elided += skipped
+            # Count attempts on both successful and failed contexts below.
             ordered_inputs = tuple(
                 BatchInputCommand(
                     input_uuid=str(inp.uuid),
@@ -728,7 +734,10 @@ def collect_batch_dependencies(
                   and scenario_key not in scenario_projections
                   and len(scenario_projections) < 10_000):
                 scenario_projections[scenario_key] = projected
+        if ctx is not None:
+            input_runstates_constructed += ctx._batch_input_states_constructed
         if isinstance(ctx, BatchContext):
+            input_runstates_elided += ctx.graph_input_state_reuses
             scope_builds += ctx.scope_builds
             scope_hits += ctx.scope_hits
             translation_hits += ctx.translation_hits
@@ -781,4 +790,6 @@ def collect_batch_dependencies(
         input_runstates_constructed=input_runstates_constructed,
         invariant_projection_reuses=invariant_projection_reuses,
         reusable_input_groups=input_groups.unique_groups if input_groups is not None else 0,
+        input_group_fallbacks=(tuple(sorted(input_groups.fallback_counts.items()))
+                               if input_groups is not None else ()),
     )
