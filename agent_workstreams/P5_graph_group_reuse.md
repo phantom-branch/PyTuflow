@@ -1,6 +1,6 @@
 # P5: Reduce repeated run-state construction in mixed control-file graphs
 
-**Status:** Conservative P5 literal input-group implementation committed; CI and native acceptance pending.
+**Status:** Conservative P5 implementation passes supplied public/native correctness gates; graph speedup remains limited.
 **Baseline:** `master` at `3de5cd954a5bf6739377937c8ff2fe3341e86bfc`.
 **Delivery:** PRs #6/#8/#9/#7/#10 were squash-merged as one atomic stack operation.
 **Updated:** 2026-10-23. **Next review:** 2026-10-30.
@@ -15,9 +15,10 @@ commands. It does not yet certify general dynamic, DEFINE or database groups.
 Do not merge or publish until validation is complete.
 
 The merged graph is a conservative foundation, not a completed implementation of
-the broader optimisation. Native measurements below show graph traversal without
-input run-state elision. Existing batch-cache improvements must remain distinct
-from any new graph benefit. Preserve the established public APIs and opt-in modes.
+the broader optimisation. The baseline measurements below predate P5. Current
+[workstation results and recommendations](P5_benchmark_results_2026-10-23.md)
+show 1,916 elisions on M480, zero on N42 and little measured timing change.
+Keep existing batch-cache gains separate from graph benefits and preserve APIs.
 
 ## Reproducible evidence and current limitation
 
@@ -135,9 +136,10 @@ before choosing a design; the outline below is a proposal, not a proof.
   mixed model now elides 499 input constructors while keeping full reference
   parity; scenario-only whole-run reuse additionally avoids one constructor.
   These are correctness counts, **not** evidence of a speedup.
-- Native SMB parser/consumer parity and three rotated same-head timings have
-  **not** been rerun for this implementation; they remain restricted to the
-  designated SMB agent. Never copy native model data to CI or GitHub.
+- The authorised workstation rerun now passes native M480/N42 parser, full
+  eager/deferred/batch materialisation and individual/batch public preflight.
+  Three rotated same-head timings and the untimed SSD sharing/I/O investigation
+  are recorded in the linked benchmark report. Raw native artifacts remain private.
 - Consumer topology: ryan-tools [#143](https://github.com/Chain-Frost/ryan-tools/pull/143)
   has a separate stacked child [#156](https://github.com/Chain-Frost/ryan-tools/pull/156)
   for ordered input/BC activation ownership. Neither consumer branch is being
@@ -168,14 +170,16 @@ Four review findings were addressed on this PR branch:
   failures, unexpected skips and missing test cases. The three-way differential
   itself has small executable unit regressions.
 
-**Validation:** The new exact-head CI runs and the public differential are
-pending. Do not cite the earlier `6e709538` checks as testing these fixes.
-Network-drive M480/N42 benchmarks and native data parity belong exclusively
-to the separately assigned authorised workstation agent, without uploading
-private model files.
+**Validation:** Retained parser source `c305a6d` passes 273 focused local
+parser/integration tests and 67 consumer tests. Two new CI-comparator tests pass.
+All eight active hosted checks pass at `eebbb16`, whose parser and benchmark
+source match c305a6d. Public 161-TCF/174-run parser and materialised parity pass;
+both native workloads pass. The earlier `6e709538` timings are not acceptance
+for the corrective fixes. See the benchmark report for exact counters and limits.
 
-**Remaining:** obtain passing exact-head CI and public tutorial parity, review
-all upstream suite results and fix real regressions, validate native physical
-materialisation, and measure any actual benefit. Broader dynamic/BC/DEFINE
-group reuse remains outside this PR's proven subset.
+**Remaining:** review measured coverage and the linked recommendations; broaden
+group proofs separately if selected. No new P5 TMF compatibility regressions
+are observed against pre-P5, but three older canonical-upstream differences
+remain separate eager/shared-compatibility follow-ups. Broader dynamic/BC/DEFINE
+group reuse remains outside this PR's proven subset. Next review: 2026-10-30.
 This PR remains draft; do not merge or publish.
