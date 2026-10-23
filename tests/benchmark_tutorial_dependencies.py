@@ -52,6 +52,7 @@ COUNTERS = (
     "graph_bypasses", "input_runstates_constructed",
     "input_runstates_elided", "invariant_projection_reuses",
     "reusable_input_groups",
+    "input_group_fallbacks",
     "relevant_context_signatures",
     "compiled_graph_nodes", "compiled_graph_eligible_reads",
     "compiled_graph_bypassed_reads", "graph_node_lookups",
