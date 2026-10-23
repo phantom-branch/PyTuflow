@@ -43,8 +43,10 @@ Preserve these contracts:
    `FVCommand` classes. Definition-time aliases must remain authoritative;
    never capture a replacement method as a new trusted baseline. An unknown
    constructor disables recorder use across the shared batch context before
-   invocation. Collection length, owner identity and exact UUID guards must
-   fall back to public append when violated.
+   invocation. Perform this check only after scope selection and PAUSE handling;
+   do not evaluate unsupported constructor descriptors while checking trust.
+   Collection length, owner identity and exact UUID guards must fall back to
+   public append when violated.
 4. Retire the enclosing recorder before invoking `ControlFileInput` or its FV
    block descendants: a child control's custom context hook can mutate its
    parent. Fresh child collections can still create independent recorders.
@@ -74,7 +76,7 @@ Summarise the final diff, tests, remaining risks and native evidence in the PR.
 
 ## Current evidence and reproduction
 
-The extracted branch passes **50 tests on Python 3.14.8**: the 12 append
+The initial extracted branch passed **50 tests on Python 3.14.8**: the 12 append
 regressions, 18 baseline constructor-guard regressions and 20 existing ordered
 input/edit tests. Two existing archive-dependent tests were deselected locally;
 their Windows checks remain required. `git diff --check` passes.
@@ -98,3 +100,28 @@ Prior independent review covered class/instance constructor overrides, nested
 control hooks, duplicate UUIDs, hidden inputs, live mutation and lazy GIS access.
 An unrelated pre-existing blank-TCF append/edit history issue remains outside
 this optimisation; the edit/undo regression uses an ordinarily parsed TCF.
+
+### Independent review, 23 October 2026
+
+The review reproduced an extension-hook regression: append trust checks read
+`inp.context` before scenario selection. A custom constructor descriptor in an
+inactive branch could raise where ordinary deferred construction correctly
+skipped it; a selected unsupported descriptor was evaluated an extra time.
+
+The guard now runs after scope selection and PAUSE handling, verifies the
+class method before reading its bound method, and retires the local recorder
+when a constructor is unsupported. Four regressions cover selected/inactive
+scenarios and both a custom subclass and an overridden class descriptor.
+They preserve constructor-access counts, complete input order/UUIDs and append
+history relative to individual deferred construction.
+
+The focused append/constructor/edit selection now passes **54 tests on Python
+3.14.8**, with the same two archive-dependent cases deselected locally. The
+full integration-contract selection also passes **279 tests**: 277 passed in
+the sandbox and the two RSS-sampling tests passed when rerun with host process
+visibility (`psutil` cannot see the sandbox's process ID). Compilation and
+`git diff --check` pass.
+
+Native performance validation remains outstanding; the recorded 500-append
+count is still component evidence only. Hosted Windows checks and refreshed
+Codex review must be checked at the updated head before native benchmarking.

@@ -232,6 +232,48 @@ def test_append_guard_does_not_inspect_lazy_gis_children(
     assert batch.inputs._indexes == [(0, 0), (1, 1)]
 
 
+@pytest.mark.parametrize('scenario', ['DEV', 'EXG'])
+@pytest.mark.parametrize('hook_target', ['subclass', 'class'])
+def test_custom_context_descriptor_is_read_only_when_constructing_selected_input(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scenario: str, hook_target: str,
+) -> None:
+    """Trust checks must not invoke inactive or unsupported constructor hooks."""
+    context_reads = []
+
+    class ExtendedSetting(SettingInput):
+        @property
+        def context(self):
+            if self is extended:
+                if scenario == 'EXG':
+                    raise AssertionError('Inactive constructor must not be inspected')
+                context_reads.append(self.uuid)
+            return MethodType(InputBuildState.context, self)
+
+    source = tmp_path / 'constructor_descriptor.tcf'
+    source.write_text(
+        'Set Code == 0\nIf Scenario == DEV\nSet Code == 1\nEnd If\nSet Code == 2\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    extended = model.find_input(lhs='Set Code')[1]
+    if hook_target == 'subclass':
+        extended.__class__ = ExtendedSetting
+    else:
+        monkeypatch.setattr(SettingInput, 'context', ExtendedSetting.context)
+    ordinary = model.context(f'-s1 {scenario}', file_resolution='deferred')
+    expected_reads = context_reads.copy()
+    context_reads.clear()
+    batch = model.context(
+        context=BatchContext(f'-s1 {scenario}', config=model.config),
+        file_resolution='deferred',
+    )
+    assert context_reads == expected_reads == ([extended.uuid] if scenario == 'DEV' else [])
+    assert batch.inputs._indexes == ordinary.inputs._indexes
+    assert [(inp.uuid, str(inp)) for inp in batch.find_input()] == [
+        (inp.uuid, str(inp)) for inp in ordinary.find_input()
+    ]
+
+
 @pytest.mark.parametrize('input_class', [InputBuildState, SettingInput])
 def test_class_constructor_override_before_first_batch_uses_live_lookup(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, input_class: type

@@ -146,12 +146,24 @@ class ControlFileRunState(RunState, ControlFile):
                 append_recorder = _ContextAppendRecorder(self.inputs)
         known_methods = _batch_append_context_methods() if append_recorder else {}
         for inp in self._inputs:
+            if not self.ctx.in_context_by_scope(inp.scope):
+                continue
+
+            if inp.lhs.upper() == 'PAUSE':
+                raise ValueError('Pause command encountered: {0}'.format(inp.rhs))
+
             if append_recorder is not None:
                 # An extension may mutate prior inputs during construction.
                 # Disable every enclosing recorder before calling that code;
                 # nested control files share this context but own their lists.
+                # Do not inspect inactive constructors, or evaluate an unknown
+                # class's descriptor merely to decide it cannot be trusted.
                 method = known_methods.get(type(inp))
-                bound_context = inp.context
+                bound_context = (
+                    inp.context
+                    if method is not None and getattr(type(inp), 'context', None) is method
+                    else None
+                )
                 if (
                     method is None
                     or getattr(bound_context, '__func__', None) is not method
@@ -159,11 +171,7 @@ class ControlFileRunState(RunState, ControlFile):
                     or type(inp._command) not in (Command, EventCommand, FVCommand)
                 ):
                     self.ctx._batch_append_indexes_safe = False
-            if not self.ctx.in_context_by_scope(inp.scope):
-                continue
-
-            if inp.lhs.upper() == 'PAUSE':
-                raise ValueError('Pause command encountered: {0}'.format(inp.rhs))
+                    append_recorder = None
 
             if append_recorder is not None and isinstance(inp, ControlFileInput):
                 # A nested control or FV block can have its own context hook,
