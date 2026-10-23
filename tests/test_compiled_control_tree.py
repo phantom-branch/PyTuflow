@@ -12,6 +12,7 @@ import pytest
 from pytuflow import TCF
 from pytuflow._tmf.compiled_control_tree import CompiledControlTree
 from pytuflow._tmf.compiled_dependency_plan import CompiledVariablePlan
+from pytuflow._tmf.group_input_reuse import LiteralInputGroupCache
 from pytuflow._tmf.tfpathlib import TuflowPath
 
 
@@ -490,6 +491,10 @@ def test_failed_context_cannot_certify_literal_group(tmp_path: Path):
     assert graph.runs[0].ordered_inputs == ()
     assert graph.reusable_input_groups == 1
     assert graph.input_runstates_elided == 1
+    # The failed BAD run still constructed its first GRID state. These are
+    # constructor attempts, not a count of only successful projections.
+    assert graph.input_runstates_constructed == 2
+    assert baseline.input_runstates_constructed == 3
     assert _identities(graph) == _identities(baseline)
 
 
@@ -518,7 +523,18 @@ def test_reused_input_state_is_independent_of_previous_run(tmp_path: Path):
             # Mutating a caller-visible earlier RunState must never affect
             # the private template or a later independent projection.
             first._rs._rhs.append('caller mutation')
+            first._rs._scope[0].names.append('mutated scope')
+            first._command.define_blocks.append(object())
             first._command.value = 'caller mutation'
+        if len(built) == 3:
+            second = built[1].find_input(lhs='read gis code')[0]
+            third = built[2].find_input(lhs='read gis code')[0]
+            assert second._rs._scope[0].names == []
+            assert third._rs._scope[0].names == []
+            assert not second._command.define_blocks
+            assert not third._command.define_blocks
+            assert second._rs._scope[0] is not third._rs._scope[0]
+            assert second._command.define_blocks is not third._command.define_blocks
         return state
 
     flags = ('-e1 A', '-e1 B', '-e1 C')
@@ -548,3 +564,54 @@ def test_literal_group_changes_between_invocations(tmp_path: Path):
     assert old.runs[0].file_references[-1].path_pattern.name == 'old.tif'
     assert changed.runs[0].file_references[-1].path_pattern.name == 'new.tif'
     assert _identities(changed) == _identities(baseline)
+
+
+def test_grid_group_clone_resets_independent_lazy_state(tmp_path: Path):
+    model = _source(tmp_path,
+                    'Set Variable ROOT == grids\n'
+                    'Read Grid Zpts == terrain/constant.tif\n'
+                    'Read GIS Code == <<ROOT>>/dynamic.shp\n')
+    original = model.context
+    built = []
+
+    def observe(*args, **kwargs):
+        result = original(*args, **kwargs)
+        built.append(result)
+        if len(built) == 2:
+            earlier = built[0].find_input(lhs='read grid zpts')[0]._rs
+            earlier._scope[0].names.append('leak')
+            earlier.clip_layer = ['leaked.shp']
+            earlier._rhs.append('leaked.tif')
+            earlier._files.append('leaked.tif')
+        if len(built) == 3:
+            latest = built[2].find_input(lhs='read grid zpts')[0]._rs
+            assert latest._scope[0].names == []
+            assert latest.clip_layer is None
+            assert latest._rhs == []
+            assert latest._files == []
+        return result
+
+    flags = ('-e1 A', '-e1 B', '-e1 C')
+    with patch.object(model, 'context', side_effect=observe):
+        batch = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert batch.passed and baseline.passed
+    assert batch.input_runstates_elided == 2
+    assert _identities(batch) == _identities(baseline)
+
+
+def test_group_clone_exceptions_fall_back_and_are_counted(tmp_path: Path):
+    model = _source(tmp_path,
+                    'Set Variable ROOT == gis\n'
+                    'Read Grid Zpts == terrain/constant.tif\n'
+                    'Read GIS Code == <<ROOT>>/dynamic.shp\n')
+    flags = ('-e1 A', '-e1 B')
+    with patch.object(LiteralInputGroupCache, '_clone', side_effect=RuntimeError('no clone')):
+        graph = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
+    assert graph.passed and baseline.passed
+    assert graph.input_runstates_elided == 0
+    assert graph.reusable_input_groups == 0
+    assert dict(graph.input_group_fallbacks)['prototype_exception'] == 2
+    assert dict(graph.input_group_fallbacks)['ineligible'] > 0
+    assert _identities(graph) == _identities(baseline)
