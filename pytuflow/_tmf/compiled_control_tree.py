@@ -88,12 +88,15 @@ class CompiledInputGroupPlan:
     command_signature: tuple[object, ...]
     define_blocks: tuple[tuple[str, str], ...]
     scenario_dependent: bool
+    input_type: type
+    context_method: object
 
 
 def _compile_input_group(inp, command, role, read, branches):
     """Classify every input once, keeping uncertain inputs on the normal path."""
-    from .inp.gis import GisInput
+    from .inp.gis import GisInput, _GIS_INPUT_CONTEXT
     from .inp.grid import GridInput
+    from .inp.inp_build_state import _INPUT_BUILD_CONTEXT
     from .parsers.block import DefineBlock
     from .parsers.command import Command
     from .scope import GlobalScope, ScenarioScope
@@ -106,6 +109,11 @@ def _compile_input_group(inp, command, role, read, branches):
         return None, 'unsupported_command'
     if type(inp) not in (GisInput, GridInput):
         return None, 'unsupported_input'
+    context_method = _GIS_INPUT_CONTEXT if type(inp) is GisInput else _INPUT_BUILD_CONTEXT
+    bound_context = inp.context
+    if (getattr(bound_context, '__func__', None) is not context_method
+            or getattr(bound_context, '__self__', None) is not inp):
+        return None, 'custom_context'
     if any(type(block) is not DefineBlock or block.type not in _SCENARIO_BLOCKS
            for block in command.define_blocks):
         return None, 'conditional_or_define'
@@ -142,6 +150,8 @@ def _compile_input_group(inp, command, role, read, branches):
         group_command_signature(command),
         group_block_signature(command),
         any(branch.scope_type != 'GLOBAL' for branch in branches),
+        type(inp),
+        context_method,
     ), None
 
 
@@ -306,7 +316,8 @@ class CompiledControlTree:
             return False
         safe_suffixes = {'.shp', '.tif', '.asc', '.flt'}
         for node in self.nodes:
-            if (node.role != 'READ'
+            if (node.input_group is None
+                    or node.role != 'READ'
                     or node.bypass_reason not in (None, 'scenario-conditional-command')
                     or (node.read_dependency is None
                         and node.bypass_reason != 'scenario-conditional-command')
@@ -349,7 +360,8 @@ class CompiledControlTree:
             return False
         safe_suffixes = {'.shp', '.tif', '.asc', '.flt'}
         for node in self.nodes:
-            if (node.role != 'READ' or node.bypass_reason is not None
+            if (node.input_group is None
+                    or node.role != 'READ' or node.bypass_reason is not None
                     or node.read_dependency is None
                     or node.read_dependency.relevant_variables
                     or node.command_name not in ('READ GIS CODE', 'READ GRID ZPTS')

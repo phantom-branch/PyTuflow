@@ -52,8 +52,12 @@ class LiteralInputGroupCache:
             self._ineligible(node.input_group_bypass_reason if node else 'unindexed')
             return None
         plan = node.input_group
+        bound_context = build_input.context
         command = build_input.command()
-        if (type(command) is not Command
+        if (type(build_input) is not plan.input_type
+                or getattr(bound_context, '__func__', None) is not plan.context_method
+                or getattr(bound_context, '__self__', None) is not build_input
+                or type(command) is not Command
                 or str(build_input.uuid) != node.input_uuid
                 or command.command != node.command_name
                 or build_input.lhs.upper() != node.command_name

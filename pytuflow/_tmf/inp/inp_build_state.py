@@ -340,3 +340,7 @@ class InputBuildState(BuildState, Input):
         """
         for file in self._files:
             self._file_to_scope[str(file)] = Scope.from_string(str(self._file_to_original[file]), str(file))
+
+
+# Capture the built-in constructor before an extension can replace the method.
+_INPUT_BUILD_CONTEXT = InputBuildState.context

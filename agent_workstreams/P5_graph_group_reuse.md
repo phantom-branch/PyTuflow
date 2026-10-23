@@ -1,9 +1,12 @@
 # P5: Reuse proven input groups in mixed control-file graphs
 
 **Updated:** 2026-10-23. **PR:** #12, remains draft.
-**Current implementation:** expanded scenario/variable proof and isolation fixes;
-245 focused/integration tests pass on each of Python 3.12.14 and 3.14.8 locally.
-Compilation and diff checks pass; Windows/public hosted CI is pending.
+**Current implementation:** bounded scenario/variable proof and isolation fixes,
+the authoritative reference-count contract merged from #13, and constructor
+eligibility guards. **263 focused/integration tests pass** on each of Python
+3.12.14 and 3.14.8 locally. The previous `84f1f38` source passed all eight active
+hosted checks and Codex review; the final constructor correction requires its
+own Windows/public checks. Final source and CI links are recorded in PR #12.
 **Performance status:** no native timing or speedup is established for the new
 implementation. Retained benchmarks validate an earlier source only.
 **Pre-P5 baseline:** `master` at `3de5cd954a5bf6739377937c8ff2fe3341e86bfc`.
@@ -72,6 +75,27 @@ Two additional isolation defects are corrected:
 Commands, expanders, configuration snapshots, contexts and lazy GIS/grid state
 are rebound or independently copied. Ordinary eager construction is unchanged.
 
+### Constructor eligibility correction before merge
+
+The original GIS/GRID group cache could bypass a source input's custom
+`context()` method after one successful run, suppressing later per-run errors.
+The group proof now records the exact input class and original constructor
+function, captured when that function's module is defined. Compilation rejects
+instance/class overrides and methods bound to another input; runtime lookup
+checks the same function and bound owner before reusing a leaf prototype.
+Static invariant/scenario whole-model classification also requires a valid
+input-group proof, so a preinstalled custom constructor cannot bypass that
+eligibility check through a different graph shortcut.
+
+This correction is limited to the existing `READ GIS CODE` / `READ GRID ZPTS`
+coverage. The focused constructor-guard regressions cover preinstalled hooks
+in mixed, literal and scenario models, and hooks replaced during iteration of
+a mixed model using leaf-group reuse. Revalidating an already-cached whole-model
+projection or an identical-flag result after a caller mutates sources mid-batch
+remains separate follow-up work; those pre-existing caches retain their
+read-only-invocation assumption. Setting-state reuse and `Inputs.append()`
+optimisation also remain follow-ups rather than expanding this correction.
+
 ## Diagnostics and cache preparation
 
 | Metric | Meaning |
@@ -115,8 +139,9 @@ Those differences established no meaningful graph speedup. Earlier public
 161-TCF/174-run and native parser/materialised/preflight gates passed at their
 recorded sources. Existing batch-cache gains remain separate from the graph.
 
-Current confirmed local evidence is **245 passing focused/integration tests on
-each of Python 3.12.14 and 3.14.8**, including 50 graph correctness tests covering
+Current confirmed local evidence is **263 passing focused/integration tests on
+each of Python 3.12.14 and 3.14.8**, including the 18 constructor-guard regressions
+and existing graph correctness tests covering
 scenario/variable provenance, mutable-state isolation, failed contexts and
 conservative exclusions. Compilation and diff checks also pass. The expanded
 500-distinct-event mixed fixture
@@ -141,16 +166,17 @@ The implementation boundary is explicit:
 | Retain transitive variable/settings dependencies | Implemented with relevant values, active declarations and configuration snapshots |
 | Separate proof, certification, cloning and construction costs | Diagnostics added; command coverage remains limited to the two proven classes |
 | Avoid single-run and zero-candidate preparation | Implemented with explicit bypass reasons and preserved iterator streaming |
-| Memoise `Path.resolve()` in the temporary consumer diagnostic | Authorised companion work in progress on ryan-tools PR #143; separate from this parser change |
-| Investigate older eager/shared compatibility differences | Remains a separate workstream |
+| Memoise `Path.resolve()` in the consumer diagnostic | Delivered in ryan-tools #143 at `144e1e4`; six regressions and hosted parity pass |
+| Investigate older eager/shared compatibility differences | Confirmed stale NetCDF rainfall and Q/QO fixture expectations; test/documentation follow-up, no parser behaviour change required |
 
 The earlier consumer diagnostic's 12,480 physical-identity resolutions for 49
 normalised targets were not production graph I/O. The companion PR #143 change
-must preserve mapped-drive/UNC and linked-path identity checks and be
-invocation-local; its final validation and commit are recorded separately.
-This PR does not repin or merge consumer
-[#143](https://github.com/Chain-Frost/ryan-tools/pull/143) or its separate child
-[#156](https://github.com/Chain-Frost/ryan-tools/pull/156).
+preserves mapped-drive/UNC and linked-path identity checks with invocation-local
+caches. Consumer [#156](https://github.com/Chain-Frost/ryan-tools/pull/156) is now
+integrated into [#143](https://github.com/Chain-Frost/ryan-tools/pull/143) at
+`298fb13`, after five green workflows and a clean refreshed Codex review.
+The reference-count contract from #13 is included here; dependency publication
+and consumer default changes remain separate decisions.
 
 Another unoptimised construction hotspot is `Inputs.append()` in
 `pytuflow/_tmf/inp/inputs.py`: every append rebuilds and searches parent UUID lists
@@ -181,16 +207,23 @@ py -3.14 -m pytest -q tests/test_compiled_control_tree.py tests/test_batch_integ
 py -3.14 tests/benchmark_tutorial_dependencies.py --bundle $Bundle --trials 3 --output "$env:TEMP\pytuflow-p5-expanded-public.json"
 ~~~
 
-The designated authorised workstation must then rerun the retained M480/N42
-protocol in the [historical report](P5_benchmark_results_2026-10-23.md): identical
-distinct launcher flags, source and dataset; three sequential rotating warm-cache
-trials; parse reported separately; and full eager/deferred/batch materialisation
-plus public-preflight parity. Report missing/extra identities, order/provenance
-differences, failed runs and fallback reasons before interpreting timings.
-Compare graph-off/on at the **same new source**; old measurements are not a
-control for changed code or environments.
+The owner will use a different model on another SMB server. Treat it as a new
+workload, with one fixed TCF and exported run list, anonymous label, exact parser
+and consumer revisions, and Python/storage details. Existing `run_local_checks`
+in ryan-tools compares eager, individual deferred and batch materialisation,
+rotates the three modes across trials, and checks public-preflight parity.
+This establishes a new end-to-end baseline; it does not isolate graph speedup.
+Report missing/extra identities, order/provenance differences, failed runs and
+fallback reasons before interpreting timings. Keep detailed reports locally.
+
+The public parser benchmark supports same-source graph-off/on comparisons.
+The native consumer runner currently has no graph-off switch; add that control
+as a focused consumer-tooling follow-up before claiming a native graph-only
+speedup. Old M480/N42 timings are historical context, not a control for changed
+models, servers or source revisions. Further append and literal-setting reuse
+will be reviewed in separate follow-up PRs against the frozen baseline.
 
 Publish anonymised aggregates only. Native data, detailed reports, identifying
 paths and source fragments remain on the workstation. Launchers are read as
-text; no launcher or solver is executed. No merge, release or production
-dependency change is part of this PR.
+text; no launcher or solver is executed. Publishing a package or changing the
+consumer's production dependency is outside this parser change.
