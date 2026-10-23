@@ -161,8 +161,12 @@ Four review findings were addressed on this PR branch:
   prototype failures, clone failures, capacity and optimisation exceptions.
   Errors in an optimisation continue to fall back to the ordinary parser.
 - Regression tests now mutate previous GIS and GRID run states, test failed
-  contexts, and inject prototype/reuse exceptions. Windows integration CI also
-  runs the complete existing `tests/tmf` suite for upstream compatibility.
+  contexts, and inject prototype/reuse exceptions. Windows integration CI runs
+  the complete `tests/tmf` suite at three pinned points: canonical upstream
+  `cf908cc`, pre-P5 fork `3de5cd9`, and this PR. Existing upstream/fork
+  failures are exposed, and the blocking gate rejects newly introduced P5
+  failures, unexpected skips and missing test cases. The three-way differential
+  itself has small executable unit regressions.
 
 **Validation:** The new exact-head CI runs and the public differential are
 pending. Do not cite the earlier `6e709538` checks as testing these fixes.
