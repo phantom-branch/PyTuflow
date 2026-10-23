@@ -95,6 +95,7 @@ def test_nested_order_uuid_and_full_batch_deferred_parity(tmp_path: Path, cache_
                 line_number=inp.line_number,
                 command_name=str(inp.lhs),
                 command_text=str(inp._command.original_text),
+                reference_count=len(inp.file_references),
             )
             for sequence, (item, inp) in enumerate(zip(case.ordered_inputs, inputs, strict=True))
         )
