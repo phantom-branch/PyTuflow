@@ -95,7 +95,26 @@ This comprises the 29 new setting cases, 18 parent constructor cases and the
 existing compiled-tree/integration cases. The imported package location was
 checked to be this isolated worktree. `git diff --check` also passed. The
 earlier combined-worktree test results are not a substitute for this isolated
-result. Hosted Windows acceptance for this draft remains to be completed.
+result.
+
+Hosted Windows acceptance at implementation revision
+`b25c235a9b0f291ddf19293280c347ea7e7580ac` passed on **2026-10-23**:
+
+- [Batch integration acceptance](https://github.com/phantom-branch/PyTuflow/actions/runs/39904079389),
+  including Windows Python 3.12/3.14 contracts and the complete public
+  **161-TCF / 174-run four-mode graph differential**.
+- [Deferred reference contracts](https://github.com/phantom-branch/PyTuflow/actions/runs/39904079715).
+- [Materialised example-model parity](https://github.com/phantom-branch/PyTuflow/actions/runs/39904079796).
+
+Independent review on **2026-10-23** checked the exact input/command types,
+constructor function and bound-owner guards, event-marker exclusion,
+scenario provenance, successful-run certification, configuration copying and
+mutable setting-state isolation. No concrete correctness defect was found.
+The same focused selection was repeated from this isolated checkout with
+Python **3.14.8**: **107 passed in 28.70s**. No parser or test changes were
+needed during this review.
+Native performance evaluation remains outstanding; the hosted results do not
+establish a speedup on the newly selected SMB workload.
 
 On Windows, rerun the same focused selection with `py -3.14 -m pytest`, then
 the existing hosted deferred-reference and batch-integration workflows. Their
@@ -152,33 +171,46 @@ placeholders in public material: `<model.tcf>`, `<exported-commands.txt>`,
 Use the anonymous label **`SMB-new`**. Keep native data, paths, command exports
 and detailed reports local and outside both repositories.
 
-Use the existing consumer diagnostic from the ryan-tools checkout, replacing
-the placeholders locally after the model is selected:
+The four-mode consumer diagnostic is implemented separately in
+[ryan-tools #158](https://github.com/Chain-Frost/ryan-tools/pull/158). Its
+initial implementation revision
+`9cd839247c430dbd9a2ec4a7e2187f1e80cea91d` passed hosted Windows archive acceptance;
+a clean-source acceptance review fix is being finalised. Consult that PR's
+[work record](https://github.com/Chain-Frost/ryan-tools/blob/test/native-graph-benchmark-controls/docs/work/2026-10-23-tuflow-native-graph-benchmark.md)
+for the final verified consumer revision before beginning native acceptance.
+
+Once that diagnostic is accepted, use its checkout with the following
+representative gate, replacing the placeholders locally:
 
 ```text
-py -3.14 -m tests.fixtures.tuflow_example_repro.run_local_checks --tcf "<model.tcf>" --commands-file "<exported-commands.txt>" --expect-runs <expected-run-count> --label SMB-new --pytuflow-checkout "<pytuflow-checkout>" --output "<private-report-directory>" --batch --representative-only
+py -3.14 -m tests.fixtures.tuflow_example_repro.run_local_checks --tcf "<model.tcf>" --commands-file "<exported-commands.txt>" --expect-runs <expected-run-count> --label SMB-new --pytuflow-checkout "<pytuflow-checkout>" --output "<private-report-directory>" --batch --graph-compare --repeats 4 --storage-and-cache-conditions "<anonymous actual storage/cache conditions>" --representative-only
 ```
 
 After representative first/middle/last runs pass, remove
-`--representative-only` and add `--repeats 3` for the complete run set with
-rotated eager/deferred/batch order. Never execute the exported launcher or a
-solver. Require complete materialised identity parity, matching public
-preflight paths/issues and no accepted partial collections.
+`--representative-only` for the complete run set with balanced four-mode
+rotation: eager, individual deferred, cached batch graph-off and cached batch
+graph-on. Keep `cache_scopes=True` and the other batch caches enabled in both
+batch modes. Never execute the exported launcher or a solver. Require
+complete materialised identity parity, matching public preflight paths/issues
+and no accepted partial collections.
 
 Hold the model, exported run set, selected source revision and storage location
 fixed within each trial. For parent-versus-draft comparisons, record each exact
 checkout and use the same model, runs, consumer revision and storage in both
-members of every comparison. Report parse and evaluation/materialisation
+members of every comparison. Both parser and consumer checkouts must be clean
+for benchmark acceptance. Report parse and evaluation/materialisation
 phases separately. Comparing a new SMB model with old M480/N42 timings does not
 isolate this PR's effect.
 
-**Current diagnostic limitation:** `run_local_checks` supports eager, deferred
-and batch modes, but has no graph-off control. Those comparisons provide
-useful end-to-end parity and baseline measurements; they do not isolate graph
-reuse. Do not invent an unsupported graph-off CLI flag or modify the diagnostic
-inside this PyTUFLOW PR. A separate ryan-tools benchmark-control follow-up must
-expose and verify the parser's existing `compile_tree=False` differential and
-record the effective mode before native graph-only claims are accepted.
+**Public-preflight boundary:** the consumer `check_simulation_inputs()` API
+has no graph switch. The diagnostic retains a separate, untimed
+individual/default-batch public-preflight gate; it is not graph-off/on public
+preflight timing. Only the parser's public `compile_tree=False/True`
+differential isolates graph contribution. Record both actual Git revisions,
+effective modes and complete parity. Compare this PR and append-accounting
+PR #14 individually against the same frozen parser baseline and consumer
+revision before testing their combination. Do not modify the consumer
+diagnostic inside this PyTUFLOW PR.
 
 ## Repository/API direction
 
