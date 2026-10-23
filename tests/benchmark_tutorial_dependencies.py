@@ -286,7 +286,8 @@ def individual(
             inputs = tuple(run.find_input())
             ordered = tuple(
                 BatchInputCommand(str(inp.uuid), ordinal, inp._command.parent,
-                                  inp.line_number, str(inp.lhs), str(inp._command.original_text))
+                                  inp.line_number, str(inp.lhs), str(inp._command.original_text),
+                                  len(inp.file_references))
                 for ordinal, inp in enumerate(inputs)
             )
             input_refs = tuple(
