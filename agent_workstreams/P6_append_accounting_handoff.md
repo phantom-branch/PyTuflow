@@ -22,8 +22,10 @@ The implementation and focused coverage are in:
 - `pytuflow/_tmf/inp/inputs.py`: private `_ContextAppendRecorder`.
 - `pytuflow/_tmf/cf/cf_run_state.py`: recorder lifetime, constructor trust and
   recursion boundary.
-- `pytuflow/_tmf/batch_dependencies.py`: definition-time canonical factory
-  alias for append-construction trust checks.
+- `pytuflow/_tmf/batch_dependencies.py`: descriptor-free context callback
+  proof and definition-time batch callback snapshot.
+- `pytuflow/_tmf/context.py`, `event.py`: original inherited-context and
+  event-database callback definitions used by that proof.
 - `pytuflow/_tmf/inp/cf.py`, `db.py`, `block.py`: original-constructor aliases.
   The baseline already supplies the GIS and base-input aliases.
 - `tests/test_input_append_accounting.py`; regression selections in
@@ -57,6 +59,14 @@ Preserve these contracts:
    parent. Fresh child collections can still create independent recorders.
    Identify this boundary by input type; reading generic `inp.cf` can trigger
    lazy GIS I/O and is prohibited here.
+5. Prove the complete context callback surface before creating a recorder and
+   before each input's scope check. Translation, command construction,
+   reference collection, resolution, variable declarations and scope callbacks
+   must retain their original class definitions and current-context binding.
+   Include inherited `Context` implementations reached through `super()` and
+   the event database's `event_variables()`/`items()` chain. Inspect raw class
+   and instance dictionaries; do not execute a getter while checking trust.
+   Unsupported callbacks retain normal invocation through public append.
 
 Finish the focused correctness review and investigate any concrete failures.
 Run the focused append and existing constructor-guard tests on supported
@@ -148,21 +158,73 @@ an earlier input's UUID without changing either collection length, leaving
 the recorder's first-position maps stale. The reproduction yielded append
 history `[(0, 0), (1, 1)]` where public append yielded `[(0, 0), (0, 0)]`.
 
-The fix captures the factory function at definition time, checks the exact
-class attribute before retrieving a replacement descriptor, and validates the
-single retrieved method's original function and bound context before invoking
-it. Unsupported factories retire the local recorder and disable recorder use
-through the shared context. Scope selection and PAUSE handling still happen
-first, and descriptor access counts remain unchanged.
+The initial fix captured the factory function at definition time, checked the
+exact class attribute before retrieving a replacement descriptor, and validated
+the single retrieved method's original function and bound context before
+invoking it. Unsupported factories retired the local recorder and disabled
+recorder use through the shared context. Scope selection and PAUSE handling
+still happened first, and descriptor access counts remained unchanged.
 
 Six additional cases cover instance overrides, class overrides, descriptor
 overrides, a descriptor that mutates UUIDs but returns the canonical bound
 function, a canonical function rebound to another owner, and preservation of
-the canonical recorder path. The focused Python 3.14.8 selection passes **60
+the canonical recorder path. That focused Python 3.14.8 selection passed **60
 tests**, with the same two archive-dependent editing cases deselected. The
-complete integration-contract selection passes **285 tests** with host process
+complete integration-contract selection passed **285 tests** with host process
 visibility for RSS sampling. The 500-append linear UUID-access regression,
 compilation and whitespace checks remain green. Independent cross-review
 found no further issue with this guard. Updated hosted acceptance and refreshed
 Codex review remain to be checked; no native timing claim is made by this
 correction.
+
+### Codex review follow-up: context callback chain
+
+[Review finding](https://github.com/phantom-branch/PyTuflow/pull/14#discussion_r4356705358)
+showed that a canonical factory still calls overridable context hooks before
+append. Rebound translation/command hooks can mutate earlier UUIDs; independent
+inspection reproduced the same history corruption through scope selection,
+resolution and cached-reference callbacks. The factory-only check is therefore
+superseded by a single context dispatch proof.
+
+The new proof compares raw, definition-time `Context`/`BatchContext` attribute
+snapshots and inheritance, including the original implementations invoked by
+`super()`. It checks instance shadows without binding them, permitting only an
+original method explicitly bound to its current owner. The event database is
+read from the verified raw context dictionary and must retain its exact class,
+original `event_variables()` and inherited `items()` callbacks, and ordinary
+attribute access. Both instance namespaces must be ordinary dictionaries;
+assigned dictionary subclasses are rejected before their membership/index/get
+methods can run. Standard event workloads remain eligible.
+
+The check runs after context setup but before recorder creation, then before
+each scope lookup, including scopes that will be inactive. It never evaluates
+a property or adds a callback invocation. Retirement uses the raw context
+dictionary captured when the recorder was created, so a later replacement
+`__dict__` getter is not executed by the guard. The ordinary-context import
+boundary, scope/PAUSE behaviour and existing constructor/recursion guards are
+preserved.
+
+Comparing complete context class snapshots is deliberately conservative:
+even an unrelated class metadata change can disable the recorder. This is a
+bounded append-construction proof, not a redesign of graph-cache invalidation
+or support for arbitrary mutation of private cache objects during a batch.
+The extra proof cost requires native measurement; the linear UUID-access count
+alone does not establish an elapsed-time benefit.
+
+Twenty-one added cases cover instance and inherited callbacks, mutating
+descriptors (including getters returning the canonical method), inactive and
+late-installed scope callbacks, same/wrong-owner binding, a public batch READ
+that invokes the declaration signature, event callbacks, and canonical event
+eligibility. The final two cases reject custom instance-namespace dictionaries
+without invoking their membership, index or `get` methods.
+
+The final focused Python 3.14.8 selection passed **81 tests**, with the same two
+archive-dependent editing cases deselected. The full integration-contract
+selection passed **304 tests** with host process visibility before only the
+last exact-dictionary guard and its two proof cases were added; it was not
+rerun after that narrow addition. The focused rerun includes the existing
+500-append linear UUID-access regression. Production compilation and
+`git diff --check` pass. Independent callback-inventory and code review found
+no further defect within this bounded trust proof. Updated-head hosted Windows
+checks, refreshed Codex review and native timing remain pending; earlier hosted
+results do not establish acceptance of this correction.

@@ -2,7 +2,6 @@ import logging
 import re
 import typing
 from functools import cache
-from types import MethodType
 
 from ..inp.inputs import Inputs, _ContextAppendRecorder
 from ..inp.inp_run_state import InputRunState
@@ -135,40 +134,34 @@ class ControlFileRunState(RunState, ControlFile):
         # UUID positions incrementally. Never retain an index cache on mutable
         # Inputs, and leave ordinary contexts/edit collections on live lookup.
         append_recorder = None
+        append_context_state = {}
         if (getattr(self.ctx, '_batch_active', False)
                 and getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'
                 and getattr(self.ctx, '_batch_append_indexes_safe', True)):
-            from ..batch_dependencies import BatchContext, _BATCH_INPUT_STATE
+            from ..batch_dependencies import _batch_append_context_is_trusted
             from ..inp.cf import ControlFileInput
             from ..parsers.command import Command, EventCommand
             from ..parsers.fvcommand import FVCommand
 
-            if type(self.ctx) is BatchContext:
+            if _batch_append_context_is_trusted(self.ctx):
+                append_context_state = object.__getattribute__(self.ctx, '__dict__')
                 append_recorder = _ContextAppendRecorder(self.inputs)
         known_methods = _batch_append_context_methods() if append_recorder else {}
         for inp in self._inputs:
+            if append_recorder is not None and not _batch_append_context_is_trusted(self.ctx):
+                # Scope checks themselves can mutate earlier input UUIDs.
+                # Retire before invoking any callback, including inactive
+                # inputs' scope selection. Keep the previously trusted raw
+                # storage so even a replacement __dict__ getter is not read.
+                append_context_state['_batch_append_indexes_safe'] = False
+                append_recorder = None
             if not self.ctx.in_context_by_scope(inp.scope):
                 continue
 
             if inp.lhs.upper() == 'PAUSE':
                 raise ValueError('Pause command encountered: {0}'.format(inp.rhs))
 
-            if (append_recorder is not None
-                    and BatchContext.__dict__.get('batch_input_state') is not _BATCH_INPUT_STATE):
-                # A replacement descriptor can execute while the factory is
-                # retrieved. Retire first and keep the single existing lookup.
-                self.ctx._batch_append_indexes_safe = False
-                append_recorder = None
             batch_factory = getattr(self.ctx, 'batch_input_state', None)
-            if append_recorder is not None and (
-                type(batch_factory) is not MethodType
-                or batch_factory.__func__ is not _BATCH_INPUT_STATE
-                or batch_factory.__self__ is not self.ctx
-            ):
-                # The factory actually invoked below can also be rebound per
-                # instance and mutate earlier inputs without changing length.
-                self.ctx._batch_append_indexes_safe = False
-                append_recorder = None
 
             if append_recorder is not None:
                 # An extension may mutate prior inputs during construction.
@@ -188,7 +181,7 @@ class ControlFileRunState(RunState, ControlFile):
                     or getattr(bound_context, '__self__', None) is not inp
                     or type(inp._command) not in (Command, EventCommand, FVCommand)
                 ):
-                    self.ctx._batch_append_indexes_safe = False
+                    append_context_state['_batch_append_indexes_safe'] = False
                     append_recorder = None
 
             if append_recorder is not None and isinstance(inp, ControlFileInput):
@@ -208,8 +201,8 @@ class ControlFileRunState(RunState, ControlFile):
                 input_run_state = inp.context(context=self.ctx, parent=self)
             else:
                 input_run_state = batch_factory(inp, self)
-            if append_recorder is not None and getattr(self.ctx, '_batch_append_indexes_safe', True):
+            if append_recorder is not None and append_context_state.get('_batch_append_indexes_safe', True):
                 if not append_recorder.append(input_run_state):
-                    self.ctx._batch_append_indexes_safe = False
+                    append_context_state['_batch_append_indexes_safe'] = False
             else:
                 self.inputs.append(input_run_state)

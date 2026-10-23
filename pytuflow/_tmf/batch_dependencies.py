@@ -13,12 +13,14 @@ from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
+from types import MethodType
 from typing import TYPE_CHECKING
 
 from .compiled_control_tree import CompiledControlTree
 from .compiled_dependency_plan import CompiledVariablePlan
 from .group_input_reuse import LiteralInputGroupCache
-from .context import Context
+from .context import Context, _CONTEXT_APPEND_ATTRIBUTES, _CONTEXT_APPEND_MRO
+from .event import EventDatabase, _EVENT_DATABASE_APPEND_ATTRIBUTES, _EVENT_DATABASE_APPEND_MRO
 from .scope import GlobalScope, ScenarioScope
 from .tfpathlib import TuflowPath
 
@@ -429,8 +431,74 @@ class BatchContext(Context):
         return translated
 
 
-# Retain the original factory before an extension can replace the method.
-_BATCH_INPUT_STATE = BatchContext.batch_input_state
+# Retain the entire raw callback surface, including the inherited methods
+# invoked through super(). New/replaced class descriptors are unsupported too.
+_BATCH_CONTEXT_APPEND_ATTRIBUTES = tuple(BatchContext.__dict__.items())
+_BATCH_CONTEXT_APPEND_MRO = BatchContext.__mro__
+_APPEND_CONTEXT_INSTANCE_ATTRIBUTES = tuple({
+    **dict(_CONTEXT_APPEND_ATTRIBUTES),
+    **dict(_BATCH_CONTEXT_APPEND_ATTRIBUTES),
+}.items())
+
+
+def _raw_class_attribute(cls: type, name: str):
+    """Return an unbound class attribute without executing any descriptor."""
+    for owner in type.__getattribute__(cls, '__mro__'):
+        namespace = type.__getattribute__(owner, '__dict__')
+        if name in namespace:
+            return namespace[name]
+    return None
+
+
+def _original_instance_callbacks(instance, namespace: dict, originals) -> bool:
+    # An assigned dict subclass can override even membership/index lookup.
+    # Inspect only ordinary storage so proving dispatch cannot run callbacks.
+    if type(namespace) is not dict:
+        return False
+    for name, original in originals:
+        if name not in namespace:
+            continue
+        replacement = namespace[name]
+        if (type(replacement) is not MethodType
+                or replacement.__func__ is not original
+                or replacement.__self__ is not instance):
+            return False
+    return True
+
+
+def _batch_append_context_is_trusted(context) -> bool:
+    """Prove context dispatch is built in before retaining UUID positions.
+
+    Scope selection, translation, command/reference creation and resolution
+    all dispatch through this context. A custom callback anywhere in that
+    chain can edit previous parent inputs. Inspect raw dictionaries only;
+    proving a property or a constructor must never execute it an extra time.
+    """
+    if type(context) is not BatchContext:
+        return False
+    for cls, mro, originals in (
+        (Context, _CONTEXT_APPEND_MRO, _CONTEXT_APPEND_ATTRIBUTES),
+        (BatchContext, _BATCH_CONTEXT_APPEND_MRO, _BATCH_CONTEXT_APPEND_ATTRIBUTES),
+    ):
+        namespace = type.__getattribute__(cls, '__dict__')
+        if (type.__getattribute__(cls, '__mro__') != mro
+                or len(namespace) != len(originals)
+                or any(name not in namespace or namespace[name] is not original
+                       for name, original in originals)):
+            return False
+    namespace = object.__getattribute__(context, '__dict__')
+    if not _original_instance_callbacks(context, namespace, _APPEND_CONTEXT_INSTANCE_ATTRIBUTES):
+        return False
+    # Do not retrieve context.event_db: an extension could make it a property.
+    # The unchanged class surface above proves this raw instance slot is used.
+    event_db = namespace.get('event_db')
+    if (type(event_db) is not EventDatabase
+            or type.__getattribute__(EventDatabase, '__mro__') != _EVENT_DATABASE_APPEND_MRO
+            or any(_raw_class_attribute(EventDatabase, name) is not original
+                   for name, original in _EVENT_DATABASE_APPEND_ATTRIBUTES)):
+        return False
+    event_namespace = object.__getattribute__(event_db, '__dict__')
+    return _original_instance_callbacks(event_db, event_namespace, _EVENT_DATABASE_APPEND_ATTRIBUTES)
 
 
 @dataclass(frozen=True, slots=True)

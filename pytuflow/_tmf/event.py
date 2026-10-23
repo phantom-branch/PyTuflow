@@ -55,3 +55,16 @@ class EventDatabase(CaseInsDict):
             combs.append(list(itertools.product([event_var], event_vals)))
         combs = list(itertools.product(*combs))
         yield from combs
+
+
+# event_variables() is called during deferred input construction and delegates
+# to items(). Keep the original attribute access and both callbacks available
+# for a descriptor-free append-accounting proof.
+_EVENT_DATABASE_APPEND_ATTRIBUTES = (
+    ('event_variables', EventDatabase.event_variables),
+    ('items', EventDatabase.items),
+    ('__getattribute__', EventDatabase.__getattribute__),
+    ('__getattr__', None),
+    ('__dict__', CaseInsDict.__dict__['__dict__']),
+)
+_EVENT_DATABASE_APPEND_MRO = EventDatabase.__mro__
