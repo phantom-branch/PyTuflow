@@ -6,6 +6,7 @@ on:
       - "pytuflow/_tmf/**"
       - "tests/test_batch_integration.py"
       - "tests/test_group_constructor_guards.py"
+      - "tests/test_setting_group_reuse.py"
       - "tests/verify_tutorial_integration.py"
       - "tests/benchmark_tutorial_dependencies.py"
       - "tests/test_tutorial_benchmark.py"
@@ -45,6 +46,7 @@ jobs:
           tests/test_batch_activation_index.py
           tests/test_compiled_control_tree.py
           tests/test_group_constructor_guards.py
+          tests/test_setting_group_reuse.py
           tests/test_batch_integration.py
           tests/test_batch_dependencies.py
           tests/test_compiled_dependency_plan.py
