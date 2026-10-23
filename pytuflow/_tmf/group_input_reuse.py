@@ -8,6 +8,7 @@ successful entire run must certify a prototype before another run can use it.
 from __future__ import annotations
 
 from copy import copy
+from collections import Counter
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -30,6 +31,8 @@ class LiteralInputGroupCache:
     def __init__(self, graph: CompiledControlTree):
         self.graph = graph
         self._prototypes: dict[tuple[object, ...], tuple[object, object]] = {}
+        # Fixed reason keys, bounded memory even for very large batches.
+        self.fallback_counts: Counter[str] = Counter()
 
     def _key(self, build_input, ctx: Context) -> tuple[object, ...] | None:
         node = self.graph.node_for(build_input)
@@ -93,6 +96,11 @@ class LiteralInputGroupCache:
         config.file_resolution = "deferred"
         config.variables = ctx.translate
         command = copy(prototype._command)
+        # `copy` leaves the mutable list shared with the previous projection.
+        # Eligible literal commands contain no DEFINE blocks.
+        if prototype._command.define_blocks:
+            return None
+        command._define_blocks = []
         command.config = config
         command._expander = copy(prototype._command._expander)
         command._expander.variables = ctx.translate
@@ -110,7 +118,24 @@ class LiteralInputGroupCache:
         state._file_to_original = {}
         state._file_to_scope = {}
         state._rhs = []
-        state._scope = copy(prototype._rs._scope)
+        # Scope objects have mutable `names`, so copying just the list aliases
+        # previous run states. Only GLOBAL scopes are eligible for this cache.
+        from .scope import GlobalScope, Scope, ScopeList
+        if not prototype._rs._scope or any(
+            not isinstance(scope, GlobalScope) for scope in prototype._rs._scope
+        ):
+            return None
+        state._scope = ScopeList(Scope('GLOBAL', '') for _ in prototype._rs._scope)
+        state._prev_val = None
+        state._attr_idx = 0
+        state._attr_idx_found = False
+        # Both GIS and GRID descendants may retain mutable lazy-loaded state.
+        if hasattr(state, '_cf'):
+            state._cf = []
+            state._cf_loaded = False
+        if type(state) is GridInput:
+            state.multiplier = 1.0
+            state.clip_layer = None
         if type(state) is GisInput:
             state._cf = []
             state._cf_loaded = False
@@ -124,28 +149,38 @@ class LiteralInputGroupCache:
         try:
             key = self._key(build_input, ctx)
             if key is None:
+                self.fallback_counts['ineligible'] += 1
                 return None, None
             entry = self._prototypes.get(key)
             if entry is None or entry[0] is not build_input:
                 return None, key
             result = self._clone(entry[1], build_input, ctx, parent)
-            return (result, key) if result is not None else (None, None)
+            if result is None:
+                self.fallback_counts['clone_unsupported'] += 1
+                return None, None
+            return result, key
         except Exception:
-            # Optimisation failures cannot change normal parser behaviour.
+            # The ordinary parser still determines errors, never this cache.
+            self.fallback_counts['reuse_exception'] += 1
             return None, None
 
     def commit(self, pending) -> None:
         """Only fully successful run projections may certify later reuse."""
         for key, build_input, state in pending:
-            if key in self._prototypes or len(self._prototypes) >= _MAX_TEMPLATES:
+            if key in self._prototypes:
+                continue
+            if len(self._prototypes) >= _MAX_TEMPLATES:
+                self.fallback_counts['capacity'] += 1
                 continue
             # The retained exemplar cannot be mutated through the returned
             # projection or its original run tree.
             try:
                 exemplar = self._clone(state, build_input, state.ctx, None)
             except Exception:
+                self.fallback_counts['prototype_exception'] += 1
                 continue
             if exemplar is None:
+                self.fallback_counts['prototype_unsupported'] += 1
                 continue
             exemplar.ctx = None
             exemplar.parent = None
