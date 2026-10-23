@@ -35,8 +35,10 @@ quoted multiword values survive without lossy whitespace tokenisation.
 The displayed `-s1 value` label is diagnostic text only, not reparsed input.
 The JSON counters distinguish `input_runstates_constructed`,
 `input_runstates_elided`, `invariant_projection_reuses` and
-`reusable_input_groups`. The first two measure actual constructor work,
-while the latter two distinguish whole-run reuse from eligible literal input
+`reusable_input_groups` and `input_group_fallbacks`. The first two count
+actual constructor attempts (including those that raise) and successful
+elisions, respectively; the latter metrics distinguish whole-run reuse from
+eligible literal input groups and expose bounded diagnostic fallback reasons.
 groups in mixed models. An observed zero must not be confused with an
 unavailable (`null`) metric; no counter alone proves a speedup.
 
