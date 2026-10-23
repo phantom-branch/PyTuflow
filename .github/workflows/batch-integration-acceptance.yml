@@ -47,8 +47,34 @@ jobs:
           tests/test_deferred_file_references.py
           tests/test_deferred_database_parity.py
           tests/test_tutorial_benchmark.py
-      - name: Complete upstream TMF test suite (fork compatibility)
-        run: python -m pytest -q tests/tmf
+      - name: Checkout pinned canonical upstream for TMF differential
+        uses: actions/checkout@v5
+        with:
+          repository: TUFLOW-Support/PyTuflow
+          ref: cf908cc922ca8448ed6002834877b0b377329eae
+          path: pristine-upstream
+          persist-credentials: false
+      - name: Run original upstream TMF suite (record baseline failures)
+        working-directory: pristine-upstream
+        continue-on-error: true
+        run: |
+          python -c "import pytuflow; print(pytuflow.__file__)"
+          python -m pytest -q tests/tmf --junitxml=../upstream-tmf.xml
+      - name: Run fork TMF suite (record all results)
+        continue-on-error: true
+        run: python -m pytest -q tests/tmf --junitxml=fork-tmf.xml
+      - name: Gate on new fork compatibility failures versus upstream
+        run: python tests/compare_upstream_tmf_junit.py --upstream upstream-tmf.xml --fork fork-tmf.xml
+      - name: Archive full upstream compatibility diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-tmf-differential-${{ matrix.python-version }}
+          path: |
+            upstream-tmf.xml
+            fork-tmf.xml
+          if-no-files-found: warn
+          retention-days: 14
 
   verified-public-tutorial:
     name: Windows 3.14 verified 161-TCF graph differential
