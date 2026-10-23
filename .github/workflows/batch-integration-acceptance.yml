@@ -63,11 +63,27 @@ jobs:
         run: |
           python -c "import pytuflow; print(pytuflow.__file__)"
           python -m pytest -q tests/tmf --junitxml=../upstream-tmf.xml
-      - name: Run fork TMF suite (record all results)
+      - name: Checkout pre-P5 fork baseline (upstream deltas predate PR 12)
+        uses: actions/checkout@v5
+        with:
+          repository: phantom-branch/PyTuflow
+          ref: 3de5cd954a5bf6739377937c8ff2fe3341e86bfc
+          path: pre-p5-baseline
+          persist-credentials: false
+      - name: Run pre-P5 fork TMF suite
+        working-directory: pre-p5-baseline
+        continue-on-error: true
+        run: |
+          python -c "import pytuflow; print(pytuflow.__file__)"
+          python -m pytest -q tests/tmf --junitxml=../pre-p5-tmf.xml
+      - name: Run PR 12 fork TMF suite
         continue-on-error: true
         run: python -m pytest -q tests/tmf --junitxml=fork-tmf.xml
-      - name: Gate on new fork compatibility failures versus upstream
-        run: python tests/compare_upstream_tmf_junit.py --upstream upstream-tmf.xml --fork fork-tmf.xml
+      - name: Report original upstream differences present before P5
+        continue-on-error: true
+        run: python tests/compare_upstream_tmf_junit.py --upstream upstream-tmf.xml --fork pre-p5-tmf.xml
+      - name: Gate on new PR 12 regressions against pre-P5 fork master
+        run: python tests/compare_upstream_tmf_junit.py --upstream pre-p5-tmf.xml --fork fork-tmf.xml
       - name: Archive full upstream compatibility diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -75,6 +91,7 @@ jobs:
           name: upstream-tmf-differential-${{ matrix.python-version }}
           path: |
             upstream-tmf.xml
+            pre-p5-tmf.xml
             fork-tmf.xml
           if-no-files-found: warn
           retention-days: 14
