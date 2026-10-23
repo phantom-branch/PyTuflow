@@ -33,8 +33,36 @@ Launchers are **read as text, never executed**. Their event/scenario flag
 values are stored as dictionaries and passed directly into PyTUFLOW, so
 quoted multiword values survive without lossy whitespace tokenisation.
 The displayed `-s1 value` label is diagnostic text only, not reparsed input.
-The JSON counters include P2's `input_runstates_elided`; an observed zero
-must not be confused with an unavailable (`null`) metric.
+The JSON counters distinguish actual work from graph metadata:
+
+- `input_runstates_constructed` counts constructor attempts, including failures;
+  `input_runstates_elided` counts constructors avoided. The
+  `failed_run_input_runstates_*` fields identify the subset performed or avoided
+  in projections that subsequently failed and returned no dependencies.
+- `invariant_projection_reuses` counts whole-run projection reuse;
+  `input_group_state_reuses` counts independently cloned input states in mixed
+  models. `reusable_input_groups` counts successfully certified signatures.
+- `compiled_input_group_candidates` counts inputs whose construction can be
+  reused, while `compiled_graph_eligible_reads` describes the broader command
+  dependency plan. These counts are deliberately different.
+- `input_group_bypass_reasons` explains static candidate exclusions;
+  `input_group_fallbacks` reports bounded runtime fallbacks. The aggregate
+  `ineligible` runtime counter includes its more specific `ineligible_*`
+  categories and must not be added to them.
+- `input_group_cache_bypass_reason` explains why no prototype cache was
+  prepared: disabled graph, no candidates, known single run, or an existing
+  complete invariant projection. Unknown-length iterators stay streaming.
+- `input_group_costs_seconds` separates runtime key/proof, cloning,
+  successful-run certification and normal constructor costs. These diagnostics
+  overlap other phases and must not be added to the top-level totals. Normal
+  constructor timing includes nested constructors, so it is a hotspot measure,
+  not exclusive CPU time; it is unavailable in uncached contexts.
+
+An observed zero must not be confused with an unavailable (`null`) metric;
+no counter alone proves a speedup. Scenario-conditioned inputs retain exact
+scenario slots, and variable-derived inputs retain relevant values and ordered
+active declarations. Event/DEFINE, BC, wildcard, spatial database and multipart
+inputs retain their ordinary evaluation when their reuse is unproven.
 
 For CPU hotspot profiling (cProfile **distorts** wall time and is not
 valid speedup evidence), use the same public TCF, from the PyTUFLOW checkout:

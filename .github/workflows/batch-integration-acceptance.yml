@@ -5,9 +5,12 @@ on:
     paths:
       - "pytuflow/_tmf/**"
       - "tests/test_batch_integration.py"
+      - "tests/test_group_constructor_guards.py"
       - "tests/verify_tutorial_integration.py"
       - "tests/benchmark_tutorial_dependencies.py"
       - "tests/test_tutorial_benchmark.py"
+      - "tests/compare_upstream_tmf_junit.py"
+      - "tests/test_upstream_tmf_comparison.py"
       - ".github/workflows/batch-integration-acceptance.yml"
   workflow_dispatch:
 
@@ -41,18 +44,59 @@ jobs:
           tests/test_batch_ordered_inputs.py
           tests/test_batch_activation_index.py
           tests/test_compiled_control_tree.py
+          tests/test_group_constructor_guards.py
           tests/test_batch_integration.py
           tests/test_batch_dependencies.py
           tests/test_compiled_dependency_plan.py
           tests/test_deferred_file_references.py
           tests/test_deferred_database_parity.py
           tests/test_tutorial_benchmark.py
-      - name: Existing TCF and XS context regressions
-        run: >
-          python -m pytest -q
-          tests/tmf/test_cf_context.py
-          tests/tmf/test_context.py
-          tests/tmf/test_xs_db_from_cf.py
+          tests/test_upstream_tmf_comparison.py
+      - name: Checkout pinned canonical upstream for TMF differential
+        uses: actions/checkout@v5
+        with:
+          repository: TUFLOW-Support/PyTuflow
+          ref: cf908cc922ca8448ed6002834877b0b377329eae
+          path: pristine-upstream
+          persist-credentials: false
+      - name: Run original upstream TMF suite (record baseline failures)
+        working-directory: pristine-upstream
+        continue-on-error: true
+        run: |
+          python -c "import pytuflow; print(pytuflow.__file__)"
+          python -m pytest -q tests/tmf --junitxml=../upstream-tmf.xml
+      - name: Checkout pre-P5 fork baseline (upstream deltas predate PR 12)
+        uses: actions/checkout@v5
+        with:
+          repository: phantom-branch/PyTuflow
+          ref: 3de5cd954a5bf6739377937c8ff2fe3341e86bfc
+          path: pre-p5-baseline
+          persist-credentials: false
+      - name: Run pre-P5 fork TMF suite
+        working-directory: pre-p5-baseline
+        continue-on-error: true
+        run: |
+          python -c "import pytuflow; print(pytuflow.__file__)"
+          python -m pytest -q tests/tmf --junitxml=../pre-p5-tmf.xml
+      - name: Run PR 12 fork TMF suite
+        continue-on-error: true
+        run: python -m pytest -q tests/tmf --junitxml=fork-tmf.xml
+      - name: Report original upstream differences present before P5
+        continue-on-error: true
+        run: python tests/compare_upstream_tmf_junit.py --upstream upstream-tmf.xml --fork pre-p5-tmf.xml
+      - name: Gate on new PR 12 regressions against pre-P5 fork master
+        run: python tests/compare_upstream_tmf_junit.py --upstream pre-p5-tmf.xml --fork fork-tmf.xml
+      - name: Archive full upstream compatibility diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-tmf-differential-${{ matrix.python-version }}
+          path: |
+            upstream-tmf.xml
+            pre-p5-tmf.xml
+            fork-tmf.xml
+          if-no-files-found: warn
+          retention-days: 14
 
   verified-public-tutorial:
     name: Windows 3.14 verified 161-TCF graph differential

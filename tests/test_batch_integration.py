@@ -166,3 +166,117 @@ def test_dynamic_sources_use_original_resolution(tmp_path: Path, source_line: st
     assert _projection(graph) == _projection(baseline)
     assert graph.invariant_projection_reuses == 0
     assert graph.input_runstates_elided == 0
+
+
+def test_single_run_keeps_graph_metadata_without_unused_prototypes(tmp_path: Path) -> None:
+    source = tmp_path / 'single.tcf'
+    source.write_text(
+        'Set Variable UNUSED == one\nRead Grid Zpts == terrain.tif\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    with patch(
+        'pytuflow._tmf.batch_dependencies.LiteralInputGroupCache',
+        side_effect=AssertionError('single-run cache cannot be reused'),
+    ):
+        graph = model.collect_batch_dependencies(('-e1 FIRST',))
+    baseline = model.collect_batch_dependencies(('-e1 FIRST',), compile_tree=False)
+    assert graph.passed and _projection(graph) == _projection(baseline)
+    assert graph.compiled_graph_nodes == 2
+    assert graph.compiled_input_group_candidates == 1
+    assert graph.input_group_cache_bypass_reason == 'single-run'
+    assert graph.reusable_input_groups == graph.input_group_state_reuses == 0
+    assert graph.input_group_certification_seconds == 0.0
+
+
+def test_zero_candidate_graph_does_not_prepare_or_probe_group_cache(tmp_path: Path) -> None:
+    source = tmp_path / 'unsupported.tcf'
+    source.write_text('Read GIS BC == gis/2d_bc.shp\n', encoding='utf-8')
+    model = TCF(source)
+    flags = ('-e1 FIRST', '-e1 SECOND')
+    with patch(
+        'pytuflow._tmf.batch_dependencies.LiteralInputGroupCache',
+        side_effect=AssertionError('no eligible input'),
+    ):
+        graph = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, compile_tree=False)
+    assert graph.passed and _projection(graph) == _projection(baseline)
+    assert graph.compiled_graph_nodes == 1
+    assert graph.compiled_input_group_candidates == 0
+    assert graph.input_group_cache_bypass_reason == 'no-candidates'
+    assert sum(dict(graph.input_group_bypass_reasons).values()) == 1
+    assert graph.input_group_fallbacks == ()
+    assert graph.input_runstates_constructed == 2
+    assert graph.input_runstates_elided == 0
+
+
+def test_group_cache_does_not_consume_streamed_flags_ahead(tmp_path: Path) -> None:
+    source = tmp_path / 'stream.tcf'
+    source.write_text(
+        'Set Variable UNUSED == one\nRead Grid Zpts == terrain.tif\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    evaluated = []
+    original_context = model.context
+
+    def record_context(*args, **kwargs):
+        result = original_context(*args, **kwargs)
+        evaluated.append(result)
+        return result
+
+    def flags():
+        yield '-e1 FIRST'
+        assert len(evaluated) == 1
+        yield '-e1 SECOND'
+        assert len(evaluated) == 2
+
+    with patch.object(model, 'context', record_context):
+        graph = model.collect_batch_dependencies(flags())
+    baseline = model.collect_batch_dependencies(
+        ('-e1 FIRST', '-e1 SECOND'), compile_tree=False,
+    )
+    assert graph.passed and _projection(graph) == _projection(baseline)
+    assert graph.input_group_cache_bypass_reason is None
+    assert graph.input_group_state_reuses == 1
+    assert graph.reusable_input_groups == 1
+    assert graph.input_runstates_constructed == 3
+
+
+def test_empty_sized_batch_rejects_before_compiling(tmp_path: Path) -> None:
+    source = tmp_path / 'empty.tcf'
+    source.write_text('Read Grid Zpts == terrain.tif\n', encoding='utf-8')
+    model = TCF(source)
+    with patch(
+        'pytuflow._tmf.batch_dependencies.CompiledControlTree.compile',
+        side_effect=AssertionError('empty batch must not compile'),
+    ):
+        with pytest.raises(ValueError, match='At least one simulation'):
+            model.collect_batch_dependencies(())
+
+
+def test_failed_run_work_is_reported_separately_from_successful_projection(tmp_path: Path) -> None:
+    source = tmp_path / 'failed-work.tcf'
+    source.write_text(
+        'Set Variable UNUSED == one\n'
+        'Read Grid Zpts == terrain.tif\n'
+        'If Scenario == STOP\n'
+        '  Pause == fail after reusable input\n'
+        'End If\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    flags = ('-s1 GO -e1 FIRST', '-s1 STOP -e1 SECOND', '-s1 GO -e1 THIRD')
+    graph = model.collect_batch_dependencies(flags)
+    baseline = model.collect_batch_dependencies(flags, compile_tree=False)
+    assert _projection(graph) == _projection(baseline)
+    assert graph.runs[1].error and not graph.runs[1].ordered_inputs
+    assert graph.input_group_state_reuses == graph.input_runstates_elided == 2
+    assert graph.input_runstates_constructed == 4
+    assert graph.failed_run_input_runstates_constructed == 1
+    assert graph.failed_run_input_runstates_elided == 1
+    assert baseline.failed_run_input_runstates_constructed == 2
+    assert baseline.failed_run_input_runstates_elided == 0
+    assert graph.input_group_key_seconds >= 0.0
+    assert graph.input_group_clone_seconds >= 0.0
+    assert graph.input_group_certification_seconds >= 0.0

@@ -109,5 +109,15 @@ class ControlFileRunState(RunState, ControlFile):
             if inp.lhs.upper() == 'PAUSE':
                 raise ValueError('Pause command encountered: {0}'.format(inp.rhs))
 
-            input_run_state = inp.context(context=self.ctx, parent=self)
+            # Opt-in batch-only fast path for independently proven literal
+            # inputs. Scope selection and PAUSE/failure handling stay here.
+            batch_factory = getattr(self.ctx, 'batch_input_state', None)
+            if batch_factory is None:
+                # Instrument only explicitly batch-tagged uncached contexts;
+                # standalone upstream-style contexts are unchanged.
+                if hasattr(self.ctx, '_batch_input_states_constructed'):
+                    self.ctx._batch_input_states_constructed += 1
+                input_run_state = inp.context(context=self.ctx, parent=self)
+            else:
+                input_run_state = batch_factory(inp, self)
             self.inputs.append(input_run_state)

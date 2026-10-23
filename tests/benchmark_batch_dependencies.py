@@ -127,6 +127,11 @@ def benchmark(
                             'compiled_read_nodes': report.compiled_read_nodes,
                             'command_plan_hits': report.command_plan_hits,
                             'variable_template_clones': report.variable_template_clones,
+                            'input_runstates_constructed': report.input_runstates_constructed,
+                            'input_runstates_elided': report.input_runstates_elided,
+                            'invariant_projection_reuses': report.invariant_projection_reuses,
+                            'reusable_input_groups': report.reusable_input_groups,
+                            'input_group_fallbacks': dict(report.input_group_fallbacks),
                         }
                         cached_phases['compilation'].append(report.compilation_seconds)
                         cached_phases['context_construction'].append(

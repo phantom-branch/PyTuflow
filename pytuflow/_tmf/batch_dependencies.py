@@ -1,13 +1,14 @@
 """Opt-in, read-only batch projection of parsed TUFLOW control-file contexts.
 
-The batch path uses a fresh Context for each distinct run. It caches
-immutable references keyed by resolved command and relevant configuration
-within a single synchronous batch, never mutable RunState objects. The full
-immutable cross-run dependency graph remains future work.
+The batch path uses a fresh Context for each distinct run. Its compiled tree
+identifies independently reusable inputs and the variables and branches that
+govern them. Private prototypes supply fresh, independently mutable run states;
+immutable dependency projections are shared within this invocation only.
 """
 
 from __future__ import annotations
 
+from collections.abc import Sized
 from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
@@ -16,6 +17,7 @@ from typing import TYPE_CHECKING
 
 from .compiled_control_tree import CompiledControlTree
 from .compiled_dependency_plan import CompiledVariablePlan
+from .group_input_reuse import LiteralInputGroupCache
 from .context import Context
 from .scope import GlobalScope, ScenarioScope
 from .tfpathlib import TuflowPath
@@ -50,6 +52,11 @@ class BatchContext(Context):
         self._shared_read_plans = None
         self._batch_variable_plan: CompiledVariablePlan | None = None
         self._batch_compiled_tree: CompiledControlTree | None = None
+        self._batch_input_group_cache: LiteralInputGroupCache | None = None
+        self._batch_pending_input_groups: list[tuple[tuple[object, ...], object, object]] = []
+        self.graph_input_state_reuses = 0
+        self._batch_input_states_constructed = 0
+        self.input_state_construction_seconds = 0.0
         self.graph_node_lookups = 0
         self.graph_node_fallbacks = 0
         self._active_declaration_cache: dict[str, tuple[str, ...]] = {}
@@ -382,6 +389,33 @@ class BatchContext(Context):
             self.command_template_bypasses += 1
         return command
 
+    def batch_input_state(self, build_input, parent):
+        """Return a fresh state; skip construction only for a certified group."""
+        cache = self._batch_input_group_cache if self._batch_active else None
+        if cache is not None:
+            reused, key = cache.try_reuse(build_input, self, parent)
+            if reused is not None:
+                self.graph_input_state_reuses += 1
+                return reused
+        else:
+            key = None
+        # Count constructor attempts here, including those that raise.
+        self._batch_input_states_constructed += 1
+        construction_started = perf_counter()
+        try:
+            state = build_input.context(context=self, parent=parent)
+        finally:
+            self.input_state_construction_seconds += perf_counter() - construction_started
+        if key is not None and cache.prepare_seed(state):
+            self._batch_pending_input_groups.append((key, build_input, state))
+        return state
+
+    def commit_input_groups(self) -> None:
+        """Publish templates only after the *entire* run has passed."""
+        if self._batch_input_group_cache is not None:
+            self._batch_input_group_cache.commit(self._batch_pending_input_groups)
+        self._batch_pending_input_groups.clear()
+
     def translate(self, item):
         if not self._batch_active or not isinstance(item, (str, TuflowPath)):
             return super().translate(item)
@@ -410,6 +444,9 @@ class BatchInputCommand:
     line_number: int
     command_name: str
     command_text: str
+    # Authoritative count retained independently of the flattened projection.
+    # A consumer can detect references that vanish from both output tuples.
+    reference_count: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -476,6 +513,18 @@ class BatchDependencyResult:
     input_runstates_elided: int = 0
     input_runstates_constructed: int = 0
     invariant_projection_reuses: int = 0
+    reusable_input_groups: int = 0
+    input_group_fallbacks: tuple[tuple[str, int], ...] = ()
+    compiled_input_group_candidates: int = 0
+    input_group_bypass_reasons: tuple[tuple[str, int], ...] = ()
+    input_group_cache_bypass_reason: str | None = None
+    input_group_state_reuses: int = 0
+    failed_run_input_runstates_constructed: int = 0
+    failed_run_input_runstates_elided: int = 0
+    input_group_key_seconds: float = 0.0
+    input_group_clone_seconds: float = 0.0
+    input_group_certification_seconds: float = 0.0
+    input_state_construction_seconds: float | None = None
 
     @property
     def passed(self) -> bool:
@@ -498,6 +547,11 @@ def collect_batch_dependencies(
     the original per-batch caches remain on, isolating the graph's contribution.
     """
     started = perf_counter()
+    # Do not consume or look ahead in generators: callers can stream flags
+    # after examining an earlier projection. Only use an advertised length.
+    requested_count = len(run_flags) if isinstance(run_flags, Sized) else None
+    if requested_count == 0:
+        raise ValueError('At least one simulation context is required')
     results: list[BatchDependencyRun] = []
     seen_flags: dict[str, BatchDependencyRun] = {}
     contexts_constructed = contexts_reused = 0
@@ -514,6 +568,10 @@ def collect_batch_dependencies(
     graph_node_lookups = 0
     graph_node_fallbacks = 0
     input_runstates_constructed = input_runstates_elided = 0
+    input_group_state_reuses = 0
+    failed_run_input_runstates_constructed = 0
+    failed_run_input_runstates_elided = 0
+    input_state_construction_seconds = 0.0
     invariant_projection_reuses = 0
     invariant_projection: BatchDependencyRun | None = None
     scenario_projections: dict[tuple[str, ...], BatchDependencyRun] = {}
@@ -561,6 +619,20 @@ def collect_batch_dependencies(
         and not can_reuse_invariant_projection
         and compiled_tree.is_scenario_literal_model(model)
     )
+    # Compilation remains visible even when there is no useful group cache.
+    # In particular a one-run public model must not clone private prototypes
+    # which can never be used. Unknown-length iterators stay fully streaming.
+    input_group_cache_bypass_reason = None
+    if compiled_tree is None:
+        input_group_cache_bypass_reason = 'graph-disabled'
+    elif compiled_tree.reusable_input_group_nodes == 0:
+        input_group_cache_bypass_reason = 'no-candidates'
+    elif requested_count == 1:
+        input_group_cache_bypass_reason = 'single-run'
+    elif can_reuse_invariant_projection:
+        input_group_cache_bypass_reason = 'whole-model-projection'
+    input_groups = (LiteralInputGroupCache(compiled_tree)
+                    if input_group_cache_bypass_reason is None else None)
     compilation_seconds = perf_counter() - started
 
     for index, flags in enumerate(run_flags):
@@ -595,12 +667,17 @@ def collect_batch_dependencies(
             ctx = (BatchContext(flags, config=model.config, variable_inputs=variable_inputs,
                                 shared_scope_decisions=shared_scope_decisions)
                    if cache_scopes else Context(flags, config=model.config))
+            # Count attempts on the uncached differential as well. Ordinary
+            # standalone eager/deferred contexts have no instrumentation.
+            if not isinstance(ctx, BatchContext):
+                ctx._batch_input_states_constructed = 0
             if isinstance(ctx, BatchContext):
                 ctx._shared_file_references = shared_file_references
                 ctx._shared_command_templates = shared_command_templates
                 ctx._shared_read_plans = shared_read_plans
                 ctx._batch_variable_plan = variable_plan
                 ctx._batch_compiled_tree = compiled_tree
+                ctx._batch_input_group_cache = input_groups
                 ctx._batch_run_index = index
                 ctx._batch_variable_assignments = variable_assignments
             scenario_key = None
@@ -630,8 +707,11 @@ def collect_batch_dependencies(
                 input_runstates_elided += len(projected.ordered_inputs)
                 continue
             context_started = perf_counter()
-            run = model.context(context=ctx, file_resolution='deferred')
-            context_construction_seconds += perf_counter() - context_started
+            try:
+                run = model.context(context=ctx, file_resolution='deferred')
+            finally:
+                # Failed runs can have performed substantial construction.
+                context_construction_seconds += perf_counter() - context_started
             references_started = perf_counter()
             # Retain input UUID + command order for downstream active-database
             # selection; merely flattening paths would lose provenance.
@@ -639,7 +719,7 @@ def collect_batch_dependencies(
             # particular, commands without FileReference must not disappear:
             # consumers need the original ordinals for database activation.
             active_inputs = tuple(run.find_input())
-            input_runstates_constructed += len(active_inputs)
+            # Count attempts on both successful and failed contexts below.
             ordered_inputs = tuple(
                 BatchInputCommand(
                     input_uuid=str(inp.uuid),
@@ -648,6 +728,7 @@ def collect_batch_dependencies(
                     line_number=inp.line_number,
                     command_name=str(inp.lhs),
                     command_text=str(inp._command.original_text),
+                    reference_count=len(inp.file_references),
                 )
                 for sequence, inp in enumerate(active_inputs)
             )
@@ -675,6 +756,9 @@ def collect_batch_dependencies(
                 for source in run.deferred_database_sources_for_activation(activation.input_uuid)
             )
             database_projection_seconds += perf_counter() - database_started
+            # Do not let a failed/partial projection seed a reusable group.
+            if isinstance(ctx, BatchContext):
+                ctx.commit_input_groups()
         except Exception as exc:
             # Fail closed. Never return the partial references accumulated
             # before an unknown database or malformed control-file failure.
@@ -695,7 +779,16 @@ def collect_batch_dependencies(
                   and scenario_key not in scenario_projections
                   and len(scenario_projections) < 10_000):
                 scenario_projections[scenario_key] = projected
+        if ctx is not None:
+            input_runstates_constructed += ctx._batch_input_states_constructed
+            if error is not None:
+                failed_run_input_runstates_constructed += ctx._batch_input_states_constructed
         if isinstance(ctx, BatchContext):
+            input_state_construction_seconds += ctx.input_state_construction_seconds
+            input_runstates_elided += ctx.graph_input_state_reuses
+            input_group_state_reuses += ctx.graph_input_state_reuses
+            if error is not None:
+                failed_run_input_runstates_elided += ctx.graph_input_state_reuses
             scope_builds += ctx.scope_builds
             scope_hits += ctx.scope_hits
             translation_hits += ctx.translation_hits
@@ -747,4 +840,24 @@ def collect_batch_dependencies(
         input_runstates_elided=input_runstates_elided,
         input_runstates_constructed=input_runstates_constructed,
         invariant_projection_reuses=invariant_projection_reuses,
+        reusable_input_groups=input_groups.unique_groups if input_groups is not None else 0,
+        input_group_fallbacks=(tuple(sorted(input_groups.fallback_counts.items()))
+                               if input_groups is not None else ()),
+        compiled_input_group_candidates=(compiled_tree.reusable_input_group_nodes
+                                         if compiled_tree is not None else 0),
+        input_group_bypass_reasons=(compiled_tree.input_group_bypass_reasons
+                                   if compiled_tree is not None else ()),
+        input_group_cache_bypass_reason=input_group_cache_bypass_reason,
+        input_group_state_reuses=input_group_state_reuses,
+        failed_run_input_runstates_constructed=failed_run_input_runstates_constructed,
+        failed_run_input_runstates_elided=failed_run_input_runstates_elided,
+        # Diagnostic costs overlap other phases; certification happens after
+        # database projection. Do not add these to elapsed time or sum them
+        # with the top-level phases as independent end-to-end costs.
+        input_group_key_seconds=input_groups.key_seconds if input_groups is not None else 0.0,
+        input_group_clone_seconds=input_groups.clone_seconds if input_groups is not None else 0.0,
+        input_group_certification_seconds=(input_groups.certification_seconds
+                                           if input_groups is not None else 0.0),
+        input_state_construction_seconds=(input_state_construction_seconds
+                                          if cache_scopes else None),
     )

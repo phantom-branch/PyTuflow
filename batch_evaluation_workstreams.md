@@ -1,5 +1,11 @@
 # Shared-TCF batch evaluation: stacked implementation workstreams
 
+The P0-P4 stack is squash-merged into `master` at `3de5cd9`. Its graph remains
+partial: supplied native models show zero input run-states elided. The next
+implementation task and measured baseline are in
+[P5: invariant command-group reuse](agent_workstreams/P5_graph_group_reuse.md).
+The topology and checkpoints below describe the original development stack.
+
 **Status:** development; draft foundation PR based on PyTUFLOW PR #5.
 **Baseline branch:** `feat/batch-dependency-context-cache` (PR #5, head `a9f654c1ec0812fc70035e227fb2f9f12290f449` at foundation creation).
 **Companion consumer:** Chain-Frost/ryan-tools PR #143 (`feat/tuflow-run-preflight`), including the opt-in batch adapter that arrived through PR #148.

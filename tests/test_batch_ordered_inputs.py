@@ -31,6 +31,12 @@ def test_batch_exposes_non_file_commands_and_original_ordinals(tmp_path: Path) -
         assert tuple(command.command_index for command in commands) == tuple(range(len(expected)))
         assert tuple(command.input_uuid for command in commands) == tuple(str(inp.uuid) for inp in expected)
         assert tuple(command.command_name for command in commands) == tuple(str(inp.lhs) for inp in expected)
+        assert tuple(command.reference_count for command in commands) == tuple(
+            len(inp.file_references) for inp in expected
+        )
+        assert sum(command.reference_count for command in commands) == len(case.input_references)
+        assert any(command.reference_count == 0 for command in commands)
+        assert any(command.reference_count > 0 for command in commands)
 
         file_owners = {(record.command_index, record.input_uuid) for record in case.input_references}
         assert all((record.command_index, record.input_uuid) in {
@@ -79,11 +85,12 @@ def test_batch_ordered_inputs_match_individual_runs_across_scenario_branches(
         active = tuple(model.context(flag, file_resolution="deferred").find_input())
         assert [
             (item.command_index, item.input_uuid, item.owner_control_file,
-             item.line_number, item.command_name, item.command_text)
+             item.line_number, item.command_name, item.command_text,
+             item.reference_count)
             for item in projected.ordered_inputs
         ] == [
             (index, str(inp.uuid), inp._command.parent, inp.line_number,
-             str(inp.lhs), str(inp._command.original_text))
+             str(inp.lhs), str(inp._command.original_text), len(inp.file_references))
             for index, inp in enumerate(active)
         ]
         assert [
