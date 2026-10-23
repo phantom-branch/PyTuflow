@@ -47,12 +47,8 @@ jobs:
           tests/test_deferred_file_references.py
           tests/test_deferred_database_parity.py
           tests/test_tutorial_benchmark.py
-      - name: Existing TCF and XS context regressions
-        run: >
-          python -m pytest -q
-          tests/tmf/test_cf_context.py
-          tests/tmf/test_context.py
-          tests/tmf/test_xs_db_from_cf.py
+      - name: Complete upstream TMF test suite (fork compatibility)
+        run: python -m pytest -q tests/tmf
 
   verified-public-tutorial:
     name: Windows 3.14 verified 161-TCF graph differential
