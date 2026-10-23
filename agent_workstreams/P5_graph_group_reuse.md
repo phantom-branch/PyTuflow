@@ -143,7 +143,35 @@ before choosing a design; the outline below is a proposal, not a proof.
   for ordered input/BC activation ownership. Neither consumer branch is being
   merged or repinned by this PR.
 
-**Remaining:** complete passing exact-head CI and public tutorial parity; validate
-native materialisation and measure any actual benefit; investigate broader
-scenario-group eligibility only when it can be proven without losing provenance.
+## Independent upstream compatibility review and corrective changes
+
+Review against `TUFLOW-Support/PyTuflow` `master` (`cf908cc`): the PR branch
+has no upstream commits outstanding, but the deferred/batch API remains
+fork-only and ordinary eager TCF contexts must retain upstream semantics.
+Four review findings were addressed on this PR branch:
+
+- Literal cache clones now reset the command's mutable DEFINE list, rebuild
+  independent GLOBAL scope objects (including their mutable `names` lists),
+  and reset GIS/GRID lazy state. Unsupported scope shapes fall back normally.
+- Constructor counters are now incremented at the actual construction call,
+  including attempts in runs that subsequently fail. Explicitly batch-tagged
+  uncached contexts count attempts as well; ordinary eager contexts are not
+  instrumented. An elision counter is work bypassed, not a speedup claim.
+- Invocation-local fixed-reason diagnostics report unsupported inputs,
+  prototype failures, clone failures, capacity and optimisation exceptions.
+  Errors in an optimisation continue to fall back to the ordinary parser.
+- Regression tests now mutate previous GIS and GRID run states, test failed
+  contexts, and inject prototype/reuse exceptions. Windows integration CI also
+  runs the complete existing `tests/tmf` suite for upstream compatibility.
+
+**Validation:** The new exact-head CI runs and the public differential are
+pending. Do not cite the earlier `6e709538` checks as testing these fixes.
+Network-drive M480/N42 benchmarks and native data parity belong exclusively
+to the separately assigned authorised workstation agent, without uploading
+private model files.
+
+**Remaining:** obtain passing exact-head CI and public tutorial parity, review
+all upstream suite results and fix real regressions, validate native physical
+materialisation, and measure any actual benefit. Broader dynamic/BC/DEFINE
+group reuse remains outside this PR's proven subset.
 This PR remains draft; do not merge or publish.
