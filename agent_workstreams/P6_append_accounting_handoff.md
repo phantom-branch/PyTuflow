@@ -23,9 +23,11 @@ The implementation and focused coverage are in:
 - `pytuflow/_tmf/cf/cf_run_state.py`: recorder lifetime, constructor trust and
   recursion boundary.
 - `pytuflow/_tmf/batch_dependencies.py`: descriptor-free context callback
-  proof and definition-time batch callback snapshot.
+  proof, scope/data proofs and definition-time batch callback snapshot.
 - `pytuflow/_tmf/context.py`, `event.py`: original inherited-context and
   event-database callback definitions used by that proof.
+- `pytuflow/_tmf/scope.py`, `abc/bld_state.py`, `inp/inp_build_state.py`:
+  original scope callbacks and input scope getters used by the raw proof.
 - `pytuflow/_tmf/inp/cf.py`, `db.py`, `block.py`: original-constructor aliases.
   The baseline already supplies the GIS and base-input aliases.
 - `tests/test_input_append_accounting.py`; regression selections in
@@ -67,6 +69,14 @@ Preserve these contracts:
    the event database's `event_variables()`/`items()` chain. Inspect raw class
    and instance dictionaries; do not execute a getter while checking trust.
    Unsupported callbacks retain normal invocation through public append.
+6. Before retrieving or evaluating an input's scope, prove its original scope
+   getter and raw scope data, including cached available scopes. Custom scope
+   containers/objects, rebound callbacks, descriptors and non-primitive scope
+   values retire the recorder without changing evaluation/access counts.
+   Validate scope-producing flags, variable/event mappings and declaration
+   scopes once before a fresh recorder exists. This uses the existing stable
+   source contract and does not rescan prior input UUIDs. Internal writer-only
+   `_BlockScope` objects conservatively use public append.
 
 Finish the focused correctness review and investigate any concrete failures.
 Run the focused append and existing constructor-guard tests on supported
@@ -226,5 +236,59 @@ rerun after that narrow addition. The focused rerun includes the existing
 500-append linear UUID-access regression. Production compilation and
 `git diff --check` pass. Independent callback-inventory and code review found
 no further defect within this bounded trust proof. Updated-head hosted Windows
-checks, refreshed Codex review and native timing remain pending; earlier hosted
-results do not establish acceptance of this correction.
+checks and refreshed Codex review were pending at that handoff. The subsequent
+head `63ad7024ffe1870bd26662baf90fcd05b5f37d7b` passed all three hosted workflows:
+[integration](https://github.com/phantom-branch/PyTuflow/actions/runs/39911961298),
+[reference contracts](https://github.com/phantom-branch/PyTuflow/actions/runs/39911961335),
+and [materialised parity](https://github.com/phantom-branch/PyTuflow/actions/runs/39911961328).
+Those checks predate the public-scope correction below and do not establish
+acceptance of the updated code. Native timing remains pending.
+
+### Codex review follow-up: public scope and event data
+
+[Review finding](https://github.com/phantom-branch/PyTuflow/pull/14#discussion_r4356805039)
+showed that canonical context callbacks can still dispatch through public
+scope objects. The scope setter preserves `ScopeList`/`Scope` subclasses;
+membership, resolution, negation and comparison callbacks can edit an earlier
+parent UUID before append. Ten active/inactive reproductions failed on the
+previous head with stale history while scope selection and callback traces
+otherwise matched public append. Independent review also reproduced custom
+scope-name containers, scenario string values and nested event-entry mappings.
+
+The guard now proves the input's original scope getter before the normal
+getter call, then inspects the raw scope list, supported built-in scope types,
+original callbacks and plain name/flag values. Cached available scopes receive
+the same data check. These checks do not call scope membership, resolution,
+comparison or property callbacks. Unknown or modified scope behavior retains
+its original evaluation order through public append, including inactive input
+getters. Canonical scenario and event scopes remain eligible.
+
+Before each fresh recorder is created, a bounded preflight checks public
+scenario/event flag values, variable/event dictionaries, nested event-entry
+dictionaries and compiled variable-declaration scopes. An event-scoped later
+declaration can be inspected while an earlier READ is constructed, so proving
+only the current input is insufficient. This preflight inspects raw data once
+under the existing stable-source contract; it does not repeatedly scan previous
+input UUIDs or redesign active-batch cache invalidation. Namespace keys must be
+exact strings, checked before membership/index lookup, because public variable
+loading can retain string subclasses with custom equality/hash behavior.
+
+Definition-time scope class snapshots cover inherited callbacks and replacement
+descriptors. The private writer-only `_BlockScope`, custom containers/scopes,
+non-primitive public data and changed class metadata conservatively disable
+append accounting. Their parser behavior remains delegated to the existing
+scope and construction paths. Native elapsed-time benefit remains unproven;
+the extra guard work must be included in the candidate benchmark.
+
+Nineteen additional regression cases cover the public extension seams above,
+including exact callback traces and scope getter counts, inactive branches,
+canonical scenario/event recorder eligibility, cached available scopes, the
+later event-scoped declaration, nested event entries and a public variable key
+whose custom comparison would otherwise execute during the proof. The final
+frozen-tree Python 3.14.8 selection passed **100 focused tests**, with the same
+two archive-dependent editing cases deselected, and **325 integration-contract
+tests** with host process visibility. Production/test compilation and
+`git diff --check` pass. Independent review found no residual defect within
+this bounded public callback/data seam. Updated-head hosted Windows checks and
+refreshed Codex review are required for this correction; native validation is
+still outstanding and the PR remains draft.

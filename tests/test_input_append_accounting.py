@@ -15,6 +15,7 @@ from pytuflow._tmf.inp.gis import GisInput
 from pytuflow._tmf.inp.inp_build_state import InputBuildState
 from pytuflow._tmf.inp.inputs import Inputs, _ContextAppendRecorder
 from pytuflow._tmf.inp.setting import SettingInput
+from pytuflow._tmf.scope import ScenarioScope, Scope, ScopeList
 
 
 class _InputProbe:
@@ -694,7 +695,7 @@ def test_compiled_command_signature_callback_keeps_prior_uuid_lookups_live(
     assert projections[0] == projections[1]
 
 
-@pytest.mark.parametrize('callback', ['event_variables', 'items'])
+@pytest.mark.parametrize('callback', ['event_variables', 'items', 'nested_items'])
 def test_event_database_callback_mutation_uses_live_append_history(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, callback: str,
 ) -> None:
@@ -702,27 +703,34 @@ def test_event_database_callback_mutation_uses_live_append_history(
     source.write_text('Set Code == 0\nSet Code == 1\n', encoding='utf-8')
     model = TCF(source)
     parents = _capture_context_parents(monkeypatch)
-    original = getattr(EventDatabase, callback)
-    histories, call_counts = [], []
+    original = getattr(EventDatabase, 'items' if callback == 'nested_items' else callback)
+    histories, traces = [], []
     calls = []
 
     def custom_callback(self):
-        calls.append(self)
         parent = parents.get(id(context))
+        calls.append(tuple(str(inp) for inp in parent.inputs) if parent is not None else ())
         if parent is not None and parent.inputs:
             parent.inputs[0].uuid = model.inputs[-1].uuid
         return original(self)
+
+    class CustomEvent(dict):
+        items = custom_callback
 
     for recorder_enabled in (False, True):
         context = BatchContext('-s1 DEV', config=model.config)
         if not recorder_enabled:
             context._batch_append_indexes_safe = False
-        setattr(context.event_db, callback, MethodType(custom_callback, context.event_db))
+        if callback == 'nested_items':
+            context.event_db['RUN'] = CustomEvent({'~code~': '1'})
+        else:
+            setattr(context.event_db, callback, MethodType(custom_callback, context.event_db))
         calls.clear()
         result = model.context(context=context, file_resolution='deferred')
         histories.append(result.inputs._indexes)
-        call_counts.append(len(calls))
-    assert call_counts[0] == call_counts[1] > 0
+        traces.append(calls.copy())
+        assert calls
+    assert traces[0] == traces[1]
     assert histories == [[(0, 0), (0, 0)], [(0, 0), (0, 0)]]
 
 
@@ -771,3 +779,282 @@ def test_append_trust_rejects_custom_namespaces_without_invoking_mapping_hooks(
         assert _batch_append_context_is_trusted(context) is False
     finally:
         owner.__dict__ = original
+
+
+@pytest.mark.parametrize('scenario', ['DEV', 'OMIT'])
+@pytest.mark.parametrize(('hook_target', 'callback'), [
+    ('list', '__contains__'),
+    ('scope', 'resolvable'),
+    ('scope', 'is_neg'),
+    ('scope', '__eq__'),
+    ('instance', 'resolvable'),
+])
+def test_public_custom_scope_mutations_preserve_live_append_history(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    scenario: str, hook_target: str, callback: str,
+) -> None:
+    """Scope callbacks can edit earlier UUIDs even when their input is inactive."""
+    source = tmp_path / 'scope_extension.tcf'
+    source.write_text('Set Code == 0\nSet Code == 2\nSet Code == 1\n', encoding='utf-8')
+    model = TCF(source)
+    parents = _capture_context_parents(monkeypatch)
+    context = None
+    calls = []
+
+    def mutate():
+        parent = parents.get(id(context))
+        prefix = tuple(str(inp) for inp in parent.inputs) if parent is not None else ()
+        calls.append((callback, prefix))
+        if parent is not None and parent.inputs:
+            parent.inputs[0].uuid = model.inputs[-1].uuid
+
+    class CustomScopeList(ScopeList):
+        def __contains__(self, item):
+            mutate()
+            return super().__contains__(item)
+
+    class CustomScenario(ScenarioScope):
+        def __new__(cls, *args, **kwargs):
+            # Scope's public factory normally returns a built-in concrete type.
+            return object.__new__(cls)
+
+    if hook_target == 'list':
+        scopes = CustomScopeList([Scope('SCENARIO', scenario)])
+    else:
+        scope = (Scope('SCENARIO', scenario) if hook_target == 'instance'
+                 else CustomScenario('SCENARIO', scenario))
+        original = getattr(ScenarioScope, callback)
+
+        def custom_callback(self, *args, **kwargs):
+            mutate()
+            return original(self, *args, **kwargs)
+
+        if callback == '__eq__':
+            # Keep this extension in comparisons instead of replacing it with
+            # the fresh canonical scopes returned by the normal explode().
+            def explode(self, neg=False):
+                return [self]
+
+            def compare(self, other):
+                mutate()
+                return Scope('SCENARIO', scenario) == other
+
+            CustomScenario.explode = explode
+            CustomScenario.__eq__ = compare
+        elif hook_target == 'instance':
+            scope.resolvable = MethodType(custom_callback, scope)
+        else:
+            setattr(CustomScenario, callback, custom_callback)
+        scopes = ScopeList([scope])
+    model.inputs[1].scope = scopes
+    assert model.inputs[1].scope is scopes
+
+    results, traces = [], []
+    for recorder_enabled in (False, True):
+        context = BatchContext('-s1 DEV', config=model.config)
+        if not recorder_enabled:
+            context._batch_append_indexes_safe = False
+        calls.clear()
+        result = model.context(context=context, file_resolution='deferred')
+        results.append(result)
+        traces.append(calls.copy())
+        assert calls
+        assert all(prefix == ('Set Code == 0',) for _, prefix in calls)
+
+    ordinary, optimised = results
+    expected = [(0, 0), (1, 1), (0, 0)] if scenario == 'DEV' else [(0, 0), (0, 0)]
+    assert traces[0] == traces[1]
+    assert optimised.inputs._indexes == ordinary.inputs._indexes == expected
+    assert [(inp.uuid, str(inp)) for inp in optimised.inputs] == [
+        (inp.uuid, str(inp)) for inp in ordinary.inputs
+    ]
+    assert [str(inp) for inp in optimised.inputs] == (
+        ['Set Code == 0', 'Set Code == 2', 'Set Code == 1']
+        if scenario == 'DEV' else ['Set Code == 0', 'Set Code == 1']
+    )
+
+
+@pytest.mark.parametrize('scenario', ['DEV', 'OMIT'])
+def test_public_canonical_scopes_keep_append_recorder_eligible(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scenario: str,
+) -> None:
+    source = tmp_path / 'canonical_scope.tcf'
+    source.write_text('Set Code == 0\nSet Code == 2\nSet Code == 1\n', encoding='utf-8')
+    model = TCF(source)
+    model.inputs[1].scope = [('SCENARIO', scenario)]
+    context = BatchContext('-s1 DEV', config=model.config)
+    recorded_inputs = []
+    original_append = _ContextAppendRecorder.append
+
+    def counted_append(self, inp):
+        recorded_inputs.append(inp.uuid)
+        return original_append(self, inp)
+
+    monkeypatch.setattr(_ContextAppendRecorder, 'append', counted_append)
+    result = model.context(context=context, file_resolution='deferred')
+    assert recorded_inputs == [inp.uuid for inp in result.inputs]
+    assert len(recorded_inputs) == (3 if scenario == 'DEV' else 2)
+    assert result.inputs._indexes == [(index, index) for index in range(len(result.inputs))]
+
+
+def test_inactive_input_scope_getter_keeps_live_history_without_extra_reads(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = tmp_path / 'scope_getter.tcf'
+    source.write_text('Set Code == 0\nSet Code == 2\nSet Code == 1\n', encoding='utf-8')
+    model = TCF(source)
+    parents = _capture_context_parents(monkeypatch)
+    context = None
+    reads = []
+
+    class CustomSetting(SettingInput):
+        @property
+        def scope(self):
+            parent = parents.get(id(context))
+            prefix = tuple(str(inp) for inp in parent.inputs) if parent is not None else ()
+            reads.append(prefix)
+            if parent is not None and parent.inputs:
+                parent.inputs[0].uuid = model.inputs[-1].uuid
+            return InputBuildState.scope.fget(self)
+
+    model.inputs[1].scope = [('SCENARIO', 'OMIT')]
+    model.inputs[1].__class__ = CustomSetting
+    histories = []
+    for recorder_enabled in (False, True):
+        context = BatchContext('-s1 DEV', config=model.config)
+        if not recorder_enabled:
+            context._batch_append_indexes_safe = False
+        reads.clear()
+        result = model.context(context=context, file_resolution='deferred')
+        histories.append(result.inputs._indexes)
+        assert reads == [('Set Code == 0',)]
+        assert [str(inp) for inp in result.inputs] == ['Set Code == 0', 'Set Code == 1']
+    assert histories == [[(0, 0), (0, 0)], [(0, 0), (0, 0)]]
+
+
+@pytest.mark.parametrize('custom_value', ['scope_names', 'scenario_flag', 'available_scopes'])
+def test_public_scope_data_extensions_preserve_callback_trace_and_live_indices(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, custom_value: str,
+) -> None:
+    """Built-in scope objects can still dispatch through custom names or flags."""
+    source = tmp_path / 'scope_data.tcf'
+    source.write_text('Set Code == 0\nSet Code == 1\n', encoding='utf-8')
+    model = TCF(source)
+    parents = _capture_context_parents(monkeypatch)
+    context = None
+    calls = []
+
+    def mutate():
+        parent = parents.get(id(context))
+        prefix = tuple(str(inp) for inp in parent.inputs) if parent is not None else ()
+        calls.append(prefix)
+        if parent is not None and parent.inputs:
+            parent.inputs[0].uuid = model.inputs[-1].uuid
+
+    class CustomNames(list):
+        def __iter__(self):
+            mutate()
+            return super().__iter__()
+
+    class CustomFlag(str):
+        def split(self, *args, **kwargs):
+            mutate()
+            return super().split(*args, **kwargs)
+
+    scope = Scope('SCENARIO', 'DEV')
+    if custom_value == 'scope_names':
+        scope.names = CustomNames(scope.names)
+    model.inputs[1].scope = [scope]
+    flags = {'s1': CustomFlag('DEV')} if custom_value == 'scenario_flag' else {'s1': 'DEV'}
+    histories, traces = [], []
+    for recorder_enabled in (False, True):
+        context = BatchContext(flags, config=model.config)
+        if custom_value == 'available_scopes':
+            # Preserve a caller's mutation of the publicly returned cached
+            # scopes across ordinary context setup.
+            context.load_variables({})
+            context.available_scopes[0].names = CustomNames(['DEV'])
+        if not recorder_enabled:
+            context._batch_append_indexes_safe = False
+        calls.clear()
+        result = model.context(context=context, file_resolution='deferred')
+        histories.append(result.inputs._indexes)
+        traces.append(calls.copy())
+        assert calls
+        assert all(prefix == ('Set Code == 0',) for prefix in calls)
+        assert [str(inp) for inp in result.inputs] == ['Set Code == 0', 'Set Code == 1']
+    assert traces[0] == traces[1]
+    assert histories == [[(0, 0), (0, 0)], [(0, 0), (0, 0)]]
+
+
+def test_public_variable_keys_are_rejected_without_custom_namespace_dispatch() -> None:
+    calls = []
+
+    class CustomKey(str):
+        def upper(self):
+            return self
+
+        def __hash__(self):
+            calls.append('hash')
+            return hash('translate')
+
+        def __eq__(self, other):
+            calls.append('equality')
+            return super().__eq__(other)
+
+    context = BatchContext('-s1 DEV')
+    assert _batch_append_context_is_trusted(context) is True
+    context.load_variables({CustomKey('CUSTOM'): 'value'})
+    assert any(type(key) is CustomKey for key in vars(context))
+    assert any(type(key) is CustomKey for key in context.var_map)
+    calls.clear()
+    assert _batch_append_context_is_trusted(context) is False
+    assert calls == []
+
+
+def test_later_declaration_scope_callback_keeps_earlier_read_append_history_live(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """READ signatures can evaluate a declaration before traversal reaches it."""
+    source = tmp_path / 'declaration_scope.tcf'
+    source.write_text(
+        'Set Code == 0\nRead GIS Code == <<CODE>>\nSet Variable CODE == code.shp\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    parents = _capture_context_parents(monkeypatch)
+    original_context = model.context
+    context = None
+    calls, runs = [], []
+
+    class CustomScopes(ScopeList):
+        def contains(self, *args, **kwargs):
+            parent = parents.get(id(context))
+            calls.append(tuple(str(inp) for inp in parent.inputs) if parent is not None else ())
+            if parent is not None and parent.inputs:
+                parent.inputs[0].uuid = model.inputs[1].uuid
+            return super().contains(*args, **kwargs)
+
+    def build_context(*args, **kwargs):
+        nonlocal context
+        context = kwargs['context']
+        if not recorder_enabled:
+            context._batch_append_indexes_safe = False
+        result = original_context(*args, **kwargs)
+        runs.append(result)
+        return result
+
+    model.find_input(lhs='set variable')[0].scope = CustomScopes([Scope('EVENT', 'RUN')])
+    monkeypatch.setattr(model, 'context', build_context)
+    projections = []
+    for recorder_enabled in (False, True):
+        context = None
+        calls.clear()
+        result = model.collect_batch_dependencies(('-e1 RUN',), compile_tree=False)
+        assert result.passed
+        assert calls == [(), ('Set Code == 0',)]
+        projections.append(result.runs)
+    assert [run.inputs._indexes for run in runs] == [
+        [(0, 0), (0, 0), (2, 2)], [(0, 0), (0, 0), (2, 2)],
+    ]
+    assert projections[0] == projections[1]

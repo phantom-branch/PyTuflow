@@ -135,22 +135,31 @@ class ControlFileRunState(RunState, ControlFile):
         # Inputs, and leave ordinary contexts/edit collections on live lookup.
         append_recorder = None
         append_context_state = {}
+        known_methods = {}
         if (getattr(self.ctx, '_batch_active', False)
                 and getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'
                 and getattr(self.ctx, '_batch_append_indexes_safe', True)):
-            from ..batch_dependencies import _batch_append_context_is_trusted
+            from ..batch_dependencies import (
+                _batch_append_context_is_trusted, _batch_append_input_scope_is_trusted,
+                _batch_append_scope_is_trusted, _batch_append_scope_sources_are_trusted,
+            )
             from ..inp.cf import ControlFileInput
             from ..parsers.command import Command, EventCommand
             from ..parsers.fvcommand import FVCommand
 
             if _batch_append_context_is_trusted(self.ctx):
                 append_context_state = object.__getattribute__(self.ctx, '__dict__')
-                append_recorder = _ContextAppendRecorder(self.inputs)
-        known_methods = _batch_append_context_methods() if append_recorder else {}
+                known_methods = _batch_append_context_methods()
+                if _batch_append_scope_sources_are_trusted(append_context_state, known_methods):
+                    append_recorder = _ContextAppendRecorder(self.inputs)
         for inp in self._inputs:
-            if append_recorder is not None and not _batch_append_context_is_trusted(self.ctx):
+            if append_recorder is not None and (
+                not _batch_append_context_is_trusted(self.ctx)
+                or not _batch_append_input_scope_is_trusted(inp, known_methods)
+                or not _batch_append_scope_is_trusted(append_context_state.get('_batch_scopes'))
+            ):
                 # Scope checks themselves can mutate earlier input UUIDs.
-                # Retire before invoking any callback, including inactive
+                # Retire before the getter or any callback, including inactive
                 # inputs' scope selection. Keep the previously trusted raw
                 # storage so even a replacement __dict__ getter is not read.
                 append_context_state['_batch_append_indexes_safe'] = False
