@@ -1,8 +1,9 @@
 import logging
 import re
 import typing
+from functools import cache
 
-from ..inp.inputs import Inputs
+from ..inp.inputs import Inputs, _ContextAppendRecorder
 from ..inp.inp_run_state import InputRunState
 from ..abc.cf import ControlFile
 from ..abc.run_state import RunState
@@ -14,6 +15,33 @@ if typing.TYPE_CHECKING:
     from .cf_build_state import ControlFileBuildState
 
 logger = logging.getLogger('pytuflow')
+
+
+@cache
+def _batch_append_context_methods() -> dict[type, object]:
+    """Original constructors do not edit already-built parent inputs/UUIDs.
+
+    Use aliases captured where each method is defined. A class-level extension
+    installed before the first batch must not become trusted by this table.
+    """
+    from ..inp import block, cf, comment, db, file, folder, gis, grid
+    from ..inp import inp_build_state, mat, setting, time_inp, tin, trd
+
+    plain_input_types = (
+        inp_build_state.InputBuildState, setting.SettingInput,
+        comment.CommentInput, file.FileInput, folder.FolderInput,
+        grid.GridInput, time_inp.TimeInput, tin.TinInput, trd.TuflowReadFileInput,
+    )
+    return {
+        **{input_type: inp_build_state._INPUT_BUILD_CONTEXT for input_type in plain_input_types},
+        cf.ControlFileInput: cf._CONTROL_FILE_INPUT_CONTEXT,
+        db.DatabaseInput: db._DATABASE_INPUT_CONTEXT,
+        mat.MatDatabaseInput: db._DATABASE_INPUT_CONTEXT,
+        gis.GisInput: gis._GIS_INPUT_CONTEXT,
+        block.BlockControlInput: block._BLOCK_CONTROL_INPUT_CONTEXT,
+        block.BCBlockControlInput: block._BLOCK_CONTROL_INPUT_CONTEXT,
+        block.GridDefinitionFileBlockInput: block._BLOCK_CONTROL_INPUT_CONTEXT,
+    }
 
 
 class ControlFileRunState(RunState, ControlFile):
@@ -102,12 +130,47 @@ class ControlFileRunState(RunState, ControlFile):
                         var_map[var_name] = var_val
             self.ctx.load_variables(var_map)
 
+        # A fresh, privately constructed batch collection can record first
+        # UUID positions incrementally. Never retain an index cache on mutable
+        # Inputs, and leave ordinary contexts/edit collections on live lookup.
+        append_recorder = None
+        if (getattr(self.ctx, '_batch_active', False)
+                and getattr(self.ctx, 'file_resolution', 'eager') == 'deferred'
+                and getattr(self.ctx, '_batch_append_indexes_safe', True)):
+            from ..batch_dependencies import BatchContext
+            from ..inp.cf import ControlFileInput
+            from ..parsers.command import Command, EventCommand
+            from ..parsers.fvcommand import FVCommand
+
+            if type(self.ctx) is BatchContext:
+                append_recorder = _ContextAppendRecorder(self.inputs)
+        known_methods = _batch_append_context_methods() if append_recorder else {}
         for inp in self._inputs:
+            if append_recorder is not None:
+                # An extension may mutate prior inputs during construction.
+                # Disable every enclosing recorder before calling that code;
+                # nested control files share this context but own their lists.
+                method = known_methods.get(type(inp))
+                bound_context = inp.context
+                if (
+                    method is None
+                    or getattr(bound_context, '__func__', None) is not method
+                    or getattr(bound_context, '__self__', None) is not inp
+                    or type(inp._command) not in (Command, EventCommand, FVCommand)
+                ):
+                    self.ctx._batch_append_indexes_safe = False
             if not self.ctx.in_context_by_scope(inp.scope):
                 continue
 
             if inp.lhs.upper() == 'PAUSE':
                 raise ValueError('Pause command encountered: {0}'.format(inp.rhs))
+
+            if append_recorder is not None and isinstance(inp, ControlFileInput):
+                # A nested control or FV block can have its own context hook,
+                # which may edit this parent's existing inputs. Retire only
+                # this recorder; a fresh child collection can still use one.
+                # Never inspect generic inp.cf: GIS children are lazy I/O.
+                append_recorder = None
 
             # Opt-in batch-only fast path for independently proven literal
             # inputs. Scope selection and PAUSE/failure handling stay here.
@@ -120,4 +183,8 @@ class ControlFileRunState(RunState, ControlFile):
                 input_run_state = inp.context(context=self.ctx, parent=self)
             else:
                 input_run_state = batch_factory(inp, self)
-            self.inputs.append(input_run_state)
+            if append_recorder is not None and getattr(self.ctx, '_batch_append_indexes_safe', True):
+                if not append_recorder.append(input_run_state):
+                    self.ctx._batch_append_indexes_safe = False
+            else:
+                self.inputs.append(input_run_state)
