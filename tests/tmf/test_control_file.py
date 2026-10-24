@@ -1433,9 +1433,9 @@ def test_write():
         assert tcf_.exists()
         assert tgc_.exists()
         with tcf_.open('r') as f:
-            assert f.read() == 'Solution Scheme == HPC\nHardware == GPU\nGeometry Control File == test_002.tgc\n'
+            assert f.read() == 'Solution Scheme == HPC\nHardware == GPU\nGeometry Control File == test_002.tgc'
         with tgc_.open('r') as f:
-            assert f.read() == 'Read GIS Code == 2d_code_M01_R.shp\n'
+            assert f.read() == 'Read GIS Code == 2d_code_M01_R.shp'
     except Exception as e:
         raise e
     finally:
@@ -1481,13 +1481,13 @@ def test_write_trd():
         assert tcf_trd_.exists()
         assert tgc_trd_.exists()
         with tcf_.open('r') as f:
-            assert f.read() == 'Read File == tcf_trd_002.trd\nGeometry Control File == test_002.tgc\n'
+            assert f.read() == 'Read File == tcf_trd_002.trd\nGeometry Control File == test_002.tgc'
         with tcf_trd_.open() as f:
             assert f.read() == 'Solution Scheme == HPC\nHardware == GPU\n'
         with tgc_.open('r') as f:
-            assert f.read() == 'Read File == tgc_trd_002.trd\n'
+            assert f.read() == 'Read File == tgc_trd_002.trd'
         with tgc_trd_.open('r') as f:
-            assert f.read() == 'Read GIS Code == 2d_code_M01_R.shp\n'
+            assert f.read() == 'Read GIS Code == 2d_code_M01_R.shp'
     except Exception as e:
         raise e
     finally:
