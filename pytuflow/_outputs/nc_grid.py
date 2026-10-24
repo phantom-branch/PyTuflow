@@ -272,6 +272,11 @@ class NCGrid(Grid):
         with self._open():
             return super().maximum(data_types)
 
+    def minimum(self, data_types: str | list[str]) -> float | pd.DataFrame:
+        self._load()
+        with self._open():
+            return super().minimum(data_types)
+
     def surface(self, data_type: str = None, time: TimeLike = 0, to_vertex: bool = False, coord_scope: str = 'global',
                 direction_to_vector: bool = False, direction_convention = 'arithmetic') -> pd.DataFrame:
         self._load()
