@@ -53,3 +53,16 @@ required before this boundary is ready for downstream adoption.
 
 This independent PR must stay draft. No package publication, native benchmark,
 solver launch, private model data, or combination with parser PR #14/#15.
+
+## Codex review correction
+
+Codex identified that scenario/invariant projection reuse originally invoked
+`on_run` inside the parser's broad exception handler. A consumer exception
+could consequently become a failed parser projection and duplicate an already
+recorded run index. The corrected reuse branch retains its completed immutable
+projection but defers the callback until after the exception handler, before
+the next run. Other callback sites are already outside that handler. Two
+regressions verify consumer exceptions propagate unchanged on invariant and
+scenario-only reuse with exactly one emission per run index. No caching or
+reference projection semantics change; current-head tests/CI and refreshed
+review are required before acceptance.

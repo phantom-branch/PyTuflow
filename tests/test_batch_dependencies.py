@@ -626,3 +626,59 @@ def test_batch_on_run_callback_exception_aborts_without_parser_error_conversion(
     with pytest.raises(ConsumerFailure, match='consumer queue closed'):
         model.collect_batch_dependencies(('-s1 DEV', '-s1 EXG'), on_run=consumer)
     assert observed == [0]
+
+
+def test_on_run_reused_projection_consumer_exception_propagates_without_duplicate_index(tmp_path):
+    import pytest
+
+    class ConsumerFailure(RuntimeError):
+        pass
+
+    source = tmp_path / 'reuse.tcf'
+    source.write_text(
+        'Read GIS Code == static.shp\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    flags = ('-s1 DEV -e1 A', '-s1 DEV -e1 B')
+    assert model.collect_batch_dependencies(flags).invariant_projection_reuses == 1
+    visited = []
+
+    def callback(run):
+        visited.append((run.index, run.error))
+        if run.index == 1:
+            raise ConsumerFailure('reused projection consumer aborted')
+
+    with pytest.raises(ConsumerFailure, match='reused projection consumer aborted'):
+        model.collect_batch_dependencies(flags, on_run=callback)
+    assert visited == [(0, None), (1, None)]
+
+
+def test_on_run_scenario_reuse_consumer_exception_propagates(tmp_path):
+    import pytest
+
+    class ConsumerFailure(RuntimeError):
+        pass
+
+    source = tmp_path / 'scenario.tcf'
+    source.write_text(
+        'If Scenario == DEV\n'
+        'Read GIS Code == dev.shp\n'
+        'Else\n'
+        'Read GIS Code == exg.shp\n'
+        'End If\n',
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    flags = ('-s1 DEV -e1 A', '-s1 DEV -e1 B')
+    assert model.collect_batch_dependencies(flags).invariant_projection_reuses == 1
+    visited = []
+
+    def callback(run):
+        visited.append(run.index)
+        if run.index == 1:
+            raise ConsumerFailure('scenario projection consumer aborted')
+
+    with pytest.raises(ConsumerFailure, match='scenario projection consumer aborted'):
+        model.collect_batch_dependencies(flags, on_run=callback)
+    assert visited == [0, 1]
