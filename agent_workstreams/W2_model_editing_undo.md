@@ -1,4 +1,6 @@
 # [W2] Repair editing, undo history and project persistence
+> **Updated after W1 merge (25 October 2026):** [PR #17](https://github.com/phantom-branch/PyTuflow/pull/17) has merged to `master` at `f1ceb77f74cb521f50be80209b929ecf0b58bf20`. This branch has been synchronized with the merged W1 implementation and now targets `master`. The original dependency and planning-head text below is historical; do not reset to the original scaffold. **W2 remains a draft plan with no editing/undo implementation yet.**
+
 
 ## Initial status
 
