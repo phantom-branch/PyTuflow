@@ -202,7 +202,8 @@ def test_classic_profile_hook_is_not_replaced(tmp_path: Path) -> None:
 def test_cli_help_does_not_load_benchmark(monkeypatch, capsys) -> None:
     from . import profile_batch_dependencies
 
-    monkeypatch.setitem(sys.modules, 'tests.benchmark_batch_dependencies', None)
+    module_name = f'{profile_batch_dependencies.__package__}.benchmark_batch_dependencies'
+    monkeypatch.setitem(sys.modules, module_name, None)
     monkeypatch.setattr(sys, 'argv', ['profile_batch_dependencies.py', '--help'])
     with pytest.raises(SystemExit) as stopped:
         profile_batch_dependencies.main()
@@ -217,7 +218,8 @@ def test_cli_help_does_not_load_benchmark(monkeypatch, capsys) -> None:
 def test_cli_invalid_counts_do_not_load_benchmark(monkeypatch, arguments) -> None:
     from . import profile_batch_dependencies
 
-    monkeypatch.setitem(sys.modules, 'tests.benchmark_batch_dependencies', None)
+    module_name = f'{profile_batch_dependencies.__package__}.benchmark_batch_dependencies'
+    monkeypatch.setitem(sys.modules, module_name, None)
     monkeypatch.setattr(sys, 'argv', ['profile_batch_dependencies.py', *arguments])
     with pytest.raises(SystemExit) as stopped:
         profile_batch_dependencies.main()
@@ -229,14 +231,15 @@ def test_cli_retains_existing_benchmark_arguments(tmp_path: Path, monkeypatch, c
     from . import profile_batch_dependencies
 
     calls = []
-    benchmark_module = ModuleType('tests.benchmark_batch_dependencies')
+    module_name = f'{profile_batch_dependencies.__package__}.benchmark_batch_dependencies'
+    benchmark_module = ModuleType(module_name)
 
     def benchmark(runs, *, trials, static_inputs):
         calls.append((runs, trials, static_inputs))
         return {'parity': 'test-only', 'cached_context_counters': {}}
 
     benchmark_module.benchmark = benchmark
-    monkeypatch.setitem(sys.modules, 'tests.benchmark_batch_dependencies', benchmark_module)
+    monkeypatch.setitem(sys.modules, module_name, benchmark_module)
     monkeypatch.setattr(sys, 'argv', [
         'profile_batch_dependencies.py', '--runs', '2', '--static-inputs', '0',
         '--functions', '1', '--output', str(tmp_path / 'cli'),
