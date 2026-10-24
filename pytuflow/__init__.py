@@ -1,5 +1,38 @@
 import sys
 import logging
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Public type references remain statically discoverable while reader
+    # implementations are imported only when accessed at runtime.
+    from ._outputs import (
+        INFO,
+        TPC,
+        GPKG1D,
+        GPKG2D,
+        GPKGRL,
+        FMTS,
+        FVBCTide,
+        HydTablesCheck,
+        BCTablesCheck,
+        CrossSections,
+        DATCrossSections,
+        XMDF,
+        NCMesh,
+        CATCHJson,
+        DAT,
+        NCGrid,
+        LP2D,
+        MapOutput,
+        TimeSeries,
+        TabularOutput,
+        Mesh,
+        Grid,
+        GridMesh,
+        Output,
+        FormatConvention,
+    )
+
 
 # Setup default logging handler for pytuflow logger.
 # If the user has already configured a handler, this block is skipped.
