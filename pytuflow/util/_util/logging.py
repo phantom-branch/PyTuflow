@@ -28,8 +28,9 @@ def set_logging_level(
     The library-owned console handler follows the configured level. Existing
     application-owned handlers retain their individual levels and formatters.
     Reconfiguring the same file is idempotent. `log_to_file` may be an
-    existing directory or an existing file whose parent is the log directory.
-    A directory must already exist; no new directory is silently created.
+    existing directory or a path naming an existing or future file in an
+    existing directory. The output filename is always pytuflow_logs.log for
+    compatibility. Parent directories are never created implicitly.
     """
     logger = logging.getLogger("pytuflow")
     level_name = str(level).upper()
@@ -41,7 +42,9 @@ def set_logging_level(
         location = Path(log_to_file)
         if location.is_dir():
             directory = location
-        elif location.is_file():
+        elif location.parent.is_dir():
+            # Historically callers could supply an as-yet-uncreated filename.
+            # The library writes its fixed name beside that path.
             directory = location.parent
         else:
             raise ValueError(f"File path for log file handler does not exist at {log_to_file}")
