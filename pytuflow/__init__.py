@@ -13,6 +13,7 @@ if not pytuflow_logger.hasHandlers():
     ch.setFormatter(logging.Formatter("%(asctime)s %(module)-30s line:%(lineno)-4d %(levelname)-8s %(message)s"))
     ch.setStream(sys.stdout)
     ch.setLevel(logging.WARNING)
+    ch._pytuflow_owned_console = True
     pytuflow_logger.addHandler(ch)
 
 
