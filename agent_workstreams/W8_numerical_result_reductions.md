@@ -4,10 +4,12 @@
 
 Implemented on the existing `fix/numerical-result-reductions` branch of
 [PR #23](https://github.com/phantom-branch/PyTuflow/pull/23), targeting `master`.
-The PR remains draft while Windows acceptance and final review are completed.
+Implementation and Windows Python 3.12/3.14 acceptance are complete. The PR
+remains draft for final review and the separately recorded live-QGIS lane.
 
 - Starting PR head: `ab986b392950456b46e7c62c7ba442e1a3cbf73e`.
 - Fork baseline: `e162c04330d24c37bee3ade94479cc4602651060`.
+- Implemented and Windows-tested head: `90f43363270e1fb702081f4da22b27fa9484e074`.
 - Canonical upstream: `cf908cc922ca8448ed6002834877b0b377329eae`.
 - The three changed production files were identical between those upstream and
   fork checkpoints; this was rechecked with `git diff`.
@@ -179,12 +181,30 @@ all focused tests; executes the complete legacy PyMesh suite on the pinned
 fork baseline and candidate; requires nonempty reports without errors/skips;
 uses the existing unchanged JUnit comparator to gate extra failures; and
 archives reports. Existing deferred/graph workflows are unchanged.
-Hosted results are pending in this initial implementation checkpoint.
+Hosted Windows evidence for implementation head
+`90f43363270e1fb702081f4da22b27fa9484e074`:
+
+| Runtime | Focused cases | Existing baseline | Existing candidate | New regressions |
+| --- | ---: | ---: | ---: | ---: |
+| Windows Server 2025 AMD64, CPython 3.12.10 | 336 passed | 110 passed | 110 passed | 0 |
+| Windows Server 2025 AMD64, CPython 3.14.9 | 336 passed | 110 passed | 110 passed | 0 |
+
+Both jobs have zero skipped tests and successful report-completeness gates.
+[Run 40073565338](https://github.com/phantom-branch/PyTuflow/actions/runs/40073565338)
+completed successfully. Individual evidence:
+[Python 3.12 job](https://github.com/phantom-branch/PyTuflow/actions/runs/40073565338/job/120812016996),
+[Python 3.14 job](https://github.com/phantom-branch/PyTuflow/actions/runs/40073565338/job/120812016814).
+The run artifacts `numerical-reductions-python-3.12` (ID 12552576315) and
+`numerical-reductions-python-3.14` (ID 12552705658) contain exact head/runtime,
+dependency versions, focused JUnit, baseline JUnit and candidate JUnit.
+The evidence-only follow-up commit changes this handoff; its exact head and
+repeat workflow run are recorded in the PR Conversation.
 
 ## Explicit validation limits
 
 - **Live QGIS-provider comparison has not run.** `tests/test_map_output.py`
-  imports QGIS at module scope. The evidence above is authoritative provider
+  imports QGIS at module scope; an explicit collection attempt failed with
+  `ModuleNotFoundError: No module named 'qgis'`. The evidence above is authoritative provider
   source/tests plus executed Python-reader integration, not a claim of live
   QGIS parity. W5 owns the separate QGIS-capable test lane.
 - Retained provider differences: QGIS uses a 1e-6 thickness threshold and
@@ -206,6 +226,7 @@ vector-minimum fallback, dedicated tests and this focused workflow. #16 owns
 time semantics, #17 safe saves, #19 shared general/wheel infrastructure, and
 #20 reader/cache lifecycle. No sibling branch was imported.
 
-Complete the Windows evidence record and request Codex review after available
-acceptance checks pass. Address concrete review findings on this same branch.
-Keep the PR draft while required acceptance remains outstanding.
+The available Linux and Windows numerical acceptance checks have passed.
+Request Codex review on the completed branch and address concrete findings here.
+Keep the live-QGIS limitation explicit; do not turn source inspection or saved
+QGIS comparison fixtures into a claim of an executed QGIS-provider test.
