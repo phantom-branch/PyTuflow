@@ -132,7 +132,7 @@ def test_missing_logging_directory_fails_without_new_handler(tmp_path: Path) -> 
         from pathlib import Path
         from pytuflow import pytuflow_logging
 
-        missing = Path(os.environ["PYTUFLOW_W7_LOG_DIR"]) / "missing"
+        missing = Path(os.environ["PYTUFLOW_W7_LOG_DIR"]) / "missing" / "pytuflow_logs.log"
         try:
             pytuflow_logging.set_logging_level("INFO", missing)
         except ValueError as exception:
@@ -207,5 +207,29 @@ def test_public_imports_leave_global_module_search_path_unchanged() -> None:
         assert str(package_directory) not in added
         assert str(package_directory / "_tmf") not in added
         """
+    )
+    _assert_success(process)
+
+
+def test_uncreated_legacy_log_filename_is_accepted(tmp_path: Path) -> None:
+    """Legacy TMF callers pass a log filename which does not exist yet."""
+    process = _run_python(
+        """
+        import logging
+        import os
+        from pathlib import Path
+        from pytuflow._tmf.logging_ import set_logging_level
+
+        directory = Path(os.environ["PYTUFLOW_W7_LOG_DIR"])
+        requested = directory / "legacy-name-does-not-exist.log"
+        assert not requested.exists()
+        set_logging_level("INFO", requested)
+        logging.getLogger("pytuflow").info("legacy-path-probe")
+        logfile = directory / "pytuflow_logs.log"
+        assert logfile.exists()
+        assert "legacy-path-probe" in logfile.read_text(encoding="utf-8")
+        assert not requested.exists()
+        """,
+        log_directory=tmp_path,
     )
     _assert_success(process)
