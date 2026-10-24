@@ -204,3 +204,12 @@ def test_lru_returns_independent_copies(tmp_path):
         data = reader._surface("water level", 0)
         data[:] = -1000.
         assert reader._surface("water level", 0)[0, 0] == 0.
+
+def test_reductions_stream_time_slices_without_allocating_cube(tmp_path):
+    reader = NCGrid(make_nc(tmp_path, 120))
+    assert reader.maximum("water level") == 1079.
+    assert reader.minimum("water level") == 0.
+    cache = reader._surface_cache["water level"]
+    assert len(cache) <= 4
+    assert all(x.shape == (3, 3) for x in cache.values())
+    assert "water level" not in reader._cached_data

@@ -364,6 +364,24 @@ class Grid(MapOutput):
             base_topology = Grid(d)
         return GridMesh(self.fpath, self, base_topology, direction_convention)
 
+    def _stream_extreme(self, dtype: str, maximum: bool) -> float:
+        """Reduce temporal grids one slice at a time, without stacking the cube."""
+        reducer = np.nanmax if maximum else np.nanmin
+        if self._is_static(dtype):
+            return float(reducer(self._surface(dtype, -1)))
+        combine = max if maximum else min
+        result = None
+        for ti in range(len(self.times(dtype))):
+            values = np.asarray(self._surface(dtype, ti))
+            valid = values[~np.isnan(values)]
+            if valid.size:
+                value = (np.max(valid) if maximum else np.min(valid)).item()
+                result = value if result is None else combine(result, value)
+        if result is None:
+            # Preserve NumPy's original empty/all-NaN diagnostic contract.
+            return float(reducer(np.array([] if not self.times(dtype) else [np.nan])))
+        return float(result)
+
     def maximum(self, data_types: str | list[str]) -> float | pd.DataFrame:
         """Returns the maximum values for the given data types.
 
@@ -405,8 +423,7 @@ class Grid(MapOutput):
         df = pd.DataFrame()
         data_types = self._figure_out_data_types(data_types, None)
         for dtype in data_types:
-            surface = self._surface(dtype, slice(None))
-            mx = np.nanmax(surface)
+            mx = self._stream_extreme(dtype, maximum=True)
             if len(data_types) == 1:
                 return float(mx)
             df_ = pd.DataFrame([mx], columns=['maximum'], index=[dtype])
@@ -454,8 +471,7 @@ class Grid(MapOutput):
         df = pd.DataFrame()
         data_types = self._figure_out_data_types(data_types, None)
         for dtype in data_types:
-            surface = self._surface(dtype, slice(None))
-            mx = np.nanmin(surface)
+            mx = self._stream_extreme(dtype, maximum=False)
             if len(data_types) == 1:
                 return float(mx)
             df_ = pd.DataFrame([mx], columns=['minimum'], index=[dtype])
