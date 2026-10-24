@@ -21,7 +21,7 @@ from .mesh import Mesh
 from .._pytuflow_types import PathLike
 from ..results import ResultTypeError
 
-from .pymesh import PyNCMesh
+from .pymesh import PyNCMesh, NCEngine, H5Engine
 
 
 logger = logging.getLogger('pytuflow')
