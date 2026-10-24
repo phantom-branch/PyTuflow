@@ -8,7 +8,7 @@ immutable dependency projections are shared within this invocation only.
 
 from __future__ import annotations
 
-from collections.abc import Sized
+from collections.abc import Callable, Sized
 from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
@@ -537,13 +537,19 @@ def collect_batch_dependencies(
     *,
     cache_scopes: bool = True,
     compile_tree: bool = True,
+    on_run: Callable[[BatchDependencyRun], None] | None = None,
 ) -> BatchDependencyResult:
     """Collect **syntactic** dependencies without inspecting physical inputs.
 
     The caller must still bulk materialise wildcard paths, GIS attributes,
     database/table links and raster metadata, and check every unique input.
     Unsupported or malformed contexts are returned as explicit per-run errors;
-    their partial references must never be accepted. With compile_tree=False,
+    their partial references must never be accepted. The optional on_run
+    callback receives each COMPLETE immutable per-run projection in order,
+    after the run is recorded and before the next run starts. It is intended
+    for bounded, read-only consumers; callback exceptions propagate and abort
+    the batch rather than being disguised as parser errors. The callback must
+    not modify parsed model inputs or shared batch state. With compile_tree=False,
     the original per-batch caches remain on, isolating the graph's contribution.
     """
     started = perf_counter()
@@ -644,13 +650,16 @@ def collect_batch_dependencies(
             # projection within this one read-only batch. Keep their individual
             # run indices; never merge results for merely similar flag sets.
             previous = seen_flags[flag_text]
-            results.append(BatchDependencyRun(
+            projected = BatchDependencyRun(
                 index, flag_text, previous.file_references, previous.database_sources,
                 previous.database_activations, previous.error,
                 previous.input_references,
                 previous.ordered_inputs,
-            ))
+            )
+            results.append(projected)
             contexts_reused += 1
+            if on_run is not None:
+                on_run(projected)
             continue
 
         ctx = None
@@ -661,6 +670,7 @@ def collect_batch_dependencies(
         input_refs = ()
         ordered_inputs = ()
         error = None
+        reused_projection: BatchDependencyRun | None = None
         try:
             # Even an invalid flag combination is one failed run, not an
             # uncaught exception that aborts the remaining batch.
@@ -705,65 +715,72 @@ def collect_batch_dependencies(
                     seen_flags[flag_text] = projected
                 invariant_projection_reuses += 1
                 input_runstates_elided += len(projected.ordered_inputs)
-                continue
-            context_started = perf_counter()
-            try:
-                run = model.context(context=ctx, file_resolution='deferred')
-            finally:
-                # Failed runs can have performed substantial construction.
-                context_construction_seconds += perf_counter() - context_started
-            references_started = perf_counter()
-            # Retain input UUID + command order for downstream active-database
-            # selection; merely flattening paths would lose provenance.
-            # Traverse active commands once for ordered ownership. In
-            # particular, commands without FileReference must not disappear:
-            # consumers need the original ordinals for database activation.
-            active_inputs = tuple(run.find_input())
-            # Count attempts on both successful and failed contexts below.
-            ordered_inputs = tuple(
-                BatchInputCommand(
-                    input_uuid=str(inp.uuid),
-                    command_index=sequence,
-                    owner_control_file=inp._command.parent,
-                    line_number=inp.line_number,
-                    command_name=str(inp.lhs),
-                    command_text=str(inp._command.original_text),
-                    reference_count=len(inp.file_references),
+                reused_projection = projected
+            else:
+                context_started = perf_counter()
+                try:
+                    run = model.context(context=ctx, file_resolution='deferred')
+                finally:
+                    # Failed runs can have performed substantial construction.
+                    context_construction_seconds += perf_counter() - context_started
+                references_started = perf_counter()
+                # Retain input UUID + command order for downstream active-database
+                # selection; merely flattening paths would lose provenance.
+                # Traverse active commands once for ordered ownership. In
+                # particular, commands without FileReference must not disappear:
+                # consumers need the original ordinals for database activation.
+                active_inputs = tuple(run.find_input())
+                # Count attempts on both successful and failed contexts below.
+                ordered_inputs = tuple(
+                    BatchInputCommand(
+                        input_uuid=str(inp.uuid),
+                        command_index=sequence,
+                        owner_control_file=inp._command.parent,
+                        line_number=inp.line_number,
+                        command_name=str(inp.lhs),
+                        command_text=str(inp._command.original_text),
+                        reference_count=len(inp.file_references),
+                    )
+                    for sequence, inp in enumerate(active_inputs)
                 )
-                for sequence, inp in enumerate(active_inputs)
-            )
-            input_refs = tuple(
-                BatchInputReference(
-                    input_uuid=descriptor.input_uuid,
-                    command_index=descriptor.command_index,
-                    owner_control_file=descriptor.owner_control_file,
-                    line_number=descriptor.line_number,
-                    reference=ref,
+                input_refs = tuple(
+                    BatchInputReference(
+                        input_uuid=descriptor.input_uuid,
+                        command_index=descriptor.command_index,
+                        owner_control_file=descriptor.owner_control_file,
+                        line_number=descriptor.line_number,
+                        reference=ref,
+                    )
+                    for descriptor, inp in zip(ordered_inputs, active_inputs, strict=True)
+                    for ref in inp.file_references
                 )
-                for descriptor, inp in zip(ordered_inputs, active_inputs, strict=True)
-                for ref in inp.file_references
-            )
-            refs = tuple(item.reference for item in input_refs)
-            reference_collection_seconds += perf_counter() - references_started
-            database_started = perf_counter()
-            activations = run.deferred_database_activations()
-            # Keep rows attached to the exact declaration UUID. The consumer
-            # selects the database active at each boundary/GIS command; simply
-            # unioning BC rows would produce false secondary dependencies.
-            sources = tuple(
-                source
-                for activation in activations
-                for source in run.deferred_database_sources_for_activation(activation.input_uuid)
-            )
-            database_projection_seconds += perf_counter() - database_started
-            # Do not let a failed/partial projection seed a reusable group.
-            if isinstance(ctx, BatchContext):
-                ctx.commit_input_groups()
+                refs = tuple(item.reference for item in input_refs)
+                reference_collection_seconds += perf_counter() - references_started
+                database_started = perf_counter()
+                activations = run.deferred_database_activations()
+                # Keep rows attached to the exact declaration UUID. The consumer
+                # selects the database active at each boundary/GIS command; simply
+                # unioning BC rows would produce false secondary dependencies.
+                sources = tuple(
+                    source
+                    for activation in activations
+                    for source in run.deferred_database_sources_for_activation(activation.input_uuid)
+                )
+                database_projection_seconds += perf_counter() - database_started
+                # Do not let a failed/partial projection seed a reusable group.
+                if isinstance(ctx, BatchContext):
+                    ctx.commit_input_groups()
         except Exception as exc:
             # Fail closed. Never return the partial references accumulated
             # before an unknown database or malformed control-file failure.
             refs = sources = activations = input_refs = ordered_inputs = ()
             error = f'{type(exc).__name__}: {exc}'
+        # Reuse callbacks must execute outside the parser exception handler:
+        # consumer errors are not parser failures or extra projected runs.
+        if reused_projection is not None:
+            if on_run is not None:
+                on_run(reused_projection)
+            continue
         projected = BatchDependencyRun(
             index, flag_text, refs, sources, activations, error, input_refs,
             ordered_inputs,
@@ -806,6 +823,8 @@ def collect_batch_dependencies(
             variable_template_clones += ctx.variable_template_clones
             graph_node_lookups += ctx.graph_node_lookups
             graph_node_fallbacks += ctx.graph_node_fallbacks
+        if on_run is not None:
+            on_run(projected)
 
     if not results:
         raise ValueError('At least one simulation context is required')

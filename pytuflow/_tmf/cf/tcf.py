@@ -9,7 +9,7 @@ from .cf_run_state import ControlFileRunState
 from ..abc.tf_cf_base_mixin import TuflowControlFileMixin
 
 if typing.TYPE_CHECKING:
-    from ..batch_dependencies import BatchDependencyResult
+    from ..batch_dependencies import BatchDependencyResult, BatchDependencyRun
     from .tcf_run_state import TCFRunState
     from .tgc import TGC
     from .tbc import TBC
@@ -377,6 +377,7 @@ class TCF(ControlFileLoadMixin, TuflowControlFileMixin, TCFBuildState):
         *,
         cache_scopes: bool = True,
         compile_tree: bool = True,
+        on_run: typing.Callable[['BatchDependencyRun'], None] | None = None,
     ) -> 'BatchDependencyResult':
         """Project many deferred run dependencies without materialising files.
 
@@ -388,4 +389,5 @@ class TCF(ControlFileLoadMixin, TuflowControlFileMixin, TCFBuildState):
 
         return collect_batch_dependencies(
             self, run_flags, cache_scopes=cache_scopes, compile_tree=compile_tree,
+            on_run=on_run,
         )
