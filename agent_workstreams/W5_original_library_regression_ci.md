@@ -1,99 +1,195 @@
-# [W5] Establish regression coverage for original PyTuflow functionality
+# W5 — Original-library regression and installed-wheel infrastructure
 
-## Initial status
+## Implemented checkpoint and status
 
-Draft scaffolding only: this PR currently adds a scoped work plan. Runtime changes and acceptance tests have not been implemented on this branch. Earlier review reproductions were isolated component checks, not full Windows/GIS integration validation.
+Implementation is complete on `test/original-library-regression-ci`, based on `master`, under the [assigned execution prompt](https://github.com/phantom-branch/PyTuflow/pull/19#issuecomment-6380972632). The implementation checkpoint is [`cdaacf1313ad3b172dc7ae993ab7416164be1632`](https://github.com/phantom-branch/PyTuflow/commit/cdaacf1313ad3b172dc7ae993ab7416164be1632). Native validation passed in [Actions run 40075325512](https://github.com/phantom-branch/PyTuflow/actions/runs/40075325512). **All five jobs passed: three complete regression comparisons and two installed-wheel jobs.** The raw suite failures below remain visible; a passing comparison does not assert that all original tests pass. The documentation/evidence commit after this checkpoint changes no tested implementation file. Infrastructure validation reports **82 passed tests plus 10 passed subtests** in each regression job; subtests are reported separately from top-level tests.
 
-## Source checkpoints
+The contributor and feature-agent contract is [ci/README.md](../ci/README.md). This handoff supersedes the initial planning commands: use normal checkouts and the implemented snapshot runner, without new worktrees, virtual environments, or direct execution of the original suites in a working checkout.
 
-- Original upstream review: [TUFLOW-Support/PyTuflow `cf908cc922ca8448ed6002834877b0b377329eae`](https://github.com/TUFLOW-Support/PyTuflow/commit/cf908cc922ca8448ed6002834877b0b377329eae).
-- Fork source used to create this work package: [`e162c04330d24c37bee3ade94479cc4602651060`](https://github.com/phantom-branch/PyTuflow/commit/e162c04330d24c37bee3ade94479cc4602651060).
-- Recheck current source, review comments and applicable repository guidance before implementing.
+## Delivered scope
 
-## Branch and dependencies
+- `.github/workflows/original-library-regression.yml` runs Windows Python 3.12/3.14 with the documented dependency baseline, Python 3.14 with dependencies resolved under existing package metadata, and separate installed-wheel jobs for both interpreters. Relevant production, test and packaging changes trigger these checks.
+- `ci/run_regression.py` independently executes all five standalone groups: time series, Python mesh/raster, TMF, project and FM. Each group uses a disposable committed source/fixture snapshot. Project caches and inspected Python CLI children are isolated. Source checkouts and reference fixtures remain unchanged.
+- JSON, JUnit and captured logs record actual collection, each test phase, counts, skips, failures, source/harness identities, dependencies and import provenance. The comparator rejects missing, empty, interrupted or inconsistent evidence, removed tests, new failures, changed failure signatures and unexplained skips. Existing failures remain failed in raw evidence; comparison acceptance is a separate result.
+- Shared FM helpers now compare relative CSV/ECF/GPKG/layer identities and actual reference text. Generated `csv/` and `gis/` category roots are explicit; nested relative names remain significant. The same two test-only overlays apply to every source revision. Production files and public reference data are never overlaid.
+- Wheels are built from the sdist with `python -m build --no-isolation`, installed in each hosted interpreter, and inspected from outside the checkout with isolated Python imports. Checks cover import origin, distribution metadata/RECORD, every installed package file against the wheel, public exports, packaged JSON/schema/templates, a generated control file and project CLI help. The registered console entry-point target is exercised; the operating-system launcher shim is not.
 
-- Work branch: `test/original-library-regression-ci`.
-- PR base: `master`.
-- Starting state: **Can start now**.
-- This is an independent branch from master; it does not depend on the deferred optimisation PRs.
-- Dependent work: W7 on `refactor/package-api-quality`.
-- This work package owns shared regression and installed-wheel acceptance infrastructure for W1-W8; it does not implement their production fixes.
+## Native evidence
 
-## Purpose
+Each matrix entry executes these source identities in the same interpreter/dependency environment and with the same harness:
 
-Documentation-only draft scaffold for a separate regression-infrastructure workstream. Establish an honest, reproducible baseline for the existing results, TMF, project and FM functionality, then add Windows and installed-wheel checks without changing the existing deferred acceptance gates. Base: master. This is the infrastructure parent of W7.
+| Source | Exact revision |
+| --- | --- |
+| Canonical upstream | `cf908cc922ca8448ed6002834877b0b377329eae` |
+| Fixed fork baseline | `e162c04330d24c37bee3ade94479cc4602651060` |
+| Candidate implementation | `cdaacf1313ad3b172dc7ae993ab7416164be1632` |
 
-## Scope
+| Native matrix | Source | Collected | Passed | Failed | Errors | Skipped | Gate |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Python 3.12.10 / baseline | upstream | 1257 | 1244 | 1 | 0 | 12 | complete |
+| Python 3.12.10 / baseline | baseline | 1259 | 1243 | 4 | 0 | 12 | reference |
+| Python 3.12.10 / baseline | candidate | 1259 | 1243 | 4 | 0 | 12 | no regression |
+| Python 3.14.9 / baseline | upstream | 1257 | 1244 | 1 | 0 | 12 | complete |
+| Python 3.14.9 / baseline | baseline | 1259 | 1243 | 4 | 0 | 12 | reference |
+| Python 3.14.9 / baseline | candidate | 1259 | 1243 | 4 | 0 | 12 | no regression |
+| Python 3.14.9 / current | upstream | 1257 | 991 | 254 | 0 | 12 | complete |
+| Python 3.14.9 / current | baseline | 1259 | 1004 | 243 | 0 | 12 | reference |
+| Python 3.14.9 / current | candidate | 1259 | 1004 | 243 | 0 | 12 | no regression |
 
-- Inventory existing results, Python-mesh, QGIS, TMF, project and FM tests and their actual dependency/fixture requirements. Identify collection failures, missing backends, existing product failures and harness defects separately. The earlier static inventory found 1,771 test functions; this is not an executed test count or an acceptance target.
-- Capture canonical upstream cf908cc922ca8448ed6002834877b0b377329eae and the current fork base in the same Windows environment. Preserve exact commit IDs, Python/package versions, collected/pass/fail/error/skip counts and JUnit reports. Record known baseline failures explicitly and gate unexpected regressions without treating an incomplete run as success.
-- Add separate Windows Python 3.12 and 3.14 jobs for supported non-QGIS functionality, including results, project creation and FM conversion. Establish an explicit QGIS integration job or documented runnable job boundary using its real Python runtime. Missing QGIS may be an explained skip in non-QGIS jobs; a job designated to validate QGIS must fail if QGIS is unavailable.
-- Make test collection independent of unavailable optional backends. Use narrow, named capability markers/collection boundaries and report skipped groups; do not blanket-skip a results suite or silence warnings to produce green CI.
-- Build wheel/sdist and validate the installed wheel outside the source checkout: import origin, public imports, project CLI --help and representative packaged JSON/template/schema access. Smoke tests should use temporary generated model files and committed public fixtures only.
-- Use a documented dependency baseline plus a current supported dependency job. Introduce lowest-supported dependency checks where the declared lower bounds are coherent. Production compatibility corrections belong to W7 or the responsible functionality workstream, not to hidden test workarounds.
-- Own new general CI workflows, shared test helpers, fixture isolation and regression-baseline records. Preserve all existing deferred/graph workflow triggers, pins, gates and comparison semantics. Coordinate with W7 before editing README, pyproject.toml, dependency metadata or runtime imports; W7 owns those files.
-- Keep generated test outputs in temporary directories, including FM conversion fixtures that currently use repository-relative outputs_tmp. Do not delete or overwrite public reference fixtures.
+Artefacts are `original-regression-3.12-baseline`, `original-regression-3.14-baseline`, `original-regression-3.14-current`, `original-wheel-3.12` and `original-wheel-3.14`. Each regression artefact includes source reports, exact inherited failure IDs, JUnit, logs, dependency inventories and comparisons. Wheel artefacts include distributions, provenance and smoke reports. Actions retention is 30 days. The committed [machine-readable baseline](evidence/W5_cdaacf1_windows.json) preserves all counts, exact nonpassing IDs, signatures, source/environment identities and artefact URLs. The [raw report bundle](evidence/W5_cdaacf1_reports.zip) preserves the original JSON, JUnit, logs, dependency inventories, comparisons and wheel smoke/provenance with a SHA-256 file manifest. It contains no models or built distributions.
 
-## Acceptance criteria
+### Inherited baseline failures
 
-- [ ] A fresh agent can reproduce collection and the baseline using documented commands in the declared Windows environments; original upstream and current fork results are reported independently.
-- [ ] Every required group is collected and executed, or has an explicit capability-bound skip with a recorded reason. An unavailable required backend, collection error, missing JUnit report or unexpectedly empty suite fails the relevant job.
-- [ ] No new regression relative to the recorded current-fork baseline is accepted. Existing failures remain visible with exact test IDs and evidence; no broad xfail/skip or warning suppression hides them.
-- [ ] Results, project and FM-only changes trigger the new relevant checks. Existing deferred gates continue to work unchanged.
-- [ ] Wheel smoke tests run with a working directory outside the checkout and prove pytuflow.__file__ points to the installed package. Public CLI help and representative packaged resource loading pass.
-- [ ] Reports give exact head/base SHAs, dependency versions, commands, test counts, skips and limitations. Do not report static test-function counts as executed tests or claim native Windows/QGIS validation from a Linux-only run.
+The Windows 3.12 and 3.14 pinned environments have the same inherited failures:
 
-## Exclusions
+| Exact test ID | Recorded reason |
+| --- | --- |
+| `tests/fm_lib/integration_tests/test_conversion.py::TestConversion::test_convert_river_flood_relief_arch` | AssertionError: Generated ECF has four lines; the two-line reference omits the ORIFICE directive. |
+| `tests/tmf/test_control_file.py::test_load_rainfall_database` | ValueError: No Control File/Database has been loaded for read grid rf |
+| `tests/tmf/test_input.py::test_input_files_ref_in_gis` | AssertionError: Referenced-file list omits q_flow.csv; complete expected/actual lists are preserved in the raw report. |
+| `tests/tmf/test_input_context.py::test_input_files_ref_in_gis` | AssertionError: Referenced-file list omits q_flow.csv; complete expected/actual lists are preserved in the raw report. |
 
-- No deferred/compiled-graph optimisation, acceptance redesign or edits to the existing deferred workflows.
-- No mass production-code clean-up, numerical algorithm changes, blanket lint/type enforcement or cross-platform expansion.
-- No TUFLOW or other proprietary solver execution, private SMB access, private datasets, release, merge, tag, publication or production dependency repin.
-- No claim that all existing tests pass until the actual suites run in the stated environments.
+These are existing TMF behaviour and FM reference issues for owner triage. This infrastructure does not change their expected engineering output. The three TMF failures are historical upstream-to-fork regressions already present at the recorded fork baseline; the corrected FM assertion also fails on upstream. Route the TMF omissions to their owning TMF/deferred workstream, preserving its existing gates. All three candidate-to-fork comparisons and all three canonical-upstream completeness checks pass.
 
-## Source pointers
+### Current dependency evidence
 
-- https://github.com/TUFLOW-Support/PyTuflow/blob/cf908cc922ca8448ed6002834877b0b377329eae/tests/test_time_series.py
-- https://github.com/TUFLOW-Support/PyTuflow/blob/cf908cc922ca8448ed6002834877b0b377329eae/tests/test_map_output_pymesh.py
-- https://github.com/TUFLOW-Support/PyTuflow/blob/cf908cc922ca8448ed6002834877b0b377329eae/tests/test_map_output.py#L1-L7
-- https://github.com/TUFLOW-Support/PyTuflow/tree/cf908cc922ca8448ed6002834877b0b377329eae/tests/project
-- https://github.com/TUFLOW-Support/PyTuflow/blob/cf908cc922ca8448ed6002834877b0b377329eae/tests/fm_lib/integration_tests/test_conversion.py#L15-L58
-- https://github.com/TUFLOW-Support/PyTuflow/blob/cf908cc922ca8448ed6002834877b0b377329eae/pyproject.toml#L44-L61
-- https://github.com/TUFLOW-Support/PyTuflow/blob/cf908cc922ca8448ed6002834877b0b377329eae/README.md#L78-L124
+The current lane resolves pandas 3.1.0, NumPy 2.5.4, PyVista 0.49.1 and VTK 9.7.1 under unchanged package metadata. Candidate and recorded fork both retain **243 raw failures**, with no new/changed failure. This establishes regression equivalence; it does not certify current-dependency compatibility.
 
-## Implementation handoff
+| Failure type | Candidate count |
+| --- | ---: |
+| `Pandas4Warning` | 181 |
+| `AssertionError` | 29 |
+| `KeyError` | 16 |
+| `ValueError` | 8 |
+| `AttributeError` | 6 |
+| `TypeError` | 2 |
+| `ParserError` | 1 |
 
-The PR Conversation contains a copyable agent prompt with the concrete PR links and branch setup commands. The source-specific instructions are retained here as well:
+The 181 direct pandas warnings arise from production `inplace=True` operations under the existing warning-as-error policy. Another 58 failure records contain earlier pandas deprecation warnings; their empty outputs and data-loading errors are consistent with loaders catching promoted warnings and retaining incomplete data. This is diagnostic evidence, not a causal claim verified by a production fix. Together with the four baseline failures, these account for all 243 failures. The complete raw tracebacks and a separately labelled derived classification remain in the bundle. Package-compatibility triage belongs to #22. No separate numerical/time defect is inferred from a failure that stops during loading. #16/#17/#23 retain production and feature-test ownership.
 
-Continue implementation of this draft W5 PR after reading its latest body, comments, review threads, exact head/base SHAs and repository guidance. The initial PR contains planning documentation only; implement the bounded scope, do not stop after updating the plan. Work on this PR's branch using an isolated checkout/worktree if other agents are active. The parent is master. W7 is a child of W5 and owns package metadata, README and runtime import changes.
+A small reproduced mesh case is `tests/test_map_output_pymesh.py::TestXMDF::test_load_2dm_only`, which reaches `pytuflow/_outputs/pymesh/mesh_geom/py2dm.py:92` and raises `Pandas4Warning`. Run the `python_mesh` group using the recorded current environment to reproduce; use its JSON dependency inventory rather than assuming future package resolution is identical.
 
-Start by recording the current remote head/base. The review reference is canonical upstream cf908cc922ca8448ed6002834877b0b377329eae and fork review head e162c04330d24c37bee3ade94479cc4602651060; these are historical references, not permission to reset a newer branch. Compare original upstream and the current fork in equivalent environments so pre-existing failures are separated from regressions.
+### Installed-wheel evidence
 
-Milestone 1 — Baseline and collection: inspect tests/test_time_series.py, tests/test_map_output_pymesh.py, tests/test_map_output.py, tests/tmf, tests/project and tests/fm_lib. The QGIS module currently imports qgis.core at collection time. Inventory dependencies and fixture side effects before execution. Collect and run each capability group independently and capture JUnit, versions, counts and exact failures. Do not conceal existing failures by broad skips, xfails, warning filters or weaker assertions.
+Both Windows interpreters pass **23/23** checks. Each wheel verifies **553** installed package files against the wheel and RECORD, **22** public exports, **15** JSON/schema resources, **2** templates and a generated TCF. Both CLI probes return zero with empty stderr; `pip check` reports no broken requirements. Imports originate from each interpreter’s `Lib/site-packages/pytuflow/__init__.py`; the isolated smoke process runs in `D:/a/_temp/original-wheel/outside`. Exact origins, hashes, dependency inventories and source provenance are preserved in the committed evidence.
 
-Milestone 2 — General regression jobs: add independent Windows Python 3.12/3.14 coverage for the supported original-library groups. Separate QGIS integration and require its backend when that job is selected. Make outputs/project/FM paths trigger their jobs. Add a trustworthy baseline comparison where required, with missing/empty reports and unexpected skipped groups failing. Keep all existing deferred workflows unchanged. W5 owns shared test helpers, fixtures and these new workflows; discuss any pyproject/README changes with W7 first.
+Local supplemental evidence: Python 3.12.14 on Linux passed 82 infrastructure tests plus 10 subtests and built the sdist/wheel without isolation. Native Windows acceptance above is independently executed evidence.
 
-Milestone 3 — Distribution smoke tests: build wheel/sdist and use a fresh environment outside the checkout to verify the installed wheel, exported API, packaged JSON/templates/schema and project CLI --help. Ensure the import path cannot accidentally use repository sources. Use temporary directories and only committed public fixtures; FM conversion tests must not overwrite their reference outputs.
+One confirmed inherited reference mismatch is `tests/fm_lib/integration_tests/test_conversion.py::TestConversion::test_convert_river_flood_relief_arch`: the generated ECF includes the ORIFICE network directive absent from the reference ECF. Both GeoPackages contain that layer. This suggests an incomplete reference ECF; neither production behaviour nor reference data was changed to make the assertion pass.
 
-Initial Windows command patterns, after confirming files/dependencies and backend groups:
-  py -3.12 -m pip install -e . pytest build
-  py -3.12 -m pytest --collect-only -q tests/test_time_series.py tests/test_map_output_pymesh.py tests/project tests/tmf tests/fm_lib
-  py -3.12 -m pytest -q tests/test_time_series.py tests/test_map_output_pymesh.py tests/project tests/tmf tests/fm_lib --junitxml=<temporary-report-path>
-  py -3.14 -m pip install -e . pytest build
-  py -3.14 -m pytest -q <same-reviewed-capability-groups> --junitxml=<temporary-report-path>
-  py -3.14 -m build
-Use separate commands for QGIS under the verified QGIS interpreter; do not assume py -3.14 provides it. Treat the command patterns as a starting point: fix collection grouping in the harness, not by silently omitting failed groups. Inspect subprocess tests first; only Python CLI/help/conversion operations are allowed, never a solver launch. Use normal PowerShell statements and exit-code checks so a failed pytest/build command cannot be hidden by a later successful command.
+The first diagnostic run, [40073567141](https://github.com/phantom-branch/PyTuflow/actions/runs/40073567141), identified two infrastructure issues now corrected: a hosted-interpreter dependency conflict, addressed only in the new CI pin (`packaging==26.3`), and `%TEMP%` short-name aliases, addressed by placing snapshots beside explicit report folders. Its raw results remain diagnostic evidence, not acceptance for the final checkpoint.
 
-Coordinate with W7 on public dependency support and with the other workstreams on shared fixtures. Any production failure discovered here must be recorded with a minimal reproduction and assigned to its owning workstream. Do not make unrelated algorithm fixes merely to turn the baseline green.
+## Reproduce the complete standalone gate
 
-Before reporting completion, run the new exact-head jobs, the relevant original regressions and git diff --check. Report changes, exact source/environment, counts, remaining baseline failures, backend skips, wheel origin/resource evidence and CI URLs. Leave the PR draft if any required implementation or validation remains. Do not merge, publish, tag, run a solver, access private SMB models or repin production consumers.
+Use an already installed Python 3.12 or 3.14 and normal clones of this branch and canonical upstream. Run the commands from the matching implementation checkout. Choose a **fresh, writable report root with its explicit long Windows path**, outside both repositories; avoid a short-name alias such as `RUNNER~1`. Replace the example drive/path below to suit the machine. Never reuse nonempty report directories.
 
-## Shared implementation rules
+```powershell
+$reportRoot = 'D:\Validation\PyTuflow-PR19-cdaacf1-python314'
+$candidateSha = 'cdaacf1313ad3b172dc7ae993ab7416164be1632'
+$forkSha = 'e162c04330d24c37bee3ade94479cc4602651060'
+$upstreamSha = 'cf908cc922ca8448ed6002834877b0b377329eae'
+$requiredGroups = @('--required-group', 'time_series', '--required-group', 'python_mesh', '--required-group', 'tmf', '--required-group', 'project', '--required-group', 'fm')
 
-- Implement the original-library work in this PR on its assigned branch. Read current AGENTS.md guidance and the latest PR body/comments first; inspect the latest parent branch before coding.
-- Preserve existing public APIs and established model/result semantics unless this scope explicitly identifies a defect. Use modern built-in Python annotations while keeping the declared interpreter support truthful; retain Python 3.12 compatibility needed by QGIS and validate standalone Python 3.14.
-- Keep Windows drive-letter, UNC and network paths lexical; use Path.absolute() when an absolute path is needed, not Path.resolve(). Preserve supported GIS/mesh backends and source provenance.
-- Use small public or generated fixtures. No TUFLOW solver launches, proprietary SMB models, private data uploads, package releases or merges are part of these work packages.
-- Do not expand the deferred/batch/graph optimisation work, alter PRs #4/#14/#15, or weaken their acceptance checks. Coordinate shared files with the linked work-package owner.
-- Record baseline failures separately from regressions. Do not make checks green by dropping fixtures, broad skipping, blanket warning suppression or silently changing expected engineering results.
-- Complete implementation and relevant validation before requesting final review. Keep this PR draft while work is incomplete; update the body with code checkpoints, commands, results and precise remaining limitations.
-- Routine implementation, fixes, tests and pushes to this development branch are authorised. Continue without another confirmation for those steps. Report an actual access or capability blocker with evidence.
+py -3.14 -m pip install -r ci/requirements-regression.txt
+if ($LASTEXITCODE -ne 0) { throw 'Dependency installation failed' }
+py -3.14 -m pytest -q tests/ci
+if ($LASTEXITCODE -ne 0) { throw 'Infrastructure tests failed' }
+
+# Raw failures intentionally return 1 and remain visible in each report.
+py -3.14 ci/run_regression.py --source ../pristine-upstream --ref $upstreamSha --label upstream --report-dir "$reportRoot/upstream"
+py -3.14 ci/run_regression.py --source . --ref $forkSha --label baseline --report-dir "$reportRoot/baseline"
+py -3.14 ci/run_regression.py --source . --ref $candidateSha --label candidate --report-dir "$reportRoot/candidate"
+
+# Record historical upstream/fork differences independently of candidate acceptance.
+py -3.14 ci/compare_regression.py --baseline "$reportRoot/upstream/report.json" --candidate "$reportRoot/baseline/report.json" --output "$reportRoot/upstream-comparison.json" @requiredGroups
+# Inspect the historical comparison; a difference does not replace the gates below.
+
+# Required: complete canonical-upstream evidence, even when historical differences exist.
+py -3.14 ci/compare_regression.py --baseline "$reportRoot/upstream/report.json" --candidate "$reportRoot/upstream/report.json" --output "$reportRoot/upstream-completeness.json" @requiredGroups
+if ($LASTEXITCODE -ne 0) { throw 'Canonical upstream evidence is incomplete' }
+
+# Required: candidate has no regression against the fixed fork baseline.
+py -3.14 ci/compare_regression.py --baseline "$reportRoot/baseline/report.json" --candidate "$reportRoot/candidate/report.json" --output "$reportRoot/candidate-comparison.json" @requiredGroups
+if ($LASTEXITCODE -ne 0) { throw 'Candidate regression or incomplete evidence' }
+```
+
+Repeat with `py -3.12` and a different report root. Dependency pins belong to these test environments; package metadata and production dependency policy are unchanged. A lowest-supported dependency job remains assigned to #22 after its lower-bound contract is made coherent; #22 has not been started.
+
+## Capability boundaries and retained limitations
+
+- Standalone jobs explicitly record QGIS as `not_selected`. They do not claim it is unavailable or validated. The documented `--group qgis` route requires the real supplied QGIS interpreter and MDAL provider; missing capabilities or incomplete reports fail. **Live QGIS acceptance is now passed**; see the three-source execution record below. The owner may mark this PR non-draft and consider merging.
+- Without `osgeo.ogr`, exactly ten named OGR writer tests and `test_input_attrs_3` receive explicit capability skips. The existing Linux-only path test skips on Windows. GeoPandas writer coverage remains required; there are no blanket result-suite skips or new warning filters/xfails.
+- Existing deferred/compiled-graph workflows, triggers, pins, comparisons and acceptance gates remain unchanged. This workflow supplies additional original-library coverage; it does not supersede those gates or claim a new deferred acceptance run.
+- No solver, private model, private NAS access, native NAS benchmark, merge, release, tag, publication or production consumer repin occurred.
+
+## Parallel ownership and downstream handoff
+
+| Owner | Reusable selection / next boundary |
+| --- | --- |
+| #16 | `time_series` and `python_mesh`, plus its own dedicated time-semantics regression module |
+| #17 | `tmf` and `project`, plus its own dedicated save/encoding regression module |
+| #23 | `python_mesh` and applicable real-QGIS coverage, plus its own numerical regression module |
+| #19 | `ci/`, new general workflow, `tests/ci`, the two shared FM helpers and evidence records |
+| #22 | Reuse this checkpoint and installed-wheel gate; retains package metadata, runtime import/logging/typing and root README ownership; not started |
+
+The feature agents retain their production files and new tests. Dedicated feature tests must still be run by their owners; the five original-suite selections do not automatically discover unrelated top-level feature modules. Shared-fixture changes require coordination on the PR. No unfinished feature branches were merged into this branch.
+
+Codex review and any subsequent findings are tracked in the PR conversation. The real-QGIS boundary has now passed as recorded below. The PR is ready to be marked non-draft and considered for merging; the owner retains that action.
+
+
+## Completed native QGIS/MDAL validation (24 October 2026)
+
+**W5 QGIS acceptance passed. Ready to mark non-draft and consider merging.**
+No W5 implementation defect or necessary code change was identified. This
+handoff/evidence update does not change the tested production, runner, helpers,
+tests, workflows or dependency policy. No draft conversion or merge was done.
+
+Frozen candidate/harness: `4ca199c55d6d388a0019128332e8f0adafdace93`.
+Canonical upstream: `cf908cc922ca8448ed6002834877b0b377329eae`, obtained from
+`https://github.com/TUFLOW-Support/PyTuflow.git` in a separate normal checkout.
+Fork baseline: `e162c04330d24c37bee3ade94479cc4602651060`, from
+`https://github.com/phantom-branch/PyTuflow.git`. Both checkouts were clean and
+readable by `git archive`; the unchanged runner created independent snapshots.
+
+| Full QGIS group | Collected | Passed | Failed | Errors | Skips | Raw exit |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Upstream | 239 | 239 | 0 | 0 | 0 | 0 |
+| Fork baseline | 239 | 239 | 0 | 0 | 0 | 0 |
+| PR #19 candidate | 239 | 239 | 0 | 0 | 0 | 0 |
+
+Every run executed all of `tests/test_map_output.py`, including mesh geometry,
+extraction and module-order-dependent CATCHJson tests. The strict candidate
+comparison, required upstream self-completeness and independently recorded
+upstream-to-fork comparison all passed, each raw exit 0. No failing IDs,
+collection errors, incomplete reports, unexpected skips, xfails or xpasses
+occurred. Collected IDs, JSON outcomes and JUnit counts agree; every role has
+identical required capabilities, package inventory and harness fingerprints.
+All reports record unchanged source checkouts and a clean harness.
+
+The actual installed environment is QGIS 4.2.3, CPython 3.12.15, Qt 6.11.0 and
+GDAL 3.13.3, using the existing OSGeo4W launcher/W3 bootstrap and compatible
+additive dependency targets. A real QgsApplication and MDAL provider were
+verified. No bundled Python/Qt/GDAL/NumPy/pandas package was replaced. Runtime
+versions, provider hash and origins are in the linked record. One local utility
+filename shadowed stdlib inspect during preflight; renaming that report utility
+resolved the environment issue without editing W5 or changing its independently
+executed probe/test subprocesses. Corrected preflight and complete test reports
+are retained as acceptance evidence.
+
+[Published underlying JSON/JUnit/logs, commands and summary](evidence/W5_qgis_4ca199c/README.md)
+contain sanitised machine roots/identifiers, explicit source-import roles and
+checksums. Original raw reports and exact local launch commands remain local.
+The final delivery comment identifies the evidence-only pushed head; all tested
+implementation remains identical to the frozen candidate/harness above.
+
+[Hosted run 40076415079](https://github.com/phantom-branch/PyTuflow/actions/runs/40076415079)
+was rechecked at exact source `4ca199c`: all five Windows jobs remain successful.
+Prior Codex review is complete with no findings and zero unresolved threads.
+No further implementation/review cycle is needed for unchanged W5 code.
+
+No remaining work was identified within W5's required acceptance scope. The
+four inherited baseline production/reference failures and separately recorded
+current-dependency failures remain visible and belong to their owning TMF/FM
+reference or package workstreams; they are not newly fixed or accepted as
+compatible by this QGIS result. #16/#17/#23 retain feature implementations;
+#22 has not been started. Existing deferred/graph gates remain unchanged.

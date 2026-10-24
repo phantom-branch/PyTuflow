@@ -20,6 +20,19 @@ with (Path(__file__).parent / 'data' / 'data_type_name_alternatives.json').open(
 
 DEFAULT_REFERENCE_TIME = datetime(1990, 1, 1, tzinfo=timezone.utc)
 
+_TIME_UNIT_LABELS = {
+    alias: unit
+    for unit, aliases in {
+        'us': ('us', 'microsecond', 'microseconds'),
+        'ms': ('ms', 'millisecond', 'milliseconds'),
+        's': ('s', 'sec', 'secs', 'second', 'seconds'),
+        'm': ('m', 'min', 'mins', 'minute', 'minutes'),
+        'h': ('h', 'hr', 'hrs', 'hour', 'hours'),
+        'd': ('d', 'day', 'days'),
+    }.items()
+    for alias in aliases
+}
+
 
 class Output(ABC):
     """Base class for all TUFLOW output classes. This class should not be initialised directly."""
@@ -99,10 +112,15 @@ class Output(ABC):
             if isinstance(row['dt'], tuple):
                 return np.array(row['dt']) / 3600.
             else:
-                if np.isclose(row['start'], row['end'], rtol=0., atol=0.001).all():
+                # Static results use start == end and scalar dt == 0. Temporal
+                # singletons use an explicit tuple of saved times, above.
+                if row['start'] == row['end']:
                     return np.array([])
                 a = np.arange(row['start'], row['end'], row['dt'] / 3600.)
-                if not np.isclose(a[-1], row['end'], rtol=0., atol=0.001):
+                # Keep the tolerance for rounded metadata, but never let it
+                # swallow a whole interval on short/subsecond axes.
+                end_tolerance = min(0.001, row['dt'] / 7200.)
+                if not np.isclose(a[-1], row['end'], rtol=0., atol=end_tolerance):
                     a = np.append(a, np.reshape(row['end'], (1,)), axis=0)
                 return a[a <= row['end']]
 
@@ -110,7 +128,7 @@ class Output(ABC):
         ctx, _ = self._filter(filter_by)
         if ctx.empty:
             return []
-        if not np.intersect1d(['start', 'end', 'dt'], ctx.columns).all():
+        if not {'start', 'end', 'dt'}.issubset(ctx.columns):
             return []
 
         # generate a lit of times based on the unique start, end and dt values
@@ -329,10 +347,14 @@ class Output(ABC):
         pass
 
     @staticmethod
-    def _parse_time_units_string(string: str, regex: str, fmt: list[str] | str) -> tuple[datetime, str]:
+    def _parse_time_units_string(string: str, regex: str | None = None,
+                                 fmt: list[str] | str | None = None) -> tuple[datetime, str]:
         """Parses a string containing the time units and reference time
         e.g. hours since 1990-01-01 00:00:00
-        Returns the reference time as a datetime object, the time units as a single character.
+        Returns the reference time as a datetime object and a normalised unit
+        label. Without an explicit regex/format, require a supported fixed time
+        unit and a complete ISO reference, if supplied. Existing readers that
+        supply regex/format retain their default-reference fallback.
 
         Parameters
         ----------
@@ -348,16 +370,32 @@ class Output(ABC):
         tuple[datetime, str]
             Reference time and time units.
         """
-        if 'hour' in string:
-            u = 'h'
-        elif 'minute' in string:
-            u = 'm'
-        elif 'second' in string:
-            u = 's'
-        elif 'since' in string:
-            u = string.split(' ')[0]
-        else:
-            u = string
+        token = string.strip().split()[0].lower() if string.strip() else ''
+        u = _TIME_UNIT_LABELS.get(token, token)
+        if regex is None:
+            match = re.fullmatch(r'\s*([a-z]+)(?:\s+since\s+(.+?))?\s*', string, re.IGNORECASE)
+            if match is None or token not in _TIME_UNIT_LABELS:
+                raise ValueError(f'Unsupported time units: {string!r}')
+            reference = match.group(2)
+            if reference is None:
+                return DEFAULT_REFERENCE_TIME, u
+            reference = re.sub(r'\s*(?:UTC|Z)$', '+00:00', reference, flags=re.IGNORECASE)
+            reference = re.sub(r'\s+([+-]\d{2}(?::?\d{2})?)$', r'\1', reference)
+            if not re.fullmatch(
+                    r'\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d{1,6})?)?'
+                    r'(?:[+-]\d{2}(?::?\d{2})?)?)?', reference):
+                raise ValueError(f'Invalid reference time in units: {string!r}')
+            offset = re.search(r'[T ].*[+-](\d{2})(?::?(\d{2}))?$', reference)
+            if offset and (int(offset.group(1)) >= 24 or int(offset.group(2) or 0) >= 60):
+                raise ValueError(f'Invalid reference time offset in units: {string!r}')
+            try:
+                dt = datetime.fromisoformat(reference)
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+                return dt.astimezone(timezone.utc), u
+            except (ValueError, OverflowError) as exc:
+                raise ValueError(f'Invalid reference time in units: {string!r}') from exc
+
         time = re.findall(regex, string)
         if time:
             if isinstance(fmt, str):
@@ -379,33 +417,45 @@ class Output(ABC):
             method: str = 'previous',
             tol: float = 0.001
     ) -> int:
-        """Returns the index of the closest time in the provided timesteps.
-        It will try and find any matching time within the given tolerance, otherwise will return the index of the
-        previous or next time depending on the method.
+        """Select a saved sample from an ascending time axis.
+
+        The first sample within ``tol`` wins, then ``previous`` selects the
+        preceding sample, ``next`` the following sample, and ``closest`` the
+        nearest (first on a tie). Requests outside the axis clamp to its ends.
+        ``tol`` is in relative hours for both numeric and datetime requests;
+        the default 0.001 hours is 3.6 seconds. Naive datetimes mean UTC.
+        An empty axis has no selectable sample and raises ValueError.
         """
+        if len(timesteps) == 0:
+            raise ValueError('Cannot select a sample from an empty time axis.')
         if isinstance(time, datetime):
             if time.tzinfo is None:
                 time = time.replace(tzinfo=timezone.utc)
-            a = np.array([(x - time).total_seconds() for x in timesteps])
+            a = np.array([((x if x.tzinfo is not None else x.replace(tzinfo=timezone.utc)) - time)
+                          .total_seconds() / 3600. for x in timesteps])
+            scale = max(1., float(np.abs(a).max()))
         else:
             a = np.array([x - time for x in timesteps])
+            scale = max(1., abs(time), float(np.abs(timesteps).max()))
 
-        isclose = np.isclose(a, 0, rtol=0., atol=tol)
+        # Subtraction can put an exact tolerance-boundary value a few ulps
+        # outside the interval in one representation but not the other.
+        isclose = np.isclose(a, 0, rtol=0., atol=tol + 4 * np.finfo(float).eps * scale)
         if isclose.any():
             return int(np.argwhere(isclose).flatten()[0])
 
         if method == 'previous':
-            prev = a > 0
+            prev = a < 0
             if prev.any():
-                return np.flatnonzero(prev)[0]
-            else:
-                return len(timesteps) - 1
-        elif method == 'next':
-            next_ = a < 0
-            if next_.any():
-                return np.flatnonzero(next_)[-1]
+                return int(np.flatnonzero(prev)[-1])
             else:
                 return 0
+        elif method == 'next':
+            next_ = a > 0
+            if next_.any():
+                return int(np.flatnonzero(next_)[0])
+            else:
+                return len(timesteps) - 1
         elif method == 'closest':
             return int(np.abs(a).argmin())
 
