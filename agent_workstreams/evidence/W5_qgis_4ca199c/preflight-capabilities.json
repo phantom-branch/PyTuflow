@@ -1,0 +1,109 @@
+{
+  "available": {
+    "numpy": true,
+    "pandas": true,
+    "packaging": true,
+    "dbfread": true,
+    "pyproj": true,
+    "h5py": true,
+    "pyvista": true,
+    "vtk": true,
+    "geopandas": true,
+    "shapely": true,
+    "netCDF4": true,
+    "rasterio": true,
+    "pygltflib": true,
+    "pyogrio": true,
+    "osgeo.ogr": true,
+    "qgis": true
+  },
+  "details": {
+    "numpy": {
+      "origin": "<qgis-runtime>\\apps\\Python312\\Lib\\site-packages\\numpy\\__init__.py"
+    },
+    "pandas": {
+      "origin": "<qgis-runtime>\\apps\\Python312\\Lib\\site-packages\\pandas\\__init__.py"
+    },
+    "packaging": {
+      "origin": "<qgis-runtime>\\apps\\Python312\\Lib\\site-packages\\packaging\\__init__.py"
+    },
+    "dbfread": {
+      "origin": "<extra-dependencies>\\dbfread\\__init__.py"
+    },
+    "pyproj": {
+      "origin": "<qgis-runtime>\\apps\\Python312\\Lib\\site-packages\\pyproj\\__init__.py"
+    },
+    "h5py": {
+      "origin": "<compatible-h5py>\\h5py\\__init__.py"
+    },
+    "pyvista": {
+      "origin": "<extra-dependencies>\\pyvista\\__init__.py"
+    },
+    "vtk": {
+      "origin": "<extra-dependencies>\\vtk.py"
+    },
+    "geopandas": {
+      "origin": "<qgis-runtime>\\apps\\Python312\\Lib\\site-packages\\geopandas\\__init__.py"
+    },
+    "shapely": {
+      "origin": "<qgis-runtime>\\apps\\Python312\\Lib\\site-packages\\shapely\\__init__.py"
+    },
+    "netCDF4": {
+      "origin": "<extra-dependencies>\\netCDF4\\__init__.py"
+    },
+    "rasterio": {
+      "origin": "<extra-dependencies>\\rasterio\\__init__.py"
+    },
+    "pygltflib": {
+      "origin": "<extra-dependencies>\\pygltflib\\__init__.py"
+    },
+    "pyogrio": {
+      "origin": "<qgis-runtime>\\apps\\Python312\\Lib\\site-packages\\pyogrio\\__init__.py"
+    },
+    "osgeo.ogr": {
+      "origin": "<qgis-runtime>\\apps\\Python312\\Lib\\site-packages\\osgeo\\ogr.py"
+    },
+    "qgis": {
+      "version": "4.2.3-Bel\u00e9m do Par\u00e1",
+      "providers": [
+        "OAPIF",
+        "WFS",
+        "arcgisfeatureserver",
+        "arcgisimageserver",
+        "arcgismapserver",
+        "arcgisvectortileservice",
+        "cesiumtiles",
+        "copc",
+        "delimitedtext",
+        "ept",
+        "esrii3s",
+        "gdal",
+        "gpx",
+        "hana",
+        "mbtilesvectortiles",
+        "mdal",
+        "memory",
+        "mesh_memory",
+        "mssql",
+        "ogr",
+        "oracle",
+        "pdal",
+        "postgres",
+        "postgresraster",
+        "quantizedmesh",
+        "sensorthings",
+        "spatialite",
+        "tiledscene",
+        "vectortile",
+        "virtual",
+        "virtualraster",
+        "vpc",
+        "vtpkvectortiles",
+        "wcs",
+        "wms",
+        "xyzvectortiles"
+      ]
+    }
+  },
+  "missing": []
+}

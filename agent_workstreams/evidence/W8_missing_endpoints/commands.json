@@ -1,0 +1,27 @@
+{
+  "runtime": "Installed OSGeo4W python-qgis.bat + local runpy bootstrap inserting compatible target dependencies, then pytest. Bundled Qt/GDAL/NumPy/pandas untouched.",
+  "candidate_sha": "37fc565218775a06252252a15cdb6e79e4e28c3c",
+  "pre_fix_sha": "26c6bad101811af2945ce7558e69bb6c1c37685e",
+  "baseline_sha": "e162c04330d24c37bee3ade94479cc4602651060",
+  "candidate": "QGIS_RUN -m pytest -q tests/test_numerical_depth_averaging.py tests/test_numerical_mesh_reductions.py tests/test_numerical_fv_reader.py tests/test_numerical_qgis_reductions.py tests/test_map_output.py tests/test_map_output_pymesh.py --junitxml=REPORTS/candidate.xml",
+  "pre_fix_and_baseline": "QGIS_RUN -m pytest -q tests/test_numerical_depth_averaging.py tests/test_numerical_fv_reader.py -k \"missing_endpoint or endpoint_single_layer\" --junitxml=REPORTS/<role>.xml",
+  "baseline_existing_reused": "QGIS_RUN -m pytest -q tests/test_map_output.py tests/test_map_output_pymesh.py --junitxml=REPORTS/baseline-existing.xml",
+  "raw_exit_codes": {
+    "candidate": 0,
+    "pre_fix_reproduction": 1,
+    "baseline_endpoints": 1,
+    "baseline_existing": 0
+  },
+  "test_harness": "Only new test modules copied into separate pre-fix/baseline normal checkouts; no production file changes. Test-module hashes and git/runtime production hashes in source-provenance.json.",
+  "path_aliases": {
+    "<candidate>": "candidate normal checkout or its repository-relative runtime files",
+    "<pre-fix>": "separate normal checkout at pre-fix SHA",
+    "<baseline>": "separate normal checkout at unchanged baseline SHA",
+    "<qgis-runtime>": "installed QGIS/OSGeo4W root",
+    "<pytest-temp>": "pytest generated temporary root",
+    "<extra-dependencies>": "compatible additive --target packages",
+    "<compatible-h5py>": "separate h5py 3.14.0 additive target",
+    "<reports>": "this execution raw report root",
+    "<earlier-reports>": "earlier valid same-runtime report root"
+  }
+}
