@@ -212,6 +212,10 @@ class ControlFileRunState(RunState, ControlFile):
                 input_run_state = batch_factory(inp, self)
             if append_recorder is not None and append_context_state.get('_batch_append_indexes_safe', True):
                 if not append_recorder.append(input_run_state):
+                    # The failing append already used the ordinary live path.
+                    # Retire locally too: later inputs must not pay for trust
+                    # proofs after the shared batch recorder is disabled.
                     append_context_state['_batch_append_indexes_safe'] = False
+                    append_recorder = None
             else:
                 self.inputs.append(input_run_state)

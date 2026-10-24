@@ -1058,3 +1058,156 @@ def test_later_declaration_scope_callback_keeps_earlier_read_append_history_live
         [(0, 0), (0, 0), (2, 2)], [(0, 0), (0, 0), (2, 2)],
     ]
     assert projections[0] == projections[1]
+
+
+def test_append_failure_retires_local_recorder_before_next_input(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """An append fallback must not repeat guards for subsequent inputs."""
+    import pytuflow._tmf.batch_dependencies as dependencies
+
+    source = tmp_path / 'recorder_fallback.tcf'
+    source.write_text(
+        ''.join(f'Set Code == {index}\n' for index in range(8)), encoding='utf-8',
+    )
+    model = TCF(source)
+    original_append = _ContextAppendRecorder.append
+    original_proof = dependencies._batch_append_context_is_trusted
+    attempts = []
+    proofs = []
+
+    def force_fallback(self, inp):
+        attempts.append(inp.uuid)
+        if len(attempts) == 1:
+            # Retain the existing recorder's ordinary-append fallback.
+            self._active = False
+        return original_append(self, inp)
+
+    def count_proof(ctx):
+        proofs.append(ctx)
+        return original_proof(ctx)
+
+    monkeypatch.setattr(_ContextAppendRecorder, 'append', force_fallback)
+    monkeypatch.setattr(dependencies, '_batch_append_context_is_trusted', count_proof)
+
+    context = BatchContext('-s1 DEV', config=model.config)
+    result = model.context(context=context, file_resolution='deferred')
+    assert context._batch_append_indexes_safe is False
+    assert len(attempts) == 1
+    # Setup and the first input; no proof for later ordinary appends.
+    assert proofs == [context, context]
+
+    ordinary_context = BatchContext('-s1 DEV', config=model.config)
+    ordinary_context._batch_append_indexes_safe = False
+    ordinary = model.context(context=ordinary_context, file_resolution='deferred')
+    assert result.inputs._indexes == ordinary.inputs._indexes
+    assert [(x.uuid, str(x)) for x in result.inputs] == [
+        (x.uuid, str(x)) for x in ordinary.inputs
+    ]
+
+
+@pytest.mark.parametrize('count', [5, 41])
+def test_full_construction_proof_cost_includes_inactive_inputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, count: int,
+) -> None:
+    """Measure complete-path guard calls, not only recorder UUID reads."""
+    import pytuflow._tmf.batch_dependencies as dependencies
+
+    source = tmp_path / 'complete_proof.tcf'
+    source.write_text(
+        ''.join(f'Set Code == {index}\n' for index in range(count)),
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    inactive = set(range(4, count, 5))
+    for index in inactive:
+        model.inputs[index].scope = [('SCENARIO', 'OMIT')]
+
+    calls = {'context': 0, 'scope': 0, 'sources': 0, 'append': 0}
+    proof = dependencies._batch_append_context_is_trusted
+    scope = dependencies._batch_append_input_scope_is_trusted
+    sources = dependencies._batch_append_scope_sources_are_trusted
+    append = _ContextAppendRecorder.append
+
+    def count_context(ctx):
+        calls['context'] += 1
+        return proof(ctx)
+
+    def count_scope(inp, known):
+        calls['scope'] += 1
+        return scope(inp, known)
+
+    def count_sources(namespace, known):
+        calls['sources'] += 1
+        return sources(namespace, known)
+
+    def count_append(self, inp):
+        calls['append'] += 1
+        return append(self, inp)
+
+    monkeypatch.setattr(dependencies, '_batch_append_context_is_trusted', count_context)
+    monkeypatch.setattr(dependencies, '_batch_append_input_scope_is_trusted', count_scope)
+    monkeypatch.setattr(dependencies, '_batch_append_scope_sources_are_trusted', count_sources)
+    monkeypatch.setattr(_ContextAppendRecorder, 'append', count_append)
+
+    context = BatchContext('-s1 DEV', config=model.config)
+    result = model.context(context=context, file_resolution='deferred')
+    assert context._batch_append_indexes_safe is True
+    assert calls == {
+        'context': count + 1,
+        'scope': count,
+        'sources': 1,
+        'append': count - len(inactive),
+    }
+    ordinary_context = BatchContext('-s1 DEV', config=model.config)
+    ordinary_context._batch_append_indexes_safe = False
+    ordinary = model.context(context=ordinary_context, file_resolution='deferred')
+    assert result.inputs._indexes == ordinary.inputs._indexes
+    assert [(x.uuid, str(x)) for x in result.inputs] == [
+        (x.uuid, str(x)) for x in ordinary.inputs
+    ]
+
+
+def test_early_child_retirement_does_not_prove_remaining_parent_inputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Nested controls retire the parent recorder but may create their own."""
+    import pytuflow._tmf.batch_dependencies as dependencies
+
+    (tmp_path / 'geometry.tgc').write_text('Set Code == 1\n', encoding='utf-8')
+    source = tmp_path / 'early_child.tcf'
+    source.write_text(
+        'Geometry Control File == geometry.tgc\n'
+        + ''.join(f'Set Code == {index}\n' for index in range(35)),
+        encoding='utf-8',
+    )
+    model = TCF(source)
+    proof = dependencies._batch_append_context_is_trusted
+    append = _ContextAppendRecorder.append
+    proof_calls = []
+    appended = []
+
+    def count_context(ctx):
+        proof_calls.append(ctx)
+        return proof(ctx)
+
+    def count_append(self, inp):
+        appended.append(inp)
+        return append(self, inp)
+
+    monkeypatch.setattr(dependencies, '_batch_append_context_is_trusted', count_context)
+    monkeypatch.setattr(_ContextAppendRecorder, 'append', count_append)
+    context = BatchContext('-s1 DEV', config=model.config)
+    result = model.context(context=context, file_resolution='deferred')
+    child = result.tgc()
+    assert len(proof_calls) == 4  # parent setup/input, child setup/input
+    assert appended == [child.inputs[0]]
+
+    ordinary_context = BatchContext('-s1 DEV', config=model.config)
+    ordinary_context._batch_append_indexes_safe = False
+    ordinary = model.context(context=ordinary_context, file_resolution='deferred')
+    assert result.inputs._indexes == ordinary.inputs._indexes
+    assert child.inputs._indexes == ordinary.tgc().inputs._indexes
+    assert [(x.uuid, str(x)) for x in result.inputs] == [
+        (x.uuid, str(x)) for x in ordinary.inputs
+    ]

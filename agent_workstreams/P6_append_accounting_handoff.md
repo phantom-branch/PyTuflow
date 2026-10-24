@@ -292,3 +292,45 @@ tests** with host process visibility. Production/test compilation and
 this bounded public callback/data seam. Updated-head hosted Windows checks and
 refreshed Codex review are required for this correction; native validation is
 still outstanding and the PR remains draft.
+
+
+### M480 native evidence and bounded fallback correction — 24 October 2026
+
+The owner's matched native Windows/SMB M480 campaign completed four rotated
+trials for each frozen revision and passed each revision's acceptance gates,
+with unchanged sources, dependencies and inputs. Frozen ryan-tools executable:
+f1f7958b79f3ffe84ba8ac0b04658f27c311460a; parser baseline:
+e162c04330d24c37bee3ade94479cc4602651060; reviewed candidate:
+fa8169046dd0083f6c0ecbd6aee604dbe92a5d7b; Python 3.14.6.
+The workload yielded 480 runs, 12,480 diagnostic identities and 49 inventory
+files; public preflight checked 50 files. Cross-revision semantic hashes
+matched, but complete successful identity sets were not retained for independent
+retrospective comparison. Graph-off medians: 44.636 s baseline, 45.533 s
+candidate (2.01% slower); graph-on: 43.718 s versus 45.364 s (3.76% slower).
+Eager/deferred controls moved in the opposite direction. **No demonstrated
+speedup; causal attribution inconclusive.** The unmatched published 8,160/158
+result is not a comparator for this workload. Raw reports remain private.
+
+[Bounded cost review](https://github.com/phantom-branch/PyTuflow/pull/14#issuecomment-6382627184)
+found that a recorder's failed append used ordinary fallback but left the
+loop-local recorder non-None. Later inputs could continue expensive context/
+scope/constructor proofs despite ordinary append being mandatory. The bounded
+fix clears the local recorder immediately following a failed append, retaining
+the existing shared safe-flag retirement. The failing input is not appended
+a second time.
+
+Added deterministic complete-construction work-count regressions for forced
+fallback, selected/inactive input traversal and early nested child retirement,
+with index-history and input-identity comparison against ordinary append.
+These supplement the direct 500-append recorder-only UUID-count test, which
+does not include the surrounding safety proofs. Preserve late callback
+detection for *every visited input* while eligible, nested retirement before
+entering a child, and all existing callback and scope-getter access counts.
+
+Representation-only callback lookup restructuring remains a possible separate
+experiment, not implemented. No cached trust across inputs, active-batch
+invalidation redesign, new consumer behaviour or mixed parser branch is
+authorised. The native M480 data applies only to the *previous* PR #14 source.
+Require focused parser validation, all three hosted Windows gates and refreshed
+Codex review on any new code head before readiness. This correction does not
+authorise another full native benchmark.
