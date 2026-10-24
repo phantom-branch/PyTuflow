@@ -10,7 +10,7 @@ import importlib
 import importlib.metadata
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePath
 import platform
 import re
 import subprocess
@@ -105,6 +105,25 @@ def skip_contract(available: dict) -> dict[str, str]:
     return allowed
 
 
+def normalise_failure_signature(reason: str, source: PurePath, temporary: PurePath) -> str:
+    """Remove only known per-run paths, preserving diagnostic path differences.
+
+    Windows may expand a short username such as RUNNER~1 in Path.resolve().
+    Relative diagnostics may also contain that alias without the original
+    absolute prefix. Replace the exact generated temporary basename only at
+    path-component boundaries; retain aliases, relative depth and filenames.
+    """
+    signature = reason
+    for path, replacement in ((source, "<snapshot>"), (temporary, "<temporary>")):
+        forms = {str(path), path.as_posix(), str(path).replace("\\", "\\\\")}
+        for spelling in sorted(forms, key=len, reverse=True):
+            signature = signature.replace(spelling, replacement)
+    if temporary.name:
+        component = rf"(?<=[\\/]){re.escape(temporary.name)}(?=[\\/])"
+        signature = re.sub(component, "<temporary-name>", signature)
+    return re.sub(r"0x[0-9a-fA-F]+", "<address>", signature)
+
+
 class Recorder:
     def __init__(self, report: dict, source: Path, cache: Path):
         self.report = report
@@ -135,12 +154,7 @@ class Recorder:
         if event.failed:
             phase["failure_type"] = type(call.excinfo.value).__name__ if call.excinfo else "UnknownFailure"
             phase["reason"] = str(call.excinfo.value) if call.excinfo else str(event.longrepr)
-            signature = phase["reason"]
-            for path, replacement in ((self.source, "<snapshot>"), (self.cache.parent, "<temporary>")):
-                forms = {str(path), path.as_posix(), str(path).replace("\\", "\\\\")}
-                for spelling in sorted(forms, key=len, reverse=True):
-                    signature = signature.replace(spelling, replacement)
-            signature = re.sub(r"0x[0-9a-fA-F]+", "<address>", signature)
+            signature = normalise_failure_signature(phase["reason"], self.source, self.cache.parent)
             record.update(
                 outcome="failed" if event.when == "call" else "error",
                 reason=phase["reason"], failure_type=phase["failure_type"],

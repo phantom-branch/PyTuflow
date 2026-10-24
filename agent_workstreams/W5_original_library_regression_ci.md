@@ -22,6 +22,17 @@ Python 3.12.14 on Linux; dependency baseline taken from the recorded `requiremen
 
 The newly exposed FM failure is `tests/fm_lib/integration_tests/test_conversion.py::TestConversion::test_convert_river_flood_relief_arch`: generated ECF includes the ORIFICE network directive absent from the reference ECF. Both reference and generated GeoPackages contain that layer, suggesting an incomplete reference ECF. No fixture has been changed to make this pass.
 
+### First native diagnostic and infrastructure corrections
+
+Implementation `d4bebaef7054db5efa11548fd80710c9b7fb6670` ran in [Actions run 40073567141](https://github.com/phantom-branch/PyTuflow/actions/runs/40073567141). Windows 3.12 and 3.14 infrastructure checks passed (74 tests plus 10 subtests), and the Windows 3.14 installed wheel passed all 23 smoke checks. Complete original-suite reports were generated independently for upstream, fork baseline and candidate.
+
+That diagnostic exposed two infrastructure issues, which are corrected for the next native checkpoint:
+
+- The hosted Python 3.12 interpreter includes pipx, requiring `packaging>=26.3`; the copied test-environment pin of 26.2 made `pip check` fail. Only the new CI pin moves to 26.3; package metadata is unchanged.
+- Default Windows temporary paths used `RUNNER~1`, while legacy tests expanded that alias to `runneradmin`. This introduced path-comparison failures and variable signature text. Source snapshots now use the explicit report parent under `RUNNER_TEMP`. Signatures also remove the exact generated temporary directory component, while retaining filename, relative-depth, alias and case differences. Raw diagnostic reports remain unchanged.
+
+The default QGIS boundary now says `not_selected`, without asserting that QGIS is absent from an unprobed interpreter. The refined infrastructure suite passes 81 tests plus 10 subtests locally. Native acceptance is still pending for these refinements; diagnostic replay is not labelled as native acceptance.
+
 ### Ownership and retained boundaries
 
 #19 owns `ci/`, its new general workflow, `tests/ci`, and the two shared FM test helpers. #16/#17/#23 retain their production fixes and dedicated feature tests. #22 retains package metadata, runtime import/logging/typing and root README; it has not been started. Existing deferred/graph workflow files and comparator semantics remain unchanged. No solver, private model, NAS benchmark, merge or release is part of this work.

@@ -1,8 +1,9 @@
-# W5 test environment, taken from requirements-dev.txt at e162c04330d24c37.
+# W5 test environment, based on requirements-dev.txt at e162c04330d24c37.
 # These are CI constraints, not changes to the public dependency contract.
+# packaging 26.3 also satisfies pipx on the hosted Python 3.12 interpreter.
 numpy==2.4.4
 pandas==3.0.3
-packaging==26.2
+packaging==26.3
 dbfread==2.0.7
 pyproj==3.7.2
 h5py==3.16.0

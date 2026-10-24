@@ -174,6 +174,52 @@ class RegressionComparisonTests(unittest.TestCase):
         }))
         self.assert_failed(baseline, candidate, "lacks a capability skip reason")
 
+    def test_optional_unselected_group_does_not_claim_backend_unavailable(self):
+        baseline, candidate = self.pair()
+        unselected = {
+            "required": False, "status": "not_selected", "reason": "Select the separate QGIS job",
+            "collected": [], "tests": {}, "collection_errors": [], "pytest_exit_code": None,
+            "capabilities": {}, "required_capabilities": ["qgis"],
+        }
+        for path in (baseline, candidate):
+            self.modify(path, lambda report: report["groups"].update(qgis=unselected))
+        result = compare_reports(baseline, candidate)
+        self.assertEqual(result["status"], "passed", result)
+        self.assertEqual(result["skipped_groups"], [{
+            "group": "qgis", "status": "not_selected", "reason": "Select the separate QGIS job",
+        }])
+
+    def test_required_group_cannot_be_marked_unselected(self):
+        baseline, candidate = self.pair()
+        self.modify(candidate, lambda report: report["groups"]["tmf"].update(
+            status="not_selected", reason="Select a separate job", capabilities={},
+            collected=[], tests={}, pytest_exit_code=None,
+        ))
+        self.assert_failed(baseline, candidate, "Required group tmf was not selected")
+
+    def test_unselected_optional_group_cannot_assert_backend_availability(self):
+        baseline, candidate = self.pair()
+        self.modify(candidate, lambda report: report["groups"].update(qgis={
+            "required": False, "status": "not_selected", "reason": "Select separate QGIS job",
+            "collected": [], "tests": {}, "collection_errors": [], "pytest_exit_code": None,
+            "capabilities": {"qgis": False}, "required_capabilities": ["qgis"],
+        }))
+        self.assert_failed(baseline, candidate, "must not claim backend availability")
+
+    def test_changed_optional_execution_status_is_visible(self):
+        baseline, candidate = self.pair()
+        common = {
+            "required": False, "reason": "Select separate QGIS job", "collected": [],
+            "tests": {}, "collection_errors": [], "pytest_exit_code": None, "required_capabilities": ["qgis"],
+        }
+        self.modify(baseline, lambda report: report["groups"].update(qgis={
+            **common, "status": "not_selected", "capabilities": {},
+        }))
+        self.modify(candidate, lambda report: report["groups"].update(qgis={
+            **common, "status": "capability_unavailable", "capabilities": {"qgis": False},
+        }))
+        self.assert_failed(baseline, candidate, "Capability execution status changed")
+
     def test_collection_error_fails_even_with_other_tests_executed(self):
         baseline, candidate = self.pair()
         self.modify(candidate, lambda report: report["groups"]["tmf"].update(collection_errors=["import qgis failed"]))

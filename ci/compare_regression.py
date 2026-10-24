@@ -97,17 +97,26 @@ def _validate_group(name: str, value: object, report_path: Path) -> dict:
     group = _mapping(value, f"Group {name}")
     _require(type(group.get("required")) is bool, f"Group {name} lacks a required flag")
     capabilities = _mapping(group.get("capabilities"), f"Group {name} capabilities")
-    _require(bool(capabilities) and all(isinstance(key, str) and type(item) is bool for key, item in capabilities.items()),
-             f"Group {name} capabilities must map names to booleans")
     required_capabilities = _strings(group.get("required_capabilities"),
                                      f"Group {name} required_capabilities", nonempty=True)
-    _require(set(required_capabilities) <= set(capabilities),
-             f"Group {name} lacks a required capability result")
     collected = _strings(group.get("collected"), f"Group {name} collected IDs")
     tests = _mapping(group.get("tests"), f"Group {name} tests")
     collection_errors = group.get("collection_errors")
     _require(isinstance(collection_errors, list), f"Group {name} lacks collection_errors")
     _require(not collection_errors, f"Group {name} has collection errors: {collection_errors}")
+    if group.get("status") == "not_selected":
+        _require(not group["required"], f"Required group {name} was not selected")
+        _require(isinstance(group.get("reason"), str) and bool(group["reason"].strip()),
+                 f"Optional group {name} lacks a selection boundary reason")
+        _require(not capabilities, f"Unselected group {name} must not claim backend availability")
+        _require(not collected and not tests and group.get("pytest_exit_code") is None
+                 and group.get("process_exit_code") is None,
+                 f"Unselected group {name} has inconsistent execution evidence")
+        return group
+    _require(bool(capabilities) and all(isinstance(key, str) and type(item) is bool for key, item in capabilities.items()),
+             f"Group {name} capabilities must map names to booleans")
+    _require(set(required_capabilities) <= set(capabilities),
+             f"Group {name} lacks a required capability result")
     if group.get("status") == "capability_unavailable" and not group["required"]:
         _require(isinstance(group.get("reason"), str) and bool(group["reason"].strip()),
                  f"Optional group {name} lacks a capability skip reason")
@@ -259,8 +268,8 @@ def compare_reports(baseline_path: Path, candidate_path: Path, required_groups: 
         current = candidate["groups"].get(name)
         if current is None:
             continue
-        if current["status"] == "capability_unavailable":
-            result["skipped_groups"].append({"group": name, "reason": current["reason"]})
+        if current["status"] in {"capability_unavailable", "not_selected"}:
+            result["skipped_groups"].append({"group": name, "status": current["status"], "reason": current["reason"]})
         if base_group.get("capabilities", {}) != current.get("capabilities", {}):
             problems.append(f"Capability set changed for group {name}")
         if set(base_group["required_capabilities"]) != set(current["required_capabilities"]):

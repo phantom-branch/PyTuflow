@@ -69,6 +69,8 @@ comparison. No entire results group is skipped.
 The default standalone job explicitly excludes QGIS integration. This is a
 declared job boundary, not evidence that QGIS tests passed. It appears in every
 report with its reason. Selecting `--group qgis` changes it to a required group;
+a standalone report uses `not_selected`, without claiming the interpreter lacks
+QGIS. In the selected QGIS group,
 a missing runtime/provider, empty collection or absent JUnit is an error.
 
 ## Fixture isolation
@@ -78,6 +80,13 @@ public data are copied, because legacy TMF tests write beside `__file__`, and FM
 conversion deletes/recreates `outputs_tmp`. The checkout and committed reference
 data remain untouched. The runner fingerprints HEAD, tracked changes and
 untracked file contents before and after execution.
+
+Snapshots are created beside the explicitly supplied report folder (under
+`RUNNER_TEMP` in Actions). This avoids the hosted Windows `%TEMP%` short-name
+alias `RUNNER~1`, which creates artificial differences in legacy tests that
+compare lexical paths with expanded paths. Failure signatures remove only
+known snapshot locations and the exact generated temporary directory component;
+model filenames, relative path depth, failure category and phase remain checked.
 
 An opt-in pytest fixture redirects only the two project `CACHE_ROOT` values.
 The three inspected project CLI child-process sites are wrapped with
@@ -92,7 +101,11 @@ Use an already installed interpreter; the hosted workflow supplies separate
 Python 3.12 and 3.14 jobs. The dependency baseline in
 `ci/requirements-regression.txt` comes from the recorded fork's
 `requirements-dev.txt`; these are **test environment pins**, not a production
-dependency change. The third Windows job installs current dependencies allowed
+dependency change. `packaging` uses 26.3 instead of that file's 26.2 because the
+hosted Python 3.12 interpreter also includes pipx, which requires 26.3. This
+keeps the complete interpreter dependency check valid without a virtual
+environment or a package-metadata change. The third Windows job installs current
+dependencies allowed
 by the existing package metadata, then compares all three sources within that
 same environment. A lowest-supported dependency job is deferred to #22 until
 the package's declared Python/dependency lower bounds are made coherent.

@@ -5,7 +5,7 @@ import hashlib
 import io
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import subprocess
 import sys
 import tempfile
@@ -13,6 +13,43 @@ import unittest
 from unittest.mock import patch
 
 from ci import run_regression
+from ci.regression_probe import normalise_failure_signature
+
+
+class FailureSignatureTests(unittest.TestCase):
+    def signature(self, text: str, temporary_name: str = "pytuflow-tmf-aaaa1111") -> str:
+        temporary = PureWindowsPath("C:/Users/RUNNER~1/AppData/Local/Temp") / temporary_name
+        return normalise_failure_signature(text, temporary / "source", temporary)
+
+    def test_windows_short_long_and_escaped_paths_have_stable_run_identity(self):
+        template = (
+            "assert WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/{name}/source/model/flow.csv') "
+            "== WindowsPath('C:/Users/RUNNER~1/AppData/Local/Temp/{name}/source/model/flow.csv')\n"
+            "canonical='C:\\\\Users\\\\runneradmin\\\\AppData\\\\Local\\\\Temp\\\\{name}\\\\source\\\\model\\\\flow.csv'"
+        )
+        left = self.signature(template.format(name="pytuflow-tmf-aaaa1111"))
+        right = self.signature(template.format(name="pytuflow-tmf-bbbb2222"), "pytuflow-tmf-bbbb2222")
+        self.assertEqual(left, right)
+        self.assertIn("C:/Users/runneradmin", left)
+        self.assertIn("<snapshot>/model/flow.csv", left)
+        self.assertIn("<temporary-name>", left)
+
+    def test_relative_depth_alias_and_model_filename_remain_significant(self):
+        path = r"Read File == ..\..\RUNNER~1\AppData\Local\Temp\pytuflow-tmf-aaaa1111\source\model\flow.csv"
+        result = self.signature(path)
+        self.assertIn(r"..\..\RUNNER~1", result)
+        self.assertIn(r"<temporary-name>\source\model\flow.csv", result)
+        self.assertNotEqual(result, self.signature(path.replace("flow.csv", "depth.csv")))
+        self.assertNotEqual(result, self.signature(path.replace(r"..\..\RUNNER~1", r"..\..\..\RUNNER~1")))
+        self.assertNotEqual(result, self.signature(path.replace("RUNNER~1", "runneradmin")))
+
+    def test_only_exact_generated_directory_components_are_replaced(self):
+        text = (
+            "C:/model/not-pytuflow-tmf-aaaa1111/flow.csv; "
+            "C:/model/pytuflow-tmf-aaaa1111-extra/flow.csv; "
+            "C:/model/pytuflow-tmf-aaaa1111.csv; depth=0.75"
+        )
+        self.assertEqual(self.signature(text), text)
 
 
 class RegressionRunnerTests(unittest.TestCase):

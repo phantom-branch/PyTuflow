@@ -104,7 +104,9 @@ def main() -> int:
     failed = False
     for group in groups:
         print(f"{args.label}: {group} at {revision}", flush=True)
-        with tempfile.TemporaryDirectory(prefix=f"pytuflow-{group}-") as directory:
+        # Use the explicit report location, not Windows' default %TEMP%, whose
+        # RUNNER~1 alias changes legacy lexical-vs-canonical path assertions.
+        with tempfile.TemporaryDirectory(prefix=f"pytuflow-{group}-", dir=output.parent) as directory:
             temporary = Path(directory)
             checkout = temporary / "source"
             overlays = snapshot(source, revision, checkout, harness)
@@ -151,9 +153,9 @@ def main() -> int:
         (output / "report.json").write_text(json.dumps(report, indent=2, sort_keys=True), encoding="utf-8")
     if "qgis" not in groups:
         report["groups"]["qgis"] = {
-            "required": False, "status": "capability_unavailable",
+            "required": False, "status": "not_selected",
             "reason": "QGIS integration is a separately selected real-runtime job; run --group qgis from its configured interpreter",
-            "collected": [], "tests": {}, "collection_errors": [], "capabilities": {"qgis": False},
+            "collected": [], "tests": {}, "collection_errors": [], "capabilities": {},
             "required_capabilities": ["qgis"],
             "pytest_exit_code": None,
         }
