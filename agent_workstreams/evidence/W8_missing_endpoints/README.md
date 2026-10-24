@@ -41,6 +41,8 @@ baseline failure is relabelled as a pass. Original raw reports remain local.
   Run baseline/pre-fix commands from their separate normal checkouts and the
   candidate command from its checkout. No worktree or virtual environment.
 - [Summary](summary.json), all `*-ids.json`, and [SHA256 manifest](sha256.json).
+  Checksums describe repository/Git bytes with canonical LF newlines, so Windows
+  checkout CRLF conversion does not change the documented identity.
   JUnit retains numerical assertion details, failure categories and test IDs.
   Only explicit machine roots/user temporary paths/host names are replaced by
   role aliases; repository-relative paths, observations and expectations remain.
