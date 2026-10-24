@@ -8,6 +8,7 @@
 - Core implementation: `a5c1a223791bd669e745eb6d0f2448640ba4f98c`.
 - Streaming reductions: `57badb0cce19b7114a39f130a22fe29023d98a78`.
 - Reader ownership fix for minimum: `742f298e28a77b00f958a96dc89ddf3c1af0b8e5`.
+- Mask-preservation fix following Codex P2 finding: `20d1cc5b68b5a8b3a3f058f7ff56baa1970c6a66`.
 - This documentation-only follow-up records the contract separately; validate the actual branch head when comparing results.
 
 ## Lazy-cache contract
@@ -18,7 +19,7 @@
 - **At most 64 MiB of stored arrays per variable**, except when one individual surface exceeds 64 MiB; one such surface may be retained alone.
 - Reads of one timestep therefore allocate **one two-dimensional source slice** and its returned copy, never an all-time cube. Temporary returned arrays for an explicit multi-index selection or full time selection may still be large by the caller's request.
 - The bound concerns the retained `_surface_cache` (not other Python/NumPy temporaries or provider-internal buffers); it does not multiply with the length of the file's time axis.
-- A hit updates LRU order; eviction removes the least-recently-used slice. Returned data are independent copies, so a caller cannot corrupt cached values.
+- A hit updates LRU order; eviction removes the least-recently-used slice. Returned data are independent copies, so a caller cannot corrupt cached values. NumPy `MaskedArray` subclasses retain their masks through copies, temporal stacking and extrema calculations.
 - The old `_cached_data` remains reserved for `Grid(dict)` / `load_into_memory`, which are intentionally **unbounded** with respect to the lazy budget, loading the entire variable when explicitly requested.
 
 Temporal selection accepts integers and NumPy integer scalars, 1-D integer lists/tuples/ndarrays, 1-D Boolean masks, and Python slices including zero bounds, reverse direction and non-unit steps. It normalises Python-style negative indices, preserves requested order and repeated timesteps, and rejects invalid/out-of-range selectors. A single selected timestep retains the existing squeezed 2-D return shape; multi-timestep requests stack into time-first arrays; empty selection produces an empty time-first array. Static variables retain one 2-D slice.
@@ -33,7 +34,7 @@ For reference, the old float64 allocation at 500 × 2000 × 2000 would be **16 G
 
 ## Regression evidence
 
-Dedicated `tests/test_raster_cache_reader_recovery.py` uses small generated NetCDF and in-memory fixtures. It exercises allocation versus time count, LRU hits/evictions, returned-copy isolation, direct numerical parity, reordered/duplicate/reversed/empty/Boolean selectors, invalid selection, static data, explicit preload, resident in-memory readers, streaming extrema, injected read failures, nested contexts and explicit ownership.
+Dedicated `tests/test_raster_cache_reader_recovery.py` uses small generated NetCDF and in-memory fixtures. It exercises allocation versus time count, LRU hits/evictions, returned-copy isolation, direct numerical parity, reordered/duplicate/reversed/empty/Boolean selectors, invalid selection, static data, explicit preload, resident in-memory readers, streaming extrema, masked static/temporal resident arrays, injected read failures, nested contexts and explicit ownership.
 
 Run in a normal supported Python environment:
 
@@ -45,11 +46,11 @@ python -m pytest -q tests/test_result_time_correctness.py tests/test_map_output_
 
 - [First validated Windows implementation run](https://github.com/phantom-branch/PyTuflow/actions/runs/40084833007): both Windows Python 3.12 and 3.14 jobs passed **23 focused** and **457 inherited W3/PyMesh/time-series** tests, with no failures.
 - The streaming-extrema follow-up exposed a reader-context issue in `NCGrid.minimum()` (23 passed, 1 failed in the first follow-up run); this was corrected in `742f298`, without suppressions or expectation changes.
-- [Current Windows acceptance workflow](https://github.com/phantom-branch/PyTuflow/actions/runs/40085144957): Python 3.12/3.14, now **24 focused** cases plus **457 existing** cases per interpreter, recording JUnit artifacts. Final outcome to be read from the linked jobs.
+- [Current Windows acceptance workflow](https://github.com/phantom-branch/PyTuflow/actions/runs/40085144957): Python 3.12/3.14, **24 focused** cases plus **457 existing** cases per interpreter, all passing. A subsequent Codex P2 finding identified mask loss for resident NumPy masked arrays; the follow-up adds **2 focused cases** (26 total) and preserves masks in resident/cache copies, stacking and reductions. The new exact-head run must be checked separately rather than claimed passing in advance.
 - This work does **not** claim an actual QGIS/MDAL provider run. QGIS/MDAL comparison on an installed QGIS 4 runtime remains a separate acceptance lane to be conducted using the actual provider and the accepted W3 baseline. Never treat a non-QGIS run as passing the QGIS suite.
 
 ## Coordination and exclusions
 
 Retain the W3 time-unit and timestep-selection contract. The source and tests are W4-owned; W5/#19 retains shared regression infrastructure and W8/#23 owns numerical FV reductions. Do not modify those workstreams to manufacture green CI. No production dependency pins, deferred/graph workflows, solver runs, native SMB benchmarks, private model data, merge or release are included in this implementation.
 
-Final review should check the latest head and CI/QGIS evidence before deciding whether the PR may leave draft status. Any QGIS results and Codex review findings must be recorded explicitly.
+The first Codex review on documentation head `c6697f0` found a genuine P2 mask-preservation issue; the follow-up implementation and regression tests are in `20d1cc5`. Re-review the new head after its CI gates pass. Final readiness also requires the separate native QGIS/MDAL lane. Any QGIS results and Codex review findings must be recorded explicitly.
