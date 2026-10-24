@@ -1,76 +1,117 @@
-# [W3] Correct result timestep selection and NetCDF time units
+# W3 — Result timestep selection and NetCDF time units
 
-## Initial status
+## Status
 
-Draft scaffolding only: this PR currently adds a scoped work plan. Runtime changes and acceptance tests have not been implemented on this branch. Earlier review reproductions were isolated component checks, not full Windows/GIS integration validation.
+Implemented on the existing `fix/results-time-correctness` branch, targeting `master`.
+The public time contract, regression tests and feature-specific Windows workflow are implemented.
+Local and Windows Python 3.12/3.14 validation pass. Codex review completed with no findings.
+The PR is left draft; actual QGIS/MDAL validation remains a separate, unavailable provider lane. No merge, release or W4 work is authorised by this handoff.
 
 ## Source checkpoints
 
-- Original upstream review: [TUFLOW-Support/PyTuflow `cf908cc922ca8448ed6002834877b0b377329eae`](https://github.com/TUFLOW-Support/PyTuflow/commit/cf908cc922ca8448ed6002834877b0b377329eae).
-- Fork source used to create this work package: [`e162c04330d24c37bee3ade94479cc4602651060`](https://github.com/phantom-branch/PyTuflow/commit/e162c04330d24c37bee3ade94479cc4602651060).
-- Recheck current source, review comments and applicable repository guidance before implementing.
+- Original upstream review: `cf908cc922ca8448ed6002834877b0b377329eae`.
+- Fork parent inspected at execution: `e162c04330d24c37bee3ade94479cc4602651060`.
+- Actual starting PR head: `21617f29eed86d9e123aaf9353934b63d299ca07`.
+- Implementation and test checkpoint: [`d5281da5373b6851b622b61ad949d801d8ac7dc6`](https://github.com/phantom-branch/PyTuflow/commit/d5281da5373b6851b622b61ad949d801d8ac7dc6).
+- Tested implementation tree: `527f1637496b4768ac1fb5095e854836ff4e0b6f`.
+- Regression module SHA-256: `93cb428053a9228e9202c175f78e82183378d8ec17a5b53c320c1fc2feee84ae`.
 
-## Branch and dependencies
+The implementation was added without resetting or rewriting the existing remote branch.
+The PR description records the latest handoff head; the implementation checkpoint above identifies the runtime and tests independently of subsequent documentation commits.
 
-- Work branch: `fix/results-time-correctness`.
-- PR base: `master`.
-- Starting state: **Can start now**.
-- This is an independent branch from master; it does not depend on the deferred optimisation PRs.
-- Dependent work: W4 on `fix/raster-cache-reader-recovery`.
-- Common regression/integration coordination: **W5**, `test/original-library-regression-ci`. Existing acceptance workflows must remain intact.
+## Implemented time contract
 
-## Purpose
+### Saved-sample selection
 
-Documentation-only implementation scaffold. Correct inherited result-time defects, preserving public extraction interfaces and proving equivalent physical times across supported NetCDF units. No implementation or full integration validation has been completed by this scaffold.
+`Output._closest_time_index()` now selects the previous or next saved sample in the correct direction.
+For `[0, 1, 2]` hours and request `0.6`, previous returns index `0`, next index `1` and closest index `1`.
 
-## Scope
+- The first sample within tolerance wins, preserving the existing matching rule.
+- Outside-range requests clamp to the first or last sample.
+- Closest ties use the first sample, as before.
+- An empty axis raises an explicit `ValueError`; `times()` on empty or incomplete metadata returns `[]`.
+- Naive datetimes mean UTC; aware datetimes are compared as physical instants.
+- Public extraction signatures are unchanged. `Grid`/`NCGrid.data_point()` and `surface()` use previous; `section()` retains its closest-sample policy.
 
-- Base: master. This is the parent of W4; W8 is independent. W5 supplies common CI gates without creating a branch dependency.
-- Correct the reversed previous/next branches in Output._closest_time_index and document boundary and tolerance behaviour without gratuitous API changes.
-- Normalise supported NetCDF time units at the NCGrid reader boundary before deriving metadata or absolute datetimes; preserve the original units/reference metadata.
-- Cover exact, in-between, nonuniform and single-timestep cases, distinguishing a genuine temporal sample from the existing static-result convention.
-- Review the Output.times metadata-column guard and time-step derivation for empty or singleton inputs as part of the same time contract.
+**Tolerance compatibility decision:** retain the existing numeric tolerance, `0.001` hours (3.6 seconds), and apply the same physical tolerance to datetime requests. Previously datetime subtraction applied the same number in seconds, so equivalent numeric and datetime requests could select different samples. That inconsistency is deliberately corrected. A few floating-point ulps are allowed at the tolerance boundary so representation rounding does not reintroduce the discrepancy. Tests cover `0.999`, values inside/outside the boundary, naive requests and aware requests.
 
-## Acceptance criteria
+### NetCDF units and reference metadata
 
-- [ ] For available times [0, 1, 2] and request 0.6, previous selects 0 and next selects 1; exact hits and documented endpoint behaviour remain stable.
-- [ ] Tiny equivalent NetCDF fixtures using seconds, minutes and hours return the same relative hours, absolute datetimes and extracted samples. Other claimed supported units are either converted correctly or rejected explicitly.
-- [ ] Numeric and datetime requests select the same physical sample; nonuniform axes, empty metadata and a legitimate single temporal sample receive explicit tested handling.
-- [ ] Meaningful regression tests fail on the inherited baseline, pass on the candidate, and run on Windows Python 3.12 and 3.14 under the common acceptance contract.
-- [ ] Run relevant existing tests from tests/test_map_output.py, tests/test_map_output_pymesh.py and tests/test_time_series.py; report unavailable optional-provider cases separately. QGIS integration is a separate validation lane.
+Temporal coordinates are converted once to seconds before step derivation; public relative times remain hours.
+Supported fixed units are microseconds, milliseconds, seconds, minutes, hours and days, including the explicit aliases in `_TIME_UNIT_LABELS`. Equivalent unit encodings return the same times, aware datetimes and extracted values.
 
-## Exclusions
+- `time_units` retains the normalised **source** unit label (`us`, `ms`, `s`, `m`, `h` or `d`).
+- `source_time_units` retains the exact original units/reference string.
+- `source_calendar` retains the original calendar, with `standard` as the omitted-attribute default.
+- ISO date-only and date/time references support optional seconds, microseconds and numeric UTC offsets; `Z` and `UTC` are accepted. Reference instants are normalised to UTC.
+- Unit-only axes use the existing `1990-01-01 00:00 UTC` default and do not claim an inherent reference.
+- Missing/unknown units, malformed references, invalid offset ranges and unsupported calendars raise `ValueError`.
+- `standard` and `gregorian` require the reference and samples to be on/after 1582-10-15. `proleptic_gregorian` uses Python's datetime range. Non-Gregorian calendars and months/years are explicitly unsupported.
+- Missing, non-finite, duplicate and descending temporal coordinates are rejected; absolute dates outside Python's range are diagnosed.
 
-- Deferred, batch or compiled dependency evaluation; solver execution; private models or SMB benchmarks.
-- Raster-cache redesign or NetCDF handle-lifecycle repairs owned by W4; FV depth averaging and vector minima owned by W8.
-- An arbitrary new public time API, unsupported calendar expansion, unrelated packaging changes, merge or release.
+The existing `_parse_time_units_string()` is reused. Its new no-regex path provides strict parsing for NCGrid. Existing readers that pass their own regex/format retain their date parsing and default-reference fallback.
 
-## Implementation handoff
+### Empty, singleton, irregular and static axes
 
-The PR Conversation contains a copyable agent prompt with the concrete PR links and branch setup commands. The source-specific instructions are retained here as well:
+`NCGridVar` distinguishes a temporal `time` dimension from the existing singleton static convention (`static_time`, or another non-time singleton dimension) and two-dimensional static grids. A one-sample `time` variable remains temporal, including at a nonzero time. Static results continue to return no temporal times and remain extractable.
 
-Implement W3 in phantom-branch/PyTuflow on this draft PR's existing branch. The PR currently contains only planning documentation: it does not implement the fixes or establish full integration validation. Work autonomously through implementation, meaningful regression tests, documentation and an updated PR handoff. Request review only after the implementation is complete and the relevant available gates have passed.
+`_calculate_time_step()` accepts seconds consistently. The in-memory `Grid` constructor now converts hours **before** calling it, so a tuple of explicit times is never multiplied by a float.
 
-Branch relationships: W3 targets master. W4 branches from and targets W3 because it edits the same grid/NetCDF area and relies on the corrected time contract. W8 is independent on master. W5 defines common CI acceptance but is not a code or branch dependency. Inspect current PR metadata and repository guidance before editing; preserve unrelated work, and do not force-push or rewrite another contributor's history. Record the actual starting and final commit SHAs. The reviewed original upstream baseline is cf908cc922ca8448ed6002834877b0b377329eae, inherited unchanged in these result files at fork master e162c04330d24c37bee3ade94479cc4602651060. Reconfirm the relevant source at the current branch before applying repairs.
+All intervals, including the last, are checked. Empty, singleton and irregular axes retain explicit tuples of saved seconds. Nominal regular float32 coordinates retain the centisecond step convention only when reconstruction agrees to source float precision. Sub-centisecond axes are not rounded to zero or expanded with unsaved samples. The existing rounded-endpoint tolerance is capped at half an interval so it cannot swallow a whole short timestep.
 
-Verified defects and scope:
-1. pytuflow/_outputs/output.py, Output._closest_time_index, computes timestep minus requested time, then uses positive differences for previous and negative differences for next. Executing the original function with times [0.0, 1.0, 2.0] and request 0.6 returns index 1 for previous and index 0 for next. Correct this while preserving public call signatures and documented exact-match behaviour. Establish endpoint, empty-axis and tolerance behaviour from existing documentation/tests; do not introduce arbitrary API breaks.
-2. pytuflow/_outputs/nc_grid.py, NCGrid._reference_time, records time_units, but _load_info treats NCGridVar.times as hours. pytuflow/_outputs/helpers/nc_grid_var.py exposes raw numeric NetCDF time values. A seconds axis [0,3600,7200] is consequently returned as [0,3600,7200] relative hours and generates dates months apart. Convert at an appropriate reader boundary into the established internal unit, retaining original metadata. Coordinate with the existing _parse_time_units_string and pytuflow/_outputs/map_output.py::_calculate_time_step rather than duplicating inconsistent conversions. Handle the formats actually claimed by this reader; explicitly diagnose unsupported units/calendars instead of silently guessing.
-3. Review Output.times metadata validation and empty/singleton axes. Its present intersect1d(...).all() check does not prove that all required columns exist. A temporal singleton must be distinguished from static-result conventions before changing generated times.
+## Validation
 
-Use small, analytical fixtures and on-disk NetCDF tests generated under tmp_path. Prove that seconds/minutes/hours encoding the same samples gives identical relative hours, absolute datetimes and extracted data. Cover exact hits, between-time requests, irregular spacing, endpoints, numeric/datetime equivalence, timezone/reference handling and realistic single-timestep behaviour. Tests must exercise the installed/imported implementation, not copied function bodies or assertions that merely mirror code. The original review used isolated source-level reproductions; upgrade that evidence to real reader integration where dependencies are available.
+### Local baseline versus candidate
 
-Inspect existing tests/test_map_output.py, tests/test_map_output_pymesh.py and tests/test_time_series.py and the public tests/nc_grid fixtures. Add focused regression tests where they can run without QGIS, then run the affected existing result tests. Windows Python 3.12 and 3.14 are the common acceptance platforms; report QGIS-dependent validation separately and do not claim it ran if unavailable. Use W5's shared gates when available, keeping dependency/provider failures distinct from regressions. A short baseline-versus-candidate comparison should identify newly fixed cases and any existing failures without weakening expected results.
+Python 3.12.14, Linux, normal interpreter; no new virtual environment or Git worktree.
+The same dependency profile and the unchanged repository warnings-as-errors policy were used for both revisions.
 
-Update the PR description and handoff with implemented behaviour, test commands/counts, exact source revision, compatibility decisions and remaining optional-provider limitations. Keep the PR draft until its acceptance evidence is complete. Preserve Windows lexical paths; do not replace them with Path.resolve(). Do not change deferred execution, implement W4/W8, launch TUFLOW, access private SMB data, merge, publish or change production dependency pins.
+| Suite | Inherited `21617f2` | Implementation `d5281da` | Skips |
+| --- | --- | --- | --- |
+| Dedicated time regressions | 36 passed, **72 failed** / 108 | **108 passed** / 108 | 0 |
+| Existing `test_map_output_pymesh.py` | **110 passed** / 110 | **110 passed** / 110 | 0 |
+| Existing `test_time_series.py` | **239 passed** / 239 | **239 passed** / 239 | 0 |
+| Existing `test_map_output.py` | No tests executed; QGIS import fails at collection | Actual QGIS provider unavailable | Not represented as a passing/blanket-skipped suite |
 
-## Shared implementation rules
+The exact focused baseline IDs and test-module hash are preserved in [`W3_result_time_baseline.json`](W3_result_time_baseline.json). The tests import the real package and create tiny NetCDF files under pytest's temporary directories; no copied function implementations or fabricated GIS providers are used.
 
-- Implement the original-library work in this PR on its assigned branch. Read current AGENTS.md guidance and the latest PR body/comments first; inspect the latest parent branch before coding.
-- Preserve existing public APIs and established model/result semantics unless this scope explicitly identifies a defect. Use modern built-in Python annotations while keeping the declared interpreter support truthful; retain Python 3.12 compatibility needed by QGIS and validate standalone Python 3.14.
-- Keep Windows drive-letter, UNC and network paths lexical; use Path.absolute() when an absolute path is needed, not Path.resolve(). Preserve supported GIS/mesh backends and source provenance.
-- Use small public or generated fixtures. No TUFLOW solver launches, proprietary SMB models, private data uploads, package releases or merges are part of these work packages.
-- Do not expand the deferred/batch/graph optimisation work, alter PRs #4/#14/#15, or weaken their acceptance checks. Coordinate shared files with the linked work-package owner.
-- Record baseline failures separately from regressions. Do not make checks green by dropping fixtures, broad skipping, blanket warning suppression or silently changing expected engineering results.
-- Complete implementation and relevant validation before requesting final review. Keep this PR draft while work is incomplete; update the body with code checkpoints, commands, results and precise remaining limitations.
-- Routine implementation, fixes, tests and pushes to this development branch are authorised. Continue without another confirmation for those steps. Report an actual access or capability blocker with evidence.
+Dependency profile: NumPy 2.5.4, pandas 2.3.3, pytest 9.1.1, netCDF4 1.7.5.1.post1, rasterio 1.5.2, geopandas 1.2.0, shapely 2.2.0, h5py 3.16.0 and pyvista 0.49.1.
+
+A separate current-dependency baseline using pandas 3.1.0 produced 66 PyMesh and 131 time-series failures, including pandas deprecations promoted by the existing warning policy. Those inherited compatibility failures were recorded without suppressing warnings or changing production dependency requirements. W5/W7 own general current-dependency acceptance. The candidate has the identical 197 failing test IDs and 152 passes: zero added or resolved failures. This comparison is recorded in the baseline JSON.
+
+### Reproduction commands
+
+Use a separate normal checkout and the selected normal interpreter, without creating a virtual environment:
+
+```text
+python -m pip install -e . pytest "pandas==2.3.3"
+python -m pytest -q tests/test_result_time_correctness.py --junitxml=focused.xml
+python -m pytest -q tests/test_map_output_pymesh.py tests/test_time_series.py --junitxml=existing-results.xml
+```
+
+For baseline proof, place the exact new test module into a separate normal checkout of `21617f29eed86d9e123aaf9353934b63d299ca07` and run it against that checkout's unmodified imported package using the same dependency profile. The expected 72 failures are diagnostic evidence, not a passing acceptance job.
+
+Run `tests/test_map_output.py` separately under an actual QGIS interpreter. The observed non-QGIS collection failure was `ModuleNotFoundError: No module named 'qgis'`; no QGIS/MDAL acceptance is claimed.
+
+### Windows acceptance and review
+
+[Feature-specific Windows run](https://github.com/phantom-branch/PyTuflow/actions/runs/40073571572): Python 3.12 and 3.14, checking out the exact PR head and running the focused and all affected non-QGIS suites. Full environment JSON and JUnit reports are uploaded per interpreter. No existing deferred/graph workflow, common configuration, fixture or sibling branch was changed.
+
+| Platform | Focused | Existing PyMesh/time-series | Failures / errors / skips |
+| --- | --- | --- | --- |
+| Windows Server 2025, Python 3.12.10 | 108 passed | 349 passed | 0 / 0 / 0 |
+| Windows Server 2025, Python 3.14.9 | 108 passed | 349 passed | 0 / 0 / 0 |
+
+Both jobs verified source `d5281da5373b6851b622b61ad949d801d8ac7dc6` and pandas 2.3.3. Report artifacts are `result-times-python-3.12` (ID `12552416857`) and `result-times-python-3.14` (ID `12551844644`). Both environments report QGIS unavailable.
+
+[Codex review requested](https://github.com/phantom-branch/PyTuflow/pull/16#issuecomment-6381359281) after implementation and focused validation. Independent local review found malformed UTC-offset acceptance and a numeric/datetime tolerance-boundary discrepancy; both were corrected and verified with dedicated tests. [Remote Codex review completed](https://github.com/phantom-branch/PyTuflow/pull/16#issuecomment-6381380333) at `d5281da5373b6851b622b61ad949d801d8ac7dc6` with no findings and no unresolved review threads.
+
+## Ownership and W4 handoff
+
+Runtime changes are limited to `output.py`, `map_output.py`, `nc_grid.py`, `helpers/nc_grid_var.py` and the single constructor time-conversion expression in `grid.py`. Dedicated tests and `result-time-correctness.yml` are feature-owned; W5 retains ownership of general CI and common test infrastructure.
+
+W4 / PR #20 can use the validated source checkpoint above when the owner authorises that work. Preserve the time contract, source metadata and tuple-valued axes while developing cache/reader recovery. Do not infer static data from the number of temporal samples. This task does **not** start, rebase or merge #20.
+
+An inherited out-of-scope observation for W4: `Grid(dict).data_point()`/`time_series()` call `_value()`, which attempts to open the `memory` pseudo-path instead of using the existing in-memory surface. The time regressions therefore exercise its supported `surface()` path. No cache or reader-lifecycle repair was included here.
+
+No numerical reductions, depth averaging, safe-save code, package requirements, production consumer pins, deferred/compiled evaluation or sibling PR implementations were modified. No solver, private data or native NAS benchmark was used; no merge or release was performed.
