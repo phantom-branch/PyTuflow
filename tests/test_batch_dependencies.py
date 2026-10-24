@@ -576,3 +576,53 @@ def test_ninth_scenario_selects_same_branch_in_all_modes(tmp_path):
     assert batch.passed
     assert paths[0] == paths[1] == tuple(ref.path_pattern for ref in batch.runs[0].file_references)
     assert len(paths[0]) == 1
+
+
+def test_batch_on_run_yields_completed_projections_in_original_order(tmp_path):
+    """A consumer sees complete runs before the following context is evaluated."""
+    model = _make_model(tmp_path)
+    flags = ('-s1 DEV', '-s1 DEV', '-s1 EXG', '-s1 DEV')
+    observed = []
+
+    def on_run(case):
+        assert case.index == len(observed)
+        assert case.flags == flags[case.index]
+        assert case.error is None
+        assert tuple(row.reference for row in case.input_references) == case.file_references
+        observed.append(case)
+
+    result = model.collect_batch_dependencies(flags, on_run=on_run)
+    assert result.passed
+    assert tuple(observed) == result.runs
+    assert observed[0] is not observed[1]
+    assert observed[0].file_references == observed[1].file_references
+
+
+def test_batch_on_run_exposes_failed_context_without_partial_references(tmp_path):
+    model = _make_model(tmp_path)
+    flags = ('-s1 DEV', '-s1 DEV -s1 EXG', '-s1 DEV')
+    observed = []
+    result = model.collect_batch_dependencies(flags, on_run=observed.append)
+    assert observed == list(result.runs)
+    assert observed[1].error is not None
+    assert observed[1].file_references == ()
+    assert observed[1].input_references == ()
+    assert observed[1].ordered_inputs == ()
+
+
+def test_batch_on_run_callback_exception_aborts_without_parser_error_conversion(tmp_path):
+    import pytest
+
+    model = _make_model(tmp_path)
+    observed = []
+
+    class ConsumerFailure(RuntimeError):
+        pass
+
+    def consumer(case):
+        observed.append(case.index)
+        raise ConsumerFailure('consumer queue closed')
+
+    with pytest.raises(ConsumerFailure, match='consumer queue closed'):
+        model.collect_batch_dependencies(('-s1 DEV', '-s1 EXG'), on_run=consumer)
+    assert observed == [0]
