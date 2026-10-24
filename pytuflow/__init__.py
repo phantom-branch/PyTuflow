@@ -14,7 +14,7 @@ if not pytuflow_logger.hasHandlers():
 
 
 from .TUFLOW import *
-from ._outputs import *
+from . import _outputs as _outputs_api
 from ._tmf import *
 from ._fm import GXY, FMDAT
 from .util import TuflowBinaries, TuflowFVBinaries, pytuflow_logging, misc
@@ -23,3 +23,24 @@ from .project import HPCProject, FVProject
 
 name = 'PyTuflow'
 __version__ = '1.2.6'
+
+
+# Preserve the historic from-pytuflow import surface without eagerly loading
+# every result reader. The existing TMF/model exports remain unchanged here.
+_OUTPUT_EXPORTS = frozenset(_outputs_api.__all__)
+__all__ = tuple(dict.fromkeys(
+    [name for name in globals() if not name.startswith("_")]
+    + list(_outputs_api.__all__)
+))
+
+
+def __getattr__(name: str):
+    if name in _OUTPUT_EXPORTS:
+        value = getattr(_outputs_api, name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | _OUTPUT_EXPORTS)
