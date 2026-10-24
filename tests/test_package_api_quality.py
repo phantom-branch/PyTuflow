@@ -300,3 +300,36 @@ def test_supported_public_constructor_type_hints_resolve() -> None:
         """
     )
     _assert_success(process)
+
+
+def test_rotating_file_handler_deduplicates_lexical_aliases(tmp_path: Path) -> None:
+    process = _run_python(
+        """
+        import logging
+        import os
+        from pathlib import Path
+        from pytuflow import pytuflow_logging
+
+        root = Path(os.environ["PYTUFLOW_W7_LOG_DIR"])
+        logs = root / "logs"
+        logs.mkdir()
+        logger = logging.getLogger("pytuflow")
+        pytuflow_logging.set_logging_level("INFO", logs)
+        pytuflow_logging.set_logging_level("INFO", logs / ".." / "logs")
+
+        if os.name == "nt":
+            pytuflow_logging.set_logging_level("INFO", Path(str(logs).swapcase()))
+
+        handlers = [
+            h for h in logger.handlers
+            if getattr(h, "_pytuflow_owned_file", None) is not None
+        ]
+        assert len(handlers) == 1, handlers
+        logger.info("W7-DEDUPLICATION-SENTINEL")
+        handlers[0].flush()
+        contents = (logs / "pytuflow_logs.log").read_text(encoding="utf-8")
+        assert contents.count("W7-DEDUPLICATION-SENTINEL") == 1
+        """,
+        log_directory=tmp_path,
+    )
+    _assert_success(process)
