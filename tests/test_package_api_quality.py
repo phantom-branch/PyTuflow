@@ -233,3 +233,50 @@ def test_uncreated_legacy_log_filename_is_accepted(tmp_path: Path) -> None:
         log_directory=tmp_path,
     )
     _assert_success(process)
+
+
+def test_deferred_result_reader_public_exports_and_identity() -> None:
+    process = _run_python(
+        """
+        import pytuflow
+        from pytuflow import _outputs
+
+        expected = ("INFO", "TPC", "GPKG1D", "GPKG2D", "GPKGRL",
+                    "FMTS", "FVBCTide", "HydTablesCheck", "BCTablesCheck",
+                    "CrossSections", "DATCrossSections", "XMDF", "NCMesh",
+                    "CATCHJson", "DAT", "NCGrid", "LP2D", "MapOutput",
+                    "TimeSeries", "TabularOutput", "Mesh", "Grid",
+                    "GridMesh", "Output", "FormatConvention")
+        assert set(expected) == set(_outputs.__all__)
+        assert set(expected).issubset(set(pytuflow.__all__))
+        for name in expected:
+            root_value = getattr(pytuflow, name)
+            package_value = getattr(_outputs, name)
+            assert root_value is package_value, name
+            assert root_value.__module__.startswith("pytuflow."), name
+        assert "XMDF" in dir(pytuflow)
+        assert "XMDF" in dir(_outputs)
+        for mod in (pytuflow, _outputs):
+            try:
+                getattr(mod, "nonexistent_w7_reader")
+            except AttributeError:
+                pass
+            else:
+                raise AssertionError("Unknown result export unexpectedly resolved")
+        """
+    )
+    _assert_success(process)
+
+
+def test_legacy_star_import_still_exposes_result_readers() -> None:
+    process = _run_python(
+        """
+        namespace = {}
+        exec("from pytuflow import *", namespace)
+        for name in ("TCF", "TPC", "INFO", "XMDF", "NCMesh", "NCGrid",
+                     "HPCProject", "FVProject", "TuflowBinaries", "FMDAT"):
+            assert name in namespace
+            assert callable(namespace[name]), name
+        """
+    )
+    _assert_success(process)
