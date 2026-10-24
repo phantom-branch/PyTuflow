@@ -13,6 +13,7 @@ on:
       - "pytuflow/_tmf/logging_.py"
       - "pytuflow/util/_util/logging.py"
       - "tests/test_package_api_quality.py"
+      - "tests/typing_consumer.py"
   workflow_dispatch:
 
 permissions:
@@ -41,6 +42,32 @@ jobs:
         run: |
           python -c "import logging, importlib.metadata as md, pytuflow; from pytuflow import pytuflow_logging; from packaging.specifiers import SpecifierSet; assert callable(pytuflow.set_logging_level); assert callable(pytuflow_logging.set_logging_level); assert str(md.requires('pytuflow'))"
           python -c "import sys, importlib.metadata as md; from packaging.specifiers import SpecifierSet; assert sys.version.split()[0] in SpecifierSet(md.metadata('pytuflow')['Requires-Python'])"
+      - name: Verify installed wheel and bounded static typing outside the checkout
+        shell: pwsh
+        run: |
+          python -m pip install mypy
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to install mypy' }
+          python -m build --wheel --no-isolation
+          if ($LASTEXITCODE -ne 0) { throw 'Wheel build failed' }
+          python -m pip uninstall -y pytuflow
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to uninstall editable package' }
+          $wheel = (Get-ChildItem -Path "dist/*.whl" | Select-Object -First 1).FullName
+          if (-not $wheel) { throw 'Missing built wheel' }
+          python -m pip install --no-deps "$wheel"
+          if ($LASTEXITCODE -ne 0) { throw 'Wheel installation failed' }
+          $external = Join-Path $env:RUNNER_TEMP "w7-external-typing"
+          New-Item -ItemType Directory -Force -Path $external | Out-Null
+          Copy-Item "tests/typing_consumer.py" (Join-Path $external "consumer.py")
+          Push-Location $external
+          try {
+            python -I -c "import os, pathlib, pytuflow, importlib.metadata as md; package = pathlib.Path(pytuflow.__file__).absolute(); source = pathlib.Path(os.environ['GITHUB_WORKSPACE']).absolute(); assert not package.is_relative_to(source), package; assert (package.parent / 'py.typed').is_file(), package; assert (md.distribution('pytuflow').locate_file('pytuflow/py.typed')).is_file(); print('Installed wheel typing origin:', package)"
+            if ($LASTEXITCODE -ne 0) { throw 'Wheel origin or typing marker check failed' }
+            python -m mypy --strict --follow-imports=silent --no-incremental consumer.py
+            if ($LASTEXITCODE -ne 0) { throw 'Installed wheel typing consumer failed' }
+          }
+          finally {
+            Pop-Location
+          }
       - name: Save focused JUnit evidence
         if: always()
         uses: actions/upload-artifact@v4
