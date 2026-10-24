@@ -1,5 +1,6 @@
 import warnings
 from abc import abstractmethod
+from collections import OrderedDict
 from datetime import datetime
 from typing import Union
 
@@ -83,6 +84,9 @@ class Grid(MapOutput):
         self.cache = Cache()
         self._cached_timesteps = {}
         self._cached_data = {}
+        # Ordinary reads retain at most four slices and 64 MiB per variable.
+        # Preloaded/in-memory results are kept separately in _cached_data.
+        self._surface_cache: dict[str, OrderedDict[int | None, np.ndarray]] = {}
         self._data = None
 
         if d is None:
@@ -206,61 +210,108 @@ class Grid(MapOutput):
 
     def _value(self, dtype: str, idx: tuple | int | np.ndarray | slice) -> float | np.ndarray:
         if self._data is None:
-            with TuflowPath(self.fpath).open_grid() as grid:
-                self._data = grid.as_array()
+            if self.fpath == 'memory':
+                self._data = self._cached_data[dtype.lower()]
+            else:
+                with TuflowPath(self.fpath).open_grid() as grid:
+                    self._data = grid.as_array()
         return self._data[idx]
 
     def _surface(self, dtype: str, time_index: int | np.ndarray | slice) -> np.ndarray:
+        """Return selected surfaces in request order using a bounded lazy LRU.
+
+        A lazy variable retains at most four individual surfaces and 64 MiB
+        (unless a single surface is larger, in which case that one surface is
+        retained). This does not constrain results explicitly loaded into
+        memory or the returned array for a request selecting many timesteps.
+        """
+        key = dtype.lower()
         is_static = self._is_static(dtype)
-        if dtype.lower() not in self._cached_timesteps:
-            self._cached_timesteps[dtype.lower()] = set()
-            _, _, _, _, ncol, nrow, _ = self._grid_info(dtype)
-            shape = (nrow, ncol) if is_static else (len(self.times(dtype)), nrow, ncol)
-            self._cached_data[dtype.lower()] = np.full(shape, np.nan, dtype=float)
-
-        # special treatment if time_index is slice(None)
-        if not is_static and isinstance(time_index, slice) and time_index == slice(None):
-            vals = self._value(dtype, time_index)
-            for i, val in enumerate(vals):
-                if i not in self._cached_timesteps[dtype.lower()]:
-                    self._cached_data[dtype.lower()][i, ...] = val
-                    self._cached_timesteps[dtype.lower()].add(i)
-            return vals
-
-        if isinstance(time_index, (int, np.int32, np.int64)):
-            time_indexes = {time_index}
-        elif not is_static and isinstance(time_index, slice):
-            start = time_index.start or 0
-            stop = time_index.stop or len(self.times(dtype))
-            step = time_index.step or 1
-            time_indexes = set(range(start, stop, step))
+        if is_static:
+            indexes = [None]
         else:
-            time_indexes = time_index
-
-        data = []
-        for ti in time_indexes:
-            if ti not in self._cached_timesteps[dtype.lower()]:
-                idx = slice(None) if is_static else ti
-                val = self._value(dtype, idx)
-                if is_static:
-                    self._cached_data[dtype.lower()][:] = val
-                else:
-                    self._cached_data[dtype.lower()][idx, ...] = val
-                self._cached_timesteps[dtype.lower()].add(time_index)
+            count = len(self.times(dtype))
+            if isinstance(time_index, slice):
+                indexes = list(range(*time_index.indices(count)))
+            elif isinstance(time_index, (int, np.integer)):
+                indexes = [int(time_index)]
             else:
-                val = self._cached_data[dtype.lower()][ti] if not is_static else self._cached_data[dtype.lower()]
-            data.append(val.copy())
+                requested = np.asarray(time_index)
+                if requested.ndim == 0:
+                    requested = requested.reshape(1)
+                if requested.ndim != 1:
+                    raise IndexError('Time selector must be one-dimensional.')
+                if np.issubdtype(requested.dtype, np.bool_):
+                    if requested.size != count:
+                        raise IndexError('Boolean time selector must match the time axis.')
+                    indexes = np.flatnonzero(requested).tolist()
+                elif requested.size == 0:
+                    indexes = []
+                elif np.issubdtype(requested.dtype, np.integer):
+                    indexes = requested.tolist()
+                else:
+                    raise IndexError('Time selector must contain integer indexes.')
+            indexes = [i + count if i < 0 else i for i in indexes]
+            if any(i < 0 or i >= count for i in indexes):
+                raise IndexError('Time index out of range.')
 
-        if len(data) == 1:
-            return data[0]
-        return np.array(data).reshape(len(time_indexes), *data[0].shape)
-    
+        # Grid(dict) and explicit load_into_memory store the full source array.
+        # Preserve those intentional memory semantics and never create another
+        # per-slice cache for data already resident in memory.
+        if key in self._cached_data:
+            source = self._cached_data[key]
+            if is_static:
+                return source.copy()
+            if len(indexes) == 0:
+                return source[:0].copy()
+            if len(indexes) == 1:
+                return source[indexes[0]].copy()
+            return source[indexes].copy()
+
+        cache = self._surface_cache.setdefault(key, OrderedDict())
+        budget = 64 * 1024 * 1024
+        values = []
+        for ti in indexes:
+            if ti in cache:
+                cache.move_to_end(ti)
+                value = cache[ti]
+            else:
+                # asanyarray retains NumPy masked-array subclasses.
+                value = np.asanyarray(
+                    self._value(dtype, slice(None) if is_static else ti)
+                ).copy()
+                # A single large surface can exceed the byte budget, but no
+                # additional surface may be retained alongside it.
+                while cache and (
+                    len(cache) >= 4
+                    or sum(v.nbytes for v in cache.values()) + value.nbytes > budget
+                    or value.nbytes > budget
+                ):
+                    cache.popitem(last=False)
+                cache[ti] = value
+            values.append(value.copy())
+
+        if len(values) == 1:
+            return values[0]
+        if not values:
+            _, _, _, _, ncol, nrow, _ = self._grid_info(dtype)
+            return np.empty((0, int(nrow), int(ncol)))
+        if any(np.ma.isMaskedArray(v) for v in values):
+            return np.ma.stack(values, axis=0)
+        return np.stack(values, axis=0)
+
     def load_into_memory(self, data_types: str | list[str]):
-        # docstring inherited
+        """Explicitly retain all data for the requested variables.
+
+        Unlike ordinary _surface reads, this operation intentionally loads
+        every timestep, without the lazy cache's byte or slice budget.
+        """
         for dtype in self._figure_out_data_types(data_types, None):
-            if dtype not in self._cached_data:
-                self._cached_data[dtype] = self._value(dtype, slice(None))
-                self._cached_timesteps[dtype] = list(range(len(self.times())))
+            key = dtype.lower()
+            if key not in self._cached_data:
+                self._cached_data[key] = np.asanyarray(self._value(dtype, slice(None))).copy()
+                self._cached_timesteps[key] = set(range(len(self.times(dtype))))
+            self._surface_cache.pop(key, None)
 
     def to_mesh(self, base_topology: 'str | Grid | None' = None, direction_convention = 'arithmetic') -> GridMesh:
         """Converts the grid to a :class:`GridMesh<pytuflow.GridMesh>` object, essentially converting the grid
@@ -315,6 +366,25 @@ class Grid(MapOutput):
             base_topology = Grid(d)
         return GridMesh(self.fpath, self, base_topology, direction_convention)
 
+    def _stream_extreme(self, dtype: str, maximum: bool) -> float:
+        """Reduce temporal grids one slice at a time, without stacking the cube."""
+        reducer = np.nanmax if maximum else np.nanmin
+        if self._is_static(dtype):
+            return float(reducer(self._surface(dtype, -1)))
+        combine = max if maximum else min
+        result = None
+        for ti in range(len(self.times(dtype))):
+            values = np.asanyarray(self._surface(dtype, ti))
+            valid = values.compressed() if np.ma.isMaskedArray(values) else values.ravel()
+            valid = valid[~np.isnan(valid)]
+            if valid.size:
+                value = (np.max(valid) if maximum else np.min(valid)).item()
+                result = value if result is None else combine(result, value)
+        if result is None:
+            # Preserve NumPy's original empty/all-NaN diagnostic contract.
+            return float(reducer(np.array([] if not self.times(dtype) else [np.nan])))
+        return float(result)
+
     def maximum(self, data_types: str | list[str]) -> float | pd.DataFrame:
         """Returns the maximum values for the given data types.
 
@@ -356,8 +426,7 @@ class Grid(MapOutput):
         df = pd.DataFrame()
         data_types = self._figure_out_data_types(data_types, None)
         for dtype in data_types:
-            surface = self._surface(dtype, slice(None))
-            mx = np.nanmax(surface)
+            mx = self._stream_extreme(dtype, maximum=True)
             if len(data_types) == 1:
                 return float(mx)
             df_ = pd.DataFrame([mx], columns=['maximum'], index=[dtype])
@@ -405,8 +474,7 @@ class Grid(MapOutput):
         df = pd.DataFrame()
         data_types = self._figure_out_data_types(data_types, None)
         for dtype in data_types:
-            surface = self._surface(dtype, slice(None))
-            mx = np.nanmin(surface)
+            mx = self._stream_extreme(dtype, maximum=False)
             if len(data_types) == 1:
                 return float(mx)
             df_ = pd.DataFrame([mx], columns=['minimum'], index=[dtype])

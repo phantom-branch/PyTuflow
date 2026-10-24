@@ -272,6 +272,11 @@ class NCGrid(Grid):
         with self._open():
             return super().maximum(data_types)
 
+    def minimum(self, data_types: str | list[str]) -> float | pd.DataFrame:
+        self._load()
+        with self._open():
+            return super().minimum(data_types)
+
     def surface(self, data_type: str = None, time: TimeLike = 0, to_vertex: bool = False, coord_scope: str = 'global',
                 direction_to_vector: bool = False, direction_convention = 'arithmetic') -> pd.DataFrame:
         self._load()
@@ -305,20 +310,31 @@ class NCGrid(Grid):
     @contextmanager
     def _open(self):
         if self._nc is not None:
+            # The outer context (or explicit open_reader caller) owns the
+            # existing handle. Inner contexts must not close it.
             yield self._nc
             return
-        with Dataset(self.fpath, 'r') as self._nc:
-            yield self._nc
-        self._nc = None
+        reader = Dataset(self.fpath, 'r')
+        self._nc = reader
+        try:
+            yield reader
+        finally:
+            # Clear state even when extraction raises; never leave a closed
+            # Dataset available for the next operation.
+            if self._nc is reader:
+                self._nc = None
+            if reader.isopen():
+                reader.close()
 
     def open_reader(self):
         if self._nc is None:
             self._nc = Dataset(self.fpath, 'r')
 
     def close(self):
-        if self._nc is not None:
-            self._nc.close()
-            self._nc = None
+        reader = self._nc
+        self._nc = None
+        if reader is not None and reader.isopen():
+            reader.close()
 
     def _initial_load(self):
         self.name = self.fpath.stem
