@@ -35,7 +35,7 @@ def set_logging_level(
     level_name = str(level).upper()
     if level_name not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
         level_name = "WARNING"
-    log_level = logging._nameToLevel[level_name]
+    log_level = getattr(logging, level_name)
 
     if log_to_file is not None:
         location = Path(log_to_file)
