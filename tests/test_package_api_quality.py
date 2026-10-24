@@ -187,3 +187,25 @@ def test_legacy_results_module_does_not_append_package_path() -> None:
         """
     )
     _assert_success(process)
+
+
+def test_public_imports_leave_global_module_search_path_unchanged() -> None:
+    process = _run_python(
+        """
+        import sys
+        from pathlib import Path
+
+        previous = list(sys.path)
+        from pytuflow import TCF, TGC, Context, TuflowPath, XMDF, NCMesh
+        import pytuflow
+
+        for public_class in (TCF, TGC, Context, TuflowPath, XMDF, NCMesh):
+            assert callable(public_class)
+            assert public_class.__module__.startswith("pytuflow.")
+        package_directory = Path(pytuflow.__file__).parent.absolute()
+        added = sys.path[len(previous):]
+        assert str(package_directory) not in added
+        assert str(package_directory / "_tmf") not in added
+        """
+    )
+    _assert_success(process)
