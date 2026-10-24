@@ -18,3 +18,15 @@ The previous local investigation reported a 596-pass selection after applying eq
 ## Boundaries
 
 No edits to W1 safe model saving, W5 common CI, #23 numerical reductions or deferred/graph/batch functionality. No private models, network benchmark, solver, release, merge or dependency repin.
+## Accepted Windows validation
+
+Runtime/test checkpoint: `1010290286dfcf0b1fe4ecbe0eb1f9752cbe4646`.
+
+- [Exact-head Windows run 40084639614](https://github.com/phantom-branch/PyTuflow/actions/runs/40084639614) **passed both matrix jobs**.
+- Python 3.12: **595 passed, 1 skipped, 0 failed**, in 47.20 seconds.
+- Python 3.14: **595 passed, 1 skipped, 0 failed**, in 44.34 seconds.
+- The single skip is the inherited Linux-only absolute-path test. The newly added cross-platform absolute-path test passes on both Windows interpreters.
+- Python dependency/import provenance and JUnit are archived with both jobs; pytest warnings were not globally filtered or suppressed.
+- The exact selection comprises the 581 tests previously compared in PR #17 and 15 additional regression cases. Compared with the old Windows 548 passed/32 failed/1 skipped baseline, there are no remaining failures in this selection.
+
+An independent Codex review of this exact runtime was requested in PR #27. Other existing deferred/batch/graph checks are tracked separately and do not affect the inherited-error correction.
