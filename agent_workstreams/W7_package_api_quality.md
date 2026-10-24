@@ -1,8 +1,23 @@
 # [W7] Harden package compatibility, imports and public API
 
-## Initial status
+## Current implementation status (24 October 2026)
 
-Draft scaffolding only: this PR currently adds a scoped work plan. Runtime changes and acceptance tests have not been implemented on this branch. Earlier review reproductions were isolated component checks, not full Windows/GIS integration validation.
+Milestone A and portions of B/D are implemented on this existing branch. The first focused Windows Python 3.12/3.13/3.14 package-API run passed in all three jobs; its tested checkpoint preceded the later import-path changes. W5 full regression/wheel and the latest focused jobs remain the acceptance requirements. This PR stays draft until the outstanding B/C import/typing scope and exact-head checks have been completed.
+
+### Implemented
+
+- Corrected library-owned stdout INFO/DEBUG logging without changing application-owned handlers, added idempotent rotating file logging (51,200 bytes, two backups), and unified legacy TMF/public logging entry points with resolvable Literal level annotations.
+- Added isolated subprocess regressions for level changes, duplicate prevention, app-owned handlers, file rotation, invalid paths, public annotations and legacy/public import compatibility.
+- Set metadata to Python >=3.12,<3.15 without modifying production dependency pins; this preserves Python 3.12 QGIS and 3.14 standalone support. Python 3.13 has focused test coverage.
+- Removed redundant global sys.path additions from package and legacy result-module initialisation, retaining relative imports; pending final-head regression evidence.
+- Fixed README dependency/backend claims and replaced retired TMF/FM test paths. Added a dedicated W7 Windows 3.12/3.13/3.14 CI workflow.
+- Merged validated W5 into this branch as merge commit `04d293ca132296cdf1f1f18dd0c92c82b77b25c9`, then retargeted PR #22 to master. The resulting W7 diff excludes W5-owned infrastructure.
+
+### Evidence and retained limitations
+
+- [First focused W7 run — all three jobs passed](https://github.com/phantom-branch/PyTuflow/actions/runs/40085496170).
+- [Merged W5 parent and its final successful CI](https://github.com/phantom-branch/PyTuflow/actions/runs/40084325928).
+- Import/lazy backend boundaries, explicit public exports/typing marker, dependency support matrix, real QGIS validation after W7 changes and final source-head W5 equivalence remain pending. Current-dependency pandas warning failures are recorded as inherited rather than suppressed. Do not mark this PR ready or merge until retained acceptance is met.
 
 ## Source checkpoints
 
@@ -13,9 +28,9 @@ Draft scaffolding only: this PR currently adds a scoped work plan. Runtime chang
 ## Branch and dependencies
 
 - Work branch: `refactor/package-api-quality`.
-- PR base: `test/original-library-regression-ci`.
-- Starting state: **Implementation follows W5**.
-- Required parent: **W5**, [`test/original-library-regression-ci`](https://github.com/phantom-branch/PyTuflow/tree/test/original-library-regression-ci). The parent is initially a planning scaffold too. Reproduction tests and source investigation can start now; changes relying on the parent's contract must follow its implemented and validated checkpoint. Integrate that checkpoint before claiming dependent acceptance. Retarget to master only after the parent merges and the remaining diff is checked.
+- PR base: `master` (post-merge).
+- Current state: **W7 implementation follows merged W5; draft until final acceptance.**
+- Required parent **W5 / #19** merged to master at `a6ee90bd0886f7b544adbe8865c4cc73e977a6b2`. W7 has integrated its final code, and PR #22 now targets `master`.
 - Common regression/integration coordination: **W5**, `test/original-library-regression-ci`. Existing acceptance workflows must remain intact.
 
 ## Purpose
