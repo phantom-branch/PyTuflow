@@ -272,7 +272,9 @@ def test_masked_geometry_cannot_contribute_an_unbounded_layer(uri, all_missing):
     # the second observation cannot be included merely because its value exists.
     zlevels = np.ma.array([0.0, -1.0, -2.0], mask=[all_missing, all_missing, True])
     values = np.array([10.0, 1000.0])
-    expected = np.nan if all_missing else 10.0
+    # A missing bed makes height and sigma indeterminate. Surface-relative
+    # depth, absolute elevation and ordinals can still use the bounded layer.
+    expected = np.nan if all_missing or uri.startswith(("height", "sigma")) else 10.0
     _assert_average(get_method_func(uri)(zlevels, values), [expected])
 
 
@@ -336,7 +338,7 @@ def test_padded_short_dry_and_all_missing_columns(uri):
         [10.0, 20.0, np.nan],
         [10.0, 20.0, 30.0],
     ])
-    _assert_average(get_method_func(uri)(zlevels, values), [15.0, 30.0, np.nan, np.nan])
+    _assert_average(get_method_func(uri, layer_counts=np.array([2, 1, 2, 3]))(zlevels, values), [15.0, 30.0, np.nan, np.nan])
 
 
 @pytest.mark.parametrize("from_top", [True, False])
@@ -389,3 +391,77 @@ def test_explicit_column_counts_keep_padding_separate_from_missing_boundaries(fr
     v = np.array([[np.nan, 20., np.nan], [30., np.nan, np.nan]])
     expected = [np.nan, 30.] if from_top else [20., 30.]
     _assert_average(single_level(1, z, v, from_top, layer_counts=np.array([2, 1])), expected)
+
+
+# Prescribed geometric expectations; no production overlap/anchor calculation.
+ENDPOINT_REQUESTS = [
+    ("surface", "depth&0&0.5", np.nan),
+    ("surface", "height&0&0.5", 20.),
+    ("surface", "elevation&-2&0", 20.),
+    ("surface", "sigma&0&1", np.nan),
+    ("bed", "height&0&0.5", np.nan),
+    ("bed", "depth&0&0.5", 10.),
+    ("bed", "elevation&-2&0", 10.),
+    ("bed", "sigma&0&1", np.nan),
+]
+
+
+@pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+@pytest.mark.parametrize("masked", [False, True])
+@pytest.mark.parametrize("missing_observation", [False, True])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+    z = np.array([0., -1., -2.])
+    mask = [missing == "surface", False, missing == "bed"]
+    z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+    v = np.array([10., 20.])
+    if missing_observation:
+        # Remove the only fully bounded observation as well.
+        v[1 if missing == "surface" else 0] = np.nan
+        expected = np.nan
+    if reverse:
+        method, a, b = uri.split("&")
+        uri = f"{method}&{b}&{a}"
+    _assert_average(get_method_func(uri)(z, v), [expected])
+
+
+@pytest.mark.parametrize("uri,expected", [
+    ("depth&0&0.5", [10., np.nan, 10., np.nan, 10.]),
+    ("height&0&0.5", [20., 20., np.nan, np.nan, 10.]),
+    ("sigma&0&1", [15., np.nan, np.nan, np.nan, 10.]),
+    ("elevation&-2&0", [15., 20., 10., np.nan, 10.]),
+    ("multilevel?dir=bottom&1&1", [20., 20., np.nan, np.nan, 10.]),
+])
+def test_explicit_extent_controls_endpoints_and_excludes_finite_padding(uri, expected):
+    z = np.array([[999., 0., -1., -2., -999.],
+                  [999., np.nan, -1., -2., -999.],
+                  [999., 0., -1., np.nan, -999.],
+                  [999., 0., -1., -2., -999.],
+                  [999., 0., -1., -2., -999.]])
+    v = np.tile([999., 10., 20., 999.], (5, 1))
+    original = z.copy(), v.copy()
+    _assert_average(get_method_func(uri, layer_counts=np.array([2, 2, 2, 0, 1]), layer_start=1)(z, v), expected)
+    np.testing.assert_array_equal(z, original[0])
+    np.testing.assert_array_equal(v, original[1])
+
+
+@pytest.mark.parametrize("uri", ["depth&0&4", "height&4&0", "sigma&1&0", "elevation&-4&0"])
+@pytest.mark.parametrize("masked", [False, True])
+def test_interior_missing_geometry_preserves_known_physical_endpoints(uri, masked):
+    z = np.array([0., -1., -2., -3., -4.])
+    z = np.ma.array(z, mask=[False, False, True, False, False]) if masked else np.where(np.arange(5) == 2, np.nan, z)
+    # Only the first and last rectangles are bounded; their equal areas give 25.
+    _assert_average(get_method_func(uri)(z, np.array([10., 20., 30., 40.])), [25.])
+
+
+@pytest.mark.parametrize("uri", ["depth&0&1", "height&0&1", "sigma&0&1", "elevation&-2&0"])
+def test_empty_physical_column_has_no_contribution(uri):
+    _assert_average(get_method_func(uri)(np.array([0.]), np.array([])), [np.nan])
+    _assert_average(get_method_func(uri, layer_counts=0)(np.array([999., 0., -1.]), np.array([999., 10.])), [np.nan])
+
+
+@pytest.mark.parametrize("start,count", [(-1, 1), (0, -1), (0, 3), (0.5, 1), (0, 1.5)])
+@pytest.mark.parametrize("uri", ["depth&0&1", "height&0&1", "sigma&0&1", "elevation&-2&0"])
+def test_invalid_physical_extent_is_explicit(uri, start, count):
+    with pytest.raises(ValueError, match="physical layer"):
+        get_method_func(uri, layer_start=start, layer_counts=count)(np.array([0., -1., -2.]), np.array([10., 20.]))

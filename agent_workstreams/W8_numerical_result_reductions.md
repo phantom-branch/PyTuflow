@@ -388,3 +388,75 @@ to retain the missing physical boundary and original layer count. This corrects
 the concrete review finding without changing the unrelated geometry API.
 Final post-review counts and SHA are recorded in the delivery comment; the
 783/98 figures above describe the earlier implementation checkpoint.
+
+## Missing physical endpoints follow-up (2026-10-24)
+
+The follow-up to `26c6bad101811af2945ce7558e69bb6c1c37685e` demonstrated
+that finite min/max coordinates silently replaced missing physical endpoints.
+This correction reads actual surface/bed positions from explicit physical
+count/start metadata for all averaging methods. Direct arrays describe their
+supplied physical column; padded arrays must supply their physical extent.
+Readers already carry the provider's physical layer counts into the method
+factory; that metadata now reaches depth, height, sigma and elevation as well
+as ordinals. Padding contributes neither geometry nor observations.
+
+A surface-relative request requires the physical surface, a bed-relative request
+requires the physical bed, and sigma requires both. Unknown required geometry
+returns NaN. A known-origin or absolute-elevation request can still use a fully
+bounded layer. Missing observations remain excluded from numerator and thickness,
+and masked finite backing values never become coordinates. Relative-coordinate
+arithmetic remains intact for small depths at large datums.
+
+The old masked-geometry test expected 10 for height/sigma with a missing bed;
+those expectations are corrected to NaN explicitly. Its depth, absolute and
+ordinal expectations remain 10 where the upper physical layer is bounded.
+Padded direct tests now declare counts rather than inferring endpoints from NaNs.
+Additional regressions cover both missing endpoints, masked backing coordinates,
+simultaneously missing observations, interior gaps with known endpoints,
+reversed intervals, finite padding, per-row counts/start, empty and single-layer
+columns, and real ragged/public netCDF4/h5py/MDAL reader paths.
+
+Pre-fix reproduction against unchanged production at `26c6bad`: 208 selected
+new behavioural cases collected, 160 passed / **48 failed**, zero errors/skips.
+Against original baseline `e162c04330d24c37bee3ade94479cc4602651060`, those same
+208 cases give 88 passed / **120 failed**, zero errors/skips. The harness copies
+only the new test modules into separate normal checkouts; production imports
+and SHAs are recorded independently. These are defect reproductions, not
+acceptance runs. Existing baseline QGIS/PyMesh reports (349 passed) are reused
+because their runtime and unchanged legacy test scope are identical.
+
+### Observed installed-provider endpoint policy
+
+Genuine MDAL blocks preserve two physical layers and the missing surface/bed.
+The installed QGIS averaging object's `calculate(block)` returns valid output
+blocks containing NaN for all eight endpoint requests, including the analytically
+calculable known-origin/absolute requests. Python intentionally follows the
+explicit geometric contract rather than rejecting the entire face.
+
+| Missing endpoint | Request | Analytical / Python | Installed QGIS |
+| --- | --- | --- | --- |
+| surface | depth 0-0.5 | NaN | NaN |
+| surface | height 0-0.5 | 20 | NaN |
+| surface | elevation -2 to 0 | 20 | NaN |
+| surface | sigma 0-1 | NaN | NaN |
+| bed | height 0-0.5 | NaN | NaN |
+| bed | depth 0-0.5 | 10 | NaN |
+| bed | elevation -2 to 0 | 10 | NaN |
+| bed | sigma 0-1 | NaN | NaN |
+
+Values are `[10,20]`, with boundaries `[NaN,-1,-2]` or `[0,-1,NaN]`.
+Tests additionally remove the surviving observation and record all three results
+and raw provider geometry in JUnit properties. This is characterized provider
+behaviour, not universal parity. The Float64 tolerance remains 1e-12; public
+Float32 fixture precision is unchanged. No bundled runtime stack was replaced.
+
+Sanitised underlying candidate/baseline/pre-fix JUnit, runtime and source-import
+provenance, exact commands, test IDs and endpoint observations are published
+under `agent_workstreams/evidence/W8_missing_endpoints/` in the evidence follow-up.
+Raw reports remain local. The delivery comment records exact code-tested and
+final pushed SHAs, final counts, Windows CI and Codex review outcomes.
+
+The inherited QGIS public-surface `cell_position` limitation remains; cell
+reductions and point/time-series/sections execute, and netCDF4/h5py public
+surfaces are covered. PR remains draft and unmerged. No sibling implementation,
+production pin, solver, native benchmark or private NAS model was involved.

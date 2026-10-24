@@ -165,3 +165,69 @@ def test_single_layer_reader_honours_requested_interval(tmp_path, engine, access
     np.testing.assert_allclose(_read(reader, access, "salinity", "sigma&0&1"), 10.0)
     np.testing.assert_allclose(_read(reader, access, "salinity", "depth&0.2&0.8"), 10.0)
     assert np.isnan(_read(reader, access, "salinity", "depth&2&3")).all()
+
+
+@pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+@pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+@pytest.mark.parametrize("missing,averaging,expected", [
+    ("surface", "depth&0&0.5", np.nan),
+    ("surface", "height&0&0.5", 20.),
+    ("surface", "elevation&-2&0", 20.),
+    ("surface", "sigma&0&1", np.nan),
+    ("bed", "height&0&0.5", np.nan),
+    ("bed", "depth&0&0.5", 10.),
+    ("bed", "elevation&-2&0", 10.),
+    ("bed", "sigma&0&1", np.nan),
+])
+@pytest.mark.parametrize("missing_observation", [False, True])
+def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+    path = tmp_path / "missing_endpoint.nc"
+    _write_fv(path)
+    with Dataset(path, "a") as nc:
+        z = nc["layerface_Z"][:]
+        z[:, 0 if missing == "surface" else 2] = np.nan
+        nc["layerface_Z"][:] = z
+        if missing_observation:
+            v = nc["SAL"][:]
+            v[:, 1 if missing == "surface" else 0] = np.nan
+            nc["SAL"][:] = v
+            expected = np.nan
+    reader = NCMesh(path, driver=engine)
+    np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                               rtol=1e-12, atol=1e-12, equal_nan=True)
+
+
+@pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+@pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+@pytest.mark.parametrize("missing", ["surface", "bed"])
+def test_endpoint_single_layer_has_no_bounded_contribution(tmp_path, engine, access, missing):
+    path = tmp_path / "single_endpoint.nc"
+    _write_fv(path, single_layer=True)
+    with Dataset(path, "a") as nc:
+        z = nc["layerface_Z"][:]
+        z[:, 0 if missing == "surface" else 1] = np.nan
+        nc["layerface_Z"][:] = z
+    reader = NCMesh(path, driver=engine)
+    for uri in ["depth&0&0.5", "height&0&0.5", "elevation&-1&0", "sigma&0&1"]:
+        assert np.isnan(_read(reader, access, "salinity", uri)).all()
+
+
+@pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+@pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+def test_ragged_reader_endpoint_extent(tmp_path, engine, access):
+    path = tmp_path / "ragged_endpoints.nc"
+    _write_fv(path)
+    with Dataset(path, "a") as nc:
+        nc["NL"][:] = [1, 2, 1, 2]
+        nc["idx3"][:] = [1, 2, 4, 5]
+        nc["idx2"][:] = [1, 2, 2, 3, 4, 4, 4, 4]
+        nc["layerface_Z"][:] = [[0, -2, 0, -1, np.nan, 0, -2, 0, -1, -2, np.nan, np.nan]] * 2
+        nc["SAL"][:] = [[10, 30, 40, 0, 99, 99, np.nan, np.nan]] * 2
+    reader = NCMesh(path, driver=engine)
+    for uri, expected in [("depth&0&0.5", 30.), ("height&0&0.5", np.nan),
+                          ("sigma&0&1", np.nan), ("elevation&-2&0", 30.)]:
+        # The shorter first cell ends at its actual bed, before artificial padding.
+        np.testing.assert_allclose(_read(reader, access, "salinity", uri, cell=0), 10., rtol=1e-12, atol=1e-12)
+        # The second cell's missing physical bed is not the same as padding.
+        np.testing.assert_allclose(_read(reader, access, "salinity", uri, cell=1), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)

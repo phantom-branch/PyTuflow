@@ -12,7 +12,7 @@ from qgis.core import QgsApplication, QgsMeshDatasetIndex, QgsMeshLayer
 
 from pytuflow._outputs.helpers.averaging_method import AveragingMethod
 from pytuflow._outputs.pymesh.depth_averaging import get_method_func
-from tests.test_numerical_depth_averaging import _analytical_average
+from tests.test_numerical_depth_averaging import _analytical_average, ENDPOINT_REQUESTS
 from tests.test_numerical_fv_reader import _write_fv, _read
 from pytuflow import NCMesh
 
@@ -315,3 +315,50 @@ def test_reader_physical_count_survives_missing_surface(qapp, tmp_path, engine, 
         return _read(reader, access, "salinity", uri)
     assert np.isnan(read(1)).all()
     np.testing.assert_allclose(read(2), 20., rtol=RTOL, atol=ATOL)
+
+
+@pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+@pytest.mark.parametrize("missing_observation", [False, True])
+def test_missing_endpoints_actual_qgis_calculation(qapp, tmp_path, request, missing, uri, expected, missing_observation):
+    z = [np.nan, -1., -2.] if missing == "surface" else [0., -1., np.nan]
+    v = [10., 20.]
+    if missing_observation:
+        v[1 if missing == "surface" else 0] = np.nan
+        expected = np.nan
+    path = tmp_path / "physical-endpoint.nc"
+    _profile(path, z, v)
+    layer, block = _block(path, "salinity", z, v)
+    qgis = AveragingMethod(uri).to_qgis().calculate(block)
+    assert qgis.isValid()
+    python = get_method_func(uri, layer_counts=2)(np.array(z), np.array(v))
+    np.testing.assert_allclose(python, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+    # Installed QGIS 4.2.3 rejects the whole face if either outer endpoint is
+    # missing, even when the known-origin Python request has a bounded integral.
+    assert np.isnan(qgis.values()).all()
+    request.node.user_properties.extend([
+        ("physical_boundaries", str(block.verticalLevels())),
+        ("physical_layer_counts", str(block.verticalLevelsCount())),
+        ("raw_values", str(block.values())),
+        ("analytical_expected", str(expected)),
+        ("python_result", str(python.tolist())),
+        ("qgis_result", str(qgis.values())),
+    ])
+
+
+@pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+@pytest.mark.parametrize("access", ["point", "time_series", "section", "cell_data"])
+def test_missing_endpoint_qgis_python_reader(qapp, tmp_path, missing, uri, expected, access):
+    path = tmp_path / "reader-endpoint.nc"
+    _write_fv(path)
+    with Dataset(path, "a") as nc:
+        z = nc["layerface_Z"][:]
+        z[:, 0 if missing == "surface" else 2] = np.nan
+        nc["layerface_Z"][:] = z
+    reader = NCMesh(path, driver="qgis geometry data extractor")
+    if access == "cell_data":
+        values, active = reader._driver.cell_data("salinity", 0, uri)
+        assert active[0]
+        actual = values[0]
+    else:
+        actual = _read(reader, access, "salinity", uri)
+    np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
