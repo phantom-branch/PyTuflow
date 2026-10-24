@@ -89,7 +89,7 @@ capture can use separate passes with clearly distinguished boundaries.
 
 ## Validation and handoff
 
-Local Linux CPython 3.13.5: 34 dependency-free accounting/driver tests pass.
+Local Linux CPython 3.13.5: 36 dependency-free accounting/driver tests pass.
 They cover deterministic nesting/recursion, generators, exceptions, hook
 ownership, exact code identity, unknown owners, projection failures/differences,
 unchanged flags/duplicates/cache switches, run limits and both CLI entry points.
@@ -114,3 +114,18 @@ Preserve #14/#15, frozen ryan-tools #158 diagnostic
 supplementary three-trial SMB_PC2 result. Neither baseline validates candidates
 or runner #159. No new native run, private model publication, unsorted inspection,
 merge, dependency repin or release is authorised by this work.
+
+### Bounded review corrections
+
+Two additional regression tests failed on the initial implementation and now
+pass. Returned asynchronous iterators are rejected alongside ordinary iterators
+and awaitables. Reporting failures use an explicitly captured workload exception,
+not sys.exception(), which can refer to an unrelated exception being handled by
+the caller and incorrectly suppress a new report-write failure. The CLI summary
+uses the same explicit exception ownership. No parser behaviour changed.
+
+Initial head `d283231a2d9a1eea68f1789624ec1a20f9c7608d` passed the
+[Windows workflow](https://github.com/phantom-branch/PyTuflow/actions/runs/40066973472)
+on Python 3.12 and 3.14, including real-parser parity and existing batch
+contracts. This evidence predates the two corrections above; refreshed
+exact-head validation remains required.

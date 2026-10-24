@@ -6,7 +6,7 @@ inside the nearest active boundary. Generator suspension is outside that span.
 """
 
 from collections import defaultdict
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import AsyncIterator, Callable, Iterable, Iterator
 from dataclasses import dataclass
 from inspect import CO_ASYNC_GENERATOR, CO_COROUTINE, CO_GENERATOR, isawaitable
 import sys
@@ -104,7 +104,7 @@ class Attribution:
         try:
             sys.setprofile(self._hook)
             result = action()
-            if isinstance(result, Iterator) or isawaitable(result):
+            if isinstance(result, (Iterator, AsyncIterator)) or isawaitable(result):
                 raise TypeError('Consume lazy work inside the observed action')
             self.completed = True
             return result

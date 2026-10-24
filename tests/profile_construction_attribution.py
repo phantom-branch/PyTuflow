@@ -150,20 +150,23 @@ def compare(model, runs, targets, owners, *, on_capture=None) -> dict[str, objec
         action = lambda: model.collect_batch_dependencies(runs, cache_scopes=True, compile_tree=graph)
         capture = Attribution(targets, owners) if observed else None
         started = perf_counter_ns()
+        workload_error: BaseException | None = None
         try:
             results[label] = capture.run(action) if capture is not None else action()
+        except BaseException as exc:
+            workload_error = exc
+            raise
         finally:
             elapsed[label] = perf_counter_ns() - started
             if capture is not None and capture._used and not capture._active:
                 captures[label] = capture.snapshot()
                 if on_capture is not None:
-                    original_error = sys.exception()
                     try:
                         on_capture(label, captures[label])
                     except BaseException as report_error:
-                        if original_error is None:
+                        if workload_error is None:
                             raise
-                        original_error.add_note(f'Attribution report failed: {type(report_error).__name__}')
+                        workload_error.add_note(f'Attribution report failed: {type(report_error).__name__}')
         result = results[label]
         if not result.passed or len(result.runs) != len(runs):
             raise RuntimeError(f'Incomplete or failed parser projection in {label}')
@@ -209,22 +212,23 @@ def main() -> None:
     summary_file.write_text(json.dumps(summary, indent=2), encoding='utf-8')
     def save_capture(label, report):
         (output / f'{label}.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+    workload_error: BaseException | None = None
     try:
         started = perf_counter_ns()
         model = pytuflow.TCF(args.tcf.absolute())
         summary['parse_ns'] = perf_counter_ns() - started
         summary.update(compare(model, runs, targets, owners, on_capture=save_capture))
     except BaseException as exc:
+        workload_error = exc
         summary['error_type'] = type(exc).__name__
         raise
     finally:
-        original_error = sys.exception()
         try:
             summary_file.write_text(json.dumps(summary, indent=2), encoding='utf-8')
         except BaseException as report_error:
-            if original_error is None:
+            if workload_error is None:
                 raise
-            original_error.add_note(f'Summary write failed: {type(report_error).__name__}')
+            workload_error.add_note(f'Summary write failed: {type(report_error).__name__}')
     print('Parser projection parity passed. Diagnostic only; no native acceptance or speedup claim.')
 
 
