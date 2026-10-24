@@ -5,7 +5,7 @@
 Implemented on the existing `fix/numerical-result-reductions` branch of
 [PR #23](https://github.com/phantom-branch/PyTuflow/pull/23), targeting `master`.
 Implementation and Windows Python 3.12/3.14 acceptance are complete. The PR
-remains draft for final review and the separately recorded live-QGIS lane.
+remains draft; live QGIS execution and remaining limitations are recorded below.
 
 - Starting PR head: `ab986b392950456b46e7c62c7ba442e1a3cbf73e`.
 - Fork baseline: `e162c04330d24c37bee3ade94479cc4602651060`.
@@ -200,9 +200,9 @@ dependency versions, focused JUnit, baseline JUnit and candidate JUnit.
 The evidence-only follow-up commit changes this handoff; its exact head and
 repeat workflow run are recorded in the PR Conversation.
 
-## Explicit validation limits
+## Earlier validation limits (before live execution)
 
-- **Live QGIS-provider comparison has not run.** `tests/test_map_output.py`
+- **Historical limitation, superseded by the live execution section below:** live QGIS-provider comparison had not run. `tests/test_map_output.py`
   imports QGIS at module scope; an explicit collection attempt failed with
   `ModuleNotFoundError: No module named 'qgis'`. The evidence above is authoritative provider
   source/tests plus executed Python-reader integration, not a claim of live
@@ -353,3 +353,18 @@ installation commands, runtime JSON, provider probes, JUnit and exact test IDs.
 Their local directory is linked in the execution handoff supplied with delivery;
 no private model data was used or published. Final tested SHA, hosted checks
 and review are recorded below and in the PR Conversation after push.
+
+
+### Exact implementation-head acceptance
+
+At `68310088efa04c229508a8c86766eb7a385f5f34`, all six modules were run
+together in one process: **783 collected / 783 passed / 0 failed / 0 errors /
+0 skipped**, in 49.00 seconds. Existing baseline: **349/349 passed** in 34.25
+seconds. New-provider baseline reproduction: **98 collected / 52 passed /
+46 failed / 0 errors / 0 skipped**. This separates old defects from additional
+regressions. The evidence-only follow-up does not change production/tests.
+
+Hosted standalone Windows validation:
+[run 40076444756](https://github.com/phantom-branch/PyTuflow/actions/runs/40076444756).
+Codex review was requested on the implementation head; final review/check
+outcomes and final delivery SHA are tracked in the PR Conversation.
