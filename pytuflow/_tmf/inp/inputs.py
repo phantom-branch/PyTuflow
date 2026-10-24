@@ -1,6 +1,7 @@
 import logging
 import itertools
 import typing
+from uuid import UUID
 
 from ..scope import Scope, GlobalScope, ScopeList
 from ..abc.input import T_Input
@@ -168,3 +169,56 @@ class Inputs(list[T_Input], typing.Generic[T_Input]):
             if i > -1:
                 return i
         return -1
+
+
+class _ContextAppendRecorder:
+    """Record append positions while one batch constructs a new control file.
+
+    Only the internal constructor owns this recorder. It is discarded before
+    the run state is returned; mutable Inputs and edit/undo collections always
+    use their ordinary live parent lookup. Callers must stop using it before
+    invoking an unknown constructor that could change already-built inputs.
+    """
+
+    def __init__(self, inputs: Inputs) -> None:
+        self._inputs = inputs
+        self._visible: dict[UUID, int] = {}
+        self._hidden: dict[UUID, int] = {}
+        self._visible_count = 0
+        self._hidden_count = 0
+        self._active = not inputs and not inputs._inputs
+
+    def append(self, inp: T_Input) -> bool:
+        """Append and record first UUID positions, or use the live fallback.
+
+        Return false after a failed append-only/parent/UUID guard so the caller
+        can disable the optimisation for the rest of this batch context.
+        """
+        owner = getattr(inp, 'parent', None)
+        identifier = getattr(inp, 'uuid', None)
+        if (
+            not self._active
+            or len(self._inputs) != self._visible_count
+            or len(self._inputs._inputs) != self._hidden_count
+            or not owner
+            or getattr(owner, 'inputs', None) is not self._inputs
+            or type(identifier) is not UUID
+        ):
+            self._active = False
+            self._inputs.append(inp)
+            return False
+        if inp.is_start_block() or inp.is_end_block():
+            return True
+
+        visible = bool(inp)
+        self._inputs._inputs.append(inp)
+        if visible:
+            list.append(self._inputs, inp)
+            self._visible.setdefault(identifier, self._visible_count)
+            self._visible_count += 1
+        self._hidden.setdefault(identifier, self._hidden_count)
+        self._hidden_count += 1
+        self._inputs._indexes.append((
+            self._visible.get(identifier, -1), self._hidden[identifier],
+        ))
+        return True

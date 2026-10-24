@@ -146,3 +146,7 @@ class ControlFileInput(FileInput):
         # docstring inherited
         ctx = context if context else Context(run_context, config=self.config)
         return ControlFileInputRunState(self, ctx, parent)
+
+
+# Retain the original constructor before an extension can replace the method.
+_CONTROL_FILE_INPUT_CONTEXT = ControlFileInput.context

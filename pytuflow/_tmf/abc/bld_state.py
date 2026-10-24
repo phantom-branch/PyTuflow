@@ -128,3 +128,8 @@ class BuildState:
         >>> run_state = cf.context('-s1 EXG -e1 100yr')
         """
         raise NotImplementedError
+
+
+# Raw scope access is checked before append accounting permits a getter call.
+_BUILD_STATE_SCOPE = BuildState.__dict__['scope']
+_BUILD_STATE_DICTIONARY = BuildState.__dict__['__dict__']
