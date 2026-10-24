@@ -167,3 +167,23 @@ def test_public_logging_annotation_resolves() -> None:
         """
     )
     _assert_success(process)
+
+
+def test_legacy_results_module_does_not_append_package_path() -> None:
+    process = _run_python(
+        """
+        import sys
+        from pathlib import Path
+
+        previous = list(sys.path)
+        import pytuflow
+        from pytuflow import ResData, TPC, INFO
+
+        assert callable(ResData)
+        assert callable(TPC)
+        assert callable(INFO)
+        package_directory = str(Path(pytuflow.__file__).parent.absolute())
+        assert package_directory not in sys.path[len(previous):]
+        """
+    )
+    _assert_success(process)
