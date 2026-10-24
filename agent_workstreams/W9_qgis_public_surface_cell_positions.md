@@ -1,6 +1,6 @@
 # W9 — Restore QGIS geometry public surface cell positions
 
-**Status (25 October 2026):** Native Windows QGIS/MDAL acceptance passed, including matched baseline reproduction and complete affected regressions. Updated master is incorporated; final exact-head hosted CI and Codex review are the remaining delivery gates. See the final PR #26 acceptance comment for their terminal state.
+**Status (25 October 2026):** Implementation and acceptance complete at `ab9d3a8c3296305c95745bc67d4fa57632a93d66`: native Windows QGIS/MDAL, all nine hosted jobs and final Codex review passed. Updated master and the bounded inherited fixture repair are incorporated. PR remains draft and unmerged for owner action. The final PR #26 acceptance comment records the documentation delivery head and its final checks. No further implementation action or scheduled review remains within W9 scope.
 
 - Repository: `phantom-branch/PyTuflow`
 - Branch: `fix/qgis-public-surface-cell-position`
@@ -133,3 +133,35 @@ records this correction. Earlier failing runs are preserved, not called green.
 The fixture correction requires fresh terminal W5 hosted acceptance before final
 review. Native W9 acceptance remains passed; this handoff and the final PR comment
 separate tested source checkpoints from evidence-only delivery changes.
+
+## Final accepted implementation checkpoint
+
+Exact accepted implementation/test head:
+`ab9d3a8c3296305c95745bc67d4fa57632a93d66`.
+
+- [W9 centroid maths](https://github.com/phantom-branch/PyTuflow/actions/runs/40128170202):
+  both Windows Python 3.12/3.14 jobs terminal and successful.
+- [W8 numerical regressions](https://github.com/phantom-branch/PyTuflow/actions/runs/40128170204):
+  both Windows Python 3.12/3.14 jobs terminal and successful.
+- [W5 regression and installed wheels](https://github.com/phantom-branch/PyTuflow/actions/runs/40128170226):
+  all five jobs terminal and successful. Downloaded artifacts independently confirm
+  both baseline-dependency lanes collect 1403 cases: 1387 pass, four inherited
+  failures and 12 explicit skips. Current dependencies collect 1403: 1148 pass,
+  243 inherited failures and 12 explicit skips. All strict comparisons pass with
+  zero problems. Both installed wheels complete 23/23 smoke checks.
+- [Final Codex review](https://github.com/phantom-branch/PyTuflow/pull/26#issuecomment-6389168157)
+  completed on this exact head with no major issues. The earlier boolean-index
+  finding remains resolved; no new finding required a production correction.
+- [Additional exact-head native 2D-vector public surface evidence](https://gist.github.com/Chain-Frost/3cd6fa54b01082e14746214991bc74d2)
+  passes all three QGIS geometry/extractor combinations with independently supplied
+  components, including a missing component and the inactive-face mask. This
+  supplements the committed 2D scalar and 3D scalar/vector provider tests.
+
+Recommendation: W9 is ready for final maintainer review and merge consideration.
+No additional QGIS testing is required for this unchanged implementation. Retain
+the independent `to_vertex=True` interpolation limitation and broader inherited
+W5 dependency/reference failures; this PR does not fix those separate scopes.
+The completion-record follow-up changes only Markdown and evidence summary/
+checksums. Its final-head CI/review status is recorded in the final PR acceptance
+comment. No merge, release or draft conversion was performed. Next review: none
+for completed W9 implementation; owner decides the PR transition.

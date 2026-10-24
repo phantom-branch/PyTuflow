@@ -127,3 +127,22 @@ comparison policy changed. All **39 FV project tests pass**, raw exit 0.
 `hosted-baseline312-comparison.json` and `hosted-current314-comparison.json`
 preserve the original failing gates, including their inherited failures. Fresh
 hosted comparisons on the fixture correction remain required.
+
+### Final acceptance supersedes pending statements above
+
+Implementation/test head `ab9d3a8c3296305c95745bc67d4fa57632a93d66` passed all nine
+hosted jobs: [W9](https://github.com/phantom-branch/PyTuflow/actions/runs/40128170202),
+[W8](https://github.com/phantom-branch/PyTuflow/actions/runs/40128170204),
+[W5 regression/wheel](https://github.com/phantom-branch/PyTuflow/actions/runs/40128170226).
+All three downloaded strict comparisons report no problems. Baseline-dependency
+lanes each retain 1387 passed / four inherited failed / 12 explicit skipped;
+current dependencies retain 1148 passed / 243 inherited failed / 12 explicit
+skipped. Each lane collects 1403 cases. Wheels each complete 23/23 checks.
+`final-hosted-summary.json` records the independently verified counts.
+
+[Final Codex review on that head](https://github.com/phantom-branch/PyTuflow/pull/26#issuecomment-6389168157)
+completed with no major issues. [Additional native 2D-vector probe evidence](https://gist.github.com/Chain-Frost/3cd6fa54b01082e14746214991bc74d2)
+records three passing exact-head public surface probes, supplied source components
+and actual returned tables. Final documentation delivery checks are linked from
+the PR's final acceptance comment; no implementation/test changes follow this
+accepted checkpoint.
