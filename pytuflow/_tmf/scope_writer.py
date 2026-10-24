@@ -81,11 +81,30 @@ class ScopeWriter:
             elif self.active_scope.to_string_start():
                 fo.write(f'{self.indent(1)}{self.active_scope.to_string_start()}\n')
 
-        i = -1
+        # A scope transition may revisit the next input without consuming it.
+        # Detect revisiting the same cursor/scope state, not the size of a valid
+        # file. Discard earlier states whenever the cursor advances so the
+        # guard's memory use does not grow with the number of commands.
+        last_position = inputs._iter_idx
+        seen_states = set()
         while True:
-            i += 1
-            if i > 10_000:
-                raise RuntimeError('ScopeWriter.inputs(): Too many iterations (>10,000), something has gone wrong. Check input scopes.')
+            position = inputs._iter_idx
+            if position > last_position:
+                seen_states.clear()
+            scope_state = tuple(
+                (type(scope), scope.type, tuple(scope.names), scope.var,
+                 scope.known, scope.is_neg(), scope.is_else())
+                for scope in self.active_scope_list
+            )
+            state = (scope_state, self._lost_focus)
+            if position < last_position or state in seen_states:
+                raise RuntimeError(
+                    f'ScopeWriter.inputs(): no progress at input index {position}; '
+                    'the iterator moved backwards or repeated an unchanged scope state. '
+                    'Check input scopes and iterator rewinds.'
+                )
+            seen_states.add(state)
+            last_position = position
             try:
                 inp = inputs.next()
             except StopIteration:
