@@ -87,6 +87,7 @@ alias `RUNNER~1`, which creates artificial differences in legacy tests that
 compare lexical paths with expanded paths. Failure signatures remove only
 known snapshot locations and the exact generated temporary directory component;
 model filenames, relative path depth, failure category and phase remain checked.
+Numeric values, including hexadecimal values, are never rewritten as addresses.
 
 An opt-in pytest fixture redirects only the two project `CACHE_ROOT` values.
 The three inspected project CLI child-process sites are wrapped with

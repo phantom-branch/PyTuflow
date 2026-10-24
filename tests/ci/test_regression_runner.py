@@ -51,6 +51,15 @@ class FailureSignatureTests(unittest.TestCase):
         )
         self.assertEqual(self.signature(text), text)
 
+    def test_hexadecimal_values_and_filenames_remain_significant(self):
+        for left, right in (
+            ("Unsupported bitmask 0x10", "Unsupported bitmask 0x20"),
+            ("Missing grid_0x10.asc", "Missing grid_0x20.asc"),
+        ):
+            self.assertEqual(self.signature(left), left)
+            self.assertEqual(self.signature(right), right)
+            self.assertNotEqual(self.signature(left), self.signature(right))
+
 
 class RegressionRunnerTests(unittest.TestCase):
     def setUp(self) -> None:

@@ -121,7 +121,7 @@ def normalise_failure_signature(reason: str, source: PurePath, temporary: PurePa
     if temporary.name:
         component = rf"(?<=[\\/]){re.escape(temporary.name)}(?=[\\/])"
         signature = re.sub(component, "<temporary-name>", signature)
-    return re.sub(r"0x[0-9a-fA-F]+", "<address>", signature)
+    return signature
 
 
 class Recorder:
