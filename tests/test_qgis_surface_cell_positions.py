@@ -116,7 +116,7 @@ def test_out_of_range_faces_fail_explicitly(mixed_mesh, bad):
         mixed_mesh.cell_position(bad)
 
 
-@pytest.mark.parametrize("bad", [0.5, True, [True], [0, 1.2]])
+@pytest.mark.parametrize("bad", [0.5, True, False, np.bool_(True), np.bool_(False), [True], [False], [0, 1.2]])
 def test_noninteger_face_ids_fail_explicitly(mixed_mesh, bad):
     with pytest.raises(TypeError):
         mixed_mesh.cell_position(bad)
