@@ -99,3 +99,14 @@ and address concrete findings. Keep draft; do not merge. Next review: 25 October
 2026, when those checks finish. The authoritative final PR comment records exact
 delivery SHA, terminal hosted URLs and review disposition without rewriting the
 historical execution SHAs here.
+
+Delivery checkpoint: `ceb657fd461e3d94d54917e0aec51dc6493bd73d` contains the
+implementation, tests and sanitised evidence; all 37 focused native tests also
+passed directly on this head. Its hosted runs are [W9 centroid maths](https://github.com/phantom-branch/PyTuflow/actions/runs/40126497429),
+[W8 numerical regressions](https://github.com/phantom-branch/PyTuflow/actions/runs/40126497433)
+and [W5 regression/wheel](https://github.com/phantom-branch/PyTuflow/actions/runs/40126497432).
+Both centroid jobs, both numerical jobs and both wheel jobs passed at this
+checkpoint; the three W5 comparisons were still running when this record was
+updated. This handoff-only follow-up preserves the validated implementation and
+tests. Its final-head reruns and review disposition are linked in the final PR
+acceptance comment. [Current branch workflow runs](https://github.com/phantom-branch/PyTuflow/actions?query=branch%3Afix%2Fqgis-public-surface-cell-position).
