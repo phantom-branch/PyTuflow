@@ -52,6 +52,17 @@ def _path_key(path: PathLike) -> str:
     return os.path.normcase(os.path.normpath(str(Path(path).absolute())))
 
 
+def _path_exists(path: Path) -> bool:
+    """Only a missing path is absent; inspection failures must stop a save."""
+    # Path.exists() suppresses all OSError on Python 3.14.  In particular,
+    # treating an unreadable destination as new would omit its recovery copy.
+    try:
+        path.stat()
+    except FileNotFoundError:
+        return False
+    return True
+
+
 def _increment(path: PathLike, inc: str | None) -> Path:
     return Path(path) if inc is None else increment_fpath(path, inc)
 
@@ -127,9 +138,11 @@ class ModelSaveError(RuntimeError):
         self.replaced_paths = replaced_paths
         self.unrestored_paths = unrestored_paths
         self.recovery_paths = recovery_paths
+        copies = ', '.join(f'{destination} -> {backup}'
+                           for destination, backup in recovery_paths.items()) or 'none'
         outcome = 'original destinations restored' if not unrestored_paths else (
             f'rollback incomplete for {", ".join(map(str, unrestored_paths))}; '
-            f'recovery copies: {recovery_paths}'
+            f'recovery copies: {copies}'
         )
         super().__init__(f'Model save failed replacing {failed_destination}: {outcome}. '
                          'Pending model changes and history have been retained.')
@@ -306,7 +319,7 @@ class _SaveTransaction:
             elif inp.dirty and any(isinstance(child, (ControlFileBuildState, DatabaseBuildState))
                                    for child in inp.cf):
                 increment_reference = bool(inp.cf) and all(child.loaded for child in inp.cf)
-                for child in inp.cf:
+                for index, child in enumerate(inp.cf):
                     if isinstance(child, DatabaseBuildState):
                         source = Path(child.fpath).absolute()
                         destination = _increment(source, inc) if child.loaded else source
@@ -316,6 +329,18 @@ class _SaveTransaction:
                             self.outputs.append(_SaveOutput(child, source, destination))
                     else:
                         self._plan_control(child, inc)
+                    # Constructors can canonicalise child.fpath while these
+                    # aligned indexes retain a directory alias.  Keep that
+                    # lexical spelling and advance its filename too, without
+                    # probing or reloading the owned child.
+                    index_name = ('_database_loaded_paths' if isinstance(child, DatabaseBuildState)
+                                  else '_cf_loaded_paths')
+                    loaded_paths = getattr(inp, index_name, ())
+                    if index < len(loaded_paths):
+                        lexical_source = Path(loaded_paths[index]).absolute()
+                        lexical_destination = (_increment(lexical_source, inc)
+                                               if child.loaded else lexical_source)
+                        self.moves.setdefault(_path_key(lexical_source), lexical_destination)
                 if increment_reference:
                     self._set_reference(inp, _increment(inp.rhs, inc))
 
@@ -336,18 +361,19 @@ class _SaveTransaction:
             source_text = owner._source_texts.get(_path_key(trd_source))
             signature = _source_signature(owner, trd_source)
             changed = source_text is None or signature != source_text.signature
-            if trd_source.exists() and not changed and not any(inp.dirty for inp in trd_inputs):
+            source_exists = _path_exists(trd_source)
+            if source_exists and not changed and not any(inp.dirty for inp in trd_inputs):
                 continue
-            target = _increment(trd_source, child_inc) if trd_source.exists() else trd_source
+            target = _increment(trd_source, child_inc) if source_exists else trd_source
             self.moves[_path_key(trd_source)] = target
             ref = details['inpref']
-            self._set_reference(ref, _increment(ref.rhs, child_inc) if trd_source.exists() else ref.rhs)
+            self._set_reference(ref, _increment(ref.rhs, child_inc) if source_exists else ref.rhs)
             updated_refs = set()
             for inp in trd_inputs.inputs(include_hidden=True):
                 inp.trd = target
                 if inp.trd_input is not None and id(inp.trd_input) not in updated_refs:
                     updated_refs.add(id(inp.trd_input))
-                    if trd_source.exists():
+                    if source_exists:
                         self._set_reference(inp.trd_input, _increment(inp.trd_input.rhs, child_inc))
             self.outputs.append(_SaveOutput(owner, trd_source, target, trd_inputs,
                                            source_text=source_text))
@@ -404,7 +430,11 @@ class _SaveTransaction:
             destinations[key] = output
             if key != _path_key(output.source) and key in sources:
                 raise ValueError(f'Save destination would overwrite another source: {destination}')
-            if destination.is_symlink():
+            try:
+                info = destination.lstat()
+            except FileNotFoundError:
+                info = None
+            if info is not None and stat.S_ISLNK(info.st_mode):
                 raise ValueError(f'Save destination is a symbolic link: {destination}')
             parent_info = destination.parent.stat()
             parent_destination = (parent_info.st_dev, parent_info.st_ino,
@@ -412,8 +442,7 @@ class _SaveTransaction:
             if parent_info.st_ino and parent_destination in parent_destinations:
                 raise ValueError(f'Duplicate physical save destination through a directory alias: {destination}')
             parent_destinations.add(parent_destination)
-            if destination.exists():
-                info = destination.stat()
+            if info is not None:
                 if not stat.S_ISREG(info.st_mode):
                     raise ValueError(f'Save destination is not a regular file: {destination}')
                 if not info.st_mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH):
@@ -422,7 +451,7 @@ class _SaveTransaction:
                 if info.st_ino and identity in identities:
                     raise ValueError(f'Duplicate physical save destination: {destination}')
                 identities[identity] = destination
-            if output.source_text is not None and output.source.exists():
+            if output.source_text is not None and _path_exists(output.source):
                 if output.source.read_bytes() != output.source_text.data:
                     raise ValueError(f'Source changed on disk since loading: {output.source}')
 
@@ -479,12 +508,12 @@ class _SaveTransaction:
                         os.fsync(stream.fileno())
                 finally:
                     database.fpath = output.destination
-            mode_source = output.destination if output.destination.exists() else output.source
-            if mode_source.exists():
+            mode_source = output.destination if _path_exists(output.destination) else output.source
+            if _path_exists(mode_source):
                 os.chmod(output.staged, stat.S_IMODE(mode_source.stat().st_mode))
         # Back up every existing destination before the first replacement.
         for output in self.outputs:
-            if output.destination.exists():
+            if _path_exists(output.destination):
                 output.backup = _stage_bytes(output.destination, output.destination.read_bytes())
                 shutil.copystat(output.destination, output.backup)
 
@@ -527,7 +556,12 @@ class _SaveTransaction:
                     # is lost.  Do not report a consumed backup as recoverable.
                     try:
                         if completed.backup is None:
-                            restored = not completed.destination.exists()
+                            try:
+                                completed.destination.stat()
+                            except FileNotFoundError:
+                                restored = True
+                            else:
+                                restored = False
                         else:
                             restored = backup_bytes is not None and completed.destination.read_bytes() == backup_bytes
                     except OSError:
@@ -536,14 +570,25 @@ class _SaveTransaction:
                         continue
                     unrestored.append(completed.destination)
                     if completed.backup is not None:
-                        if not completed.backup.exists() and backup_bytes is not None:
-                            try:
-                                completed.backup = _stage_bytes(completed.destination, backup_bytes)
-                            except OSError as recovery_error:
-                                error.add_note(f'Could not recreate recovery copy: {recovery_error}')
-                        if completed.backup.exists():
-                            recovery[completed.destination] = completed.backup
-                            completed.backup = None  # retain it for manual recovery
+                        # Remove this backup from ordinary cleanup before
+                        # inspecting it.  A stat error is not proof of absence
+                        # and must never discard an original recovery copy.
+                        backup = completed.backup
+                        completed.backup = None
+                        try:
+                            backup.stat()
+                        except FileNotFoundError:
+                            backup = None
+                            if backup_bytes is not None:
+                                try:
+                                    backup = _stage_bytes(completed.destination, backup_bytes)
+                                except OSError as recovery_error:
+                                    error.add_note(f'Could not recreate recovery copy: {recovery_error}')
+                        except OSError as inspection_error:
+                            error.add_note(f'Could not inspect recovery copy {backup}; '
+                                           f'retaining it: {inspection_error}')
+                        if backup is not None:
+                            recovery[completed.destination] = backup
                     error.add_note(f'Rollback failed for {completed.destination}: {rollback_error}')
             raise ModelSaveError(output.destination, tuple(item.destination for item in replaced),
                                  tuple(unrestored), recovery) from error

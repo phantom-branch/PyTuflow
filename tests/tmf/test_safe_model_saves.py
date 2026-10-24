@@ -3,7 +3,7 @@
 import errno
 import os
 import subprocess
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
@@ -411,6 +411,65 @@ def test_rollback_failure_reports_original_backup_and_keeps_live_edits(tmp_path,
             assert (tmp_path / relative).read_bytes() == original
     expected_paths = set(before_disk) | {recovery.relative_to(tmp_path)}
     assert set(_inventory(tmp_path)) == expected_paths
+
+
+def test_recovery_diagnostic_displays_native_windows_paths():
+    destination = PureWindowsPath('C:/models/grid_003.tgc')
+    recovery = PureWindowsPath('C:/models/.grid_003.tgc.pytuflow-backup.tmp')
+
+    error = saves.ModelSaveError(destination, (destination,), (destination,),
+                                 {destination: recovery})
+
+    assert str(destination) in str(error)
+    assert str(recovery) in str(error)
+
+
+def test_backup_inspection_error_retains_recovery_copy_and_continues_rollback(tmp_path, monkeypatch):
+    model = _model(tmp_path)
+    _edit_all(model)
+    before_disk, before_state = _inventory(tmp_path), _state(model)
+    replace, path_stat = saves.os.replace, Path.stat
+    attempts = []
+    unavailable_backup = None
+    inspections = 0
+
+    def fail_commit_and_one_rollback(source, destination):
+        nonlocal unavailable_backup
+        attempts.append(Path(destination))
+        if len(attempts) == 3:
+            raise PermissionError(errno.EACCES, 'injected replacement failure', str(destination))
+        if len(attempts) == 4:
+            unavailable_backup = Path(source)
+            raise PermissionError(errno.EACCES, 'injected rollback failure', str(destination))
+        return replace(source, destination)
+
+    def fail_backup_inspection(path, *args, **kwargs):
+        nonlocal inspections
+        if path == unavailable_backup:
+            inspections += 1
+            raise OSError(errno.EIO, 'injected backup inspection failure', str(path))
+        return path_stat(path, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(saves.os, 'replace', fail_commit_and_one_rollback)
+        patch.setattr(Path, 'stat', fail_backup_inspection)
+        with pytest.raises(saves.ModelSaveError) as raised:
+            model.write(None)
+
+    error = raised.value
+    assert inspections
+    assert error.failed_destination == attempts[2]
+    assert error.replaced_paths == tuple(attempts[:2])
+    assert error.unrestored_paths == (attempts[1],)
+    assert error.recovery_paths == {attempts[1]: unavailable_backup}
+    assert unavailable_backup.read_bytes() == before_disk[attempts[1].relative_to(tmp_path)]
+    assert isinstance(error.__cause__, PermissionError)
+    assert any('backup inspection' in note for note in error.__cause__.__notes__)
+    assert _state(model) == before_state
+    for relative, original in before_disk.items():
+        if tmp_path / relative != attempts[1]:
+            assert (tmp_path / relative).read_bytes() == original
+    assert set(_inventory(tmp_path)) == set(before_disk) | {unavailable_backup.relative_to(tmp_path)}
 
 
 @pytest.mark.parametrize(('increment', 'root_name', 'child_suffix'), [

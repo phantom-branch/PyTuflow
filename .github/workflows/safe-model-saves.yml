@@ -8,6 +8,8 @@ on:
       - "pytuflow/_tmf/scope_writer.py"
       - "tests/tmf/test_safe_model_saves.py"
       - "tests/tmf/test_safe_model_save_ownership.py"
+      - "tests/tmf/test_safe_model_save_aliases.py"
+      - "tests/tmf/test_safe_model_save_inspection.py"
       - "tests/tmf/test_scope_writer_progress.py"
       - ".github/workflows/safe-model-saves.yml"
   workflow_dispatch:
@@ -68,7 +70,7 @@ jobs:
         id: focused
         continue-on-error: true
         run: |
-          python -m pytest -q tests/tmf/test_safe_model_saves.py tests/tmf/test_safe_model_save_ownership.py tests/tmf/test_scope_writer_progress.py --junitxml=reports/focused.xml
+          python -m pytest -q tests/tmf/test_safe_model_saves.py tests/tmf/test_safe_model_save_ownership.py tests/tmf/test_safe_model_save_aliases.py tests/tmf/test_safe_model_save_inspection.py tests/tmf/test_scope_writer_progress.py --junitxml=reports/focused.xml
           $status = $LASTEXITCODE
           "pytest-exit=$status" | Add-Content $env:GITHUB_OUTPUT
           exit $status
