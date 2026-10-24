@@ -1,8 +1,30 @@
 # [W5] Establish regression coverage for original PyTuflow functionality
 
-## Initial status
+## Current implementation status
 
-Draft scaffolding only: this PR currently adds a scoped work plan. Runtime changes and acceptance tests have not been implemented on this branch. Earlier review reproductions were isolated component checks, not full Windows/GIS integration validation.
+Regression and installed-wheel infrastructure is implemented on the assigned branch. The first implementation checkpoint is being validated; native Windows and real QGIS acceptance are not inferred from local Linux results. The PR remains draft until retained acceptance requirements are satisfied.
+
+The authoritative contributor contract is [ci/README.md](../ci/README.md). The historical scope below is retained for traceability; its earlier worktree/environment suggestions are superseded by the execution prompt and current contract: normal checkouts, no new worktrees or virtual environments.
+
+### Implemented
+
+- New `original-library-regression.yml`: exact-head Windows Python 3.12/3.14 baseline jobs, Python 3.14 current-dependency job, and independent installed-wheel jobs.
+- Five complete standalone capability groups, actual collected IDs and per-phase outcomes, JSON/JUnit/log/dependency evidence, separate required QGIS runtime boundary.
+- Upstream and recorded-fork comparison with source/harness provenance, strict completion/count/skip/failure checks, and raw inherited failures retained.
+- Disposable committed source/fixture copies; isolated project caches including Python CLI subprocesses; explicit legacy OGR capability skips.
+- Corrected FM comparison identities and text comparison. The same two test-only overlays are applied to upstream, fork baseline and candidate; no production or reference data are overlaid.
+- Wheel/sdist build without an isolated environment; installed-wheel origin, complete package-file identity, public exports, resources, generated control-file and CLI checks.
+- Infrastructure regression tests for missing/incomplete/altered evidence, capability policy, fixture safety, warning policy and wheel isolation.
+
+### Initial local evidence (not native Windows acceptance)
+
+Python 3.12.14 on Linux; dependency baseline taken from the recorded `requirements-dev.txt`. Time-series: 239 passed. Python mesh: 110 passed. Project: 251 passed. TMF: 566 passed, 3 failed, 11 explicit capability skips. Corrected FM: 78 passed, 1 failed. The old FM helper reported all 79 passing because its text check never compared the reference file. Exact IDs and machine-readable reports will be recorded with the validated checkpoint after hosted execution.
+
+The newly exposed FM failure is `tests/fm_lib/integration_tests/test_conversion.py::TestConversion::test_convert_river_flood_relief_arch`: generated ECF includes the ORIFICE network directive absent from the reference ECF. Both reference and generated GeoPackages contain that layer, suggesting an incomplete reference ECF. No fixture has been changed to make this pass.
+
+### Ownership and retained boundaries
+
+#19 owns `ci/`, its new general workflow, `tests/ci`, and the two shared FM test helpers. #16/#17/#23 retain their production fixes and dedicated feature tests. #22 retains package metadata, runtime import/logging/typing and root README; it has not been started. Existing deferred/graph workflow files and comparator semantics remain unchanged. No solver, private model, NAS benchmark, merge or release is part of this work.
 
 ## Source checkpoints
 
@@ -21,7 +43,7 @@ Draft scaffolding only: this PR currently adds a scoped work plan. Runtime chang
 
 ## Purpose
 
-Documentation-only draft scaffold for a separate regression-infrastructure workstream. Establish an honest, reproducible baseline for the existing results, TMF, project and FM functionality, then add Windows and installed-wheel checks without changing the existing deferred acceptance gates. Base: master. This is the infrastructure parent of W7.
+Establish an honest, reproducible baseline for the existing results, TMF, project and FM functionality, then add Windows and installed-wheel checks without changing the existing deferred acceptance gates. Base: master. This is the infrastructure parent of W7.
 
 ## Scope
 
