@@ -20,23 +20,27 @@ pip install pytuflow
 
 ## Dependencies
 
-Most dependencies are automatically installed when you install pytuflow. There are a few additional dependencies
-that are not automatically installed, but are very useful as they will extend the functionality of pytuflow. These
-are:
+PyTUFLOW supports Python **3.12–3.14** in this fork. The default `pip install pytuflow`
+installs the declared dependencies, including **netCDF4**, **Shapely**, NumPy,
+pandas, h5py, PyVista, GeoPandas and rasterio. These are not optional extras,
+and no lightweight `pytuflow[core]` distribution is currently provided.
 
-- **netCDF4**: This is required for reading any netCDF files, for example, the ``NC`` time-series output format, or
-  the ``NC`` map output format. It also allows for reading of the ``XMDF`` header information.
-- **GDAL**: This is required for reading GIS files, which extends the :class:`GisInput<pytuflow.GisInput>` class and
-  allows the use of GIS files as locations to extract data from map outputs.
-- **shapely**: Needed for extracting section data from map output formats.
-- **QGIS**: Currently QGIS is required for extracting data from `XMDF`, `NCMesh`,
-  and `CATCHJson` output formats. We hope to remove this dependency in the future,
-  but for now, it is required for these particular output formats. It isn't required for using ``pytuflow`` in general.
+- **GDAL/OGR Python bindings**: Additional native bindings are needed for
+  GDAL-specific GIS functionality, including some `GisInput` operations.
+  Install bindings compatible with your runtime's native GDAL library.
+- **QGIS/MDAL**: Required for QGIS-backed map/mesh operations. The dedicated
+  `tests/test_map_output.py` suite requires a real QGIS runtime and the MDAL
+  provider. Other supported XMDF and NCMesh readers provide Python-based
+  extraction without requiring QGIS, so QGIS is **not** a universal prerequisite
+  for those file formats.
 
-One of the trickiest libraries to install is GDAL. For Windows, you can download pre-compiled binaries from
-here: https://github.com/cgohlke/geospatial-wheels/releases.
+On Windows, use a compatible GDAL distribution where native bindings are needed.
+A QGIS/OSGeo4W Python interpreter is distinct from the ordinary Python launcher.
+See the [QGIS environment guide](https://docs.tuflow.com/pytuflow/examples/working_with_tuflow_outputs/#qgis-environment).
 
-For QGIS, there are some broad instructions on how to set up a [QGIS environment](https://docs.tuflow.com/pytuflow/examples/working_with_tuflow_outputs/#qgis-environment) in the output examples.
+Changing extras cannot remove packages already required by the default
+installation. A smaller core distribution would require a separately reviewed
+compatibility/dependency migration.
 
 ## Quickstart
 
@@ -51,13 +55,24 @@ The code base can be cloned from GitHub:
 git clone https://github.com/TUFLOW-Support/PyTuflow.git --recurse-submodules
 ```
 
-Dependencies can be installed using the `requirements-dev.txt` file:
+The pinned `requirements-dev.txt` is a broad environment snapshot: it
+includes documentation, notebook and profiling tooling as well as test
+dependencies, so it is **not** a minimal runtime requirements file. For the
+focused tests, install the default package with pytest and build tooling:
 
 ```bash
-pip install -r requirements-dev.txt
+python -m pip install -e . pytest build
 ```
 
-GDAL python bindings will also need to be installed separately. Version 3.8 or later is preferred.
+For reproducing the complete pinned development environment, use:
+
+```bash
+python -m pip install -r requirements-dev.txt
+```
+
+GDAL Python bindings are supplied separately when required and must match the
+installed native GDAL library. Do not overwrite QGIS/OSGeo4W's bundled stack
+with unrelated pip wheels.
 
 ### Building the Docs
 
@@ -77,45 +92,33 @@ To serve the documentation locally, you can use (on Windows):
 
 ### Running Tests
 
-PyTUFLOW uses `unittest` and `pytest` for testing depending on which module is being tested.
-
-To run tests for the `time series` output classes:
-
-```bash
-# from the pytuflow project root directory
-python -m unittest tests.test_time_series
-```
-
-To run tests for the `map output` classes, you will need to run within a QGIS Python environment:
+Tests are under the repository-level `tests/` directory. Use the installed
+Python interpreter (and the dependencies it needs) without replacing QGIS's
+bundled native libraries.
 
 ```bash
-# from the pytuflow project root directory
-python -m unittest tests.test_map_output
+# From the repository root: focused package API regression tests
+python -m pytest -q tests/test_package_api_quality.py
+
+# Standalone original-library suites
+python -m pytest -q tests/test_time_series.py tests/test_map_output_pymesh.py
+python -m pytest -q tests/tmf tests/fm_lib
 ```
 
-To run the `tmf` tests on Windows:
+Some original FM/TMF tests have documented inherited reference/fixture failures;
+the [baseline comparison contract](ci/README.md) retains them as actual
+failures while rejecting newly introduced ones.
+
+For QGIS-backed mesh tests, **use the real QGIS Python launcher** with an
+initialised QGIS application and MDAL provider:
 
 ```bash
-# from the pytuflow project root directory
-cd pytuflow/_tmf
-pytest tests/unit_tests/
+python -m pytest -q tests/test_map_output.py
 ```
 
-To run the `fm_to_estry` unit tests:
-
-```bash
-# from the pytuflow project root directory
-cd pytuflow/_fm_to_estry
-python -m unittest discover -s tests/unit_tests
-```
-
-To run the `fm_to_estry` integration tests:
-
-```bash
-# from the pytuflow project root directory
-cd pytuflow/_fm_to_estry
-python -m unittest discover -s tests/integration_tests
-```
+The repository's [general regression and installed-wheel workflow](ci/README.md)
+checks Windows Python 3.12 and 3.14 independently; use its `--group qgis`
+runner for strict baseline comparisons under the real QGIS environment.
 
 ### Building the Package
 

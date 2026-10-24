@@ -118,43 +118,12 @@ class TMFHandler(logging.Handler):
             _WARNING_LOG.add(msg)
 
         
-def set_logging_level(
-        level: str = 'WARNING',
-        log_to_file: PathLike = None) -> None:
-    """Configure the default logging level for the "pytuflow" logger.
-    
-    Has no impact if the user code has configured its own logger.
-    if log_to_file is a valid filepath, a filehandler will also be set up and logs will be
-    written to file.
+def set_logging_level(level: str = 'WARNING', log_to_file: PathLike = None) -> None:
+    """Backward-compatible TMF entry point for pytuflow logging configuration.
 
-    Parameters
-    ----------
-    level : str
-        keyword to set logging level.
-    log_to_file : str
-        folder path at which logs should be written.
+    The implementation is shared with pytuflow.util.pytuflow_logging; importing
+    lazily avoids a circular dependency during package initialisation.
     """
-    if log_to_file:
-        log_file = Path(log_to_file)
-        log_file = log_file.joinpath('pytuflow_logs.log') if log_file.is_dir() else log_file.with_name('pytuflow_logs.log')
+    from ..util._util.logging import set_logging_level as configure_logging
 
-        logger = logging.getLogger("pytuflow")
-        if log_file.parent.exists():
-            fhandler = logging.FileHandler(log_file.resolve())
-            fhandler.setFormatter(logging.Formatter("%(asctime)s %(module)-25s %(funcName)-25s line:%(lineno)-4d %(levelname)-8s %(message)s"))
-            fhandler.mode = "a"
-            fhandler.maxBytes = 51200
-            fhandler.backupCount = 2
-            logger.addHandler(fhandler)
-            try:
-                logger.warning("Added a file handler to log results to: {}".format(log_to_file))
-            except PermissionError:
-                raise PermissionError('Unable to write to given log folder')
-        else:
-            logger.warning('File path for log file handler does not exist at {}'.format(log_to_file))
-            raise ValueError('File path for log file handler does not exist at {}'.format(log_to_file))
-
-    level = level.upper()
-    level = level if level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'] else 'WARNING'
-    logging.getLogger('pytuflow').setLevel(level)
-    
+    configure_logging(level, log_to_file)
