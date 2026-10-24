@@ -110,3 +110,26 @@ checkpoint; the three W5 comparisons were still running when this record was
 updated. This handoff-only follow-up preserves the validated implementation and
 tests. Its final-head reruns and review disposition are linked in the final PR
 acceptance comment. [Current branch workflow runs](https://github.com/phantom-branch/PyTuflow/actions?query=branch%3Afix%2Fqgis-public-surface-cell-position).
+
+### Hosted fixture correction
+
+The W5 comparison on `7763eb275e515d05b34a5dd41f5619883ab7c1e6`
+([run 40126960750](https://github.com/phantom-branch/PyTuflow/actions/runs/40126960750))
+exposed one inherited project-fixture defect after incorporating W1/master.
+`tests/project/test_fv_project.py::TestFVBaseFeatureApplyToControlFiles::test_apply_inserts_via_placement_rule_with_include_file`
+appended a generated include after parsing had already created a placeholder for
+that same missing path. The unchanged save guard correctly rejected the duplicate
+destination. The same failure was reproduced independently on unmodified master
+`f1ceb77f74cb521f50be80209b929ecf0b58bf20`; W9 geometry was not responsible.
+
+The bounded CI repair replaces the one placeholder with the intended generated
+include and explicitly verifies placeholder count/path before replacement. All
+original placement/output assertions remain unchanged. Production model-save,
+project and QGIS geometry code, W5 comparison rules and warning policy remain
+untouched. The complete FV project module passes **39/39**, no failures/errors/skips,
+raw exit 0. [Raw before/after and hosted comparison evidence](evidence/W9_native_qgis/fixture-repair.json)
+records this correction. Earlier failing runs are preserved, not called green.
+
+The fixture correction requires fresh terminal W5 hosted acceptance before final
+review. Native W9 acceptance remains passed; this handoff and the final PR comment
+separate tested source checkpoints from evidence-only delivery changes.

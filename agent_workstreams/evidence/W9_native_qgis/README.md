@@ -110,3 +110,20 @@ The corrected branch triggers separate Windows 3.12/3.14 centroid and numerical
 workflows plus all W5 regression/wheel jobs. Consult PR #26's final acceptance
 comment and exact-head check links for their terminal results and final Codex review.
 Native acceptance alone does not make a pending hosted job pass.
+
+### Inherited invalid include fixture repaired
+
+The initial corrected-base W5 run on `7763eb2` found an unrelated project test
+creating two objects for `outputs.fvc`: one parsed missing-file placeholder and
+one manually appended generated include. Its duplicate-destination rejection
+reproduces on unmodified master `f1ceb77` as well as the W9 candidate. This is
+fixture construction rejected by the unchanged safety guard, not a centroid bug.
+
+The test now asserts a single matching placeholder and replaces it with the
+intended include. No original output/placement assertions, production code or
+comparison policy changed. All **39 FV project tests pass**, raw exit 0.
+`fixture-repair.json`, `project-repro.*`, `master-project-repro.*` and
+`project-fixture-fixed.*` preserve classification and before/after evidence.
+`hosted-baseline312-comparison.json` and `hosted-current314-comparison.json`
+preserve the original failing gates, including their inherited failures. Fresh
+hosted comparisons on the fixture correction remain required.

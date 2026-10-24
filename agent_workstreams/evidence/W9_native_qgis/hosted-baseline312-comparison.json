@@ -1,0 +1,415 @@
+{
+  "counts": {
+    "baseline": {
+      "fm": {
+        "collected": 79,
+        "error": 0,
+        "failed": 1,
+        "passed": 78,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      },
+      "project": {
+        "collected": 251,
+        "error": 0,
+        "failed": 0,
+        "passed": 251,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      },
+      "python_mesh": {
+        "collected": 110,
+        "error": 0,
+        "failed": 0,
+        "passed": 110,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      },
+      "qgis": {
+        "collected": 0,
+        "error": 0,
+        "failed": 0,
+        "passed": 0,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      },
+      "time_series": {
+        "collected": 239,
+        "error": 0,
+        "failed": 0,
+        "passed": 239,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      },
+      "tmf": {
+        "collected": 580,
+        "error": 0,
+        "failed": 3,
+        "passed": 565,
+        "skipped": 12,
+        "xfail": 0,
+        "xpass": 0
+      }
+    },
+    "candidate": {
+      "fm": {
+        "collected": 79,
+        "error": 0,
+        "failed": 1,
+        "passed": 78,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      },
+      "project": {
+        "collected": 251,
+        "error": 0,
+        "failed": 1,
+        "passed": 250,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      },
+      "python_mesh": {
+        "collected": 110,
+        "error": 0,
+        "failed": 0,
+        "passed": 110,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      },
+      "qgis": {
+        "collected": 0,
+        "error": 0,
+        "failed": 0,
+        "passed": 0,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      },
+      "time_series": {
+        "collected": 239,
+        "error": 0,
+        "failed": 0,
+        "passed": 239,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      },
+      "tmf": {
+        "collected": 724,
+        "error": 0,
+        "failed": 3,
+        "passed": 709,
+        "skipped": 12,
+        "xfail": 0,
+        "xpass": 0
+      }
+    }
+  },
+  "fixed_failures": [],
+  "inherited_failures": [
+    {
+      "failure_signature": "compare_txt(file1, file2): length of lines do not match:\nfile1: 4\nfile2: 2",
+      "failure_type": "AssertionError",
+      "group": "fm",
+      "nodeid": "tests/fm_lib/integration_tests/test_conversion.py::TestConversion::test_convert_river_flood_relief_arch",
+      "outcome": "failed",
+      "phase": "call",
+      "phases": {
+        "call": {
+          "failure_type": "AssertionError",
+          "outcome": "failed",
+          "reason": "compare_txt(file1, file2): length of lines do not match:\nfile1: 4\nfile2: 2"
+        },
+        "setup": {
+          "outcome": "passed"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "compare_txt(file1, file2): length of lines do not match:\nfile1: 4\nfile2: 2"
+    },
+    {
+      "failure_signature": "No Control File/Database has been loaded for read grid rf",
+      "failure_type": "ValueError",
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_control_file.py::test_load_rainfall_database",
+      "outcome": "failed",
+      "phase": "call",
+      "phases": {
+        "call": {
+          "failure_type": "ValueError",
+          "outcome": "failed",
+          "reason": "No Control File/Database has been loaded for read grid rf"
+        },
+        "setup": {
+          "outcome": "passed"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "No Control File/Database has been loaded for read grid rf"
+    },
+    {
+      "failure_signature": "assert [WindowsPath(...1_001_L.shp')] == [WindowsPath(...ix.csv'), ...]\n  \n  At index 3 diff: WindowsPath('<snapshot>/tests/tmf/scen1_matrix.csv') != WindowsPath('<snapshot>/tests/tmf/q_flow.csv')\n  Right contains one more item: WindowsPath('<snapshot>/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp')\n  \n  Full diff:\n    [\n        WindowsPath('<snapshot>/tests/tmf/area.csv'),\n        WindowsPath('<snapshot>/tests/tmf/flow.csv'),\n        WindowsPath('<snapshot>/tests/tmf/matrix.csv'),\n  -     WindowsPath('<snapshot>/tests/tmf/q_flow.csv'),\n        WindowsPath('<snapshot>/tests/tmf/scen1_matrix.csv'),\n        WindowsPath('<snapshot>/tests/tmf/scen2_matrix.csv'),\n  -     WindowsPath('<snapshot>/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  +     TuflowWindowsPath('<snapshot>/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  ?     ++++++\n    ]",
+      "failure_type": "AssertionError",
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_input.py::test_input_files_ref_in_gis",
+      "outcome": "failed",
+      "phase": "call",
+      "phases": {
+        "call": {
+          "failure_type": "AssertionError",
+          "outcome": "failed",
+          "reason": "assert [WindowsPath(...1_001_L.shp')] == [WindowsPath(...ix.csv'), ...]\n  \n  At index 3 diff: WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/scen1_matrix.csv') != WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/q_flow.csv')\n  Right contains one more item: WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp')\n  \n  Full diff:\n    [\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/area.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/flow.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/matrix.csv'),\n  -     WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/q_flow.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/scen1_matrix.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/scen2_matrix.csv'),\n  -     WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  +     TuflowWindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  ?     ++++++\n    ]"
+        },
+        "setup": {
+          "outcome": "passed"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "assert [WindowsPath(...1_001_L.shp')] == [WindowsPath(...ix.csv'), ...]\n  \n  At index 3 diff: WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/scen1_matrix.csv') != WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/q_flow.csv')\n  Right contains one more item: WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp')\n  \n  Full diff:\n    [\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/area.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/flow.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/matrix.csv'),\n  -     WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/q_flow.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/scen1_matrix.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/scen2_matrix.csv'),\n  -     WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  +     TuflowWindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  ?     ++++++\n    ]"
+    },
+    {
+      "failure_signature": "assert [WindowsPath(...1_001_L.shp')] == [WindowsPath(...1_001_L.shp')]\n  \n  At index 3 diff: WindowsPath('<snapshot>/tests/tmf/scen1_matrix.csv') != WindowsPath('<snapshot>/tests/tmf/q_flow.csv')\n  Right contains one more item: WindowsPath('<snapshot>/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp')\n  \n  Full diff:\n    [\n        WindowsPath('<snapshot>/tests/tmf/area.csv'),\n        WindowsPath('<snapshot>/tests/tmf/flow.csv'),\n        WindowsPath('<snapshot>/tests/tmf/matrix.csv'),\n  -     WindowsPath('<snapshot>/tests/tmf/q_flow.csv'),\n        WindowsPath('<snapshot>/tests/tmf/scen1_matrix.csv'),\n  -     WindowsPath('<snapshot>/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  +     TuflowWindowsPath('<snapshot>/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  ?     ++++++\n    ]",
+      "failure_type": "AssertionError",
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_input_context.py::test_input_files_ref_in_gis",
+      "outcome": "failed",
+      "phase": "call",
+      "phases": {
+        "call": {
+          "failure_type": "AssertionError",
+          "outcome": "failed",
+          "reason": "assert [WindowsPath(...1_001_L.shp')] == [WindowsPath(...1_001_L.shp')]\n  \n  At index 3 diff: WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/scen1_matrix.csv') != WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/q_flow.csv')\n  Right contains one more item: WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp')\n  \n  Full diff:\n    [\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/area.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/flow.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/matrix.csv'),\n  -     WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/q_flow.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/scen1_matrix.csv'),\n  -     WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  +     TuflowWindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  ?     ++++++\n    ]"
+        },
+        "setup": {
+          "outcome": "passed"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "assert [WindowsPath(...1_001_L.shp')] == [WindowsPath(...1_001_L.shp')]\n  \n  At index 3 diff: WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/scen1_matrix.csv') != WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/q_flow.csv')\n  Right contains one more item: WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp')\n  \n  Full diff:\n    [\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/area.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/flow.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/matrix.csv'),\n  -     WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/q_flow.csv'),\n        WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/scen1_matrix.csv'),\n  -     WindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  +     TuflowWindowsPath('<hosted-reports>/pytuflow-tmf-z6hbm0e2/source/tests/tmf/test_datasets/1d_nwk_EG11_001_L.shp'),\n  ?     ++++++\n    ]"
+    }
+  ],
+  "inherited_skips": [
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_fv_cf.py::test_load_command_with_absolute_fpath_linux",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: Test is for linux only"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: Test is for linux only"
+    },
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_gis.py::TestOGRWrite::test_auto_field_creation",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: GDAL not available"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: GDAL not available"
+    },
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_gis.py::TestOGRWrite::test_context_manager_closes_on_exit",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: GDAL not available"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: GDAL not available"
+    },
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_gis.py::TestOGRWrite::test_wkb_geometry_input",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: GDAL not available"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: GDAL not available"
+    },
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_gis.py::TestOGRWrite::test_write_gpkg_points",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: GDAL not available"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: GDAL not available"
+    },
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_gis.py::TestOGRWrite::test_write_gpkg_polygons",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: GDAL not available"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: GDAL not available"
+    },
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_gis.py::TestOGRWrite::test_write_mode_rplus_creates_layer_if_missing",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: GDAL not available"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: GDAL not available"
+    },
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_gis.py::TestOGRWrite::test_write_mode_rplus_updates_existing_layer",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: GDAL not available"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: GDAL not available"
+    },
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_gis.py::TestOGRWrite::test_write_mode_w_overwrites_layer",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: GDAL not available"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: GDAL not available"
+    },
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_gis.py::TestOGRWrite::test_write_shp_lines",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: GDAL not available"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: GDAL not available"
+    },
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_gis.py::TestOGRWrite::test_write_shp_points",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: GDAL not available"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: GDAL not available"
+    },
+    {
+      "group": "tmf",
+      "nodeid": "tests/tmf/test_input.py::test_input_attrs_3",
+      "outcome": "skipped",
+      "phases": {
+        "setup": {
+          "outcome": "skipped",
+          "reason": "Skipped: GDAL not available"
+        },
+        "teardown": {
+          "outcome": "passed"
+        }
+      },
+      "reason": "Skipped: GDAL not available"
+    }
+  ],
+  "problems": [
+    "Regression: project: tests/project/test_fv_project.py::TestFVBaseFeatureApplyToControlFiles::test_apply_inserts_via_placement_rule_with_include_file: passed -> failed"
+  ],
+  "schema_version": 1,
+  "skipped_groups": [
+    {
+      "group": "qgis",
+      "reason": "QGIS integration is a separately selected real-runtime job; run --group qgis from its configured interpreter",
+      "status": "not_selected"
+    }
+  ],
+  "sources": {
+    "baseline": {
+      "checkout_unchanged": true,
+      "repository": "<hosted-checkout>\\candidate",
+      "requested_ref": "e162c04330d24c37bee3ade94479cc4602651060",
+      "sha": "e162c04330d24c37bee3ade94479cc4602651060"
+    },
+    "candidate": {
+      "checkout_unchanged": true,
+      "repository": "<hosted-checkout>\\candidate",
+      "requested_ref": "HEAD",
+      "sha": "7763eb275e515d05b34a5dd41f5619883ab7c1e6"
+    }
+  },
+  "status": "failed"
+}
