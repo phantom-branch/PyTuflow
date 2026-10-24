@@ -1,0 +1,48 @@
+name: W7 package API and logging
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/package-api-quality.yml"
+      - "pyproject.toml"
+      - "README.md"
+      - "pytuflow/__init__.py"
+      - "pytuflow/_tmf/logging_.py"
+      - "pytuflow/util/_util/logging.py"
+      - "tests/test_package_api_quality.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-api:
+    name: Windows Python ${{ matrix.python-version }} package API
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install default package and testing tools
+        run: python -m pip install -e . pytest build
+      - name: Check installed dependencies
+        run: python -m pip check
+      - name: Execute focused API regressions
+        run: python -m pytest -q tests/test_package_api_quality.py --junitxml=package-api-results.xml
+      - name: Verify public logging exports and Python metadata
+        run: |
+          python -c "import logging, importlib.metadata as md, pytuflow; from pytuflow import pytuflow_logging; from packaging.specifiers import SpecifierSet; assert callable(pytuflow.set_logging_level); assert callable(pytuflow_logging.set_logging_level); assert str(md.requires('pytuflow'))"
+          python -c "import sys, importlib.metadata as md; from packaging.specifiers import SpecifierSet; assert sys.version.split()[0] in SpecifierSet(md.metadata('pytuflow')['Requires-Python'])"
+      - name: Save focused JUnit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w7-package-api-${{ matrix.python-version }}
+          path: package-api-results.xml
+          retention-days: 30
+          if-no-files-found: warn
