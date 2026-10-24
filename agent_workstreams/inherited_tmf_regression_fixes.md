@@ -30,3 +30,7 @@ Runtime/test checkpoint: `1010290286dfcf0b1fe4ecbe0eb1f9752cbe4646`.
 - The exact selection comprises the 581 tests previously compared in PR #17 and 15 additional regression cases. Compared with the old Windows 548 passed/32 failed/1 skipped baseline, there are no remaining failures in this selection.
 
 An independent Codex review of this exact runtime was requested in PR #27. Other existing deferred/batch/graph checks are tracked separately and do not affect the inherited-error correction.
+
+## W1 integration fixture compatibility
+
+After PR #17 merged, the complete W5 baseline lane exposed a failing FV-project include-placement test. It used `inp.cf.append(include)` on a newly constructed Include command whose missing target already had an automatically loaded placeholder; thus two distinct control owners targeted `outputs.fvc`. W1 correctly rejects ambiguous duplicate destinations. The test now replaces the placeholder via `inp.cf[:] = [include]`, asserts one owner and continues verifying that the new NetCDF output is written to the include, not to the main FVC. This removes an invalid test arrangement without weakening W1's separate duplicate-owner rejection tests. The dedicated Windows workflow now runs this project test explicitly on both supported versions; full original-library regression remains required.

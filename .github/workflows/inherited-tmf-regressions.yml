@@ -8,6 +8,7 @@ on:
       - 'tests/tmf/test_input.py'
       - 'tests/tmf/test_input_context.py'
       - 'tests/tmf/test_inherited_regression_contracts.py'
+      - 'tests/project/test_fv_project.py'
       - '.github/workflows/inherited-tmf-regressions.yml'
   workflow_dispatch:
 
@@ -44,7 +45,7 @@ jobs:
           python -m pip freeze | Set-Content reports/dependencies.txt
       - name: Run all previously failing tests and existing deferred contracts
         run: |
-          python -m pytest -q tests/tmf/test_control_file.py tests/tmf/test_scope_writer.py tests/tmf/test_altered_inputs.py tests/tmf/test_inputs.py tests/tmf/test_input.py tests/tmf/test_input_context.py tests/tmf/test_cf_context.py tests/tmf/test_context.py tests/tmf/test_fv_cf.py tests/tmf/test_scope.py tests/tmf/test_events.py tests/tmf/test_xs_db_from_cf.py tests/test_deferred_file_references.py tests/test_deferred_database_parity.py tests/test_batch_dependencies.py tests/tmf/test_inherited_regression_contracts.py --junitxml=reports/tests.xml
+          python -m pytest -q tests/tmf/test_control_file.py tests/tmf/test_scope_writer.py tests/tmf/test_altered_inputs.py tests/tmf/test_inputs.py tests/tmf/test_input.py tests/tmf/test_input_context.py tests/tmf/test_cf_context.py tests/tmf/test_context.py tests/tmf/test_fv_cf.py tests/tmf/test_scope.py tests/tmf/test_events.py tests/tmf/test_xs_db_from_cf.py tests/test_deferred_file_references.py tests/test_deferred_database_parity.py tests/test_batch_dependencies.py tests/tmf/test_inherited_regression_contracts.py tests/project/test_fv_project.py::TestFVBaseFeatureApplyToControlFiles::test_apply_inserts_via_placement_rule_with_include_file --junitxml=reports/tests.xml
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Retain exact-head reports
         if: always()
