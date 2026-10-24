@@ -1,6 +1,6 @@
 # W9 — Restore QGIS geometry public surface cell positions
 
-**Status:** Draft implementation work package; not yet a runtime fix.
+**Status:** Scoped implementation and tests pushed; hosted standalone checks in progress. Real QGIS/MDAL acceptance remains outstanding (not available in this execution environment).
 
 - Repository: `phantom-branch/PyTuflow`
 - Branch: `fix/qgis-public-surface-cell-position`
@@ -40,3 +40,28 @@ This is not a defect in the numerical weights, missing-data policy or W8 `depth_
 ## Agent handoff
 
 Continue on the **existing** `fix/qgis-public-surface-cell-position` branch, based on merged `master`; do not create a second PR or alter #23. Start by inspecting the current PR comments, repo guidance, and actual QGIS environment. Deliver implemented code, executed tests, a committed handoff and passing review, not another plan. Keep this PR draft until it is validated, and do not merge or release without the owner's instruction.
+
+## Implementation checkpoint
+
+Branch commits (in order):
+
+- `54a9147029f9df933a26c22af9f98aabd1e38d00`: implement `QgisMeshGeometry.cell_position` with native `QgsMesh` face topology, area-weighted triangle/quad polygon centroids, signed triangle-fan Z when native vertex Z exists, NaN when it does not, selected/sliced face order, duplicate and empty selection support, explicit invalid-index/scope errors, cached positions and local `Transform2D` handling.
+- `31d1be16296951913f3f7a533b19372aae182d9c`: add `tests/test_qgis_surface_cell_positions.py`, designated **real QGIS/MDAL** regression cases. Uses generated triangle/irregular quadrilateral 2DM and the public generated FV fixture from `tests.test_numerical_fv_reader`. Checks selection and coordinate contracts plus end-to-end public `surface(..., to_vertex=False)` for 2D and 3D scalar/vector data via QGIS geometry with native and QGIS data extractors.
+- `213baf2d8a7621bd3f56fc9eb66a48ae05c6d051`: standalone analytical centroid tests, `tests/test_qgis_centroid_math.py`, intentionally distinct from QGIS provider validation.
+- `f81ed2f8e54a286a1ebe8ddadfcc4bee8bcc1c9b`: dedicated Windows Python 3.12/3.14 centroid maths workflow. Existing original-library and W8 workflows are preserved.
+
+### Geometry decisions
+
+- Face locations use the *native untriangulated* QGIS mesh to retain one position per dataset face. XY is the **signed-area polygon centroid in the native mesh CRS**, not a mean of vertices and not geodesic. Relative coordinates are shifted by the first vertex for numerical precision with large projected eastings/northings.
+- The output is `N × 3` even for one face or no faces. `global` means native dataset CRS; `local` applies the existing `geom.trans` transform (identity unless configured), preserving Z. Invalid scopes/face IDs fail explicitly.
+- Z is computed only when all original `QgsMeshVertex` values report 3D with finite elevations. A signed triangle-fan area integral supplies the surface-weighted Z; missing native Z is NaN and is not substituted with a fabricated `0` or unverified bed dataset value. Public surface extraction uses XY.
+- One native mesh population and spatial index is reused; centroids are memoised by source face ID. Requested order and duplicates are retained. No public numerical averaging or wet/dry policy is changed.
+- `surface(..., to_vertex=True)` remains outside scope: the inherited `cell_to_vertex_weights` capability needs separate evidence before claiming support.
+
+### Validation status and hard boundary
+
+A local standalone analytical reproduction of the area-centroid formula passed **5/5** checks using NumPy and pytest (irregular quad, triangle Z, winding reversal, missing Z, degenerate geometry). This is a mathematical preflight, **not** executed repository tests nor QGIS validation. The committed 7-case standalone suite is being run by GitHub Actions.
+
+This environment has Python 3.13.5 but no `qgis` bindings or MDAL provider, so it **cannot** execute `tests/test_qgis_surface_cell_positions.py`. A true QGIS validation agent must execute that module plus the affected `tests/test_map_output.py`, `tests/test_map_output_pymesh.py`, and W8 numerical cases using the installed QGIS 4 runtime. An unavailable QGIS provider is a blocker, not a passing skip. Record the actual tested source head, QGIS/Python/GDAL versions, commands and JUnit; compare the pre-fix merged-master geometry `NotImplementedError` with the candidate's public scalar/vector surfaces, checking independent centroid expectations and wet/dry masks.
+
+Do not claim the PR is accepted or merge it without that lane and subsequent Codex review. The branch must stay draft until these gates pass. No private models, solver, benchmark, unrelated changes, merge or release were used.
