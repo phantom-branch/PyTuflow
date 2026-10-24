@@ -1,9 +1,5 @@
-import os
 import sys
 import logging
-
-# sys.path.append(os.path.join(os.path.dirname(__file__), '_fm_to_estry'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '_tmf'))
 
 # Setup default logging handler for pytuflow logger.
 # If the user has already configured a handler, this block is skipped.
