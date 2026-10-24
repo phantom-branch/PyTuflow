@@ -8,6 +8,24 @@ if typing.TYPE_CHECKING:
     from . import PyMesh
 
 
+def _averaging_data(values: list[np.ndarray], *, combined_vector: bool = False) -> list[np.ndarray]:
+    """Use the same valid layers for every component of a depth average.
+
+    QGIS's supported averaging provider omits a vector layer if either component
+    is missing. Convert source masks to NaN before applying that joint validity;
+    zero remains a valid value. Copies avoid modifying cached source arrays.
+    """
+    if combined_vector:
+        values = [values[0][..., 0], values[0][..., 1]]
+    values = [np.ma.asarray(value, dtype=float).filled(np.nan) for value in values]
+    if len(values) > 1:
+        missing = np.logical_or.reduce([np.isnan(value) for value in values])
+        values = [np.where(missing, np.nan, value) for value in values]
+    if combined_vector:
+        return [np.stack(values, axis=-1)]
+    return values
+
+
 class CellDataMixin:
 
     def cell_data(self: 'PyMesh',
@@ -44,12 +62,17 @@ class CellDataMixin:
             wd3d = wd[wd3d_index] if wd.ndim == 1 else wd[:, wd3d_index]
 
         wts = None
+        averaging_data = None
         if is_3d and depth_averaging_method is not None:
             nlevels = self.zlevel_count(slice(None))
             max_nlevels = nlevels.max()
             zlevels = self.zlevels(time_index, nlevels, np.arange(nlevels.shape[0]), self.cell_index(slice(None), data_types[0]))
             a_padded = np.full((nlevels.shape[0], max_nlevels), np.nan)
             b_padded = np.full((nlevels.shape[0], max_nlevels + 1), np.nan)
+            averaging_data = dict(zip(data_types, _averaging_data(
+                [self.data(dtype, index) for dtype in data_types],
+                combined_vector=is_vector and len(data_types) == 1,
+            )))
 
         data = np.array([])
         values = []
@@ -63,8 +86,9 @@ class CellDataMixin:
                     wd = np.full((a.shape[0],), True)
                 return a, wd
 
-            a = self.data(dtype, index)
-            extracted = [a[..., 0], a[..., 1]] if a.ndim == 3 else [a]
+            a = averaging_data[dtype] if averaging_data is not None else self.data(dtype, index)
+            combined_vector = averaging_data is not None and is_vector and len(data_types) == 1
+            extracted = [a[..., 0], a[..., 1]] if a.ndim == 3 or combined_vector else [a]
             for data in extracted:
                 if data.ndim == 2 and data.shape[0] == 1:
                     data = data.flatten()
@@ -78,7 +102,7 @@ class CellDataMixin:
                             b_padded[i, :nlevel + 1] = zlevels_[k2:k2 + nlevel + 1]
                             k1 += nlevel
                             k2 += nlevel + 1
-                        return depth_averaging.get_method_func(depth_averaging_method)(b_padded, a_padded)
+                        return depth_averaging.get_method_func(depth_averaging_method, layer_counts=nlevels)(b_padded, a_padded)
 
                     if data.ndim == 1:
                         data = depth_average(data, zlevels)
@@ -161,10 +185,11 @@ class CellDataMixin:
             values.append(a)
 
         if is_3d:
+            values = _averaging_data(values)
             values_avg = []
             for val in values:
                 zlevels = self.zlevels(time_index, nlevels, cell_id, cell_idx)
-                a = depth_averaging.get_method_func(depth_averaging_method)(zlevels, val)
+                a = depth_averaging.get_method_func(depth_averaging_method, layer_counts=nlevels)(zlevels, val)
                 values_avg.append(a)
             values = values_avg
 
@@ -208,11 +233,12 @@ class CellDataMixin:
 
         wd = self.wd_flag(data_type[0], (slice(None), cell_id)).flatten().astype(bool)
 
-        if is_3d and nlevels > 1:
+        if is_3d:
+            values = _averaging_data(values)
             zlevels = self.zlevels(slice(None), nlevels, cell_id, cell_idx)
             values_avg = []
             for val in values:
-                a = depth_averaging.get_method_func(depth_averaging_method)(zlevels, val)
+                a = depth_averaging.get_method_func(depth_averaging_method, layer_counts=nlevels)(zlevels, val)
                 values_avg.append(a)
             values = values_avg
 
@@ -251,12 +277,19 @@ class CellDataMixin:
             max_nlevels = 1
             idx = cells
 
+        averaging_data = None
+        if is_3d:
+            averaging_data = dict(zip(data_type, _averaging_data(
+                [self.data(dtype, (time_index, idx)) for dtype in data_type],
+                combined_vector=self.is_vector(data_type[0]) and len(data_type) == 1,
+            )))
+
         values = []
         for dtype in data_type:
-            a = self.data(dtype, (time_index, idx))
+            a = averaging_data[dtype] if averaging_data is not None else self.data(dtype, (time_index, idx))
             extracted = [a[:,0], a[:,1]] if a.ndim == 2 else [a]
             for a in extracted:
-                if is_3d and max_nlevels > 1:
+                if is_3d:
                     zlevels = self.zlevels(time_index, nlevels, cells, cell_idx)
                     a_padded = np.full((cell_idx.shape[0], max_nlevels), np.nan)
                     b_padded = np.full((cell_idx.shape[0], max_nlevels + 1), np.nan)
@@ -266,7 +299,7 @@ class CellDataMixin:
                         b_padded[i, :nlevel+1] = zlevels[k2:k2 + nlevel + 1]
                         k1 += nlevel
                         k2 += nlevel + 1
-                    avg = depth_averaging.get_method_func(depth_averaging_method)(b_padded, a_padded)
+                    avg = depth_averaging.get_method_func(depth_averaging_method, layer_counts=nlevels)(b_padded, a_padded)
                     values.append(avg)
                 else:
                     values.append(a)
