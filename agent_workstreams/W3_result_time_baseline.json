@@ -230,5 +230,46 @@
     "findings": false,
     "unresolved_findings": false,
     "url": "https://github.com/phantom-branch/PyTuflow/pull/16#issuecomment-6381380333"
+  },
+  "qgis_acceptance": {
+    "status": "passed",
+    "date": "2026-10-24",
+    "candidate_sha": "318a282181db642df4ee76ddf3d7731909fb6b3b",
+    "baseline_sha": "21617f29eed86d9e123aaf9353934b63d299ca07",
+    "harness_sha": "4ca199c55d6d388a0019128332e8f0adafdace93",
+    "environment": {
+      "qgis": "4.2.3",
+      "python": "3.12.15",
+      "qt": "6.11.0",
+      "gdal": "3.13.3",
+      "mdal": true
+    },
+    "baseline_qgis": {
+      "collected": 239,
+      "passed": 239,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0
+    },
+    "candidate_qgis": {
+      "collected": 239,
+      "passed": 239,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0
+    },
+    "candidate_focused": {
+      "collected": 108,
+      "passed": 108,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "exit_code": 0
+    },
+    "comparison_exit_code": 0,
+    "evidence_url": "https://github.com/phantom-branch/PyTuflow/pull/16#issuecomment-6382509851",
+    "note": "Reported local real-provider evidence; no production changes; raw logs remain local."
   }
 }

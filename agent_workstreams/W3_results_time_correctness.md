@@ -5,7 +5,7 @@
 Implemented on the existing `fix/results-time-correctness` branch, targeting `master`.
 The public time contract, regression tests and feature-specific Windows workflow are implemented.
 Local and Windows Python 3.12/3.14 validation pass. Codex review completed with no findings.
-The PR is left draft; actual QGIS/MDAL validation remains a separate, unavailable provider lane. No merge, release or W4 work is authorised by this handoff.
+The originally unavailable QGIS/MDAL provider lane was subsequently completed on installed QGIS 4.2.3 with 239/239 existing QGIS tests passing on both baseline and candidate, plus 108/108 dedicated time tests passing on candidate. Final QGIS comparison exit code 0; no changes were needed. This handoff documents the result without altering the reviewed production implementation.
 
 ## Source checkpoints
 
@@ -71,7 +71,7 @@ The same dependency profile and the unchanged repository warnings-as-errors poli
 | Dedicated time regressions | 36 passed, **72 failed** / 108 | **108 passed** / 108 | 0 |
 | Existing `test_map_output_pymesh.py` | **110 passed** / 110 | **110 passed** / 110 | 0 |
 | Existing `test_time_series.py` | **239 passed** / 239 | **239 passed** / 239 | 0 |
-| Existing `test_map_output.py` | No tests executed; QGIS import fails at collection | Actual QGIS provider unavailable | Not represented as a passing/blanket-skipped suite |
+| Existing `test_map_output.py` | Not available in the original non-QGIS Linux environment | Later validated on actual QGIS 4.2.3: baseline 239/239, candidate 239/239 | 0 |
 
 The exact focused baseline IDs and test-module hash are preserved in [`W3_result_time_baseline.json`](W3_result_time_baseline.json). The tests import the real package and create tiny NetCDF files under pytest's temporary directories; no copied function implementations or fabricated GIS providers are used.
 
@@ -91,7 +91,7 @@ python -m pytest -q tests/test_map_output_pymesh.py tests/test_time_series.py --
 
 For baseline proof, place the exact new test module into a separate normal checkout of `21617f29eed86d9e123aaf9353934b63d299ca07` and run it against that checkout's unmodified imported package using the same dependency profile. The expected 72 failures are diagnostic evidence, not a passing acceptance job.
 
-Run `tests/test_map_output.py` separately under an actual QGIS interpreter. The observed non-QGIS collection failure was `ModuleNotFoundError: No module named 'qgis'`; no QGIS/MDAL acceptance is claimed.
+The original non-QGIS run could not collect `tests/test_map_output.py` because `qgis.core` was unavailable. The separate native QGIS/MDAL validation subsequently completed successfully; see the native acceptance record below.
 
 ### Windows acceptance and review
 
@@ -105,6 +105,22 @@ Run `tests/test_map_output.py` separately under an actual QGIS interpreter. The 
 Both jobs verified source `d5281da5373b6851b622b61ad949d801d8ac7dc6` and pandas 2.3.3. Report artifacts are `result-times-python-3.12` (ID `12552416857`) and `result-times-python-3.14` (ID `12551844644`). Both environments report QGIS unavailable.
 
 [Codex review requested](https://github.com/phantom-branch/PyTuflow/pull/16#issuecomment-6381359281) after implementation and focused validation. Independent local review found malformed UTC-offset acceptance and a numeric/datetime tolerance-boundary discrepancy; both were corrected and verified with dedicated tests. [Remote Codex review completed](https://github.com/phantom-branch/PyTuflow/pull/16#issuecomment-6381380333) at `d5281da5373b6851b622b61ad949d801d8ac7dc6` with no findings and no unresolved review threads.
+
+### Native QGIS 4.2.3 / MDAL acceptance (completed 24 October 2026)
+
+[Published execution evidence and command summary](https://github.com/phantom-branch/PyTuflow/pull/16#issuecomment-6382509851) validates unchanged candidate `318a282181db642df4ee76ddf3d7731909fb6b3b` against inherited `21617f29eed86d9e123aaf9353934b63d299ca07` using the same QGIS environment and W5 harness `4ca199c55d6d388a0019128332e8f0adafdace93`.
+
+- Real QGIS **4.2.3**, CPython **3.12.15**, Qt **6.11.0**, GDAL **3.13.3**; MDAL provider verified in the real registry.
+- Full `tests/test_map_output.py`: **239 passed** on baseline and **239 passed** on candidate, no failures/errors/skips.
+- Dedicated `tests/test_result_time_correctness.py`: **108 passed**, no failures/errors/skips.
+- W5 strict baseline/candidate comparison: **exit 0**, no problems, changed failures, skipped groups or inherited failures.
+- Same harness, dependencies and import provenance for both source snapshots; source checkouts unchanged.
+- This closes the W3 provider-validation boundary for the installed runtime; it does not claim validation of every QGIS release.
+- Detailed machine-readable summary is also preserved in `W3_result_time_baseline.json` under `qgis_acceptance`. Raw local reports remain with the executing agent; no private paths were committed.
+
+### Final-head validation
+
+[Final-head Windows 3.12 and 3.14 checks](https://github.com/phantom-branch/PyTuflow/actions/runs/40073837344) both passed **108 focused + 349 existing** tests on `318a282181db642df4ee76ddf3d7731909fb6b3b`, with zero failures, errors or skips. Codex's implementation review had no findings; any new review of this documentation-only follow-up remains separately recorded.
 
 ## Ownership and W4 handoff
 
