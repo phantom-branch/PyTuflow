@@ -102,7 +102,7 @@ class CellDataMixin:
                             b_padded[i, :nlevel + 1] = zlevels_[k2:k2 + nlevel + 1]
                             k1 += nlevel
                             k2 += nlevel + 1
-                        return depth_averaging.get_method_func(depth_averaging_method)(b_padded, a_padded)
+                        return depth_averaging.get_method_func(depth_averaging_method, layer_counts=nlevels)(b_padded, a_padded)
 
                     if data.ndim == 1:
                         data = depth_average(data, zlevels)
@@ -189,7 +189,7 @@ class CellDataMixin:
             values_avg = []
             for val in values:
                 zlevels = self.zlevels(time_index, nlevels, cell_id, cell_idx)
-                a = depth_averaging.get_method_func(depth_averaging_method)(zlevels, val)
+                a = depth_averaging.get_method_func(depth_averaging_method, layer_counts=nlevels)(zlevels, val)
                 values_avg.append(a)
             values = values_avg
 
@@ -238,7 +238,7 @@ class CellDataMixin:
             zlevels = self.zlevels(slice(None), nlevels, cell_id, cell_idx)
             values_avg = []
             for val in values:
-                a = depth_averaging.get_method_func(depth_averaging_method)(zlevels, val)
+                a = depth_averaging.get_method_func(depth_averaging_method, layer_counts=nlevels)(zlevels, val)
                 values_avg.append(a)
             values = values_avg
 
@@ -299,7 +299,7 @@ class CellDataMixin:
                         b_padded[i, :nlevel+1] = zlevels[k2:k2 + nlevel + 1]
                         k1 += nlevel
                         k2 += nlevel + 1
-                    avg = depth_averaging.get_method_func(depth_averaging_method)(b_padded, a_padded)
+                    avg = depth_averaging.get_method_func(depth_averaging_method, layer_counts=nlevels)(b_padded, a_padded)
                     values.append(avg)
                 else:
                     values.append(a)

@@ -284,3 +284,34 @@ def test_ragged_provider_columns_trim_only_padding(qapp, tmp_path):
     data, active = reader._driver.cell_data("tracer", 0, "sigma&0&1")
     np.testing.assert_allclose(data, [10, 20, 0, 0], rtol=RTOL, atol=ATOL)
     np.testing.assert_array_equal(active, [True, True, True, False])
+
+
+@pytest.mark.parametrize("engine", ["netcdf4", "h5py", "qgis geometry data extractor"])
+@pytest.mark.parametrize("access", ["point", "time_series", "section", "cell_data"])
+@pytest.mark.parametrize("missing_observation", [False, True])
+def test_reader_physical_count_survives_missing_surface(qapp, tmp_path, engine, access, missing_observation):
+    path = tmp_path / "missing-boundary.nc"
+    _write_fv(path)
+    with Dataset(path, "a") as nc:
+        z = nc["layerface_Z"][:]
+        z[:, 0] = np.nan
+        nc["layerface_Z"][:] = z
+        if missing_observation:
+            values = nc["SAL"][:]
+            values[:, 0] = np.nan
+            nc["SAL"][:] = values
+    reader = NCMesh(path, driver=engine)
+    if engine == "qgis geometry data extractor":
+        # The genuine provider block must retain the missing physical boundary.
+        p = reader._driver.extractors[0].lyr.dataProvider()
+        groups = {p.datasetGroupMetadata(g).name(): g for g in range(p.datasetGroupCount())}
+        block = p.dataset3dValues(QgsMeshDatasetIndex(groups["salinity"], 0), 0, 1)
+        assert block.isValid() and block.verticalLevelsCount() == [2]
+        assert np.isnan(block.verticalLevels()[0])
+    def read(level):
+        uri = f"singlelevel?dir=top&{level}"
+        if access == "cell_data":
+            return reader._driver.cell_data("salinity", 0, uri)[0][0]
+        return _read(reader, access, "salinity", uri)
+    assert np.isnan(read(1)).all()
+    np.testing.assert_allclose(read(2), 20., rtol=RTOL, atol=ATOL)

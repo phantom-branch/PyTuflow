@@ -345,8 +345,10 @@ def test_geometry_padding_does_not_renumber_a_missing_real_layer(from_top):
     values = np.array([np.nan, np.nan, 40.0, np.nan])
     expected_first = np.nan if from_top else 40.0
     expected_second = 40.0 if from_top else np.nan
-    _assert_average(single_level(1, zlevels, values, from_top), [expected_first])
-    _assert_average(single_level(2, zlevels, values, from_top), [expected_second])
+    # Leading padding is ambiguous with a missing physical boundary/value;
+    # carry its known extent rather than deriving it from valid geometry.
+    _assert_average(single_level(1, zlevels, values, from_top, layer_start=1, layer_counts=2), [expected_first])
+    _assert_average(single_level(2, zlevels, values, from_top, layer_start=1, layer_counts=2), [expected_second])
 
 
 @pytest.mark.parametrize("uri", ["depth&0.2&1.5", "height&0.2&1.5", "elevation&-0.2&-1.5", "sigma&0.1&0.75"])
@@ -358,3 +360,32 @@ def test_averaging_preserves_caller_arrays(uri):
     get_method_func(uri)(zlevels, values)
     np.testing.assert_array_equal(zlevels, original_zlevels)
     np.testing.assert_array_equal(values, original_values)
+
+
+@pytest.mark.parametrize("from_top", [True, False])
+@pytest.mark.parametrize("masked", [False, True])
+@pytest.mark.parametrize("missing_observation", [False, True])
+def test_missing_physical_boundary_does_not_renumber_ordinals(from_top, masked, missing_observation):
+    z = np.array([0., -1., -2.])
+    v = np.array([10., 20.])
+    boundary, layer = (0, 0) if from_top else (-1, -1)
+    if masked:
+        z = np.ma.array(z, mask=[from_top, False, not from_top])
+    else:
+        z[boundary] = np.nan
+    if missing_observation:
+        v[layer] = np.nan
+    # Direct-call default columns are top-aligned; no known boundary/value may
+    # cause the second physical layer to become ordinal one.
+    _assert_average(single_level(1, z, v, from_top), [np.nan])
+    _assert_average(single_level(2, z, v, from_top), [20. if from_top else 10.])
+    _assert_average(single_level(1, z, v, from_top, layer_counts=2), [np.nan])
+    _assert_average(single_level(2, z, v, from_top, layer_counts=2), [20. if from_top else 10.])
+
+
+@pytest.mark.parametrize("from_top", [True, False])
+def test_explicit_column_counts_keep_padding_separate_from_missing_boundaries(from_top):
+    z = np.array([[np.nan, -1., -2., np.nan], [0., -1., np.nan, np.nan]])
+    v = np.array([[np.nan, 20., np.nan], [30., np.nan, np.nan]])
+    expected = [np.nan, 30.] if from_top else [20., 30.]
+    _assert_average(single_level(1, z, v, from_top, layer_counts=np.array([2, 1])), expected)

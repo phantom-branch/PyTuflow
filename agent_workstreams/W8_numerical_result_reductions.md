@@ -368,3 +368,23 @@ Hosted standalone Windows validation:
 [run 40076444756](https://github.com/phantom-branch/PyTuflow/actions/runs/40076444756).
 Codex review was requested on the implementation head; final review/check
 outcomes and final delivery SHA are tracked in the PR Conversation.
+
+### Codex review correction: missing physical boundaries
+
+Review of the live-QGIS follow-up identified that the old ordinal offset used
+the first layer with valid boundaries, so a missing physical surface could
+renumber the next layer. The correction carries each reader's known physical
+layer count through the averaging-method factory for point, surface reduction,
+time-series and section requests. Ordinals are now computed from that extent,
+independently of geometry/result validity. Direct callers treat their supplied
+array as a physical column; padded direct arrays can supply `layer_counts`
+and `layer_start` explicitly. NaNs alone cannot distinguish padding from a
+missing physical boundary/observation.
+
+New regressions cover missing/masked surface and bed boundaries, simultaneously
+missing observations, explicit ragged counts, and real netCDF4/h5py/MDAL public
+point/time-series/section and cell-data requests. Provider blocks are verified
+to retain the missing physical boundary and original layer count. This corrects
+the concrete review finding without changing the unrelated geometry API.
+Final post-review counts and SHA are recorded in the delivery comment; the
+783/98 figures above describe the earlier implementation checkpoint.

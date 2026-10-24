@@ -5,7 +5,7 @@ import numpy as np
 from .depth_averaging import single_level, multi_level, depth, elevation, sigma
 
 
-def get_method_func(uri: str) -> typing.Callable:
+def get_method_func(uri: str, *, layer_counts=None) -> typing.Callable:
     if uri is None:
         uri = 'sigma&0.0&1.0'
     if '?' in uri:
@@ -19,10 +19,10 @@ def get_method_func(uri: str) -> typing.Callable:
     vals = uri.split('&')
     if method.lower() == 'singlelevel':
         val = int(vals[0])
-        return lambda zlevels, values: single_level(val, zlevels, values, from_top)
+        return lambda zlevels, values: single_level(val, zlevels, values, from_top, layer_counts=layer_counts)
     elif method.lower() == 'multilevel':
         levels = [int(v) for v in vals][:2]
-        return lambda zlevels, values: multi_level(levels, zlevels, values, from_top)
+        return lambda zlevels, values: multi_level(levels, zlevels, values, from_top, layer_counts=layer_counts)
     elif method.lower() == 'depth':
         depth_value = [float(x) for x in vals][:2]
         return lambda zlevels, values: depth(depth_value, zlevels, values, True)

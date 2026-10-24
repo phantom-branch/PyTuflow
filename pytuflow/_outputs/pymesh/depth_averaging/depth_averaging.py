@@ -63,7 +63,8 @@ def _weighted_average(values: np.ndarray, weights: np.ndarray) -> np.ndarray:
     return result
 
 
-def multi_level(levels: list[int] | np.ndarray, zlevels: np.ndarray, values: np.ndarray, from_top: bool) -> np.ndarray:
+def multi_level(levels: list[int] | np.ndarray, zlevels: np.ndarray, values: np.ndarray, from_top: bool,
+                *, layer_counts=None, layer_start=0) -> np.ndarray:
     """Average selected physical layer ordinals, excluding missing observations."""
     zlevels, values = _profiles(zlevels, values)
     rows, boundary_count = zlevels.shape
@@ -73,23 +74,26 @@ def multi_level(levels: list[int] | np.ndarray, zlevels: np.ndarray, values: np.
 
     valid_layers = ~np.isnan(zlevels[:, :-1]) & ~np.isnan(zlevels[:, 1:])
     thickness = np.where(valid_layers, np.abs(np.diff(zlevels, axis=1)), 0.)
-    if not from_top:
-        thickness = np.flip(thickness, axis=1)
-        values = np.flip(values, axis=1)
-        valid_layers = np.flip(valid_layers, axis=1)
-
-    # Padding may precede the first physical layer after reversing a column.
-    # A missing result in a real layer must never renumber subsequent layers.
-    first_idx = np.argmax(valid_layers, axis=1)
-    cols = np.arange(boundary_count - 1)[None, :] - first_idx[:, None]
+    # Readers know physical extents independently of missing observations and
+    # boundaries. Direct callers default to the full supplied physical column;
+    # padding requires explicit extents because NaNs alone cannot identify it.
+    start = np.broadcast_to(np.asarray(layer_start), (rows,))
+    if layer_counts is None:
+        layer_counts = boundary_count - 1 - start
+    counts = np.broadcast_to(np.asarray(layer_counts), (rows,))
+    physical_cols = np.arange(boundary_count - 1)[None, :]
+    physical = (physical_cols >= start[:, None]) & (physical_cols < (start + counts)[:, None])
+    cols = physical_cols - start[:, None] if from_top else (start + counts - 1)[:, None] - physical_cols
     idx1 = np.clip(levels[:, 0] - 1, 0, boundary_count - 1)
     idx2 = np.clip(levels[:, 1] - 1, 0, boundary_count - 1)
-    selected = (cols >= idx1[:, None]) & (cols <= idx2[:, None])
+    selected = physical & (cols >= idx1[:, None]) & (cols <= idx2[:, None])
     return _weighted_average(values, np.where(selected, thickness, 0.))
 
 
-def single_level(level: int, zlevels: np.ndarray, values: np.ndarray, from_top: bool) -> np.ndarray:
-    return multi_level([level, level], zlevels, values, from_top)
+def single_level(level: int, zlevels: np.ndarray, values: np.ndarray, from_top: bool,
+                 *, layer_counts=None, layer_start=0) -> np.ndarray:
+    return multi_level([level, level], zlevels, values, from_top,
+                       layer_counts=layer_counts, layer_start=layer_start)
 
 
 def depth(dist: np.ndarray | list[float], zlevels: np.ndarray, values: np.ndarray, from_top: bool) -> np.ndarray:
