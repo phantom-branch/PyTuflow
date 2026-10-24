@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Union, Generator
 import logging
@@ -41,6 +41,12 @@ class NCGrid(Grid):
     cheap to initialise.
 
     The netCDF4 library is required to use this class.
+
+    Relative times are returned in hours. Fixed units from microseconds through
+    days are supported, with optional ISO reference dates and UTC offsets.
+    Standard/Gregorian calendars are supported from 1582-10-15 onwards;
+    proleptic Gregorian dates use Python's datetime range. Unsupported units,
+    reference formats and calendars raise ValueError rather than being guessed.
 
     Parameters
     ----------
@@ -116,6 +122,11 @@ class NCGrid(Grid):
 
         #: str: The units of time in the netCDF file.
         self.time_units = 'h'
+        #: str | None: The original time-coordinate units, including its reference text.
+        self.source_time_units = None
+        #: str: The source calendar (``standard`` when the attribute is omitted).
+        self.source_calendar = 'standard'
+        self._time_unit_seconds = 3600.
 
         if not has_nc:
             raise ImportError('netCDF4 is not installed.')
@@ -315,22 +326,29 @@ class NCGrid(Grid):
             self.reference_time = self._reference_time(nc)
             self._load_info(nc)
 
-    def _reference_time(self, nc: Dataset) -> datetime | None:
+    def _reference_time(self, nc: Dataset) -> datetime:
         if 'time' not in nc.variables:
-            return None
-        units = nc.variables['time'].units
-        if 'hour' in units:
-            self.time_units = 'h'
-        elif 'second' in units:
-            self.time_units = 's'
-        else:
-            self.time_units = units.split(' ')[0]
+            return self.reference_time
+        time = nc.variables['time']
+        if time.dimensions != ('time',):
+            raise ValueError('NetCDF time coordinate must be one-dimensional on the time dimension.')
+        units = getattr(time, 'units', None)
+        if not isinstance(units, str) or not units.strip():
+            raise ValueError('NetCDF time coordinate must declare supported time units.')
+        self.source_time_units = units
+        self.source_calendar = getattr(time, 'calendar', 'standard')
+        if self.source_calendar not in ('standard', 'gregorian', 'proleptic_gregorian'):
+            raise ValueError(f'Unsupported NetCDF time calendar: {self.source_calendar!r}')
 
-        if 'since' in units.lower():
-            self.has_reference_time = True
-
-        return self._parse_time_units_string(units, r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}(?:\:\d{2})?',
-                                             ['%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'])[0]
+        reference, self.time_units = self._parse_time_units_string(units)
+        self._time_unit_seconds = {'us': 1e-6, 'ms': 1e-3, 's': 1., 'm': 60., 'h': 3600., 'd': 86400.}[
+            self.time_units
+        ]
+        self.has_reference_time = 'since' in units.lower().split()
+        if (self.source_calendar != 'proleptic_gregorian'
+                and reference < datetime(1582, 10, 15, tzinfo=timezone.utc)):
+            raise ValueError('Standard/Gregorian time calendars require dates on or after 1582-10-15.')
+        return reference
 
     def _load_info(self, nc: Dataset):
         d = {'data_type': [], 'type': [], 'is_max': [], 'is_min': [], 'static': [], 'start': [], 'end': [], 'dt': [],
@@ -351,9 +369,23 @@ class NCGrid(Grid):
                 d['end'].append(0)
                 d['dt'].append(0)
             else:
-                dt = self._calculate_time_step(np.array(var.times) * 3600.)
-                start = float(var.times[0])
-                end = float(var.times[-1])
+                if np.ma.is_masked(var.times):
+                    raise ValueError('NetCDF time coordinate contains missing samples.')
+                seconds = np.asarray(var.times, dtype=float) * self._time_unit_seconds
+                if not np.isfinite(seconds).all() or (np.diff(seconds) <= 0).any():
+                    raise ValueError('NetCDF time coordinate must contain finite, strictly increasing samples.')
+                if seconds.size:
+                    try:
+                        first = self.reference_time + timedelta(seconds=float(seconds[0]))
+                        self.reference_time + timedelta(seconds=float(seconds[-1]))
+                    except OverflowError as exc:
+                        raise ValueError('NetCDF time samples exceed the supported datetime range.') from exc
+                    if (self.source_calendar != 'proleptic_gregorian'
+                            and first < datetime(1582, 10, 15, tzinfo=timezone.utc)):
+                        raise ValueError('Standard/Gregorian time calendars require dates on or after 1582-10-15.')
+                dt = self._calculate_time_step(seconds)
+                start = float(seconds[0] / 3600.) if seconds.size else 0.
+                end = float(seconds[-1] / 3600.) if seconds.size else 0.
                 d['start'].append(start)
                 d['end'].append(end)
                 d['dt'].append(dt)
