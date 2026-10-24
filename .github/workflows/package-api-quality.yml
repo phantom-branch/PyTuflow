@@ -45,8 +45,8 @@ jobs:
       - name: Verify installed wheel and bounded static typing outside the checkout
         shell: pwsh
         run: |
-          python -m pip install mypy
-          if ($LASTEXITCODE -ne 0) { throw 'Failed to install mypy' }
+          python -m pip install mypy hatchling
+          if ($LASTEXITCODE -ne 0) { throw 'Failed to install typing/build dependencies' }
           python -m build --wheel --no-isolation
           if ($LASTEXITCODE -ne 0) { throw 'Wheel build failed' }
           python -m pip uninstall -y pytuflow
