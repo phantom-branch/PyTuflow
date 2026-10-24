@@ -15,7 +15,10 @@ import io
 import pstats
 from pathlib import Path
 
-from profile_capture import capture_profile
+if __package__:
+    from .profile_capture import capture_profile
+else:
+    from profile_capture import capture_profile
 
 
 def positive_integer(value: str) -> int:
@@ -42,7 +45,10 @@ def main() -> None:
     parser.add_argument('--output', type=Path, help='New PRIVATE report directory outside the repository')
     args = parser.parse_args()
     # Keep --help and evidence-helper tests independent of GIS/package imports.
-    from benchmark_batch_dependencies import benchmark
+    if __package__:
+        from .benchmark_batch_dependencies import benchmark
+    else:
+        from benchmark_batch_dependencies import benchmark
 
     outcome, profiler = capture_profile(
         lambda: benchmark(args.runs, trials=1, static_inputs=args.static_inputs),

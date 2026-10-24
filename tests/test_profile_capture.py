@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
-from profile_capture import capture_profile
+from .profile_capture import capture_profile
 
 
 def _leaf() -> int:
@@ -200,9 +200,9 @@ def test_classic_profile_hook_is_not_replaced(tmp_path: Path) -> None:
 
 
 def test_cli_help_does_not_load_benchmark(monkeypatch, capsys) -> None:
-    import profile_batch_dependencies
+    from . import profile_batch_dependencies
 
-    monkeypatch.setitem(sys.modules, 'benchmark_batch_dependencies', None)
+    monkeypatch.setitem(sys.modules, 'tests.benchmark_batch_dependencies', None)
     monkeypatch.setattr(sys, 'argv', ['profile_batch_dependencies.py', '--help'])
     with pytest.raises(SystemExit) as stopped:
         profile_batch_dependencies.main()
@@ -215,9 +215,9 @@ def test_cli_help_does_not_load_benchmark(monkeypatch, capsys) -> None:
     ['--functions', '0'], ['--runs', 'invalid'],
 ])
 def test_cli_invalid_counts_do_not_load_benchmark(monkeypatch, arguments) -> None:
-    import profile_batch_dependencies
+    from . import profile_batch_dependencies
 
-    monkeypatch.setitem(sys.modules, 'benchmark_batch_dependencies', None)
+    monkeypatch.setitem(sys.modules, 'tests.benchmark_batch_dependencies', None)
     monkeypatch.setattr(sys, 'argv', ['profile_batch_dependencies.py', *arguments])
     with pytest.raises(SystemExit) as stopped:
         profile_batch_dependencies.main()
@@ -226,17 +226,17 @@ def test_cli_invalid_counts_do_not_load_benchmark(monkeypatch, arguments) -> Non
 
 def test_cli_retains_existing_benchmark_arguments(tmp_path: Path, monkeypatch, capsys) -> None:
     from types import ModuleType
-    import profile_batch_dependencies
+    from . import profile_batch_dependencies
 
     calls = []
-    benchmark_module = ModuleType('benchmark_batch_dependencies')
+    benchmark_module = ModuleType('tests.benchmark_batch_dependencies')
 
     def benchmark(runs, *, trials, static_inputs):
         calls.append((runs, trials, static_inputs))
         return {'parity': 'test-only', 'cached_context_counters': {}}
 
     benchmark_module.benchmark = benchmark
-    monkeypatch.setitem(sys.modules, 'benchmark_batch_dependencies', benchmark_module)
+    monkeypatch.setitem(sys.modules, 'tests.benchmark_batch_dependencies', benchmark_module)
     monkeypatch.setattr(sys, 'argv', [
         'profile_batch_dependencies.py', '--runs', '2', '--static-inputs', '0',
         '--functions', '1', '--output', str(tmp_path / 'cli'),
@@ -245,3 +245,17 @@ def test_cli_retains_existing_benchmark_arguments(tmp_path: Path, monkeypatch, c
     assert calls == [(2, 1, 0)]
     assert (tmp_path / 'cli/profile.pstats').is_file()
     assert 'Exact reference parity: test-only' in capsys.readouterr().out
+
+
+@pytest.mark.parametrize('invocation', [
+    ['tests/profile_batch_dependencies.py', '--help'],
+    ['-m', 'tests.profile_batch_dependencies', '--help'],
+])
+def test_cli_script_and_package_entry_points(invocation) -> None:
+    import subprocess
+
+    completed = subprocess.run(
+        [sys.executable, *invocation], cwd=Path(__file__).absolute().parents[1],
+        capture_output=True, text=True, check=True,
+    )
+    assert '--output' in completed.stdout

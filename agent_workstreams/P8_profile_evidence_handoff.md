@@ -82,7 +82,7 @@ See the [Python profiling documentation](https://docs.python.org/3.14/library/pr
 
 ## Validation and next action
 
-Local Linux CPython 3.13.5: **23 focused tests passed**; CLI `--help`, compilation,
+Local Linux CPython 3.13.5: **25 focused tests passed**; CLI `--help`, compilation,
 and whitespace checks passed. This validates the dependency-free helper and CLI
 with controlled callbacks, not a real PyTUFLOW workload, Windows behaviour or
 Python 3.14 performance. The connected GitHub read/write API was available, but
@@ -104,3 +104,13 @@ validates either candidate, or use it to validate
 [runner #159](https://github.com/Chain-Frost/ryan-tools/pull/159).
 Preserve frozen native diagnostic `f1f7958b79f3ffe84ba8ac0b04658f27c311460a`.
 No merge, release, repin, private data publication or `unsorted` work is authorised.
+
+### Hosted import follow-up
+
+The first Windows run failed during collection because the real repository has
+`tests/__init__.py`, while the initial minimal local staging lacked that file.
+The failure was reproduced locally with the actual package boundary restored.
+Tests now use relative imports; the CLI explicitly supports direct-script and
+package-module imports without editing `sys.path`. Two subprocess regressions
+cover both entry points. The 25-test rerun passes locally. Refreshed hosted
+Windows checks remain required; the initial failure is not accepted evidence.
