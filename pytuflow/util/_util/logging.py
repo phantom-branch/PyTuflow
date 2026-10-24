@@ -5,6 +5,7 @@ handlers marked as library-owned are modified by this module.
 """
 
 import logging
+import os
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Literal
@@ -50,7 +51,9 @@ def set_logging_level(
             raise ValueError(f"File path for log file handler does not exist at {log_to_file}")
 
         filename = (directory / _LOG_FILE_NAME).absolute()
-        identifier = str(filename)
+        # Lexically collapse . and .. and Windows case aliases without
+        # resolving symlinks, UNC paths or network targets.
+        identifier = os.path.normcase(os.path.normpath(str(filename)))
         if not any(
             getattr(handler, "_pytuflow_owned_file", None) == identifier
             for handler in logger.handlers
