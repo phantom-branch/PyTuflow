@@ -55,12 +55,14 @@ def test_renamed_child_alias_keeps_context_and_reference_caches(
     lexical_geometry = reference._cf_loaded_paths[0]
     assert lexical_geometry == alias / 'grid_003.tgc'
     assert geometry.fpath == real / 'grid_003.tgc'
+    _assert_reference_cache(reference, lexical_geometry, '_cf_loaded_paths')
     if nested:
         nested_reference = geometry.find_input('BC Control File')[0]
         boundary = nested_reference.cf[0]
         lexical_boundary = nested_reference._cf_loaded_paths[0]
         assert lexical_boundary == alias / 'nested' / 'boundary_004.tbc'
         assert boundary.fpath == real / 'nested' / 'boundary_004.tbc'
+        _assert_reference_cache(nested_reference, lexical_boundary, '_cf_loaded_paths')
 
     for increment, size in ((11, 10), (12, 15)):
         geometry.find_input('Cell Size')[0].rhs = str(size)
@@ -108,6 +110,7 @@ def test_renamed_database_alias_retains_cached_secondary_source_selection(
     database = reference.cf[0]
     assert database.fpath == real / filename
     assert reference._database_loaded_paths == [alias / filename]
+    _assert_reference_cache(reference, alias / filename, '_database_loaded_paths')
 
     for increment, value in ((11, 0.04), (12, 0.05)):
         database.df.loc[1, "Manning's n"] = value

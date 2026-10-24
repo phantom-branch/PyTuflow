@@ -64,7 +64,9 @@ def _path_exists(path: Path) -> bool:
 
 
 def _increment(path: PathLike, inc: str | None) -> Path:
-    return Path(path) if inc is None else increment_fpath(path, inc)
+    # Keep native Path keys compatible with the original reference caches;
+    # TuflowPath has a different hash from an equal WindowsPath.
+    return Path(path if inc is None else increment_fpath(path, inc))
 
 
 def _copy_scopes(scopes: ScopeList) -> ScopeList:
