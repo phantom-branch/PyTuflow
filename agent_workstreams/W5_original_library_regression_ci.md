@@ -117,7 +117,7 @@ Repeat with `py -3.12` and a different report root. Dependency pins belong to th
 
 ## Capability boundaries and retained limitations
 
-- Standalone jobs explicitly record QGIS as `not_selected`. They do not claim it is unavailable or validated. The documented `--group qgis` route requires the real supplied QGIS interpreter and MDAL provider; missing capabilities or incomplete reports fail. **Real QGIS execution remains outstanding.** Retain draft status while required acceptance or review items remain.
+- Standalone jobs explicitly record QGIS as `not_selected`. They do not claim it is unavailable or validated. The documented `--group qgis` route requires the real supplied QGIS interpreter and MDAL provider; missing capabilities or incomplete reports fail. **Live QGIS acceptance is now passed**; see the three-source execution record below. The owner may mark this PR non-draft and consider merging.
 - Without `osgeo.ogr`, exactly ten named OGR writer tests and `test_input_attrs_3` receive explicit capability skips. The existing Linux-only path test skips on Windows. GeoPandas writer coverage remains required; there are no blanket result-suite skips or new warning filters/xfails.
 - Existing deferred/compiled-graph workflows, triggers, pins, comparisons and acceptance gates remain unchanged. This workflow supplies additional original-library coverage; it does not supersede those gates or claim a new deferred acceptance run.
 - No solver, private model, private NAS access, native NAS benchmark, merge, release, tag, publication or production consumer repin occurred.
@@ -134,4 +134,62 @@ Repeat with `py -3.12` and a different report root. Dependency pins belong to th
 
 The feature agents retain their production files and new tests. Dedicated feature tests must still be run by their owners; the five original-suite selections do not automatically discover unrelated top-level feature modules. Shared-fixture changes require coordination on the PR. No unfinished feature branches were merged into this branch.
 
-Codex review and any subsequent findings are tracked in the PR conversation. The PR remains draft for the real-QGIS validation boundary; this handoff does not claim that boundary passed.
+Codex review and any subsequent findings are tracked in the PR conversation. The real-QGIS boundary has now passed as recorded below. The PR is ready to be marked non-draft and considered for merging; the owner retains that action.
+
+
+## Completed native QGIS/MDAL validation (24 October 2026)
+
+**W5 QGIS acceptance passed. Ready to mark non-draft and consider merging.**
+No W5 implementation defect or necessary code change was identified. This
+handoff/evidence update does not change the tested production, runner, helpers,
+tests, workflows or dependency policy. No draft conversion or merge was done.
+
+Frozen candidate/harness: `4ca199c55d6d388a0019128332e8f0adafdace93`.
+Canonical upstream: `cf908cc922ca8448ed6002834877b0b377329eae`, obtained from
+`https://github.com/TUFLOW-Support/PyTuflow.git` in a separate normal checkout.
+Fork baseline: `e162c04330d24c37bee3ade94479cc4602651060`, from
+`https://github.com/phantom-branch/PyTuflow.git`. Both checkouts were clean and
+readable by `git archive`; the unchanged runner created independent snapshots.
+
+| Full QGIS group | Collected | Passed | Failed | Errors | Skips | Raw exit |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Upstream | 239 | 239 | 0 | 0 | 0 | 0 |
+| Fork baseline | 239 | 239 | 0 | 0 | 0 | 0 |
+| PR #19 candidate | 239 | 239 | 0 | 0 | 0 | 0 |
+
+Every run executed all of `tests/test_map_output.py`, including mesh geometry,
+extraction and module-order-dependent CATCHJson tests. The strict candidate
+comparison, required upstream self-completeness and independently recorded
+upstream-to-fork comparison all passed, each raw exit 0. No failing IDs,
+collection errors, incomplete reports, unexpected skips, xfails or xpasses
+occurred. Collected IDs, JSON outcomes and JUnit counts agree; every role has
+identical required capabilities, package inventory and harness fingerprints.
+All reports record unchanged source checkouts and a clean harness.
+
+The actual installed environment is QGIS 4.2.3, CPython 3.12.15, Qt 6.11.0 and
+GDAL 3.13.3, using the existing OSGeo4W launcher/W3 bootstrap and compatible
+additive dependency targets. A real QgsApplication and MDAL provider were
+verified. No bundled Python/Qt/GDAL/NumPy/pandas package was replaced. Runtime
+versions, provider hash and origins are in the linked record. One local utility
+filename shadowed stdlib inspect during preflight; renaming that report utility
+resolved the environment issue without editing W5 or changing its independently
+executed probe/test subprocesses. Corrected preflight and complete test reports
+are retained as acceptance evidence.
+
+[Published underlying JSON/JUnit/logs, commands and summary](evidence/W5_qgis_4ca199c/README.md)
+contain sanitised machine roots/identifiers, explicit source-import roles and
+checksums. Original raw reports and exact local launch commands remain local.
+The final delivery comment identifies the evidence-only pushed head; all tested
+implementation remains identical to the frozen candidate/harness above.
+
+[Hosted run 40076415079](https://github.com/phantom-branch/PyTuflow/actions/runs/40076415079)
+was rechecked at exact source `4ca199c`: all five Windows jobs remain successful.
+Prior Codex review is complete with no findings and zero unresolved threads.
+No further implementation/review cycle is needed for unchanged W5 code.
+
+No remaining work was identified within W5's required acceptance scope. The
+four inherited baseline production/reference failures and separately recorded
+current-dependency failures remain visible and belong to their owning TMF/FM
+reference or package workstreams; they are not newly fixed or accepted as
+compatible by this QGIS result. #16/#17/#23 retain feature implementations;
+#22 has not been started. Existing deferred/graph gates remain unchanged.

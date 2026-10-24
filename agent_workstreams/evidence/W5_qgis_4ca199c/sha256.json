@@ -1,0 +1,22 @@
+{
+  "baseline/qgis.json": "0b063b45a8dd2e478e27e39aa3cffce29bfc5e9855fdf338492de72e30cfd60b",
+  "baseline/qgis.log": "f01f2ae3036104c8f540893e89cd2a5f44b1150c8274d54800523972b1208472",
+  "baseline/qgis.xml": "0c841138cf3efe78c3ef9e36212ae3fa3c5a51a7aaed49280ce54f8de7ee0f14",
+  "baseline/report.json": "6f47f412c862c680cb75b105de462f5498b17a951bf4a2a386fcb2789043c463",
+  "candidate/qgis.json": "e0a0c7c45bdc0cca3f613a675db76ad603354a6b4ab7168fcce282569cd535d8",
+  "candidate/qgis.log": "b77ceb4303d3fc467702cbe9b86c7eea56591f02ab19e225906e2ba7bf4b4d18",
+  "candidate/qgis.xml": "96c30bd40cca2b12c0c0de7830c94f5d5c70530d486626463e307f54a5c445e3",
+  "candidate/report.json": "f851be771e5d9f8dbd280ac7e468a35a4f5fbc1099f86121fc8eea0c910661ad",
+  "candidate-comparison.json": "979346352050deabb9ab54f7dcb7bb9ac5211fd7d9cd717408fbff4f622a0865",
+  "commands.json": "042f96550b09324bca04cd4319d980082e5b7a90cbd06a5a0a870eae8d1e5b48",
+  "preflight-capabilities.json": "ce0176c8e6db3f0c8bef936576e06c74798bfc2aeb379705499813fd505f15b9",
+  "README.md": "4e83a418bd07c176c78264cd6a606d2bda4910007e23145ee14dd47d2695bbca",
+  "runtime.json": "a0c20c70647b4f02f90a19f61e1e6eea539cdbd3990f2f020695248b7b04bb1c",
+  "summary.json": "e163b19857a6a470a885fbbf00e2fd2135ad1d51616cd5890585cb8a76391e92",
+  "upstream/qgis.json": "74b138c4fa10436d672886e4220b05f9b89a609d437ef9aedff04fafbd65164f",
+  "upstream/qgis.log": "02431c4c264f992d72e030b748e0581495bcc38f72bbbb86238154e682216403",
+  "upstream/qgis.xml": "085ccfab530261cbb08f8c4f239bb327ea45cd14b30602c753a0efe42a6e5aa9",
+  "upstream/report.json": "6f45ecf5c4712fd1777c98e79d5da75fd686c869fb845eba6b39a4fdfa8902ed",
+  "upstream-comparison.json": "f0981763d054b20dd1abfc50f72ce6963dba4feb281428faeada1b2b2916c122",
+  "upstream-completeness.json": "2173b27e616f7a30170d99a0ad80b8880b3473e64d01952122957c37d2d11708"
+}
