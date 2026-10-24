@@ -333,3 +333,60 @@ def test_rotating_file_handler_deduplicates_lexical_aliases(tmp_path: Path) -> N
         log_directory=tmp_path,
     )
     _assert_success(process)
+
+
+def test_explicit_missing_mesh_providers_raise_capability_errors(tmp_path: Path) -> None:
+    process = _run_python(
+        """
+        from pathlib import Path
+        from unittest.mock import patch
+        import importlib
+        import os
+
+        from pytuflow import NCMesh, XMDF, NCGrid
+
+        root = Path(os.environ["PYTUFLOW_W7_LOG_DIR"])
+        nc = root / "missing-provider.nc"
+        nc.write_bytes(b"not a real NetCDF file")
+        xmdf = root / "missing-provider.xmdf"
+        xmdf.write_bytes(b"not real XMDF")
+        (root / "missing-provider.2dm").write_text("MESH2D", encoding="utf-8")
+
+        for name, cls, source in (("nc_mesh", NCMesh, nc), ("xmdf", XMDF, xmdf)):
+            module = importlib.import_module("pytuflow._outputs." + name)
+            with patch.object(module, "has_qgis", False):
+                try:
+                    cls(source, driver="qgis geometry data extractor")
+                except ImportError as exc:
+                    assert "QGIS" in str(exc) and "MDAL" in str(exc)
+                else:
+                    raise AssertionError("Missing QGIS was not diagnosed")
+
+            with patch.object(module.H5Engine, "available", return_value=False):
+                try:
+                    cls(source, driver="h5py")
+                except ImportError as exc:
+                    assert "h5py" in str(exc)
+                else:
+                    raise AssertionError("Missing h5py was not diagnosed")
+
+            with patch.object(module.NCEngine, "available", return_value=False):
+                try:
+                    cls(source, driver="netcdf4")
+                except ImportError as exc:
+                    assert "netCDF4" in str(exc)
+                else:
+                    raise AssertionError("Missing netCDF4 was not diagnosed")
+
+        grid_module = importlib.import_module("pytuflow._outputs.nc_grid")
+        with patch.object(grid_module, "has_nc", False):
+            try:
+                NCGrid(nc)
+            except ImportError as exc:
+                assert "netCDF4" in str(exc)
+            else:
+                raise AssertionError("Missing NCGrid netCDF4 was not diagnosed")
+        """,
+        log_directory=tmp_path,
+    )
+    _assert_success(process)
