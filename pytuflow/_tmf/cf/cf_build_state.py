@@ -1177,6 +1177,22 @@ class ControlFileBuildState(BuildState, ControlFile):
         ControlFileBuildState
             The control file that was written.
 
+        Notes
+        -----
+        Every affected control file, read file and database is staged before
+        existing destinations or live object state are changed. A replacement
+        failure raises :class:`ModelSaveError` after attempting rollback; its
+        ``unrestored_paths`` and ``recovery_paths`` describe incomplete recovery.
+        Multiple file replacements are not globally atomic, and concurrent
+        writers or process/power loss are outside this recovery contract.
+
+        Control files use UTF-8 with surrogateescape, preserving source BOM,
+        newline convention and final-newline presence. Unchanged source bytes
+        are retained exactly. New files use UTF-8 without BOM and LF. Edited
+        include layouts that the flattened writer cannot represent are rejected
+        before writing. Direct standalone database writes are not covered by
+        this control-file transaction.
+
         Examples
         --------
         .. code-block:: tuflow

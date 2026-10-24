@@ -1,86 +1,125 @@
-# [W1] Make model saves recoverable and preserve text encoding
+# W1 — Safe model saves: implementation handoff
 
-## Initial status
+## Checkpoint and ownership
 
-Draft scaffolding only: this PR currently adds a scoped work plan. Runtime changes and acceptance tests have not been implemented on this branch. Earlier review reproductions were isolated component checks, not full Windows/GIS integration validation.
+- PR: [#17](https://github.com/phantom-branch/PyTuflow/pull/17).
+- Branch: `fix/safe-model-saves`; base: `master`.
+- Original planning/baseline commit: `e2086fba7796307429887d12f61c2e35542e5cd4`.
+- Implemented runtime and regression checkpoint: [`4b929f50e6a017fa785ecd9e572ee6215a903272`](https://github.com/phantom-branch/PyTuflow/commit/4b929f50e6a017fa785ecd9e572ee6215a903272).
+- Implementation tree: `1c37b91150e7e52f312aa44676c02c5759439b7c`. The uploaded tree was verified identical to the locally tested tree before the branch was advanced, without a force push.
+- Windows acceptance: [W1 run 40074471962](https://github.com/phantom-branch/PyTuflow/actions/runs/40074471962), Python 3.12 and 3.14. Both jobs are running at this handoff checkpoint; no Windows pass is claimed yet. The PR conversation records subsequent exact-head results.
 
-## Source checkpoints
+Runtime changes are confined to `cf_build_state.py`, the text read contract in `non_recursive_basic_parser.py`, and progress detection in `scope_writer.py`. Tests use dedicated W1 modules. Five assertions in the two original control-file write tests now expect the source's missing final newline to remain missing. This is the requested preservation contract, not a skipped test or blanket expectation change. The dedicated W1 workflow does not alter common test configuration or existing deferred gates.
 
-- Original upstream review: [TUFLOW-Support/PyTuflow `cf908cc922ca8448ed6002834877b0b377329eae`](https://github.com/TUFLOW-Support/PyTuflow/commit/cf908cc922ca8448ed6002834877b0b377329eae).
-- Fork source used to create this work package: [`e162c04330d24c37bee3ade94479cc4602651060`](https://github.com/phantom-branch/PyTuflow/commit/e162c04330d24c37bee3ade94479cc4602651060).
-- Recheck current source, review comments and applicable repository guidance before implementing.
+No sibling branch was imported. No merge, release, dependent PR, solver run, private model/NAS access or native benchmark was performed. #16, #19 and #23 remain separate workstreams. #18 and #21 were not started.
 
-## Branch and dependencies
+## Implemented save contract
 
-- Work branch: `fix/safe-model-saves`.
-- PR base: `master`.
-- Starting state: **Can start now**.
-- This is an independent branch from master; it does not depend on the deferred optimisation PRs.
-- Dependent work: W2 on `fix/model-editing-undo`.
-- Common regression/integration coordination: **W5**, `test/original-library-regression-ci`. Existing acceptance workflows must remain intact.
+`ControlFileBuildState.write(inc)` creates a private `_SaveTransaction` and returns the same live control-file object only after publication succeeds.
 
-## Purpose
+1. Clone the save-relevant control/input/configuration state. Retain live object identity, UUIDs, child ownership, pending edits and history while planning. Inline FV blocks are detached for serialisation but are not separate file destinations.
+2. Plan the root, dirty children, their flattened TRDs and supported database subclasses exactly once. Prepare reference changes and cached loaded paths without invoking the live `rhs` setter or reloading owned children.
+3. Reject duplicate lexical/physical destinations, directory-alias collisions, destinations that overwrite another loaded source, read-only/non-regular/symlink destinations, and saved source bytes that changed since loading.
+4. Render all control-file outputs in memory. Stage all outputs and recovery copies beside their destinations. Database subclasses render their existing format to a detached staging target, including the materials TMF header. Finish writes, flush, close and synchronise staging files before replacement.
+5. Replace child outputs before parents. Each replacement is a filesystem operation; the full model is **not** one atomic transaction.
+6. If replacement fails, restore completed replacements in reverse order and inspect the attempted destination as well. A network rename can complete before its acknowledgement is lost. The same verification applies to a rollback whose acknowledgement is lost.
+7. Publish precomputed plain state assignments only after every replacement succeeds. Update paths, references, configurations and loaded-path caches together; clear saved dirty flags and begin a new history block while retaining earlier history blocks.
 
-Scope-only draft; no implementation or acceptance pass is claimed. Repair original control-file/TRD write safety and the valid-large-file writer failure. Base: master. W2 will build on this write contract; W6 will later change include representation.
+Serialisation, encoding, permission and staging failures propagate their original exceptions. They leave original destination bytes and live object state unchanged, and remove staging files where the filesystem permits cleanup. Cleanup failures are reported in exception notes or logging.
 
-## Scope
+### Replacement failure and manual recovery
 
-- Own pytuflow/_tmf/cf/cf_build_state.py write planning/serialisation/commit behaviour, the text read policy in pytuflow/_tmf/parsers/non_recursive_basic_parser.py as needed for lossless encoding, and the non-progress guard in pytuflow/_tmf/scope_writer.py.
-- Render every affected parent/child/TRD output to staging before replacing existing destinations or committing in-memory path/reference/history changes. Preserve existing inc='auto', explicit suffix, inc='inplace' and inc=None semantics.
-- Preserve source encoding/error handling, newline style, BOM policy and undecodable legacy comment bytes; define UTF-8 behaviour for newly created files. A read accepted with surrogateescape must not lose the original during a failed write.
-- Use temporary files on the destination filesystem and explicit replacement/recovery handling. Document that multiple filesystem replacements are not a single atomic transaction. Preserve originals on staging failure; define rollback and accurate partial-failure reporting for commit failures.
-- Replace ScopeWriter's fixed >10,000 iteration ceiling with bounded detection of actual non-progress. Valid 10,001+ line input must write successfully.
-- Keep output ownership, child ordering and dirty/history transitions explicit; change persistent object state only when the corresponding save contract succeeds.
-- Use lexical Path.absolute() when an absolute path is required; do not introduce Path.resolve(), realpath calls or network path canonicalisation.
-- Regression additions belong in tests/tmf/test_control_file.py and tests/tmf/test_scope_writer.py, with a new dedicated temporary-fixture test module if separation improves clarity. Update relevant write API documentation/examples only for the contract implemented.
+`ModelSaveError` is defined in `pytuflow._tmf.cf.cf_build_state` and exposes:
 
-## Acceptance criteria
+| Attribute | Meaning |
+| --- | --- |
+| `failed_destination` | Destination whose forward replacement failed. |
+| `replaced_paths` | Completed forward replacements, including an attempted replacement found to have changed its destination. |
+| `unrestored_paths` | Destinations that could not be restored or removed during rollback. |
+| `recovery_paths` | Mapping from an unrestored existing destination to a retained file containing its original bytes. |
+| `__cause__` | Original replacement error. |
 
-- [ ] Reproduce the legacy read/write mismatch with a real TCF/TRD and the installed package: earlier isolated-method evidence reduced a 30-byte file to zero after UnicodeEncodeError, but that evidence is not integration validation.
-- [ ] Test unchanged and edited UTF-8, UTF-8 BOM, CRLF/LF, no-final-newline and undecodable legacy comment bytes using temporary files; preserve bytes where the contract promises no changes.
-- [ ] Inject serialisation, encoding, temporary-write, permission and replacement failures before and during parent/child/TRD saves. Assert original bytes, destination inventory, in-memory paths, references and dirty/history states match the documented failure contract.
-- [ ] Cover all existing increment modes and a model with more than one dirty child. Prevent duplicate writes to one destination and unintended overwrites introduced by the new staging layer.
-- [ ] Verify at least 20,000 valid flat commands and a representative nested-scope file. A deliberately stalled writer must still terminate with an actionable diagnostic.
-- [ ] Pass affected tests on Windows Python 3.12 and 3.14, followed by existing relevant TMF editing/context regression selections. Report exact commands, counts, skips, source SHA and CI links; do not represent component tests or Linux execution as Windows acceptance.
-- [ ] Confirm no deferred/batch/graph API or behaviour change, no solver invocation, and a clean git diff --check.
+A new destination has no original recovery copy; an unrestored new file is identified in `unrestored_paths`. Live paths and pending edit/history state remain at the pre-save checkpoint even if rollback is incomplete. The error does not report success or clear those pending edits. Restore the reported recovery files/remove reported new partial outputs before retrying or reloading.
 
-## Exclusions
+This is recovery from handled exceptions. It does not guarantee consistency after process termination, power loss or concurrent external writes. Sources are checked before rendering/staging; there is no filesystem lock. Direct standalone `DatabaseBuildState.write()` calls remain outside this control-file transaction boundary.
 
-- No deferred execution, compiled graph, cache or benchmark optimisation.
-- No include-tree redesign or nested TRD feature; W6 owns include representation and occurrence identity.
-- No undo/reset redesign or project feature-persistence fix; W2 owns these.
-- No broad project template overwrite-policy redesign unless the coordinator explicitly assigns that scope.
-- No publication, merge, solver execution, private model access or native SMB benchmark.
+## Control-file text contract
 
-## Implementation handoff
+- Read explicitly as UTF-8 with `surrogateescape`, accepting an optional UTF-8 BOM before the first command. This preserves undecodable legacy bytes; it does not guess a legacy character set.
+- Unchanged sources reuse their exact original bytes, including scope spelling, comments, BOM, mixed line endings and end-of-file layout.
+- Edited sources retain their BOM, newline convention and presence/absence of a final newline. Edited mixed-newline sources use their first newline convention. Newly entered Unicode text encodes as UTF-8; undecodable original bytes remain intact.
+- New control files use UTF-8 without a BOM and LF line endings.
+- Unencodable new non-byte surrogate characters fail before any replacement.
+- Normal RHS edits that reinitialise a flattened TRD input recover that input's recorded source ownership during save. W1 does not redesign the editing or undo API.
 
-The PR Conversation contains a copyable agent prompt with the concrete PR links and branch setup commands. The source-specific instructions are retained here as well:
+### Include boundary for W6 / #21
 
-Implement W1 in phantom-branch/PyTuflow on the existing assigned W1 branch and draft PR. The starting PR is intentionally scope-only: its planning document is not an implementation, and earlier component reproductions are not acceptance results. W1 targets master; use the exact branch, PR URL and initial source SHA recorded in the PR. W2 depends on this contract and W6 later depends on W2. Work autonomously within this scope; do not ask for another implementation confirmation.
+The inherited flattened representation cannot safely regenerate every empty, missing, repeated or scoped `Read File` directive. Unchanged source bytes remain safe. A changed output requiring one of these unsupported layouts now raises an actionable `ValueError` before writing, rather than silently dropping or regrouping a directive.
 
-First fetch the latest refs, inspect repository guidance, the PR scope/comment and current CI, then check out the assigned branch. Preserve other agents' work. Do not switch to or commit on master or a sibling branch. If the parent changes, integrate its actual current head into your assigned branch without force-pushing or rewriting shared history; keep this PR's documented base.
+This guard is an intentional safety restriction. Ordered include occurrence editing, nested includes and the underlying representation remain owned by #21. Do not remove the guard until that representation has equivalent loss-prevention tests.
 
-The review identified two original-source faults. ControlFileBuildState.write() in pytuflow/_tmf/cf/cf_build_state.py opens destinations with mode 'w' before serialisation succeeds, writes children before their parent, and mutates paths/references during the operation. get_commands() in pytuflow/_tmf/parsers/non_recursive_basic_parser.py reads with errors='surrogateescape', whereas writes use strict defaults. An isolated reproduction accepted a legacy byte on read, raised UnicodeEncodeError during the actual write method and left a 30-byte target empty. Separately, ScopeWriter.inputs() in pytuflow/_tmf/scope_writer.py rejects a valid 10,001-command flat file because it mistakes an absolute loop count for non-progress. These areas are unchanged from canonical upstream cf908cc922ca8448ed6002834877b0b377329eae through fork e162c04330d24c37bee3ade94479cc4602651060.
+## Increment compatibility
 
-Implement a concrete save contract. Build and validate a complete write plan, render affected parent/child/TRD files to temporary output, then replace destinations with explicit recovery handling. Use staging beside the destination. Do not advertise multiple replacements as globally atomic. Existing originals must survive staging or serialization failure. Define rollback and accurate reporting if replacement fails midway, and leave in-memory filenames, references and dirty/history state consistent with the actual result. Preserve existing increment modes rather than changing naming policy. Avoid repeated writes to the same physical destination.
+For a loaded `model_010.tcf` with a dirty `grid_003.tgc`:
 
-Preserve the source text's encoding/error policy, newline convention and BOM where applicable; define an explicit policy for new files. Do not silently discard or replace undecodable bytes. Keep this implementation compatible with current flattened include representation: W6 owns its redesign. W2 owns undo/reset mechanics and project secondary-file persistence. Coordinate a small stable internal writer interface rather than duplicating these changes downstream. Preserve lexical Windows drive and UNC paths; use Path.absolute() when needed, never introduce resolve()/realpath canonicalisation.
+| `inc` | Root output | Child output |
+| --- | --- | --- |
+| `"auto"` | `model_011.tcf` | `grid_011.tgc` |
+| `"025"` | `model_025.tcf` | `grid_025.tgc` |
+| `"review"` | `model_review.tcf` | `grid_001.tgc` |
+| `"inplace"` | `model_010.tcf` | `grid_010.tgc` |
+| `None` | `model_010.tcf` | `grid_003.tgc` |
 
-Replace the writer's fixed loop ceiling with detection of genuinely unchanged input/scope state. It must support normal large files while still bounding a malformed non-progressing stream.
+The arbitrary-suffix child fallback to `001` is inherited naming behaviour and is retained. `None` now implements its documented no-increment semantics instead of reaching the old `inc.lower()` failure. A newly created/unloaded control file retains its specified filename.
 
-Add meaningful regressions around tests/tmf/test_control_file.py and tests/tmf/test_scope_writer.py, preferably temporary generated fixtures rather than production data. First demonstrate the old fault, then cover UTF-8/BOM, legacy bytes, CRLF/LF, no final newline, all increment modes, multiple dirty children and at least 20,000 flat commands. Inject failures at serialisation, staging and replacement boundaries; verify both disk contents and object state. A failed save must not be reported as success.
+All added absolute-path handling uses lexical `Path.absolute()` and normalisation/identity checks. No new `resolve()` or `realpath()` calls were introduced; existing constructor path behaviour was retained to avoid changing the deferred-context API.
 
-Run the affected installed-package tests on Windows Python 3.12 and 3.14 plus the relevant existing TMF editing/context selections. Use hosted CI when local Windows is unavailable. Distinguish an unavailable integration environment, a pre-existing failure, a skipped test and a new regression; do not use isolated AST methods as a substitute for acceptance. Broaden testing only to resolve a remaining risk or satisfy an existing gate. Do not execute TUFLOW, request private data, run SMB benchmarks, change deferred/batch/graph behaviour, publish or merge.
+## Writer progress contract
 
-Commit and push the implementation to the assigned branch, update this PR's scope/status with actual validation evidence, and record the writer interface and any remaining limitation for W2/W6. Report commit SHA, exact tests/CI links, failure-recovery contract and review findings. Complete the bounded implementation before requesting final review; keep the PR draft if acceptance remains incomplete.
+The fixed 10,000-iteration ceiling is removed. `ScopeWriter.inputs()` tracks the iterator position and immutable scope/focus state. It raises an actionable error on backwards movement or a repeated unchanged state, and discards prior state tracking whenever the cursor advances. A valid large file is not rejected because of its length.
 
-## Shared implementation rules
+The focused large-file regression parses and saves a real generated TCF containing 20,000 commands and compares output bytes. Separate tests exercise nested IF/ELSE transitions, a stalled iterator, a rewind and repeated occurrences of the same input object. No solver or performance benchmark is involved.
 
-- Implement the original-library work in this PR on its assigned branch. Read current AGENTS.md guidance and the latest PR body/comments first; inspect the latest parent branch before coding.
-- Preserve existing public APIs and established model/result semantics unless this scope explicitly identifies a defect. Use modern built-in Python annotations while keeping the declared interpreter support truthful; retain Python 3.12 compatibility needed by QGIS and validate standalone Python 3.14.
-- Keep Windows drive-letter, UNC and network paths lexical; use Path.absolute() when an absolute path is needed, not Path.resolve(). Preserve supported GIS/mesh backends and source provenance.
-- Use small public or generated fixtures. No TUFLOW solver launches, proprietary SMB models, private data uploads, package releases or merges are part of these work packages.
-- Do not expand the deferred/batch/graph optimisation work, alter PRs #4/#14/#15, or weaken their acceptance checks. Coordinate shared files with the linked work-package owner.
-- Record baseline failures separately from regressions. Do not make checks green by dropping fixtures, broad skipping, blanket warning suppression or silently changing expected engineering results.
-- Complete implementation and relevant validation before requesting final review. Keep this PR draft while work is incomplete; update the body with code checkpoints, commands, results and precise remaining limitations.
-- Routine implementation, fixes, tests and pushes to this development branch are authorised. Continue without another confirmation for those steps. Report an actual access or capability blocker with evidence.
+## Validation evidence
+
+### Baseline failures reproduced before the fixes
+
+Real-package temporary-file regressions at the original runtime demonstrated:
+
+- TCF and TRD comments containing byte `0x81` raised `UnicodeEncodeError` during saving and left their original targets at **zero bytes**.
+- Injected parent serialisation failure left a truncated parent and three already-created child/TRD outputs.
+- A real 20,000-command TCF failed at the old iteration ceiling. The stalled/backwards-iterator cases also failed their retained assertions.
+
+The initial save reproduction had **3 failed, 0 skipped**. The original scope regression run had **3 failed, 2 passed, 0 skipped**. These red results were recorded before changing the corresponding runtime.
+
+### Linux Python 3.12.14
+
+Dependencies were installed into a task-local target using the normal interpreter; no virtual environment was created. Actual package imports were used throughout.
+
+- Save/ownership/database/FV regression modules: **129 passed, 0 failed, 0 skipped**.
+- Full focused suite, including the real 20,000-command save: **134 passed, 0 failed, 0 skipped**, in 175.23 seconds. This is correctness validation, not a performance claim.
+- Existing 581-test selection: **549 passed, 32 failed, 0 skipped**, identical to the original runtime. The comparison tool reported **0 new compatibility regressions**.
+- Compilation and `git diff --check` passed.
+
+The 32 inherited Linux failures are one rainfall-database load failure, two GIS-referenced dependency inventory failures, and 29 FV tests where pandas 3.1.0's `Pandas4Warning` is promoted to an error by the existing warning policy. They were not skipped, suppressed or changed in this PR.
+
+Focused command:
+
+```text
+python -m pytest -q tests/tmf/test_safe_model_saves.py tests/tmf/test_safe_model_save_ownership.py tests/tmf/test_scope_writer_progress.py --junitxml=reports/focused.xml
+```
+
+Existing regression selection, run identically against baseline and candidate:
+
+```text
+python -m pytest -q tests/tmf/test_control_file.py tests/tmf/test_scope_writer.py tests/tmf/test_altered_inputs.py tests/tmf/test_inputs.py tests/tmf/test_input.py tests/tmf/test_input_context.py tests/tmf/test_cf_context.py tests/tmf/test_context.py tests/tmf/test_fv_cf.py tests/tmf/test_scope.py tests/tmf/test_events.py tests/tmf/test_xs_db_from_cf.py tests/test_deferred_file_references.py tests/test_deferred_database_parity.py tests/test_batch_dependencies.py --junitxml=reports/candidate.xml
+python tests/compare_upstream_tmf_junit.py --upstream reports/baseline.xml --fork reports/candidate.xml
+```
+
+The Windows workflow uses those commands on Python 3.12 and 3.14, rejects incomplete executions, requires every focused test to pass, rejects added regression failures/skips, and uploads all JUnit reports plus exact interpreter/dependency/source provenance. Unavailable or unfinished Windows validation is not a passing check.
+
+## Checkpoint for W2 / #18
+
+Build on `_SaveTransaction`'s plan → render → stage → replace/recover → publish-state boundary. Preserve input/child identity, the source ownership record, `_source_texts`, reference caches and the prepared-assignment commit discipline. Do not reintroduce live `rhs` setters or direct final-destination writes into planning.
+
+W2 still owns undo/reset and project feature persistence; W6 owns ordered include representation. The current save implementation retains earlier history blocks and only marks successfully saved objects clean. Final review and Windows acceptance status belong in the exact-head PR handoff; neither this document nor the implementation starts a dependent workstream or authorises a merge.
