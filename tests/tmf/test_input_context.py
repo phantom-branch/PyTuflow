@@ -314,7 +314,9 @@ def test_input_files_ref_in_gis():
         ctx.load_variables({'var': 'scen1'})
         input_ctx = input.context(context=ctx)
         files = [x.resolve() for x in input_ctx.files]
-        assert sorted(files) == sorted([file0, file1, file2, file3, file4, file5])
+        assert sorted(files) == sorted([file0, file1, file2, file3, file5])
+        # Q curve identifiers are database keys, not CSV file dependencies.
+        assert file4 not in files
     except Exception as e:
         raise e
     finally:

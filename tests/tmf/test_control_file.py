@@ -920,19 +920,18 @@ def test_load_pit_inlet_database():
         ecf.unlink()
 
 
-def test_load_rainfall_database():
-    tcf = Path(__file__).parent / 'test.tcf'
-    with tcf.open('w') as f:
-        f.write('READ GRID RF == rainfall.nc')
-    try:
-        cf = TCF(tcf)
-        assert isinstance(cf.rainfall_dbase(), RainfallDatabase)
-        assert cf.rainfall_dbase().TUFLOW_TYPE == const.DB.RAINFALL
-    except Exception as e:
-        raise e
-    finally:
-        tcf.unlink()
-
+def test_load_rainfall_database(tmp_path):
+    # Rainfall CSV indexes are databases, unlike direct NetCDF rainfall grids.
+    tcf = tmp_path / 'model.tcf'
+    rainfall = tmp_path / 'rainfall_index.csv'
+    rainfall.write_text('0,grid_000.flt\n1,grid_001.flt\n', encoding='utf-8')
+    tcf.write_text('Read Grid RF == rainfall_index.csv\n', encoding='utf-8')
+    model = TCF(tcf)
+    database = model.rainfall_dbase()
+    assert isinstance(database, RainfallDatabase)
+    assert database.TUFLOW_TYPE == const.DB.RAINFALL
+    assert database.df.shape == (2, 1)
+    assert database.fpath == rainfall
 
 def test_figure_out_file_scopes():
     tcf = Path(__file__).parent / 'test.tcf'
