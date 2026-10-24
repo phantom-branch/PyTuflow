@@ -110,6 +110,29 @@ def test_local_scope_applies_explicit_transform(mixed_mesh):
     np.testing.assert_allclose(geom.cell_position(slice(None), scope="global"), native, equal_nan=True)
 
 
+def test_face_cache_reuses_native_mesh_and_returns_independent_arrays(mixed_mesh, monkeypatch):
+    from pytuflow._outputs.pymesh.mesh_geom import qgismesh_geom
+
+    geom = mixed_mesh
+    original = qgismesh_geom._face_centroid
+    calls = []
+
+    def counted(vertices):
+        calls.append(vertices.copy())
+        return original(vertices)
+
+    monkeypatch.setattr(qgismesh_geom, "_face_centroid", counted)
+    first = geom.cell_position([1, 0, 1])
+    native_mesh, spatial_index = geom._mesh, geom._si
+    assert len(calls) == 2
+    first[:] = -999
+    again = geom.cell_position([0, 1])
+    assert len(calls) == 2
+    assert geom._mesh is native_mesh and geom._si is spatial_index
+    np.testing.assert_allclose(again[:, :2], [[2 / 3, 2 / 3], [10 + 37 / 21, 20 / 21]],
+                               rtol=RTOL, atol=ATOL)
+
+
 @pytest.mark.parametrize("bad", [-1, 2, [0, 2]])
 def test_out_of_range_faces_fail_explicitly(mixed_mesh, bad):
     with pytest.raises(IndexError):
