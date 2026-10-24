@@ -1,4 +1,4 @@
-# W8 missing physical endpoints — sanitised live-QGIS evidence
+# W8 missing physical endpoints - sanitised live-QGIS evidence
 
 Code/test source: **37fc565218775a06252252a15cdb6e79e4e28c3c**.
 Pre-fix source: **26c6bad101811af2945ce7558e69bb6c1c37685e**.
