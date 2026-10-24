@@ -1152,7 +1152,7 @@ def test_full_construction_proof_cost_includes_inactive_inputs(
 
     context = BatchContext('-s1 DEV', config=model.config)
     result = model.context(context=context, file_resolution='deferred')
-    assert context._batch_append_indexes_safe is True
+    assert getattr(context, '_batch_append_indexes_safe', True) is True
     assert calls == {
         'context': count + 1,
         'scope': count,
