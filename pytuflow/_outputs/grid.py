@@ -261,12 +261,12 @@ class Grid(MapOutput):
         if key in self._cached_data:
             source = self._cached_data[key]
             if is_static:
-                return np.array(source, copy=True)
+                return source.copy()
             if len(indexes) == 0:
-                return np.array(source[:0], copy=True)
+                return source[:0].copy()
             if len(indexes) == 1:
-                return np.array(source[indexes[0]], copy=True)
-            return np.array(source[indexes], copy=True)
+                return source[indexes[0]].copy()
+            return source[indexes].copy()
 
         cache = self._surface_cache.setdefault(key, OrderedDict())
         budget = 64 * 1024 * 1024
@@ -276,10 +276,10 @@ class Grid(MapOutput):
                 cache.move_to_end(ti)
                 value = cache[ti]
             else:
-                value = np.array(
-                    self._value(dtype, slice(None) if is_static else ti),
-                    copy=True,
-                )
+                # asanyarray retains NumPy masked-array subclasses.
+                value = np.asanyarray(
+                    self._value(dtype, slice(None) if is_static else ti)
+                ).copy()
                 # A single large surface can exceed the byte budget, but no
                 # additional surface may be retained alongside it.
                 while cache and (
@@ -289,13 +289,15 @@ class Grid(MapOutput):
                 ):
                     cache.popitem(last=False)
                 cache[ti] = value
-            values.append(np.array(value, copy=True))
+            values.append(value.copy())
 
         if len(values) == 1:
             return values[0]
         if not values:
             _, _, _, _, ncol, nrow, _ = self._grid_info(dtype)
             return np.empty((0, int(nrow), int(ncol)))
+        if any(np.ma.isMaskedArray(v) for v in values):
+            return np.ma.stack(values, axis=0)
         return np.stack(values, axis=0)
 
     def load_into_memory(self, data_types: str | list[str]):
@@ -307,7 +309,7 @@ class Grid(MapOutput):
         for dtype in self._figure_out_data_types(data_types, None):
             key = dtype.lower()
             if key not in self._cached_data:
-                self._cached_data[key] = np.array(self._value(dtype, slice(None)), copy=True)
+                self._cached_data[key] = np.asanyarray(self._value(dtype, slice(None))).copy()
                 self._cached_timesteps[key] = set(range(len(self.times(dtype))))
             self._surface_cache.pop(key, None)
 
@@ -372,8 +374,9 @@ class Grid(MapOutput):
         combine = max if maximum else min
         result = None
         for ti in range(len(self.times(dtype))):
-            values = np.asarray(self._surface(dtype, ti))
-            valid = values[~np.isnan(values)]
+            values = np.asanyarray(self._surface(dtype, ti))
+            valid = values.compressed() if np.ma.isMaskedArray(values) else values.ravel()
+            valid = valid[~np.isnan(valid)]
             if valid.size:
                 value = (np.max(valid) if maximum else np.min(valid)).item()
                 result = value if result is None else combine(result, value)

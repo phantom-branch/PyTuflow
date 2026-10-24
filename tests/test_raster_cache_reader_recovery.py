@@ -213,3 +213,21 @@ def test_reductions_stream_time_slices_without_allocating_cube(tmp_path):
     assert len(cache) <= 4
     assert all(x.shape == (3, 3) for x in cache.values())
     assert "water level" not in reader._cached_data
+
+@pytest.mark.parametrize("temporal", [False, True])
+def test_resident_masked_grid_preserves_missing_cells_and_extrema(temporal):
+    surface = np.ma.array(
+        [[1., 999.], [2., 3.]],
+        mask=[[False, True], [False, False]],
+    )
+    data = np.ma.stack([surface, surface + 1]) if temporal else surface
+    metadata = {"dx": 1., "nrow": 2, "ncol": 2,
+                "data_type": "water level", "data": data}
+    if temporal:
+        metadata["timesteps"] = [0., 1.]
+    grid = Grid(metadata)
+    with_masks = grid._surface("water level", [1, 0, 1] if temporal else -1)
+    assert np.ma.isMaskedArray(with_masks)
+    assert np.ma.getmaskarray(with_masks).any()
+    assert grid.maximum("water level") == (4. if temporal else 3.)
+    assert grid.minimum("water level") == 1.
