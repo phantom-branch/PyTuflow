@@ -1,6 +1,6 @@
 # W9 — Restore QGIS geometry public surface cell positions
 
-**Status:** Scoped implementation and tests pushed; hosted standalone checks in progress. Real QGIS/MDAL acceptance remains outstanding (not available in this execution environment).
+**Status (25 October 2026):** Native Windows QGIS/MDAL acceptance passed, including matched baseline reproduction and complete affected regressions. Updated master is incorporated; final exact-head hosted CI and Codex review are the remaining delivery gates. See the final PR #26 acceptance comment for their terminal state.
 
 - Repository: `phantom-branch/PyTuflow`
 - Branch: `fix/qgis-public-surface-cell-position`
@@ -65,3 +65,37 @@ A local standalone analytical reproduction of the area-centroid formula passed *
 This environment has Python 3.13.5 but no `qgis` bindings or MDAL provider, so it **cannot** execute `tests/test_qgis_surface_cell_positions.py`. A true QGIS validation agent must execute that module plus the affected `tests/test_map_output.py`, `tests/test_map_output_pymesh.py`, and W8 numerical cases using the installed QGIS 4 runtime. An unavailable QGIS provider is a blocker, not a passing skip. Record the actual tested source head, QGIS/Python/GDAL versions, commands and JUnit; compare the pre-fix merged-master geometry `NotImplementedError` with the candidate's public scalar/vector surfaces, checking independent centroid expectations and wet/dry masks.
 
 Do not claim the PR is accepted or merge it without that lane and subsequent Codex review. The branch must stay draft until these gates pass. No private models, solver, benchmark, unrelated changes, merge or release were used.
+
+## Native Windows completion — 25 October 2026
+
+This section supersedes the earlier environment limitation and outstanding native
+validation statements above. Work used dedicated normal clones; the main checkout
+and other agents' work were untouched.
+
+- Safely merged current master `f1ceb77f74cb521f50be80209b929ecf0b58bf20` as
+  `6c048477960bce2d9ca6e6956d725681027515a4`, supplying merged W5 infrastructure.
+  Prior hosted failures were missing `tests/ci`, requirements and runner paths;
+  no shared harness/workflow modification or error suppression was required.
+- Native QGIS 4.2.3 / Python 3.12.15 / Qt 6.11.0 / GDAL 3.13.3 and real MDAL:
+  original provider module **29 passed**. No production correction was needed.
+- The identical 13-case public reproduction at baseline
+  `0679d9c758c07e786f23d552295366baa4bea10b` fails only with the inherited
+  `cell_position` NotImplementedError; all 13 candidate cases pass.
+- Both baseline and geometry candidate pass **1118/1118** identical affected
+  map/Python-mesh/W8 numerical tests, with zero failures/errors/skips.
+- Added real-provider cache/array-isolation regression at
+  `3f0627d7bf5988019fe472e8f812594ba6d10309`; committed focused validation is
+  **37 passed** (30 provider, seven analytical), zero failures/errors/skips.
+- [Committed sanitised evidence and commands](evidence/W9_native_qgis/README.md)
+  include JUnit, logs, all test IDs, source/runtime provenance, actual public
+  surface tables, independent centroid expectations, raw exits and checksums.
+- Both source clones were clean after execution. No production changes beyond
+  the existing W9 implementation, dependency writes, solver/private model use,
+  worktrees, virtual environments, merge or release occurred.
+
+Next action: await terminal Windows 3.12/3.14 centroid/numerical and W5
+regression/wheel checks on the evidence delivery head, request final Codex review,
+and address concrete findings. Keep draft; do not merge. Next review: 25 October
+2026, when those checks finish. The authoritative final PR comment records exact
+delivery SHA, terminal hosted URLs and review disposition without rewriting the
+historical execution SHAs here.
