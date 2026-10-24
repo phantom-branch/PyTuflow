@@ -1,0 +1,1834 @@
+<?xml version='1.0' encoding='utf-8'?>
+<testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="48" skipped="0" tests="208" time="16.995" timestamp="2026-10-24T17:43:19.850348+08:00" hostname="&lt;host&gt;"><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-depth&amp;0&amp;0.5-nan]" time="0.068"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array([nan])">missing = 'surface', uri = 'depth&amp;0&amp;0.5', expected = nan, masked = False
+missing_observation = False, reverse = False
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([20.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-height&amp;0&amp;0.5-20.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-elevation&amp;-2&amp;0-20.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-sigma&amp;0&amp;1-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array([nan])">missing = 'surface', uri = 'sigma&amp;0&amp;1', expected = nan, masked = False
+missing_observation = False, reverse = False
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([20.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-height&amp;0&amp;0.5-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array([nan])">missing = 'bed', uri = 'height&amp;0&amp;0.5', expected = nan, masked = False
+missing_observation = False, reverse = False
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([10.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-depth&amp;0&amp;0.5-10.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-elevation&amp;-2&amp;0-10.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-sigma&amp;0&amp;1-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array([nan])">missing = 'bed', uri = 'sigma&amp;0&amp;1', expected = nan, masked = False
+missing_observation = False, reverse = False
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([10.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-depth&amp;0&amp;0.5-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array([nan])">missing = 'surface', uri = 'depth&amp;0&amp;0.5', expected = nan, masked = True
+missing_observation = False, reverse = False
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([20.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-height&amp;0&amp;0.5-20.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-elevation&amp;-2&amp;0-20.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-sigma&amp;0&amp;1-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array([nan])">missing = 'surface', uri = 'sigma&amp;0&amp;1', expected = nan, masked = True
+missing_observation = False, reverse = False
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([20.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-height&amp;0&amp;0.5-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array([nan])">missing = 'bed', uri = 'height&amp;0&amp;0.5', expected = nan, masked = True
+missing_observation = False, reverse = False
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([10.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-depth&amp;0&amp;0.5-10.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-elevation&amp;-2&amp;0-10.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-sigma&amp;0&amp;1-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array([nan])">missing = 'bed', uri = 'sigma&amp;0&amp;1', expected = nan, masked = True
+missing_observation = False, reverse = False
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([10.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-depth&amp;0&amp;0.5-nan]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-height&amp;0&amp;0.5-20.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-elevation&amp;-2&amp;0-20.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-sigma&amp;0&amp;1-nan]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-height&amp;0&amp;0.5-nan]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-depth&amp;0&amp;0.5-10.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-elevation&amp;-2&amp;0-10.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-sigma&amp;0&amp;1-nan]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-depth&amp;0&amp;0.5-nan]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-height&amp;0&amp;0.5-20.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-elevation&amp;-2&amp;0-20.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-sigma&amp;0&amp;1-nan]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-height&amp;0&amp;0.5-nan]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-depth&amp;0&amp;0.5-10.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-elevation&amp;-2&amp;0-10.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-sigma&amp;0&amp;1-nan]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-depth&amp;0&amp;0.5-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array([nan])">missing = 'surface', uri = 'depth&amp;0.5&amp;0', expected = nan, masked = False
+missing_observation = False, reverse = True
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([20.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-height&amp;0&amp;0.5-20.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-elevation&amp;-2&amp;0-20.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-sigma&amp;0&amp;1-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array([nan])">missing = 'surface', uri = 'sigma&amp;1&amp;0', expected = nan, masked = False
+missing_observation = False, reverse = True
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([20.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-height&amp;0&amp;0.5-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array([nan])">missing = 'bed', uri = 'height&amp;0.5&amp;0', expected = nan, masked = False
+missing_observation = False, reverse = True
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([10.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-depth&amp;0&amp;0.5-10.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-elevation&amp;-2&amp;0-10.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-sigma&amp;0&amp;1-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array([nan])">missing = 'bed', uri = 'sigma&amp;1&amp;0', expected = nan, masked = False
+missing_observation = False, reverse = True
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([10.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-depth&amp;0&amp;0.5-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array([nan])">missing = 'surface', uri = 'depth&amp;0.5&amp;0', expected = nan, masked = True
+missing_observation = False, reverse = True
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([20.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-height&amp;0&amp;0.5-20.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-elevation&amp;-2&amp;0-20.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-sigma&amp;0&amp;1-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array([nan])">missing = 'surface', uri = 'sigma&amp;1&amp;0', expected = nan, masked = True
+missing_observation = False, reverse = True
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([20.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-height&amp;0&amp;0.5-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array([nan])">missing = 'bed', uri = 'height&amp;0.5&amp;0', expected = nan, masked = True
+missing_observation = False, reverse = True
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([10.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-depth&amp;0&amp;0.5-10.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-elevation&amp;-2&amp;0-10.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-sigma&amp;0&amp;1-nan]" time="0.001"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array([nan])">missing = 'bed', uri = 'sigma&amp;1&amp;0', expected = nan, masked = True
+missing_observation = False, reverse = True
+
+    @pytest.mark.parametrize("missing,uri,expected", ENDPOINT_REQUESTS)
+    @pytest.mark.parametrize("masked", [False, True])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def test_missing_endpoint_requests_keep_physical_origins(missing, uri, expected, masked, missing_observation, reverse):
+        z = np.array([0., -1., -2.])
+        mask = [missing == "surface", False, missing == "bed"]
+        z = np.ma.array(z, mask=mask) if masked else np.where(mask, np.nan, z)
+        v = np.array([10., 20.])
+        if missing_observation:
+            # Remove the only fully bounded observation as well.
+            v[1 if missing == "surface" else 0] = np.nan
+            expected = np.nan
+        if reverse:
+            method, a, b = uri.split("&amp;")
+            uri = f"{method}&amp;{b}&amp;{a}"
+&gt;       _assert_average(get_method_func(uri)(z, v), [expected])
+
+tests\test_numerical_depth_averaging.py:425: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+actual = array([10.]), expected = [nan]
+
+    def _assert_average(actual: np.ndarray, expected: list[float]) -&gt; None:
+        assert actual.shape == (len(expected),)
+&gt;       np.testing.assert_allclose(actual, expected, rtol=RTOL, atol=ATOL, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array([nan])
+
+tests\test_numerical_depth_averaging.py:72: AssertionError</failure></testcase><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-depth&amp;0&amp;0.5-nan]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-height&amp;0&amp;0.5-20.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-elevation&amp;-2&amp;0-20.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-sigma&amp;0&amp;1-nan]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-height&amp;0&amp;0.5-nan]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-depth&amp;0&amp;0.5-10.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-elevation&amp;-2&amp;0-10.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-sigma&amp;0&amp;1-nan]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-depth&amp;0&amp;0.5-nan]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-height&amp;0&amp;0.5-20.0]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-elevation&amp;-2&amp;0-20.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-sigma&amp;0&amp;1-nan]" time="0.001" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-height&amp;0&amp;0.5-nan]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-depth&amp;0&amp;0.5-10.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-elevation&amp;-2&amp;0-10.0]" time="0.000" /><testcase classname="tests.test_numerical_depth_averaging" name="test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-sigma&amp;0&amp;1-nan]" time="0.001" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-depth&amp;0&amp;0.5-nan-point-netcdf4]" time="0.167"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array(20.)&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r0')
+engine = 'netcdf4', access = 'point', missing = 'surface'
+averaging = 'depth&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array(20.)
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-depth&amp;0&amp;0.5-nan-point-h5py]" time="0.045"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array(20.)&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r1')
+engine = 'h5py', access = 'point', missing = 'surface'
+averaging = 'depth&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array(20.)
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-depth&amp;0&amp;0.5-nan-time_series-netcdf4]" time="0.125"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([[20.],&#10;       [20.]])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r2')
+engine = 'netcdf4', access = 'time_series', missing = 'surface'
+averaging = 'depth&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([[20.],
+E              [20.]])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-depth&amp;0&amp;0.5-nan-time_series-h5py]" time="0.046"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([[20.],&#10;       [20.]])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r3')
+engine = 'h5py', access = 'time_series', missing = 'surface'
+averaging = 'depth&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([[20.],
+E              [20.]])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-depth&amp;0&amp;0.5-nan-section-netcdf4]" time="0.122"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20., 20.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r4')
+engine = 'netcdf4', access = 'section', missing = 'surface'
+averaging = 'depth&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20., 20.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-depth&amp;0&amp;0.5-nan-section-h5py]" time="0.046"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20., 20.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r5')
+engine = 'h5py', access = 'section', missing = 'surface'
+averaging = 'depth&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20., 20.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-depth&amp;0&amp;0.5-nan-surface-netcdf4]" time="0.126"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r6')
+engine = 'netcdf4', access = 'surface', missing = 'surface'
+averaging = 'depth&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-depth&amp;0&amp;0.5-nan-surface-h5py]" time="0.050"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r7')
+engine = 'h5py', access = 'surface', missing = 'surface'
+averaging = 'depth&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-height&amp;0&amp;0.5-20.0-point-netcdf4]" time="0.121" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-height&amp;0&amp;0.5-20.0-point-h5py]" time="0.045" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-height&amp;0&amp;0.5-20.0-time_series-netcdf4]" time="0.127" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-height&amp;0&amp;0.5-20.0-time_series-h5py]" time="0.048" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-height&amp;0&amp;0.5-20.0-section-netcdf4]" time="0.125" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-height&amp;0&amp;0.5-20.0-section-h5py]" time="0.049" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-height&amp;0&amp;0.5-20.0-surface-netcdf4]" time="0.126" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-height&amp;0&amp;0.5-20.0-surface-h5py]" time="0.050" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-elevation&amp;-2&amp;0-20.0-point-netcdf4]" time="0.134" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-elevation&amp;-2&amp;0-20.0-point-h5py]" time="0.045" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-elevation&amp;-2&amp;0-20.0-time_series-netcdf4]" time="0.123" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-elevation&amp;-2&amp;0-20.0-time_series-h5py]" time="0.046" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-elevation&amp;-2&amp;0-20.0-section-netcdf4]" time="0.124" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-elevation&amp;-2&amp;0-20.0-section-h5py]" time="0.046" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-elevation&amp;-2&amp;0-20.0-surface-netcdf4]" time="0.128" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-elevation&amp;-2&amp;0-20.0-surface-h5py]" time="0.051" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-sigma&amp;0&amp;1-nan-point-netcdf4]" time="0.122"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array(20.)&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r24')
+engine = 'netcdf4', access = 'point', missing = 'surface'
+averaging = 'sigma&amp;0&amp;1', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array(20.)
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-sigma&amp;0&amp;1-nan-point-h5py]" time="0.046"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array(20.)&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r25')
+engine = 'h5py', access = 'point', missing = 'surface', averaging = 'sigma&amp;0&amp;1'
+expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array(20.)
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-sigma&amp;0&amp;1-nan-time_series-netcdf4]" time="0.123"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([[20.],&#10;       [20.]])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r26')
+engine = 'netcdf4', access = 'time_series', missing = 'surface'
+averaging = 'sigma&amp;0&amp;1', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([[20.],
+E              [20.]])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-sigma&amp;0&amp;1-nan-time_series-h5py]" time="0.045"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([[20.],&#10;       [20.]])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r27')
+engine = 'h5py', access = 'time_series', missing = 'surface'
+averaging = 'sigma&amp;0&amp;1', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([[20.],
+E              [20.]])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-sigma&amp;0&amp;1-nan-section-netcdf4]" time="0.123"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20., 20.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r28')
+engine = 'netcdf4', access = 'section', missing = 'surface'
+averaging = 'sigma&amp;0&amp;1', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20., 20.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-sigma&amp;0&amp;1-nan-section-h5py]" time="0.047"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20., 20.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r29')
+engine = 'h5py', access = 'section', missing = 'surface'
+averaging = 'sigma&amp;0&amp;1', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20., 20.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-sigma&amp;0&amp;1-nan-surface-netcdf4]" time="0.128"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r30')
+engine = 'netcdf4', access = 'surface', missing = 'surface'
+averaging = 'sigma&amp;0&amp;1', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-surface-sigma&amp;0&amp;1-nan-surface-h5py]" time="0.050"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([20.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r31')
+engine = 'h5py', access = 'surface', missing = 'surface'
+averaging = 'sigma&amp;0&amp;1', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([20.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-height&amp;0&amp;0.5-nan-point-netcdf4]" time="0.121"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array(10.)&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r32')
+engine = 'netcdf4', access = 'point', missing = 'bed'
+averaging = 'height&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array(10.)
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-height&amp;0&amp;0.5-nan-point-h5py]" time="0.046"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array(10.)&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r33')
+engine = 'h5py', access = 'point', missing = 'bed', averaging = 'height&amp;0&amp;0.5'
+expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array(10.)
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-height&amp;0&amp;0.5-nan-time_series-netcdf4]" time="0.125"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([[10.],&#10;       [10.]])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r34')
+engine = 'netcdf4', access = 'time_series', missing = 'bed'
+averaging = 'height&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([[10.],
+E              [10.]])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-height&amp;0&amp;0.5-nan-time_series-h5py]" time="0.045"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([[10.],&#10;       [10.]])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r35')
+engine = 'h5py', access = 'time_series', missing = 'bed'
+averaging = 'height&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([[10.],
+E              [10.]])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-height&amp;0&amp;0.5-nan-section-netcdf4]" time="0.124"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10., 10.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r36')
+engine = 'netcdf4', access = 'section', missing = 'bed'
+averaging = 'height&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10., 10.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-height&amp;0&amp;0.5-nan-section-h5py]" time="0.046"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10., 10.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r37')
+engine = 'h5py', access = 'section', missing = 'bed', averaging = 'height&amp;0&amp;0.5'
+expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10., 10.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-height&amp;0&amp;0.5-nan-surface-netcdf4]" time="0.130"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r38')
+engine = 'netcdf4', access = 'surface', missing = 'bed'
+averaging = 'height&amp;0&amp;0.5', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-height&amp;0&amp;0.5-nan-surface-h5py]" time="0.051"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r39')
+engine = 'h5py', access = 'surface', missing = 'bed', averaging = 'height&amp;0&amp;0.5'
+expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-depth&amp;0&amp;0.5-10.0-point-netcdf4]" time="0.123" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-depth&amp;0&amp;0.5-10.0-point-h5py]" time="0.046" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-depth&amp;0&amp;0.5-10.0-time_series-netcdf4]" time="0.123" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-depth&amp;0&amp;0.5-10.0-time_series-h5py]" time="0.045" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-depth&amp;0&amp;0.5-10.0-section-netcdf4]" time="0.124" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-depth&amp;0&amp;0.5-10.0-section-h5py]" time="0.046" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-depth&amp;0&amp;0.5-10.0-surface-netcdf4]" time="0.127" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-depth&amp;0&amp;0.5-10.0-surface-h5py]" time="0.050" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-elevation&amp;-2&amp;0-10.0-point-netcdf4]" time="0.124" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-elevation&amp;-2&amp;0-10.0-point-h5py]" time="0.047" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-elevation&amp;-2&amp;0-10.0-time_series-netcdf4]" time="0.123" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-elevation&amp;-2&amp;0-10.0-time_series-h5py]" time="0.046" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-elevation&amp;-2&amp;0-10.0-section-netcdf4]" time="0.125" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-elevation&amp;-2&amp;0-10.0-section-h5py]" time="0.047" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-elevation&amp;-2&amp;0-10.0-surface-netcdf4]" time="0.125" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-elevation&amp;-2&amp;0-10.0-surface-h5py]" time="0.049" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-sigma&amp;0&amp;1-nan-point-netcdf4]" time="0.130"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array(10.)&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r56')
+engine = 'netcdf4', access = 'point', missing = 'bed', averaging = 'sigma&amp;0&amp;1'
+expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array(10.)
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-sigma&amp;0&amp;1-nan-point-h5py]" time="0.049"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array(10.)&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r57')
+engine = 'h5py', access = 'point', missing = 'bed', averaging = 'sigma&amp;0&amp;1'
+expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array(10.)
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-sigma&amp;0&amp;1-nan-time_series-netcdf4]" time="0.124"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([[10.],&#10;       [10.]])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r58')
+engine = 'netcdf4', access = 'time_series', missing = 'bed'
+averaging = 'sigma&amp;0&amp;1', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([[10.],
+E              [10.]])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-sigma&amp;0&amp;1-nan-time_series-h5py]" time="0.047"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([[10.],&#10;       [10.]])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r59')
+engine = 'h5py', access = 'time_series', missing = 'bed'
+averaging = 'sigma&amp;0&amp;1', expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([[10.],
+E              [10.]])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-sigma&amp;0&amp;1-nan-section-netcdf4]" time="0.127"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10., 10.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r60')
+engine = 'netcdf4', access = 'section', missing = 'bed', averaging = 'sigma&amp;0&amp;1'
+expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10., 10.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-sigma&amp;0&amp;1-nan-section-h5py]" time="0.047"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10., 10.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r61')
+engine = 'h5py', access = 'section', missing = 'bed', averaging = 'sigma&amp;0&amp;1'
+expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10., 10.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-sigma&amp;0&amp;1-nan-surface-netcdf4]" time="0.129"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r62')
+engine = 'netcdf4', access = 'surface', missing = 'bed', averaging = 'sigma&amp;0&amp;1'
+expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[False-bed-sigma&amp;0&amp;1-nan-surface-h5py]" time="0.053"><failure message="AssertionError: &#10;Not equal to tolerance rtol=1e-12, atol=1e-12&#10;&#10;nan location mismatch:&#10; ACTUAL: array([10.])&#10; DESIRED: array(nan)">tmp_path = WindowsPath('&lt;pytest-temp&gt;/test_missing_endpoint_public_r63')
+engine = 'h5py', access = 'surface', missing = 'bed', averaging = 'sigma&amp;0&amp;1'
+expected = nan, missing_observation = False
+
+    @pytest.mark.parametrize("engine", ["netcdf4", "h5py"])
+    @pytest.mark.parametrize("access", ["point", "time_series", "section", "surface"])
+    @pytest.mark.parametrize("missing,averaging,expected", [
+        ("surface", "depth&amp;0&amp;0.5", np.nan),
+        ("surface", "height&amp;0&amp;0.5", 20.),
+        ("surface", "elevation&amp;-2&amp;0", 20.),
+        ("surface", "sigma&amp;0&amp;1", np.nan),
+        ("bed", "height&amp;0&amp;0.5", np.nan),
+        ("bed", "depth&amp;0&amp;0.5", 10.),
+        ("bed", "elevation&amp;-2&amp;0", 10.),
+        ("bed", "sigma&amp;0&amp;1", np.nan),
+    ])
+    @pytest.mark.parametrize("missing_observation", [False, True])
+    def test_missing_endpoint_public_reader(tmp_path, engine, access, missing, averaging, expected, missing_observation):
+        path = tmp_path / "missing_endpoint.nc"
+        _write_fv(path)
+        with Dataset(path, "a") as nc:
+            z = nc["layerface_Z"][:]
+            z[:, 0 if missing == "surface" else 2] = np.nan
+            nc["layerface_Z"][:] = z
+            if missing_observation:
+                v = nc["SAL"][:]
+                v[:, 1 if missing == "surface" else 0] = np.nan
+                nc["SAL"][:] = v
+                expected = np.nan
+        reader = NCMesh(path, driver=engine)
+&gt;       np.testing.assert_allclose(_read(reader, access, "salinity", averaging), expected,
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+E       AssertionError: 
+E       Not equal to tolerance rtol=1e-12, atol=1e-12
+E       
+E       nan location mismatch:
+E        ACTUAL: array([10.])
+E        DESIRED: array(nan)
+
+tests\test_numerical_fv_reader.py:196: AssertionError</failure></testcase><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-depth&amp;0&amp;0.5-nan-point-netcdf4]" time="0.126" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-depth&amp;0&amp;0.5-nan-point-h5py]" time="0.047" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-depth&amp;0&amp;0.5-nan-time_series-netcdf4]" time="0.124" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-depth&amp;0&amp;0.5-nan-time_series-h5py]" time="0.046" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-depth&amp;0&amp;0.5-nan-section-netcdf4]" time="0.125" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-depth&amp;0&amp;0.5-nan-section-h5py]" time="0.047" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-depth&amp;0&amp;0.5-nan-surface-netcdf4]" time="0.128" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-depth&amp;0&amp;0.5-nan-surface-h5py]" time="0.049" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-height&amp;0&amp;0.5-20.0-point-netcdf4]" time="0.124" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-height&amp;0&amp;0.5-20.0-point-h5py]" time="0.047" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-height&amp;0&amp;0.5-20.0-time_series-netcdf4]" time="0.123" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-height&amp;0&amp;0.5-20.0-time_series-h5py]" time="0.051" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-height&amp;0&amp;0.5-20.0-section-netcdf4]" time="0.124" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-height&amp;0&amp;0.5-20.0-section-h5py]" time="0.046" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-height&amp;0&amp;0.5-20.0-surface-netcdf4]" time="0.127" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-height&amp;0&amp;0.5-20.0-surface-h5py]" time="0.049" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-elevation&amp;-2&amp;0-20.0-point-netcdf4]" time="0.123" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-elevation&amp;-2&amp;0-20.0-point-h5py]" time="0.046" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-elevation&amp;-2&amp;0-20.0-time_series-netcdf4]" time="0.129" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-elevation&amp;-2&amp;0-20.0-time_series-h5py]" time="0.049" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-elevation&amp;-2&amp;0-20.0-section-netcdf4]" time="0.138" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-elevation&amp;-2&amp;0-20.0-section-h5py]" time="0.048" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-elevation&amp;-2&amp;0-20.0-surface-netcdf4]" time="0.132" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-elevation&amp;-2&amp;0-20.0-surface-h5py]" time="0.051" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-sigma&amp;0&amp;1-nan-point-netcdf4]" time="0.127" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-sigma&amp;0&amp;1-nan-point-h5py]" time="0.047" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-sigma&amp;0&amp;1-nan-time_series-netcdf4]" time="0.128" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-sigma&amp;0&amp;1-nan-time_series-h5py]" time="0.053" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-sigma&amp;0&amp;1-nan-section-netcdf4]" time="0.132" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-sigma&amp;0&amp;1-nan-section-h5py]" time="0.048" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-sigma&amp;0&amp;1-nan-surface-netcdf4]" time="0.136" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-surface-sigma&amp;0&amp;1-nan-surface-h5py]" time="0.051" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-height&amp;0&amp;0.5-nan-point-netcdf4]" time="0.135" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-height&amp;0&amp;0.5-nan-point-h5py]" time="0.051" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-height&amp;0&amp;0.5-nan-time_series-netcdf4]" time="0.143" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-height&amp;0&amp;0.5-nan-time_series-h5py]" time="0.051" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-height&amp;0&amp;0.5-nan-section-netcdf4]" time="0.137" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-height&amp;0&amp;0.5-nan-section-h5py]" time="0.049" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-height&amp;0&amp;0.5-nan-surface-netcdf4]" time="0.142" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-height&amp;0&amp;0.5-nan-surface-h5py]" time="0.053" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-depth&amp;0&amp;0.5-10.0-point-netcdf4]" time="0.141" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-depth&amp;0&amp;0.5-10.0-point-h5py]" time="0.048" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-depth&amp;0&amp;0.5-10.0-time_series-netcdf4]" time="0.136" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-depth&amp;0&amp;0.5-10.0-time_series-h5py]" time="0.046" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-depth&amp;0&amp;0.5-10.0-section-netcdf4]" time="0.146" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-depth&amp;0&amp;0.5-10.0-section-h5py]" time="0.049" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-depth&amp;0&amp;0.5-10.0-surface-netcdf4]" time="0.143" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-depth&amp;0&amp;0.5-10.0-surface-h5py]" time="0.055" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-elevation&amp;-2&amp;0-10.0-point-netcdf4]" time="0.136" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-elevation&amp;-2&amp;0-10.0-point-h5py]" time="0.046" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-elevation&amp;-2&amp;0-10.0-time_series-netcdf4]" time="0.138" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-elevation&amp;-2&amp;0-10.0-time_series-h5py]" time="0.047" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-elevation&amp;-2&amp;0-10.0-section-netcdf4]" time="0.182" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-elevation&amp;-2&amp;0-10.0-section-h5py]" time="0.065" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-elevation&amp;-2&amp;0-10.0-surface-netcdf4]" time="0.215" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-elevation&amp;-2&amp;0-10.0-surface-h5py]" time="0.070" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-sigma&amp;0&amp;1-nan-point-netcdf4]" time="0.206" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-sigma&amp;0&amp;1-nan-point-h5py]" time="0.063" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-sigma&amp;0&amp;1-nan-time_series-netcdf4]" time="0.196" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-sigma&amp;0&amp;1-nan-time_series-h5py]" time="0.065" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-sigma&amp;0&amp;1-nan-section-netcdf4]" time="0.207" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-sigma&amp;0&amp;1-nan-section-h5py]" time="0.071" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-sigma&amp;0&amp;1-nan-surface-netcdf4]" time="0.206" /><testcase classname="tests.test_numerical_fv_reader" name="test_missing_endpoint_public_reader[True-bed-sigma&amp;0&amp;1-nan-surface-h5py]" time="0.068" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[surface-point-netcdf4]" time="0.234" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[surface-point-h5py]" time="0.073" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[surface-time_series-netcdf4]" time="0.220" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[surface-time_series-h5py]" time="0.079" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[surface-section-netcdf4]" time="0.227" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[surface-section-h5py]" time="0.079" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[surface-surface-netcdf4]" time="0.236" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[surface-surface-h5py]" time="0.082" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[bed-point-netcdf4]" time="0.215" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[bed-point-h5py]" time="0.070" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[bed-time_series-netcdf4]" time="0.210" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[bed-time_series-h5py]" time="0.071" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[bed-section-netcdf4]" time="0.216" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[bed-section-h5py]" time="0.077" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[bed-surface-netcdf4]" time="0.224" /><testcase classname="tests.test_numerical_fv_reader" name="test_endpoint_single_layer_has_no_bounded_contribution[bed-surface-h5py]" time="0.080" /></testsuite></testsuites>

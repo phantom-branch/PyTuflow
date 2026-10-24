@@ -1,0 +1,178 @@
+[
+  {
+    "missing": "surface",
+    "uri": "depth&0&0.5",
+    "boundaries": [
+      "NaN",
+      -1.0,
+      -2.0
+    ],
+    "layer_counts": [
+      2
+    ],
+    "values": [
+      10.0,
+      20.0
+    ],
+    "expected": "NaN",
+    "python": "NaN",
+    "qgis_valid": true,
+    "qgis": [
+      "NaN"
+    ]
+  },
+  {
+    "missing": "surface",
+    "uri": "height&0&0.5",
+    "boundaries": [
+      "NaN",
+      -1.0,
+      -2.0
+    ],
+    "layer_counts": [
+      2
+    ],
+    "values": [
+      10.0,
+      20.0
+    ],
+    "expected": 20.0,
+    "python": 20.0,
+    "qgis_valid": true,
+    "qgis": [
+      "NaN"
+    ]
+  },
+  {
+    "missing": "surface",
+    "uri": "elevation&-2&0",
+    "boundaries": [
+      "NaN",
+      -1.0,
+      -2.0
+    ],
+    "layer_counts": [
+      2
+    ],
+    "values": [
+      10.0,
+      20.0
+    ],
+    "expected": 20.0,
+    "python": 20.0,
+    "qgis_valid": true,
+    "qgis": [
+      "NaN"
+    ]
+  },
+  {
+    "missing": "surface",
+    "uri": "sigma&0&1",
+    "boundaries": [
+      "NaN",
+      -1.0,
+      -2.0
+    ],
+    "layer_counts": [
+      2
+    ],
+    "values": [
+      10.0,
+      20.0
+    ],
+    "expected": "NaN",
+    "python": "NaN",
+    "qgis_valid": true,
+    "qgis": [
+      "NaN"
+    ]
+  },
+  {
+    "missing": "bed",
+    "uri": "height&0&0.5",
+    "boundaries": [
+      0.0,
+      -1.0,
+      "NaN"
+    ],
+    "layer_counts": [
+      2
+    ],
+    "values": [
+      10.0,
+      20.0
+    ],
+    "expected": "NaN",
+    "python": "NaN",
+    "qgis_valid": true,
+    "qgis": [
+      "NaN"
+    ]
+  },
+  {
+    "missing": "bed",
+    "uri": "depth&0&0.5",
+    "boundaries": [
+      0.0,
+      -1.0,
+      "NaN"
+    ],
+    "layer_counts": [
+      2
+    ],
+    "values": [
+      10.0,
+      20.0
+    ],
+    "expected": 10.0,
+    "python": 10.0,
+    "qgis_valid": true,
+    "qgis": [
+      "NaN"
+    ]
+  },
+  {
+    "missing": "bed",
+    "uri": "elevation&-2&0",
+    "boundaries": [
+      0.0,
+      -1.0,
+      "NaN"
+    ],
+    "layer_counts": [
+      2
+    ],
+    "values": [
+      10.0,
+      20.0
+    ],
+    "expected": 10.0,
+    "python": 10.0,
+    "qgis_valid": true,
+    "qgis": [
+      "NaN"
+    ]
+  },
+  {
+    "missing": "bed",
+    "uri": "sigma&0&1",
+    "boundaries": [
+      0.0,
+      -1.0,
+      "NaN"
+    ],
+    "layer_counts": [
+      2
+    ],
+    "values": [
+      10.0,
+      20.0
+    ],
+    "expected": "NaN",
+    "python": "NaN",
+    "qgis_valid": true,
+    "qgis": [
+      "NaN"
+    ]
+  }
+]

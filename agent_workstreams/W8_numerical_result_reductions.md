@@ -460,3 +460,18 @@ The inherited QGIS public-surface `cell_position` limitation remains; cell
 reductions and point/time-series/sections execute, and netCDF4/h5py public
 surfaces are covered. PR remains draft and unmerged. No sibling implementation,
 production pin, solver, native benchmark or private NAS model was involved.
+
+### Endpoint correction acceptance checkpoint
+
+At exact source `37fc565218775a06252252a15cdb6e79e4e28c3c`, the six complete
+candidate modules collected and passed **1118 tests**, with zero failures,
+errors or skips (60.65 s). Counts: 280 analytical, 55 extrema, 264 FV reader,
+170 provider, 239 existing QGIS map-output, 110 existing PyMesh. The 349 reused
+legacy baseline tests pass with matching runtime and unchanged scope. All 208
+new behavioural reproduction IDs occur as passing tests in the candidate.
+
+The [published evidence index](evidence/W8_missing_endpoints/README.md) links
+candidate, pre-fix and original-baseline XML, exact IDs, runtime/import/source
+provenance, commands, raw exits, numerical observations and sanitisation rules.
+The evidence follow-up commit does not alter production/test code; final pushed
+SHA and exact-head Windows jobs/review are reported in the PR delivery comment.

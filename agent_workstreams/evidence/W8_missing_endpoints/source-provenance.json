@@ -1,0 +1,68 @@
+{
+  "candidate": {
+    "sha": "37fc565218775a06252252a15cdb6e79e4e28c3c",
+    "production_matches_head": true,
+    "production": {
+      "pytuflow/_outputs/pymesh/depth_averaging/depth_averaging.py": {
+        "git_blob": "0c8b3db7ec258a0c76bfc2d78f23eef52a76ad65",
+        "runtime_file_sha256": "cb0738852aa6df61136f1c4b7244968e12bd7f8a62afff762052d53381c856af"
+      },
+      "pytuflow/_outputs/pymesh/depth_averaging/get_method_func.py": {
+        "git_blob": "2fe0bdb6ca77d476cd4aefdc7950560603ea3a3a",
+        "runtime_file_sha256": "59fa1552c9ae26552af0e8bbf2f935987f424a4b62fc03e4d3bad1a1881f7d7d"
+      },
+      "pytuflow/_outputs/pymesh/cell_data_mixin.py": {
+        "git_blob": "d8fe3ff36aee67cf081e55ac7a318e13acffef31",
+        "runtime_file_sha256": "eeeaf91c7df1ba75e034dd2039805e48d3ac7472621622e75640a8bcfc643298"
+      }
+    },
+    "test_modules": {
+      "tests/test_numerical_depth_averaging.py": "3c35067d37827875101355008105c10a066a7d6243d16ac2086c5e891094b796",
+      "tests/test_numerical_fv_reader.py": "79664eba8123b721eff34add3f1e75751f4b5f3b123b3334db842df911dd8870"
+    }
+  },
+  "pre-fix": {
+    "sha": "26c6bad101811af2945ce7558e69bb6c1c37685e",
+    "production_matches_head": true,
+    "production": {
+      "pytuflow/_outputs/pymesh/depth_averaging/depth_averaging.py": {
+        "git_blob": "54378e8e0c314d6f45ce4fe88d7fd7d1ab8e01a4",
+        "runtime_file_sha256": "b41b08d657cd4f0f53ce357beb324a54cf11e1c9275a76b599c4e7fd604bcf42"
+      },
+      "pytuflow/_outputs/pymesh/depth_averaging/get_method_func.py": {
+        "git_blob": "622692ba7b3e9397c0bd5301df60aeed0b1a7872",
+        "runtime_file_sha256": "6589ebcc2a84e2039fb208edbc889d261ed5d13535a95f8954115c3b1b9fb9e1"
+      },
+      "pytuflow/_outputs/pymesh/cell_data_mixin.py": {
+        "git_blob": "d8fe3ff36aee67cf081e55ac7a318e13acffef31",
+        "runtime_file_sha256": "eeeaf91c7df1ba75e034dd2039805e48d3ac7472621622e75640a8bcfc643298"
+      }
+    },
+    "test_modules": {
+      "tests/test_numerical_depth_averaging.py": "3c35067d37827875101355008105c10a066a7d6243d16ac2086c5e891094b796",
+      "tests/test_numerical_fv_reader.py": "38d65b90e1df20011bf1892bd1635f79e406c5a4c089a6fa89ff995399f46615"
+    }
+  },
+  "baseline": {
+    "sha": "e162c04330d24c37bee3ade94479cc4602651060",
+    "production_matches_head": true,
+    "production": {
+      "pytuflow/_outputs/pymesh/depth_averaging/depth_averaging.py": {
+        "git_blob": "e43666a5d2243e0c6dc32da3e2e76e7dc889bf34",
+        "runtime_file_sha256": "7aa4a26c27ebcdaa4a74666c2cbe0439aeec3cd54f34f3a5d71f64c25ed7c897"
+      },
+      "pytuflow/_outputs/pymesh/depth_averaging/get_method_func.py": {
+        "git_blob": "eac0e127e2edb54f49e34f9beba35ac943d00c73",
+        "runtime_file_sha256": "a4bfbcfc3d1d32d4e51236bf72adac3104716d195d9432bcde013083efab8bff"
+      },
+      "pytuflow/_outputs/pymesh/cell_data_mixin.py": {
+        "git_blob": "f041f7c328c95ac3a1e03f85ddf3470d410d8db5",
+        "runtime_file_sha256": "771df6ff0a5e734db3d5dd312801316727fafedfe9b381121a8d5c531440157c"
+      }
+    },
+    "test_modules": {
+      "tests/test_numerical_depth_averaging.py": "3c35067d37827875101355008105c10a066a7d6243d16ac2086c5e891094b796",
+      "tests/test_numerical_fv_reader.py": "38d65b90e1df20011bf1892bd1635f79e406c5a4c089a6fa89ff995399f46615"
+    }
+  }
+}

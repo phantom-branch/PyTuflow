@@ -1,0 +1,4474 @@
+[
+  {
+    "id": "tests.test_numerical_depth_averaging::test_first_layer_reported_regressions[one-dimensional-bounds0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_first_layer_reported_regressions[one-dimensional-bounds1-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_first_layer_reported_regressions[one-dimensional-bounds2-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_first_layer_reported_regressions[one-dimensional-bounds3-13.333333333333334]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_first_layer_reported_regressions[row-bounds0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_first_layer_reported_regressions[row-bounds1-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_first_layer_reported_regressions[row-bounds2-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_first_layer_reported_regressions[row-bounds3-13.333333333333334]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_independent_integral_known_areas[elevations0-2.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_independent_integral_known_areas[elevations1-8.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_independent_integral_known_areas[elevations2-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_independent_integral_known_areas[elevations3-11.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_independent_integral_known_areas[elevations4-12.285714285714286]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_independent_integral_known_areas[elevations5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds0-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds0-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds1-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds1-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds2-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds2-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds3-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds3-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds4-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds4-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds5-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds5-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds6-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds6-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds7-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds7-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds8-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds8-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds9-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds9-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds10-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds10-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds11-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds11-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds12-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds12-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds13-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds13-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds14-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds14-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds15-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds15-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds16-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds16-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds17-depth]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_nonuniform_depth_against_exact_integral[bounds17-height]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds6]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds7]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds8]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds9]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds10]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds11]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds12]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_elevation_against_exact_integral[bounds13]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_depth_elevation_height_sigma_physical_equivalence[bounds0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_depth_elevation_height_sigma_physical_equivalence[bounds1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_depth_elevation_height_sigma_physical_equivalence[bounds2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_depth_elevation_height_sigma_physical_equivalence[bounds3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_depth_elevation_height_sigma_physical_equivalence[bounds4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_same_depth_pair_broadcasts_across_exactly_two_columns[True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_same_depth_pair_broadcasts_across_exactly_two_columns[False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_independent_depth_ranges_per_column[True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_independent_depth_ranges_per_column[False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_relative_depth_weights_are_invariant_to_vertical_datum[0.0-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_relative_depth_weights_are_invariant_to_vertical_datum[0.0-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_relative_depth_weights_are_invariant_to_vertical_datum[1000000.0-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_relative_depth_weights_are_invariant_to_vertical_datum[1000000.0-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_relative_depth_weights_are_invariant_to_vertical_datum[1000000000.0-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_relative_depth_weights_are_invariant_to_vertical_datum[1000000000.0-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_relative_depth_weights_are_invariant_to_vertical_datum[1e+16-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_relative_depth_weights_are_invariant_to_vertical_datum[1e+16-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_single_layer_column[depth&0&0.5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_single_layer_column[height&0&0.5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_single_layer_column[elevation&4.5&3.5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_single_layer_column[sigma&0.2&0.8]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_single_layer_column[singlelevel?dir=top&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_single_layer_column[singlelevel?dir=bottom&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_single_layer_column[multilevel?dir=top&1&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_single_layer_column[multilevel?dir=bottom&1&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values0-10.0-depth&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values0-10.0-height&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values0-10.0-elevation&0&-2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values0-10.0-sigma&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values0-10.0-multilevel?dir=top&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values0-10.0-multilevel?dir=bottom&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values1-20.0-depth&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values1-20.0-height&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values1-20.0-elevation&0&-2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values1-20.0-sigma&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values1-20.0-multilevel?dir=top&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values1-20.0-multilevel?dir=bottom&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values2-5.0-depth&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values2-5.0-height&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values2-5.0-elevation&0&-2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values2-5.0-sigma&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values2-5.0-multilevel?dir=top&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values2-5.0-multilevel?dir=bottom&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values3-0.0-depth&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values3-0.0-height&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values3-0.0-elevation&0&-2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values3-0.0-sigma&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values3-0.0-multilevel?dir=top&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values3-0.0-multilevel?dir=bottom&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values4-nan-depth&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values4-nan-height&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values4-nan-elevation&0&-2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values4-nan-sigma&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values4-nan-multilevel?dir=top&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_layers_exclude_both_value_and_thickness[values4-nan-multilevel?dir=bottom&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[False-depth&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[False-height&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[False-elevation&0&-2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[False-sigma&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[False-multilevel?dir=top&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[False-multilevel?dir=bottom&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[True-depth&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[True-height&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[True-elevation&0&-2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[True-sigma&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[True-multilevel?dir=top&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_values_have_same_meaning_as_nan[True-multilevel?dir=bottom&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[False-depth&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[False-height&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[False-elevation&0&-2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[False-sigma&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[False-multilevel?dir=top&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[False-multilevel?dir=bottom&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[True-depth&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[True-height&0&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[True-elevation&0&-2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[True-sigma&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[True-multilevel?dir=top&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_masked_geometry_cannot_contribute_an_unbounded_layer[True-multilevel?dir=bottom&1&2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_qgis_documented_missing_layer_fixture[sigma&0&1-2.4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_qgis_documented_missing_layer_fixture[depth&1.25&3.5-3.3333333333333335]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_qgis_documented_missing_layer_fixture[multilevel?dir=top&1&3-1.3333333333333333]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_qgis_documented_missing_layer_fixture[singlelevel?dir=top&3-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_single_level_position_is_not_renumbered_by_missing_data[True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_single_level_position_is_not_renumbered_by_missing_data[False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_multilevel_order_and_column_clipping[levels0-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_multilevel_order_and_column_clipping[levels0-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_multilevel_order_and_column_clipping[levels1-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_multilevel_order_and_column_clipping[levels1-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_multilevel_order_and_column_clipping[levels2-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_multilevel_order_and_column_clipping[levels2-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_multilevel_order_and_column_clipping[levels3-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_multilevel_order_and_column_clipping[levels3-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_padded_short_dry_and_all_missing_columns[depth&0&10]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_padded_short_dry_and_all_missing_columns[height&0&10]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_padded_short_dry_and_all_missing_columns[elevation&10&-10]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_padded_short_dry_and_all_missing_columns[sigma&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_padded_short_dry_and_all_missing_columns[multilevel?dir=top&1&3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_padded_short_dry_and_all_missing_columns[multilevel?dir=bottom&1&3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_geometry_padding_does_not_renumber_a_missing_real_layer[True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_geometry_padding_does_not_renumber_a_missing_real_layer[False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_averaging_preserves_caller_arrays[depth&0.2&1.5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_averaging_preserves_caller_arrays[height&0.2&1.5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_averaging_preserves_caller_arrays[elevation&-0.2&-1.5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_averaging_preserves_caller_arrays[sigma&0.1&0.75]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_physical_boundary_does_not_renumber_ordinals[False-False-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_physical_boundary_does_not_renumber_ordinals[False-False-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_physical_boundary_does_not_renumber_ordinals[False-True-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_physical_boundary_does_not_renumber_ordinals[False-True-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_physical_boundary_does_not_renumber_ordinals[True-False-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_physical_boundary_does_not_renumber_ordinals[True-False-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_physical_boundary_does_not_renumber_ordinals[True-True-True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_physical_boundary_does_not_renumber_ordinals[True-True-False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_explicit_column_counts_keep_padding_separate_from_missing_boundaries[True]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_explicit_column_counts_keep_padding_separate_from_missing_boundaries[False]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_explicit_extent_controls_endpoints_and_excludes_finite_padding[depth&0&0.5-expected0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_explicit_extent_controls_endpoints_and_excludes_finite_padding[height&0&0.5-expected1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_explicit_extent_controls_endpoints_and_excludes_finite_padding[sigma&0&1-expected2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_explicit_extent_controls_endpoints_and_excludes_finite_padding[elevation&-2&0-expected3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_explicit_extent_controls_endpoints_and_excludes_finite_padding[multilevel?dir=bottom&1&1-expected4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_interior_missing_geometry_preserves_known_physical_endpoints[False-depth&0&4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_interior_missing_geometry_preserves_known_physical_endpoints[False-height&4&0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_interior_missing_geometry_preserves_known_physical_endpoints[False-sigma&1&0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_interior_missing_geometry_preserves_known_physical_endpoints[False-elevation&-4&0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_interior_missing_geometry_preserves_known_physical_endpoints[True-depth&0&4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_interior_missing_geometry_preserves_known_physical_endpoints[True-height&4&0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_interior_missing_geometry_preserves_known_physical_endpoints[True-sigma&1&0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_interior_missing_geometry_preserves_known_physical_endpoints[True-elevation&-4&0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_empty_physical_column_has_no_contribution[depth&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_empty_physical_column_has_no_contribution[height&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_empty_physical_column_has_no_contribution[sigma&0&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_empty_physical_column_has_no_contribution[elevation&-2&0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[depth&0&1--1-1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[depth&0&1-0--1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[depth&0&1-0-3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[depth&0&1-0.5-1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[depth&0&1-0-1.5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[height&0&1--1-1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[height&0&1-0--1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[height&0&1-0-3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[height&0&1-0.5-1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[height&0&1-0-1.5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[sigma&0&1--1-1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[sigma&0&1-0--1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[sigma&0&1-0-3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[sigma&0&1-0.5-1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[sigma&0&1-0-1.5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[elevation&-2&0--1-1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[elevation&-2&0-0--1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[elevation&-2&0-0-3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[elevation&-2&0-0.5-1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_invalid_physical_extent_is_explicit[elevation&-2&0-0-1.5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_vector_magnitude_fallback[static-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_vector_magnitude_fallback[static-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_vector_magnitude_fallback[temporal-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_vector_magnitude_fallback[temporal-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_split_components_are_independent_extrema[static-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_split_components_are_independent_extrema[static-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_split_components_are_independent_extrema[temporal-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_split_components_are_independent_extrema[temporal-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_scalar_extrema_keep_scalar_shape[False-static-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_scalar_extrema_keep_scalar_shape[False-static-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_scalar_extrema_keep_scalar_shape[False-temporal-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_scalar_extrema_keep_scalar_shape[False-temporal-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_scalar_extrema_keep_scalar_shape[True-static-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_scalar_extrema_keep_scalar_shape[True-static-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_scalar_extrema_keep_scalar_shape[True-temporal-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_scalar_extrema_keep_scalar_shape[True-temporal-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[scalar-static-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[scalar-static-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[scalar-temporal-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[scalar-temporal-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[magnitude-static-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[magnitude-static-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[magnitude-temporal-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[magnitude-temporal-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[components-static-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[components-static-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[components-temporal-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_inactive_values_are_excluded_but_physical_zero_is_retained[components-temporal-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[minimum-scalar-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[minimum-scalar-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[minimum-magnitude-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[minimum-magnitude-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[minimum-components-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[minimum-components-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[maximum-scalar-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[maximum-scalar-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[maximum-magnitude-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[maximum-magnitude-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[maximum-components-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_all_inactive_fallback_preserves_empty_reduction_error[maximum-components-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_stored_and_fallback_extrema_agree[scalar-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_stored_and_fallback_extrema_agree[scalar-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_stored_and_fallback_extrema_agree[magnitude-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_stored_and_fallback_extrema_agree[magnitude-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_stored_and_fallback_extrema_agree[components-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_stored_and_fallback_extrema_agree[components-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_active_missing_data_is_not_silently_replaced_by_zero[scalar-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_active_missing_data_is_not_silently_replaced_by_zero[scalar-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_active_missing_data_is_not_silently_replaced_by_zero[magnitude-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_active_missing_data_is_not_silently_replaced_by_zero[magnitude-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_active_missing_data_is_not_silently_replaced_by_zero[components-cells]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_active_missing_data_is_not_silently_replaced_by_zero[components-vertices]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_real_xmdf_reader_stored_and_fallback_contract[scalar]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_real_xmdf_reader_stored_and_fallback_contract[magnitude]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_mesh_reductions::test_real_xmdf_reader_stored_and_fallback_contract[components]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&0.5-10.0-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&0.5-10.0-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&0.5-10.0-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&0.5-10.0-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0.2&0.8-10.0-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0.2&0.8-10.0-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0.2&0.8-10.0-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0.2&0.8-10.0-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&1-10.0-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&1-10.0-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&1-10.0-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&1-10.0-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&1.5-13.333333333333334-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&1.5-13.333333333333334-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&1.5-13.333333333333334-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[netcdf4-depth&0&1.5-13.333333333333334-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&0.5-10.0-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&0.5-10.0-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&0.5-10.0-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&0.5-10.0-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0.2&0.8-10.0-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0.2&0.8-10.0-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0.2&0.8-10.0-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0.2&0.8-10.0-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&1-10.0-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&1-10.0-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&1-10.0-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&1-10.0-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&1.5-13.333333333333334-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&1.5-13.333333333333334-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&1.5-13.333333333333334-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_first_layer_intervals_through_public_reader[h5py-depth&0&1.5-13.333333333333334-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-sigma&0&1-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-sigma&0&1-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-sigma&0&1-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-sigma&0&1-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-depth&0&2-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-depth&0&2-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-depth&0&2-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-depth&0&2-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-height&0&2-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-height&0&2-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-height&0&2-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-height&0&2-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-elevation&0&-2-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-elevation&0&-2-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-elevation&0&-2-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-elevation&0&-2-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-multilevel?dir=top&1&2-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-multilevel?dir=top&1&2-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-multilevel?dir=top&1&2-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[netcdf4-multilevel?dir=top&1&2-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-sigma&0&1-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-sigma&0&1-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-sigma&0&1-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-sigma&0&1-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-depth&0&2-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-depth&0&2-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-depth&0&2-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-depth&0&2-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-height&0&2-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-height&0&2-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-height&0&2-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-height&0&2-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-elevation&0&-2-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-elevation&0&-2-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-elevation&0&-2-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-elevation&0&-2-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-multilevel?dir=top&1&2-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-multilevel?dir=top&1&2-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-multilevel?dir=top&1&2-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_scalar_layers_do_not_dilute_valid_data[h5py-multilevel?dir=top&1&2-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_vector_layer_requires_both_components[netcdf4-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_vector_layer_requires_both_components[netcdf4-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_vector_layer_requires_both_components[netcdf4-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_vector_layer_requires_both_components[netcdf4-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_vector_layer_requires_both_components[h5py-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_vector_layer_requires_both_components[h5py-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_vector_layer_requires_both_components[h5py-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_vector_layer_requires_both_components[h5py-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[netcdf4-tracer-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[netcdf4-tracer-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[netcdf4-tracer-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[netcdf4-tracer-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[netcdf4-velocity-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[netcdf4-velocity-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[netcdf4-velocity-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[netcdf4-velocity-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[h5py-tracer-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[h5py-tracer-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[h5py-tracer-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[h5py-tracer-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[h5py-velocity-point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[h5py-velocity-time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[h5py-velocity-section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_masked_reader_values_are_missing_not_underlying_numbers[h5py-velocity-surface]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_depth_averages_on_vertices_preserve_missing_values_and_dry_mask[netcdf4-tracer]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_depth_averages_on_vertices_preserve_missing_values_and_dry_mask[netcdf4-velocity]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_depth_averages_on_vertices_preserve_missing_values_and_dry_mask[h5py-tracer]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_depth_averages_on_vertices_preserve_missing_values_and_dry_mask[h5py-velocity]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_public_dry_mask_remains_separate_from_missing_data[netcdf4-tracer]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_public_dry_mask_remains_separate_from_missing_data[netcdf4-velocity]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_public_dry_mask_remains_separate_from_missing_data[h5py-tracer]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_public_dry_mask_remains_separate_from_missing_data[h5py-velocity]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_single_layer_reader_honours_requested_interval[point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_single_layer_reader_honours_requested_interval[point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_single_layer_reader_honours_requested_interval[time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_single_layer_reader_honours_requested_interval[time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_single_layer_reader_honours_requested_interval[section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_single_layer_reader_honours_requested_interval[section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_single_layer_reader_honours_requested_interval[surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_single_layer_reader_honours_requested_interval[surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_ragged_reader_endpoint_extent[point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_ragged_reader_endpoint_extent[point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_ragged_reader_endpoint_extent[time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_ragged_reader_endpoint_extent[time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_ragged_reader_endpoint_extent[section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_ragged_reader_endpoint_extent[section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_ragged_reader_endpoint_extent[surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_ragged_reader_endpoint_extent[surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-depth&0&0.5-elevations0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-depth&0.2&0.8-elevations1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-depth&0&1-elevations2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-depth&0&1.5-elevations3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-depth&0.25&1.75-elevations4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-depth&0&9-elevations5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-depth&3&4-elevations6]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-depth&0.5&0.5-elevations7]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-height&0.5&2-elevations8]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-elevation&-1.5&0-elevations9]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-sigma&0.25&1-elevations10]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-multilevel?dir=top&1&2-elevations11]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-multilevel?dir=bottom&1&1-elevations12]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[valid-singlelevel?dir=top&1-elevations13]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-depth&0&0.5-elevations0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-depth&0.2&0.8-elevations1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-depth&0&1-elevations2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-depth&0&1.5-elevations3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-depth&0.25&1.75-elevations4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-depth&0&9-elevations5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-depth&3&4-elevations6]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-depth&0.5&0.5-elevations7]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-height&0.5&2-elevations8]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-elevation&-1.5&0-elevations9]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-sigma&0.25&1-elevations10]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-multilevel?dir=top&1&2-elevations11]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-multilevel?dir=bottom&1&1-elevations12]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-final-singlelevel?dir=top&1-elevations13]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-depth&0&0.5-elevations0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-depth&0.2&0.8-elevations1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-depth&0&1-elevations2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-depth&0&1.5-elevations3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-depth&0.25&1.75-elevations4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-depth&0&9-elevations5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-depth&3&4-elevations6]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-depth&0.5&0.5-elevations7]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-height&0.5&2-elevations8]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-elevation&-1.5&0-elevations9]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-sigma&0.25&1-elevations10]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-multilevel?dir=top&1&2-elevations11]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-multilevel?dir=bottom&1&1-elevations12]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[zero-singlelevel?dir=top&1-elevations13]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-depth&0&0.5-elevations0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-depth&0.2&0.8-elevations1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-depth&0&1-elevations2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-depth&0&1.5-elevations3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-depth&0.25&1.75-elevations4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-depth&0&9-elevations5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-depth&3&4-elevations6]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-depth&0.5&0.5-elevations7]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-height&0.5&2-elevations8]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-elevation&-1.5&0-elevations9]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-sigma&0.25&1-elevations10]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-multilevel?dir=top&1&2-elevations11]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-multilevel?dir=bottom&1&1-elevations12]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[all-missing-singlelevel?dir=top&1-elevations13]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-depth&0&0.5-elevations0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-depth&0.2&0.8-elevations1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-depth&0&1-elevations2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-depth&0&1.5-elevations3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-depth&0.25&1.75-elevations4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-depth&0&9-elevations5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-depth&3&4-elevations6]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-depth&0.5&0.5-elevations7]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-height&0.5&2-elevations8]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-elevation&-1.5&0-elevations9]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-sigma&0.25&1-elevations10]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-multilevel?dir=top&1&2-elevations11]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-multilevel?dir=bottom&1&1-elevations12]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_analytical_python_qgis[missing-first-singlelevel?dir=top&1-elevations13]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_nonuniform_reference[sigma&0&1-elevations0-2.4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_nonuniform_reference[multilevel?dir=top&1&3-elevations1-1.3333333333333333]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_nonuniform_reference[depth&1.25&3.5-elevations2-3.3333333333333335]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_nonuniform_reference[depth&0.2&0.8-elevations3-1.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_nonuniform_reference[depth&0.75&2.75-elevations4-1.6666666666666667]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_nonuniform_reference[height&0.25&0.75-elevations5-4.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_vector_components_before_magnitude[values0-expected0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_vector_components_before_magnitude[values1-expected1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_vector_components_before_magnitude[values2-expected2]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_vector_components_before_magnitude[values3-expected3]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_provider_reader_single_layer_interval[point]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_provider_reader_single_layer_interval[time_series]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_provider_reader_single_layer_interval[section]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_public_fv_volume_dataset[salinity]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_public_fv_volume_dataset[temperature]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_public_fv_volume_dataset[velocity]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reversed_bounds[depth&1.5&0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reversed_bounds[elevation&0&-1.5]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_provider_thickness_threshold[depth&0&0.0000001-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_provider_thickness_threshold[depth&0&0.000002-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_invalid_sigma_provider_difference[sigma&-0.1&1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_invalid_sigma_provider_difference[sigma&0&1.1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_zero_thickness_ordinal_provider_difference",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_extractor_preserves_missing_layers_and_components[tracer-expected0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_extractor_preserves_missing_layers_and_components[velocity-expected1]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_provider_metadata_extrema_are_magnitudes",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_unnormalised_finite_sentinel_is_not_missing",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_ragged_provider_columns_trim_only_padding",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-point-qgis geometry data extractor]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-time_series-qgis geometry data extractor]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-section-qgis geometry data extractor]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-cell_data-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-cell_data-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[False-cell_data-qgis geometry data extractor]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-point-qgis geometry data extractor]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-time_series-qgis geometry data extractor]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-section-qgis geometry data extractor]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-cell_data-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-cell_data-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_reader_physical_count_survives_missing_surface[True-cell_data-qgis geometry data extractor]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[False-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[False-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[False-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[False-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[False-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[False-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[False-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[False-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[True-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[True-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[True-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[True-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[True-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[True-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[True-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoints_actual_qgis_calculation[True-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[point-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[point-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[point-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[point-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[point-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[point-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[point-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[point-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[time_series-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[time_series-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[time_series-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[time_series-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[time_series-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[time_series-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[time_series-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[time_series-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[section-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[section-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[section-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[section-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[section-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[section-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[section-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[section-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[cell_data-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[cell_data-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[cell_data-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[cell_data-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[cell_data-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[cell_data-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[cell_data-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_qgis_reductions::test_missing_endpoint_qgis_python_reader[cell_data-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_add_data_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_add_data_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_long_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_long_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_maximums_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_maximums_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_maximums_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_maximums_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_vector_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_vector_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_point_datetime_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_point_datetime_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_point_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_point_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_point_v1_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_types_filter_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_types_filter_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_types_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_in_memory_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_in_memory_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_tracer_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_tracer_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_load_2dm_only_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_load_2dm_only_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_load_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_load_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_looks_empty_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_maximum_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_maximum_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_maximum_multiple_result_types_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_maximum_multiple_result_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_minimum_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_minimum_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_minimum_multiple_result_types_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_minimum_multiple_result_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_profile_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_profile_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_profile_vec_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_profile_vec_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_4_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_4_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_5_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_5_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_6_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_6_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_7_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_7_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_long_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_long_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_quadtree_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_quadtree_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_vec_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_vec_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_4_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_4_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_vec_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_vec_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_times_filter_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_times_filter_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_times_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_times_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_zh_output_fixed_folder_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_zh_output_fixed_folder_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_zh_output_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_zh_output_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_add_dataset_netcdf_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_add_dataset_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_curtain_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_curtain_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_data_types_filter_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_data_types_filter_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_data_types_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_data_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_dynamic_bed_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_dynamic_bed_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_extract_from_2d_result_netcdf_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_extract_from_2d_result_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_2d_in_memory_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_2d_in_memory_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_2d_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_2d_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_in_memory_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_in_memory_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_sal_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_sal_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_load_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_load_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_salinity_depth_averaged_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_salinity_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_salinity_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_velocity_depth_averaged_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_velocity_depth_averaged_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_velocity_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_velocity_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_water_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_water_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_minimum_salinity_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_minimum_salinity_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_profile_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_profile_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_averaging_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_averaging_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_long_lat_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_long_lat_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_time_series_averaging_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_time_series_averaging_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_time_series_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_time_series_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_times_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_times_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_4_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_4_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_5_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_5_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_types_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_load_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_load_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_loading_ontop_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_loading_ontop_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_maximum_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_maximum_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_minimum_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_minimum_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_profile_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_profile_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_profile_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_profile_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_4_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_4_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_5_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_5_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_6_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_6_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_7_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_7_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_8_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_8_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_9_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_9_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_time_series_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_time_series_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_time_series_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_time_series_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_times_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_times_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_add_dataset_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_add_dataset_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_data_types_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_data_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_load_2_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_load_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_load_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_load_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_bed_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_bed_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_max_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_max_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_velocity_vector_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_velocity_vector_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_minimum_bed_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_minimum_bed_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_minimum_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_minimum_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_newer_format_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_newer_format_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_section_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_section_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_time_series_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_time_series_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_times_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_times_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_data_point",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_data_point_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_data_types",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_load",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_maximum",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_maximum_dataframe",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_diag_x",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_diag_y",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_horiz",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_horiz_long",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_polyline",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_vert",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_time_series",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_times",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_cell_mesh_latlong_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_cell_mesh_latlong_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_dat_mesh_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_dat_mesh_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_quadtree_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_quadtree_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_vertex_mesh_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_vertex_mesh_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_add_dataset",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_data_point",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_data_point_datetime",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_data_point_feature",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_data_point_geodataframe",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_data_point_shapely_geom",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_flux",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_flux_in_memory",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_flux_integral",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_flux_tracer",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_load_2dm_only",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_maximum_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_maximum_multiple_result_types",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_minimum_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_minimum_multiple_result_types",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_section_7",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_section_from_feature",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_section_from_geodf",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_section_from_shapely_geom",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_surface",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_surface_max",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_surface_vector",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_surface_vector_max",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_zh_output",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_zh_output_fixed_folder",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_add_dataset",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_data_types",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_load",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_load_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_maximum_bed_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_maximum_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_maximum_max_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_maximum_velocity_vector",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_minimum_bed_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_minimum_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_newer_format",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_section",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_time_series",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_times",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_add_dataset",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_dynamic_bed_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_extract_from_2d_result",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_flux_2d",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_flux_2d_in_memory",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_flux_3d",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_flux_3d_in_memory",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_flux_3d_sal",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_load",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_maximum_salinity",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_maximum_salinity_depth_averaged",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_maximum_velocity",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_maximum_velocity_depth_averaged",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_maximum_water_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_minimum_salinity",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_section_averaging",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_surface",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_surface_to_vertex",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_surface_vector",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_time_series_averaging",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_curtain",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_curtain_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_curtain_3",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_curtain_4",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_curtain_5",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_data_point",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_data_point_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_data_point_3",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_data_types",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_load",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_loading_ontop",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_maximum",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_minimum",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_profile",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_profile_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_3",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_4",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_5",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_6",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_7",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_8",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_9",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_time_series",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_time_series_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_times",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestQuadtree::test_simple_line_1",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestQuadtree::test_simple_line_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_flux_grid_mesh",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_flux_grid_mesh_tracer",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_flux_unit_flow",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_flux_vel_depth",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_flux_vel_depth_tracer",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_surface",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_surface_local",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_surface_vector_direction",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_surface_vertex",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_surface_vertex_vector_direction",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh_section",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh_surface",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh_surface_vector",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh_surface_vertex_vector",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh_time_series",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestGrid::test_grid_file",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestGrid::test_preloaded_array",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestPyMeshRegression::test_pymesh_cell_mesh_latlong",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestPyMeshRegression::test_pymesh_quadtree",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestPyMeshRegression::test_pymesh_vertex_mesh",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestPyMeshRegression::test_qgis_dat_mesh",
+    "outcome": "passed"
+  }
+]
