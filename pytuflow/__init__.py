@@ -1,8 +1,8 @@
 import sys
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING as _TYPE_CHECKING
 
-if TYPE_CHECKING:
+if _TYPE_CHECKING:
     # Public type references remain statically discoverable while reader
     # implementations are imported only when accessed at runtime.
     from ._outputs import (
