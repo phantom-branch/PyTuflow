@@ -15,7 +15,7 @@ except ImportError:
     gdal = None
     has_gdal = False
 
-from .helpers.mesh_driver_qgis_nc import QgisNcMeshDriver
+from .helpers.mesh_driver_qgis_nc import QgisNcMeshDriver, has_qgis
 from .helpers.mesh_driver_nc_nc import NCMeshDriverNC
 from .mesh import Mesh
 from .._pytuflow_types import PathLike
