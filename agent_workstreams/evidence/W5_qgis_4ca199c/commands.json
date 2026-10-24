@@ -1,0 +1,28 @@
+{
+  "QGIS_RUN": "Installed python-qgis.bat + existing run.py bootstrap from W3. Bootstrap inserts compatible additive targets, propagates them to child PYTHONPATH, adds Git to child PATH and redirects process-only TEMP/TMP. No environment package was installed/replaced.",
+  "harness_sha": "4ca199c55d6d388a0019128332e8f0adafdace93",
+  "runs": [
+    "QGIS_RUN HARNESS/ci/run_regression.py --source UPSTREAM --ref cf908cc922ca8448ed6002834877b0b377329eae --label upstream-qgis --group qgis --report-dir REPORTS/upstream",
+    "QGIS_RUN HARNESS/ci/run_regression.py --source FORK --ref e162c04330d24c37bee3ade94479cc4602651060 --label baseline-qgis --group qgis --report-dir REPORTS/baseline",
+    "QGIS_RUN HARNESS/ci/run_regression.py --source FORK --ref 4ca199c55d6d388a0019128332e8f0adafdace93 --label candidate-qgis --group qgis --report-dir REPORTS/candidate"
+  ],
+  "comparisons": [
+    "QGIS_RUN HARNESS/ci/compare_regression.py --baseline REPORTS/baseline/report.json --candidate REPORTS/candidate/report.json --output REPORTS/candidate-comparison.json --required-group qgis",
+    "QGIS_RUN HARNESS/ci/compare_regression.py --baseline REPORTS/upstream/report.json --candidate REPORTS/upstream/report.json --output REPORTS/upstream-completeness.json --required-group qgis",
+    "QGIS_RUN HARNESS/ci/compare_regression.py --baseline REPORTS/upstream/report.json --candidate REPORTS/baseline/report.json --output REPORTS/upstream-comparison.json --required-group qgis"
+  ],
+  "path_aliases": {
+    "<upstream-snapshot>": "upstream-snapshot local role",
+    "<baseline-snapshot>": "baseline-snapshot local role",
+    "<candidate-snapshot>": "candidate-snapshot local role",
+    "<fork-checkout>": "fork-checkout local role",
+    "<upstream-checkout>": "upstream-checkout local role",
+    "<reports>": "reports local role",
+    "<bootstrap-root>": "bootstrap-root local role",
+    "<compatible-h5py>": "h5py314",
+    "<extra-dependencies>": "deps",
+    "<local-runtime-utilities>": "local-runtime-utilities local role",
+    "<qgis-runtime>": "qgis-runtime local role"
+  },
+  "local_preflight_note": "A local report utility named inspect.py shadowed the standard library in the reused bootstrap directory; it was renamed without editing the bootstrap/harness or dependencies. The corrected preflight and independent capability-probe subprocess reports are the authoritative inventory. All three test runs completed in their isolated snapshots with full capabilities."
+}
