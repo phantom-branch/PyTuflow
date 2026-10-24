@@ -151,6 +151,8 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
         if isinstance(cell_id, slice):
             face_ids = list(range(face_count)[cell_id])
         else:
+            if isinstance(cell_id, (bool, np.bool_)):
+                raise TypeError('Boolean cell indices are not supported')
             try:
                 face_ids = [operator.index(cell_id)]
             except TypeError:
