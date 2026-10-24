@@ -280,3 +280,23 @@ def test_legacy_star_import_still_exposes_result_readers() -> None:
         """
     )
     _assert_success(process)
+
+
+def test_supported_public_constructor_type_hints_resolve() -> None:
+    process = _run_python(
+        """
+        from typing import get_type_hints
+
+        from pytuflow import NCGrid, NCMesh, XMDF, Context, TuflowBinaries
+        from pytuflow._pytuflow_types import PathLike
+
+        for reader in (NCGrid, NCMesh, XMDF):
+            annotations = get_type_hints(reader.__init__)
+            assert annotations.get("fpath") == PathLike, reader.__name__
+        context_hints = get_type_hints(Context.__init__)
+        assert "context" in context_hints
+        registry_hints = get_type_hints(TuflowBinaries.get)
+        assert registry_hints.get("item") is str
+        """
+    )
+    _assert_success(process)
