@@ -1,84 +1,75 @@
-"""pytuflow logging module.
+"""Configuration of the library-owned pytuflow logging handlers.
 
-:code:`pytuflow` uses the logging name 'pytuflow' (:code:`logging.getLogger('pytuflow')`) and by default
-is written to the :code:`stdout` stream. The user can overwrite this by adding their own handler to the
-:code:`pytuflow` logger prior to the :code:`pytuflow` library being initialised.
- 
-Examples
---------
-
-Overriding the default :code:`pytuflow` logging handler by adding a custom handler:
-
-::
- 
- 
-    import logging
-
-    logger = logging.getLogger('pytuflow')
-    handler = CustomHandler()  # custom (or generic) handler setup by the user
-    logger.addHandler(handler)
-    
-If no custom handlers are added, the default log level will be WARNING. This can be changed by calling
-:func:`set_logging_level` with the desired log level. A file handler can also be added by passing in a directory
-to :func:`set_logging_level`.
-
-::
-
-
-    import pytuflow.utils.logging as pytuflow_logging
-    
-    # change logging level to DEBUG
-    pytuflow_logging.set_logging_level('DEBUG')
-    
-    # add a file handler
-    pytuflow_logging.set_logging_level('DEBUG', '/path/to/log/folder')
+Applications may install their own handlers before importing pytuflow. Only
+handlers marked as library-owned are modified by this module.
 """
 
 import logging
+import os
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Union
+from typing import Literal
 
 from ..._pytuflow_types import PathLike
 
 
+LoggingLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+_LOG_FILE_NAME = "pytuflow_logs.log"
+_MAX_LOG_BYTES = 51200
+_BACKUP_COUNT = 2
+_FILE_FORMAT = "%(asctime)s %(module)-25s %(funcName)-25s line:%(lineno)-4d %(levelname)-8s %(message)s"
+
+
 def set_logging_level(
-        level: Union['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'] = 'WARNING',
-        log_to_file: PathLike = None) -> None:
-    """Configure the default logging level for the "pytuflow" logger. The logger setting will be propagated to
-    all submodule loggers.
+    level: LoggingLevel = "WARNING",
+    log_to_file: PathLike | None = None,
+) -> None:
+    """Set the library logger level and configure an optional rotating log file.
 
-    Has no impact if the user code has configured its own logger.
-    if log_to_file is a valid filepath, a filehandler will also be set up and logs will be
-    written to file.
-
-    Parameters
-    ----------
-    level : str, optional
-        keyword to set logging level. Default is 'WARNING'.
-    log_to_file : str, optional
-        folder path at which logs should be written.
+    The library-owned console handler follows the configured level. Existing
+    application-owned handlers retain their individual levels and formatters.
+    Reconfiguring the same file is idempotent. `log_to_file` may be an
+    existing directory or a path naming an existing or future file in an
+    existing directory. The output filename is always pytuflow_logs.log for
+    compatibility. Parent directories are never created implicitly.
     """
-    if log_to_file:
-        log_file = Path(log_to_file)
-        log_file = log_file.joinpath('pytuflow_logs.log') if log_file.is_dir() else log_file.with_name('pytuflow_logs.log')
+    logger = logging.getLogger("pytuflow")
+    level_name = str(level).upper()
+    if level_name not in {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}:
+        level_name = "WARNING"
+    log_level = getattr(logging, level_name)
 
-        pytuflow_logger = logging.getLogger("pytuflow")
-        if log_file.parent.exists():
-            fhandler = logging.FileHandler(log_file.resolve())
-            fhandler.setFormatter(logging.Formatter(
-                "%(asctime)s %(module)-25s %(funcName)-25s line:%(lineno)-4d %(levelname)-8s %(message)s"))
-            fhandler.mode = "a"
-            fhandler.maxBytes = 51200
-            fhandler.backupCount = 2
-            pytuflow_logger.addHandler(fhandler)
-            try:
-                pytuflow_logger.warning("Added a file handler to log results to: {}".format(log_to_file))
-            except PermissionError:
-                raise PermissionError('Unable to write to given log folder')
+    if log_to_file is not None:
+        location = Path(log_to_file)
+        if location.is_dir():
+            directory = location
+        elif location.parent.is_dir():
+            # Historically callers could supply an as-yet-uncreated filename.
+            # The library writes its fixed name beside that path.
+            directory = location.parent
         else:
-            pytuflow_logger.warning('File path for log file handler does not exist at {}'.format(log_to_file))
-            raise ValueError('File path for log file handler does not exist at {}'.format(log_to_file))
+            raise ValueError(f"File path for log file handler does not exist at {log_to_file}")
 
-    level = level.upper()
-    level = level if level in ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'] else 'WARNING'
-    logging.getLogger('pytuflow').setLevel(level)
+        filename = (directory / _LOG_FILE_NAME).absolute()
+        # Lexically collapse . and .. and Windows case aliases without
+        # resolving symlinks, UNC paths or network targets.
+        identifier = os.path.normcase(os.path.normpath(str(filename)))
+        if not any(
+            getattr(handler, "_pytuflow_owned_file", None) == identifier
+            for handler in logger.handlers
+        ):
+            handler = RotatingFileHandler(
+                filename,
+                mode="a",
+                maxBytes=_MAX_LOG_BYTES,
+                backupCount=_BACKUP_COUNT,
+                encoding="utf-8",
+            )
+            handler.setFormatter(logging.Formatter(_FILE_FORMAT))
+            handler._pytuflow_owned_file = identifier
+            logger.addHandler(handler)
+
+    logger.setLevel(log_level)
+    for handler in logger.handlers:
+        if getattr(handler, "_pytuflow_owned_console", False):
+            handler.setLevel(log_level)

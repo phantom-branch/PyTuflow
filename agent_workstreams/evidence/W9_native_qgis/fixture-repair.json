@@ -1,0 +1,22 @@
+{
+  "tested_before_fix_candidate": "7763eb275e515d05b34a5dd41f5619883ab7c1e6",
+  "master": "f1ceb77f74cb521f50be80209b929ecf0b58bf20",
+  "test_id": "tests/project/test_fv_project.py::TestFVBaseFeatureApplyToControlFiles::test_apply_inserts_via_placement_rule_with_include_file",
+  "exception": "ValueError: Duplicate save destination: <generated-project>/runs/outputs.fvc",
+  "guard_location": "pytuflow/_tmf/cf/cf_build_state.py:431",
+  "classification": "Invalid inherited project fixture appends a second include object after the loader creates a missing-file placeholder. Correctly rejected by unchanged save guard. Not caused by W9 geometry.",
+  "local_candidate_before_fix_exit": 1,
+  "local_master_exit": 1,
+  "production_model_save_changes": "none",
+  "repair": "Replace the parsed placeholder with the intended generated include; assert exactly one matching placeholder first. Preserve all original placement/output assertions.",
+  "focused_fv_project_after_repair": {
+    "collected": 39,
+    "passed": 39,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "exit": 0
+  },
+  "native_w9_acceptance": "passed",
+  "next_action": "Rerun complete hosted W5 gates on the fixture correction, then request final review."
+}
