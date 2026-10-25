@@ -427,7 +427,7 @@ def test_fragment_context_memo_reuses_translations_and_invalidates_on_variables(
 def test_subtree_signature_parts_are_reused_per_run_and_invalidated(tmp_path: Path) -> None:
     """A shared expression is evaluated once per context, not once per parent."""
     from pytuflow._tmf.cf.cf_run_state import prepare_run_context
-    from pytuflow._tmf.fragment_dependencies import ExpressionPool, _FragmentContext, _Plan
+    from pytuflow._tmf.fragment_dependencies import _FragmentContext, _Plan
 
     model = model_files(tmp_path)
     plan = _Plan(model)
