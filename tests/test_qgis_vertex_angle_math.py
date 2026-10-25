@@ -86,7 +86,7 @@ def test_vector_preserves_single_frame_shape(geometry):
                                       [True, True], nodes, weights, count)
     assert values.shape == (count, 1, 2)
     np.testing.assert_allclose(values[1, 0], [7., 28/3], rtol=1e-12, atol=1e-12)
-    np.testing.assert_array_equal(wet[:6], True)
+    np.testing.assert_array_equal(wet[:6], [True] * 6)
 
 
 @pytest.mark.parametrize("wet", [[True], [[True, False, True]]])
