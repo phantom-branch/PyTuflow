@@ -181,6 +181,61 @@ class FragmentBatchResult:
         return bool(self.runs) and all(run.error is None for run in self.runs)
 
 
+# These classes inherit the unmodified base context constructor. A custom
+# extension/monkeypatch is never eligible for immutable fragment caching.
+_DEFAULT_CONTROL_FILE_TYPES = frozenset({
+    ("pytuflow._tmf.cf.adcf", "ADCF"),
+    ("pytuflow._tmf.cf.fvptm", "FVPTM"),
+    ("pytuflow._tmf.cf.qcf", "QCF"),
+    ("pytuflow._tmf.cf.tbc", "TBC"),
+    ("pytuflow._tmf.cf.tesf", "TESF"),
+    ("pytuflow._tmf.cf.tgc", "TGC"),
+    ("pytuflow._tmf.cf.toc", "TOC"),
+    ("pytuflow._tmf.cf.trd", "TRD"),
+    ("pytuflow._tmf.cf.trfc", "TRFC"),
+    ("pytuflow._tmf.cf.tscf", "TSCF"),
+})
+
+
+def _original_control_file_context(cf: Any) -> bool:
+    """Reject custom model/include hooks before bypassing their evaluation.
+
+    Only exact built-in control-file types with their original class method
+    and no instance override can be treated as immutable fragments. Inspect
+    raw definitions, avoiding execution of untrusted context descriptors.
+    """
+    from .batch_dependencies import _raw_class_attribute
+    from .cf.cf_build_state import _CONTROL_FILE_BUILD_CONTEXT
+    from .cf.ecf import ECF, _ECF_CONTEXT
+    from .cf.fvc import FVC, _FVC_CONTEXT
+    from .cf.fvsed import FVSed, _FVSED_CONTEXT
+    from .cf.fvwq import FVWQ, _FVWQ_CONTEXT
+    from .cf.tcf import TCF, _TCF_CONTEXT
+    from .cf.tef import TEF, _TEF_CONTEXT
+
+    cls = type(cf)
+    special = {
+        TCF: _TCF_CONTEXT,
+        TEF: _TEF_CONTEXT,
+        ECF: _ECF_CONTEXT,
+        FVC: _FVC_CONTEXT,
+        FVSed: _FVSED_CONTEXT,
+        FVWQ: _FVWQ_CONTEXT,
+    }
+    expected = special.get(cls)
+    if expected is None:
+        if (cls.__module__, cls.__name__) not in _DEFAULT_CONTROL_FILE_TYPES:
+            return False
+        expected = _CONTROL_FILE_BUILD_CONTEXT
+    namespace = object.__getattribute__(cf, "__dict__")
+    return (
+        type(namespace) is dict
+        and "context" not in namespace
+        and _raw_class_attribute(cls, "context") is expected
+        and _raw_class_attribute(cls, "__getattribute__") is object.__getattribute__
+    )
+
+
 class _Plan:
     def __init__(self, model: Any) -> None:
         from .inp.cf import ControlFileInput
@@ -197,6 +252,8 @@ class _Plan:
         from .inp.trd import TuflowReadFileInput
         from .parsers.command import Command, EventCommand
 
+        if not _original_control_file_context(model):
+            raise NotImplementedError("Custom model control file context hook")
         self.model = model
         self.expressions = ExpressionPool()
         self.cache: dict[tuple[int, tuple[object, ...]], DependencyFragment] = {}
@@ -251,6 +308,8 @@ class _Plan:
         children: tuple[Any, ...] = tuple(cast(Any, inp).cf) if type(inp) is ControlFileInput else ()
         self.children[id(inp)] = children
         for child in children:
+            if not _original_control_file_context(child):
+                raise NotImplementedError("Custom included control file context hook")
             for sub in child.inputs:
                 self._compile(sub, ancestors | {id(inp)})
                 expressions.extend(self.expressions_by_input[id(sub)])
