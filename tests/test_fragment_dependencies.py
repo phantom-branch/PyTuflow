@@ -424,3 +424,37 @@ def test_fragment_context_memo_reuses_translations_and_invalidates_on_variables(
     assert pool.evaluations + pool.reuses == before + 1
     assert ctx.translate(expression) == "input_second.csv"
     assert pool.evaluations + pool.reuses == before + 1
+def test_subtree_signature_parts_are_reused_per_run_and_invalidated(tmp_path: Path) -> None:
+    """A shared expression is evaluated once per context, not once per parent."""
+    from pytuflow._tmf.cf.cf_run_state import prepare_run_context
+    from pytuflow._tmf.fragment_dependencies import ExpressionPool, _FragmentContext, _Plan
+
+    model = model_files(tmp_path)
+    plan = _Plan(model)
+    ctx = _FragmentContext("-s1 DEV -e1 Q10", model.config, plan.expressions)
+    ctx._batch_variable_assignments = plan.assignments
+    prepare_run_context(model, ctx)
+    boundary = next(inp for inp in plan.roots if str(inp.lhs).casefold() == "bc control file")
+
+    with patch.object(ctx, "translate", wraps=ctx.translate) as translated:
+        first = plan._key(boundary, ctx)
+        first_calls = translated.call_count
+        assert first_calls > 0
+        assert ctx._fragment_signature_values
+        assert plan._key(boundary, ctx) == first
+        assert translated.call_count == first_calls
+
+        ctx.load_variables({"Dir": "different"})
+        assert not ctx._fragment_signature_values
+        second = plan._key(boundary, ctx)
+        assert second != first
+        assert translated.call_count > first_calls
+
+    # Changing the run's event/flag context also invalidates the signature.
+    ctx.load_context_from_dict({"s1": "DEV", "e1": "Q100"})
+    ctx.load_variables({"Dir": "_event_"})
+    assert not ctx._fragment_signature_values
+    third = plan._key(boundary, ctx)
+    assert third != first
+    assert third != second
+
