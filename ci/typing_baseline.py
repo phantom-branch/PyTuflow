@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 
-PYTHON_TARGETS = ("3.10", "3.11", "3.12", "3.13", "3.14")
+PYTHON_TARGETS = ("3.12", "3.13", "3.14")
 
 
 def summarise_pyright(payload: dict, exit_code: int) -> dict:
@@ -87,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--targets", nargs="+", choices=PYTHON_TARGETS,
-        default=["3.10", "3.12", "3.14"],
+        default=["3.12"],
     )
     parser.add_argument("--pyright", default="pyright", help="Existing Pyright executable")
     parser.add_argument(
