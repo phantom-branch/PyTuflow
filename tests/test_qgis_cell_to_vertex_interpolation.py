@@ -74,8 +74,8 @@ def test_qgis_public_2d_cell_to_vertex_matches_native(fv, driver):
 
 def test_native_qgis_triangle_and_quad_vertex_mapping(qapp, mixed_mesh):
     geom = mixed_mesh
+    weights = geom.cell_to_vertex_weights()  # Lazily creates native face mapping.
     nodes = geom.cell_nodes
-    weights = geom.cell_to_vertex_weights()
     assert nodes.shape == weights.shape == (2, 4)
     assert geom.vertices.shape[0] == geom.lyr.dataProvider().vertexCount()
     assert np.issubdtype(nodes.dtype, np.integer)
