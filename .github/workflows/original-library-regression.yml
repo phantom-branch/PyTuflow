@@ -2,14 +2,6 @@ name: Original library regression and wheel
 
 on:
   pull_request:
-    paths:
-      - "pytuflow/**"
-      - "tests/**"
-      - "ci/**"
-      - "pyproject.toml"
-      - "hatch_build.py"
-      - "MANIFEST.in"
-      - ".github/workflows/original-library-regression.yml"
   workflow_dispatch:
 
 permissions:
@@ -24,7 +16,24 @@ env:
   FORK_BASELINE_SHA: e162c04330d24c37bee3ade94479cc4602651060
 
 jobs:
+  changes:
+    name: Determine regression scope
+    runs-on: ubuntu-latest
+    outputs:
+      required: ${{ steps.scope.outputs.required }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - id: scope
+        run: python ci/pr_gate.py classify --mode full
+
   regression:
+    needs: changes
+    if: needs.changes.outputs.required == 'true'
     name: Windows ${{ matrix.python }} ${{ matrix.dependencies }} regression
     runs-on: windows-latest
     timeout-minutes: 40
@@ -191,7 +200,26 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  gate:
+    name: Original library acceptance
+    if: always()
+    needs: [changes, regression, wheel]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Require applicable regression and wheel jobs
+        env:
+          REQUIRED: ${{ needs.changes.outputs.required }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          JOB_RESULTS: '{"regression":"${{ needs.regression.result }}","wheel":"${{ needs.wheel.result }}"}'
+        run: python ci/pr_gate.py verify
+
   wheel:
+    needs: changes
+    if: needs.changes.outputs.required == 'true'
     name: Windows ${{ matrix.python }} installed wheel
     runs-on: windows-latest
     timeout-minutes: 20

@@ -2,12 +2,6 @@ name: Fast original-library source contracts
 
 on:
   pull_request:
-    paths:
-      - "pytuflow/**"
-      - "tests/**"
-      - "ci/**"
-      - "pyproject.toml"
-      - ".github/workflows/original-library-quick.yml"
   workflow_dispatch:
 
 permissions:
@@ -18,7 +12,24 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Determine fast-contract scope
+    runs-on: ubuntu-latest
+    outputs:
+      required: ${{ steps.scope.outputs.required }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - id: scope
+        run: python ci/pr_gate.py classify --mode fast
+
   fast-contracts:
+    needs: changes
+    if: needs.changes.outputs.required == 'true'
     name: Windows Python ${{ matrix.python }} fast contracts
     runs-on: windows-latest
     timeout-minutes: 15
@@ -55,3 +66,20 @@ jobs:
           name: fast-original-library-${{ matrix.python }}
           path: reports/
           if-no-files-found: warn
+
+  gate:
+    name: Fast contracts gate
+    if: always()
+    needs: [changes, fast-contracts]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Require applicable fast jobs
+        env:
+          REQUIRED: ${{ needs.changes.outputs.required }}
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          JOB_RESULTS: '{"fast-contracts":"${{ needs.fast-contracts.result }}"}'
+        run: python ci/pr_gate.py verify
