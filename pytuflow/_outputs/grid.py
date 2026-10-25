@@ -135,7 +135,7 @@ class Grid(MapOutput):
                     'static': static,
                     'start': [0 if static else timesteps[0]],
                     'end': [0 if static else timesteps[-1]],
-                    'dt': [0 if static else self._calculate_time_step(np.array(timesteps)) * 3600.],
+                    'dt': [0 if static else self._calculate_time_step(np.array(timesteps) * 3600.)],
                     'dx': [dx],
                     'dy': [dy],
                     'ox': [ox],
