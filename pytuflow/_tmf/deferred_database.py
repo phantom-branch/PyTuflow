@@ -1,10 +1,21 @@
 """Opt-in secondary source discovery using cached TUFLOW database rows."""
+
+from __future__ import annotations
+
 from dataclasses import replace
 from pathlib import Path
+from typing import TYPE_CHECKING
 import os
 
 from .file_reference import FileReference, make_file_reference
 from .parsers.command import Command
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
+
+    from .context import Context
+    from .inp.db import DatabaseInput
+    from .settings import TCFConfig
 
 
 class DeferredDatabaseResolutionError(ValueError):
@@ -20,7 +31,7 @@ def _cached_database_path_key(path: Path) -> str:
     return os.path.normcase(os.path.normpath(str(path)))
 
 
-def _expanded(value, context, *, kind, row):
+def _expanded(value: object, context: Context, *, kind: str, row: object) -> str:
     """Expand model variables before classifying a table cell."""
     if value is None:
         return ''
@@ -35,7 +46,7 @@ def _expanded(value, context, *, kind, row):
     return translated
 
 
-def _inline_material(value, row):
+def _inline_material(value: str, row: object) -> bool:
     """Validate depth/n pairs the same way eager MatDBEntry.is_list identifies.
 
     Inline comma-delimited values are numeric depth and Manning n pairs,
@@ -57,7 +68,7 @@ def _inline_material(value, row):
     return True
 
 
-def _validate_soil_rows(frame, context):
+def _validate_soil_rows(frame: DataFrame, context: Context) -> None:
     """Validate supported inline soil methods without generating fictitious files.
 
     SoilDatabase.value() currently implements NONE, ILCL, GA, HO, CO and
@@ -113,7 +124,9 @@ def _validate_soil_rows(frame, context):
                         ) from exc
 
 
-def _ad_global_references(frame, context, config, database_path: Path) -> tuple[FileReference, ...]:
+def _ad_global_references(
+    frame: DataFrame, context: Context, config: TCFConfig, database_path: Path,
+) -> tuple[FileReference, ...]:
     """Project spatial AD constituent fields from an already-loaded CSV.
 
     The TUFLOW AD global database permits a numeric value or GIS file for
@@ -126,7 +139,7 @@ def _ad_global_references(frame, context, config, database_path: Path) -> tuple[
         raise DeferredDatabaseResolutionError(
             'AD Global Database is missing Initial Condition or Minimum Dispersion'
         )
-    result = []
+    result: list[FileReference] = []
     for key, row in frame.iterrows():
         for field in required:
             value = _expanded(row[columns[field]], context, kind='ad_global', row=key)
@@ -160,7 +173,7 @@ def _ad_global_references(frame, context, config, database_path: Path) -> tuple[
 
 
 def database_source_references(
-    build_input, context, kind: str | None, config,
+    build_input: DatabaseInput, context: Context, kind: str | None, config: TCFConfig,
     *, source_base: Path | None = None, primary_path: Path | None = None,
 ) -> tuple[FileReference, ...]:
     """Describe context-specific secondary sources with no additional file I/O.
@@ -217,7 +230,7 @@ def database_source_references(
             raise DeferredDatabaseResolutionError('Materials database has no value column')
         column = columns[0]
 
-    refs = []
+    refs: list[FileReference] = []
     for key, record in frame.iterrows():
         value = _expanded(record[column], context, kind=kind, row=key)
         if not value:
