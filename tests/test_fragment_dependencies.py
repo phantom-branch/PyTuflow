@@ -424,6 +424,8 @@ def test_fragment_context_memo_reuses_translations_and_invalidates_on_variables(
     assert pool.evaluations + pool.reuses == before + 1
     assert ctx.translate(expression) == "input_second.csv"
     assert pool.evaluations + pool.reuses == before + 1
+
+
 def test_subtree_signature_parts_are_reused_per_run_and_invalidated(tmp_path: Path) -> None:
     """A shared expression is evaluated once per context, not once per parent."""
     from pytuflow._tmf.cf.cf_run_state import prepare_run_context
