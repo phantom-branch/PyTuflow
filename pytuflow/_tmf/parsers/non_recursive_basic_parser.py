@@ -31,7 +31,10 @@ def get_commands(control_file: Path, settings: 'TCFConfig | _ParseContext') -> t
 
     state = _ParseState()
 
-    with control_file.open(errors='surrogateescape') as f:
+    # Use one lossless byte contract on every platform.  utf-8-sig removes an
+    # optional BOM before command recognition; undecodable legacy bytes remain
+    # available to the save layer through surrogateescape.
+    with control_file.open(encoding='utf-8-sig', errors='surrogateescape') as f:
         for i, line in enumerate(f):
             command = Command(line, settings, line_number=i + 1)
             if state.was_end_define and state.define_blocks:

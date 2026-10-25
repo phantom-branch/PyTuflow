@@ -17,7 +17,11 @@ class NCGridVar:
         xdims = self.grid_axis_dims(nc, 'x')
         ydims = self.grid_axis_dims(nc, 'y')
         self.var = nc.variables[varname]
-        self.static = len(self.var.shape) == 2 or (len(self.var.shape) == 3 and self.var.shape[0] == 1)
+        # TUFLOW uses static_time for maxima/minima, but a length-one time
+        # dimension is still a genuine temporal sample.
+        self.static = len(self.var.shape) == 2 or (
+            len(self.var.shape) == 3 and self.var.shape[0] == 1 and self.var.dimensions[0] != 'time'
+        )
         i, j = 0, 0
         if len(self.var.shape) == 3:
             i, j = 1, 2
@@ -45,6 +49,8 @@ class NCGridVar:
         except AttributeError:
             self.fill_value = np.nan
         if not self.static:
+            if self.var.dimensions[0] != 'time' or 'time' not in nc.variables:
+                raise ValueError(f'Unsupported time coordinate for NetCDF variable {varname!r}.')
             self.times = nc.variables['time'][:]
 
     @staticmethod

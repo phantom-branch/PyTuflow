@@ -162,8 +162,8 @@ class QgisDataExtractor(PyDataExtractor):
                     levels = nlevels[i]
                     extracted[i, :levels] = vertical_levels[k:k + levels]
                     k += levels
-                vals = extracted[idx].flatten()
-                vals = vals[~np.isnan(vals)]
+                # Trim geometric padding, retaining missing physical boundaries.
+                vals = np.concatenate([extracted[j, :nlevels[j]] for j in idx])
                 result.append(vals)
         return np.hstack(result).reshape(shape)
 
@@ -238,8 +238,12 @@ class QgisDataExtractor(PyDataExtractor):
                         self.lyr.dataProvider().datasetValues(QgsMeshDatasetIndex(grp_idx, tidx), vert_id, count).values()
                     )
                     extracted = extracted.reshape((count, -1) if vector else (count,))
-                vals = extracted[idx].flatten()
-                vals = vals[~np.isnan(vals)]
+                if is_3d:
+                    # NaNs inside a column are observations, not padding. Removing
+                    # them shifts subsequent layers (and vector components).
+                    vals = np.concatenate([extracted[j, :nlevels[j]] for j in idx])
+                else:
+                    vals = extracted[idx].flatten()
                 values.append(vals)
         return np.hstack(values).reshape(shape)
 
