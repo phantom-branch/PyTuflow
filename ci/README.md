@@ -221,3 +221,88 @@ evidence. See `agent_workstreams/W5_original_library_regression_ci.md` and the
 PR conversation for the latest validated commit, Actions URLs and outstanding
 capability/product items. Do not infer Windows or QGIS acceptance from a local
 Linux run.
+
+## Fast feedback and strict baseline-cache reuse (CI-only)
+
+This is an **additional**, faster check. It never replaces the complete W5
+original-library gate, its unchanged upstream/fork commits or its strict
+comparison. No solvers, external models, venvs, worktrees or warning suppression.
+
+- The fast Windows 3.12/3.14 workflow selects a bounded set of original-library
+  comparison infrastructure, nested-edit, existing save ownership, inherited
+  regression and undo-contract tests. Failure is hard-fail. It deliberately
+  does not claim all package tests passed.
+- W5's three matrix jobs remain required for full acceptance. Candidate tests
+  still run **every time**, across all five required groups and with the current
+  raw-failure versus baseline gate unchanged.
+- For the two *pinned dependency* jobs only, an immutable cache may reuse
+  **both** complete upstream and recorded fork baseline runs. Its identity
+  includes source SHAs, entire installed dependency inventory/interpreter,
+  runner Windows image version, executable test harness and corrected FM test
+  overlay hashes. The floating-current-dependency job always reruns all three.
+- A cache hit is never trusted merely because it exists. Before any reuse,
+  \`ci/baseline_cache.py verify\` loads **both** reports through the existing
+  strict JUnit/JSON/capability validator and verifies exact source, interpreter,
+  packages, overlay and harness identity. Any mismatch/deleted JUnit/malformed
+  report triggers full baseline reruns. Fresh evidence must pass the same
+  validator before it may be saved for later runs.
+- Existing strict comparisons run even if cached baselines are valid; missing,
+  altered or incomplete reports still fail. The original provenance JSON/Logs
+  remain intact; cached reports intentionally preserve their original source
+  and run paths rather than misleadingly relabelling the execution.
+- A first-run cache miss cannot make the full test suite faster. Only
+  subsequent runs with genuinely identical pinned environments can omit the
+  approximately 7 minutes of upstream and fork baseline tests per matrix job.
+  W5's current-dependency job and PR candidate tests are intentionally not
+  cached.
+
+The cache identity must never be loosened to use approximate dependency
+versions, loose key prefixes or a moving source branch. Do not cache the
+candidate run or omit independent full acceptance when preparing the single
+consolidated upstream contribution.
+
+
+## Trusted default-branch baseline seeding across pull requests
+
+GitHub limits caches written by `pull_request` workflows to that PR's merge
+ref; sibling PRs cannot restore them. For reusable, shared baseline evidence
+the new `.github/workflows/original-library-baseline-seed.yml` runs **only
+trusted pushes or manual dispatches on `master`**. Its checkout is pinned
+to the triggering master SHA, permissions remain contents:read, and it
+never uses `pull_request_target` or untrusted-workflow triggers.
+
+The seeder uses the same Windows Python 3.12/3.14 pinned dependencies,
+`ci/baseline_cache.py` key algorithm, complete five-group legacy regression
+runner and unchanged baseline SHAs. A cache miss triggers fresh upstream and
+fork executions, followed by strict complete JSON/JUnit validation before
+saving. On a matching cache hit, both baselines must pass the same validator
+before either the seeder or a PR job can skip execution.
+
+The original-library PR workflow is **restore-only**: it never saves a
+short-lived PR-merge-ref cache. This avoids PR-local cache entries overshadowing
+the trusted master cache and prevents cross-PR cache poisoning. Its independent
+candidate test suite and all three strict W5 comparison gates are untouched.
+
+First-time trusted seeding is deliberately expensive. Subsequent PRs can restore
+only when exact source pins, Python environment/packages, runner image release,
+harness hash and test-only overlay hashes match. Missing, stale or tampered
+evidence still forces full baseline reruns. `master` seeding is triggered
+when the seeding workflow, W5 gate, CI harness or overlaid fixtures change,
+with an explicit manual dispatch for new runner images. Ordinary application
+commits do not unnecessarily rerun pinned baselines.
+
+**Acceptance sequencing**: prove seeder YAML, fast source tests, original
+full W5 matrix and Codex review before merging the CI PR. On merge to
+`master`, verify that the new trusted push seeder runs successfully and
+stores a cache accessible to a subsequent PR. The true cross-PR cache hit
+cannot be observed until the workflow exists on master; do not claim it
+in advance.
+
+The trusted seeding workflow also has a **dependent independent-runner smoke
+job** for each pinned Python version. Once the seeder succeeds, this job
+reinstalls the same dependencies, recomputes the key and *requires*
+`actions/cache/restore` to return an exact cache hit, then fully validates
+both recovered reports/JUnits again. This demonstrates a default-branch
+cross-job cache hit without modifying production or needing an unrelated
+dummy pull request. Any runner image/dependency drift fails closed rather
+than masquerading as a successful shared cache.

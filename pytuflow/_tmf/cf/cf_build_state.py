@@ -965,10 +965,16 @@ class ControlFileBuildState(BuildState, ControlFile):
         Solution Scheme == HPC
         Hardware == GPU
         """
-        if inp in self.inputs:
+        # The input must belong to this exact owner. Input.__eq__ compares
+        # command text, so equal commands in siblings are not interchangeable.
+        if inp.parent is self and any(current is inp for current in self.inputs):
             inputs = Inputs()
             inputs.append(inp)
-            self.inputs.remove(inp)
+            # Inputs.remove() also matches by text. Remove the same instance
+            # from both the complete and visible views of this Inputs object.
+            all_inputs = self.inputs.inputs(include_hidden=True)
+            all_inputs.pop(next(i for i, current in enumerate(all_inputs) if current is inp))
+            list.pop(self.inputs, next(i for i, current in enumerate(self.inputs) if current is inp))
             self.record_change(inputs, 'remove_input')
             if self.root_cf and self.root_cf != self:
                 self.root_cf.record_change(inputs, 'remove_input')
@@ -976,7 +982,7 @@ class ControlFileBuildState(BuildState, ControlFile):
         else:
             for inp1 in self.inputs:
                 if inp1.TUFLOW_TYPE == const.INPUT.CF and inp1.cf:
-                    for cf in inp.cf:
+                    for cf in inp1.cf:
                         inp2 = cf.remove_input(inp)
                         if inp2:
                             return inp2
