@@ -1,6 +1,6 @@
 # File-existence dependency fragments
 
-2026-10-25. Needs review: local implementation and correctness validation complete.
+2026-10-25. Needs review: implementation ready for publication through existing PR 39.
 Owner: ChatGPT. Next review: 2026-11-01.
 
 User-authorized scope: reuse geometry/boundary/invariant evaluations across batch
@@ -49,3 +49,24 @@ runs recorded 66,290 reuses and zero fallbacks. Two trials per condition,
 uncontrolled cache/load, and no new full parser provenance gate limit inference.
 The consumer handoff owns sanitized evidence and the paired parser commit ID.
 No additional benchmark ran while creating this checkpoint.
+
+## Existing PR publication follow-up
+
+Owner authorized commit and push on 2026-10-25. Preserve parser milestone
+`02868e4` and consumer milestone `5a781647` as the measured pair. Merged
+current PR 39 head `9fdc13b` without rewriting either history; the original
+benchmark is not a measurement of this merged revision.
+
+Existing delivery target: [PR 39](https://github.com/phantom-branch/PyTuflow/pull/39),
+branch `perf/consolidated-smb-preflight`. Consumer continues in
+[PR 161](https://github.com/Chain-Frost/ryan-tools/pull/161).
+The consolidated Windows 3.12/3.14 workflow now includes fragment contracts.
+Local Python 3.14 validation after integration: 110 passed (107 fragment/batch/
+deferred tests plus three material-parser tests). No benchmark rerun.
+
+Signature review: expression plans/results are already reused, but subtree keys
+and flat output records are still assembled per run. A later optimisation should
+compile unique signature slots and reuse their values within a prepared context;
+it must account for transitive variables, TEF substitution and scope decisions.
+Do not add cross-run key caching without those invalidation contracts.
+Next action: exact-head hosted CI and paired PR review; no merge or release authorised.
