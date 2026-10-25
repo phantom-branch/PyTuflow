@@ -25,7 +25,7 @@ _GROUP_VARIABLE = re.compile(r'<<[A-Za-z_][A-Za-z0-9_-]*>>')
 
 
 def group_configuration_signature(config) -> tuple[object, ...]:
-    """Settings affecting the supported deferred leaf READs, without I/O."""
+    """Configuration snapshot for supported deferred leaves, without I/O."""
     return (
         str(config.tcf), str(config.control_file), str(config.root_folder),
         str(config.spatial_database), str(config.gis_format),
@@ -51,6 +51,14 @@ def is_literal_group_path(value: str) -> bool:
         value and '_event_' not in value.casefold()
         and not any(token in value for token in '<>~*?|#$%')
         and Path(value).suffix.lower() in _GROUP_SUFFIXES
+    )
+
+
+def is_literal_group_setting(value: str) -> bool:
+    """Literal scalar/tuple text with no late-bound expression or selector."""
+    return bool(
+        value and '_event_' not in value.casefold()
+        and not any(token in value for token in '<>~*?|#$%')
     )
 
 
@@ -90,6 +98,7 @@ class CompiledInputGroupPlan:
     scenario_dependent: bool
     input_type: type
     context_method: object
+    kind: str = 'read'
 
 
 def _compile_input_group(inp, command, role, read, branches):
@@ -97,17 +106,27 @@ def _compile_input_group(inp, command, role, read, branches):
     from .inp.gis import GisInput, _GIS_INPUT_CONTEXT
     from .inp.grid import GridInput
     from .inp.inp_build_state import _INPUT_BUILD_CONTEXT
+    from .inp.setting import SettingInput
     from .parsers.block import DefineBlock
     from .parsers.command import Command
     from .scope import GlobalScope, ScenarioScope
 
-    if role != 'READ':
+    literal_setting = type(inp) is SettingInput and role in ('INPUT', 'SETTING')
+    if role != 'READ' and not literal_setting:
         return None, 'non_read'
     if type(command) is not Command:
         return None, 'specialised_command'
-    if command.command not in _GROUP_COMMANDS:
+    if literal_setting:
+        # Plain SettingInput has no load hook or context-side effects. Keep
+        # declarations, structural markers and all specialised inputs on their
+        # ordinary path; class inheritance alone is not a sufficient proof.
+        if (command.command == 'PAUSE' or command.is_set_variable()
+                or command.is_start_define() or command.is_end_define() or command.is_else()
+                or command.is_value_a_file() or command.is_value_a_folder()):
+            return None, 'structural_or_dynamic_setting'
+    elif command.command not in _GROUP_COMMANDS:
         return None, 'unsupported_command'
-    if type(inp) not in (GisInput, GridInput):
+    if not literal_setting and type(inp) not in (GisInput, GridInput):
         return None, 'unsupported_input'
     context_method = _GIS_INPUT_CONTEXT if type(inp) is GisInput else _INPUT_BUILD_CONTEXT
     bound_context = inp.context
@@ -132,8 +151,10 @@ def _compile_input_group(inp, command, role, read, branches):
         return None, 'dynamic_scope'
     raw = str(command.value_orig or '').strip()
     if not raw:
-        return None, 'empty_read'
-    if read is None or not read.reusable:
+        return None, 'empty_setting' if literal_setting else 'empty_read'
+    if literal_setting and not is_literal_group_setting(raw):
+        return None, 'dynamic_setting'
+    if not literal_setting and (read is None or not read.reusable):
         return None, 'unproven_variable_lineage'
     # Allow only variables whose complete lineage was compiled. The resolved
     # value must pass the stricter literal-path test for each individual run.
@@ -141,7 +162,7 @@ def _compile_input_group(inp, command, role, read, branches):
     if ('_event_' in literal_parts.casefold()
             or any(token in literal_parts for token in '<>~*?|#$%')):
         return None, 'dynamic_path'
-    if not read.relevant_variables and not is_literal_group_path(raw):
+    if not literal_setting and not read.relevant_variables and not is_literal_group_path(raw):
         return None, 'unsupported_path'
     if str(inp.config.spatial_database) not in ('', '.', 'None'):
         return None, 'spatial_database'
@@ -152,6 +173,7 @@ def _compile_input_group(inp, command, role, read, branches):
         any(branch.scope_type != 'GLOBAL' for branch in branches),
         type(inp),
         context_method,
+        'setting' if literal_setting else 'read',
     ), None
 
 
