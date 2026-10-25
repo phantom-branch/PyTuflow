@@ -44,6 +44,44 @@ def _batch_append_context_methods() -> dict[type, object]:
     }
 
 
+def prepare_run_context(build_state: typing.Any, context: typing.Any) -> None:
+    """Apply the existing model defaults and scoped variables once per context."""
+    # if context is empty, look for model events / scenario commands in file
+    if context.is_empty():
+        d = {}
+        model_scenarios = build_state.root_cf.find_input(lhs='model scenario')
+        for s in reversed(model_scenarios):
+            d.update({'s{0}'.format(i+1): v for i, v in enumerate(re.split(r'[\t\s|,]+', s.rhs))})
+            break
+        model_events = build_state.root_cf.find_input(lhs='model event')
+        for e in reversed(model_events):
+            d.update({'e{0}'.format(i+1): v for i, v in enumerate(re.split(r'[\t\s|,]+', e.rhs))})
+            break
+        context.load_context_from_dict(d)
+
+    # try and resolve variables
+    if not context.var_loaded:
+        # Batch dependency collection precomputes the immutable list of
+        # variable declarations once per parsed TCF. Each run still
+        # independently evaluates scopes and the active variable values.
+        compiled_assignments = getattr(context, '_batch_variable_assignments', None)
+        var_map = {}
+        if compiled_assignments is not None:
+            for var_input, (var_name, var_val) in compiled_assignments:
+                if context.in_context_by_scope(var_input.scope):
+                    var_map[var_name] = var_val
+        else:
+            var_inputs = getattr(context, '_batch_variable_inputs', None)
+            if var_inputs is None:
+                var_inputs = build_state.find_input(lhs='set variable', recursive=True)
+            for var_input in var_inputs:
+                if context.in_context_by_scope(var_input.scope):
+                    var_name, var_val = var_input.command().parse_variable()
+                    var_map[var_name] = var_val
+        context.load_variables(var_map)
+
+
+
 class ControlFileRunState(RunState, ControlFile):
     """Class for storing the run state of a control file.
 
@@ -96,39 +134,7 @@ class ControlFileRunState(RunState, ControlFile):
         pass
 
     def _resolve_scope_in_context(self) -> None:
-        # if context is empty, look for model events / scenario commands in file
-        if self.ctx.is_empty():
-            d = {}
-            model_scenarios = self.bs.root_cf.find_input(lhs='model scenario')
-            for s in reversed(model_scenarios):
-                d.update({'s{0}'.format(i+1): v for i, v in enumerate(re.split(r'[\t\s|,]+', s.rhs))})
-                break
-            model_events = self.bs.root_cf.find_input(lhs='model event')
-            for e in reversed(model_events):
-                d.update({'e{0}'.format(i+1): v for i, v in enumerate(re.split(r'[\t\s|,]+', e.rhs))})
-                break
-            self.ctx.load_context_from_dict(d)
-
-        # try and resolve variables
-        if not self.ctx.var_loaded:
-            # Batch dependency collection precomputes the immutable list of
-            # variable declarations once per parsed TCF. Each run still
-            # independently evaluates scopes and the active variable values.
-            compiled_assignments = getattr(self.ctx, '_batch_variable_assignments', None)
-            var_map = {}
-            if compiled_assignments is not None:
-                for var_input, (var_name, var_val) in compiled_assignments:
-                    if self.ctx.in_context_by_scope(var_input.scope):
-                        var_map[var_name] = var_val
-            else:
-                var_inputs = getattr(self.ctx, '_batch_variable_inputs', None)
-                if var_inputs is None:
-                    var_inputs = self.bs.find_input(lhs='set variable', recursive=True)
-                for var_input in var_inputs:
-                    if self.ctx.in_context_by_scope(var_input.scope):
-                        var_name, var_val = var_input.command().parse_variable()
-                        var_map[var_name] = var_val
-            self.ctx.load_variables(var_map)
+        prepare_run_context(self.bs, self.ctx)
 
         # A fresh, privately constructed batch collection can record first
         # UUID positions incrementally. Never retain an index cache on mutable

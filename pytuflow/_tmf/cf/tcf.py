@@ -10,6 +10,7 @@ from ..abc.tf_cf_base_mixin import TuflowControlFileMixin
 
 if typing.TYPE_CHECKING:
     from ..batch_dependencies import BatchDependencyResult, BatchDependencyRun
+    from ..fragment_dependencies import FragmentBatchResult
     from .tcf_run_state import TCFRunState
     from .tgc import TGC
     from .tbc import TBC
@@ -391,3 +392,16 @@ class TCF(ControlFileLoadMixin, TuflowControlFileMixin, TCFBuildState):
             self, run_flags, cache_scopes=cache_scopes, compile_tree=compile_tree,
             on_run=on_run,
         )
+
+    def collect_file_dependencies(
+        self,
+        run_flags: typing.Iterable[str | dict[str, str]],
+    ) -> "FragmentBatchResult":
+        """Collect a batch using immutable dependency fragments.
+
+        Reads cached source listings only; physical existence checking belongs
+        to the consumer. TBC control files and BC databases remain distinct.
+        """
+        from ..fragment_dependencies import collect_file_dependencies
+
+        return collect_file_dependencies(self, run_flags)
