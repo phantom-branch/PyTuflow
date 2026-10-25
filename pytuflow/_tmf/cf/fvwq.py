@@ -217,3 +217,7 @@ class FVWQ(ControlFileLoadMixin, FVControlFileBuildState, FVWQMixin):
 
 class FVWQRunState(ControlFileRunState, FVWQMixin):
     pass
+
+
+# Retain the original constructor for conservative fragment-cache eligibility.
+_FVWQ_CONTEXT = FVWQ.context
