@@ -260,10 +260,6 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
 
         self.init_spatial_index()
 
-        if self._vertex_positions_cache is not None and get_z:
-            cached = self._vertex_positions_cache[vertex_id]
-            return self.trans.transform(cached) if scope == 'local' else cached
-
         cache_result = False
         if isinstance(vertex_id, slice) and vertex_id == slice(None) and get_z:
             cache_result = True
@@ -276,6 +272,10 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
             vertex_id = vertex_id.flatten().tolist()
         if isinstance(vertex_id, slice):
             vertex_id = list(range(self.lyr.dataProvider().vertexCount()))[vertex_id]
+
+        if self._vertex_positions_cache is not None and get_z:
+            cached = self._vertex_positions_cache[vertex_id]
+            return self.trans.transform(cached) if scope == 'local' else cached
 
         a = np.full((len(vertex_id), 3), 0., dtype=np.float64)
         for i, vid in enumerate(vertex_id):

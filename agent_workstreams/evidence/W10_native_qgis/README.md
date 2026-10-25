@@ -31,3 +31,5 @@ Commands below run through the installed `python-qgis.bat` plus the existing boo
 ```
 
 The initial native failure and inherited baseline failure are expected negative evidence. All final native commands exited zero. Hosted final-head W10/W9/W8/W7/W5 and final Codex review are independent gates; their latest status is recorded on PR #32, and this native evidence alone is not permission to merge.
+
+Final review of delivery `28828030b5eaab75aa436187f0fb5b9999f69c4f` additionally found integer/tuple normalization was bypassed on cache hits. A real-QGIS negative regression reproduced the integer shape mismatch. Moving cache lookup after selector normalization restores the same shape/order for cached and uncached integer, tuple and array requests. The expanded native module passes 19 tests; the PR follow-up and public bundle record the subsequent exact-head reruns. These committed JSON records remain historical evidence for the explicitly named `af3cede` checkpoint, not mislabeled final-head artifacts.

@@ -164,12 +164,19 @@ def test_qgis_vertex_position_scope_and_cached_subset(qapp, mixed_mesh):
     np.testing.assert_allclose(geom.vertex_position(slice(None), scope='global'),
                                global_pos, equal_nan=True)
     assert geom._vertex_positions_cache is not None
+    for selector, indices in [(2, [2]), ((2, 0, 2, 1), [2, 0, 2, 1]),
+                              (np.array([[2, 0], [2, 1]]), [2, 0, 2, 1])]:
+        np.testing.assert_allclose(geom.vertex_position(selector, get_z=True),
+                                   global_pos[indices], equal_nan=True)
     # Also exercise provider extraction without a full-mesh cache, including
     # duplicates: chunked bed values must retain the caller's vertex order.
     geom._vertex_positions_cache = None
     subset = [2, 0, 2, 1]
     np.testing.assert_allclose(geom.vertex_position(subset, get_z=True),
                                global_pos[subset], equal_nan=True)
+    for selector, indices in [(2, [2]), ((2, 0, 2, 1), [2, 0, 2, 1])]:
+        np.testing.assert_allclose(geom.vertex_position(selector, get_z=True),
+                                   global_pos[indices], equal_nan=True)
 
 
 @pytest.mark.parametrize("driver", [
