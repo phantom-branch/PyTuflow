@@ -30,3 +30,7 @@ Preserve **existing** PyTUFLOW editing APIs when called from a root TCF against 
 ## Provenance and status
 
 Original upstream reference: [`TUFLOW-Support/PyTuflow` at `cf908cc9`](https://github.com/TUFLOW-Support/PyTuflow/blob/cf908cc922ca8448ed6002834877b0b377329eae/pytuflow/_tmf/cf/cf_build_state.py). This defect is inherited, not newly created in our fork. Parent PR #17 and inherited-regression PR #27 are merged in `master` at `9d1ad6664566e4c650f77d2498251f2a0bd6aa40` on initial scope revision. Implementation and exact-head validation outcomes must be recorded separately.
+
+## Review correction — exact object identity
+
+Codex found P1 on the first candidate: two child owners may have commands equal by text even though they are distinct input instances. This required a small, narrow correction. Root removal must restrict traversal to the target's actual owner and remove the **same input object** from both views of `Inputs`, not the first value-equal command. The original public signature and value-equality behaviour elsewhere remain unchanged. Regressions exercise a duplicate command in two separate child files (both increment modes), and duplicate commands within one owner. The prior W2 regression with distinct values is retained. This is a safety correction to the *same* inherited removal bug, not new undo/history functionality. Exact-head CI and re-review are required.
