@@ -976,7 +976,7 @@ class ControlFileBuildState(BuildState, ControlFile):
         else:
             for inp1 in self.inputs:
                 if inp1.TUFLOW_TYPE == const.INPUT.CF and inp1.cf:
-                    for cf in inp.cf:
+                    for cf in inp1.cf:
                         inp2 = cf.remove_input(inp)
                         if inp2:
                             return inp2
