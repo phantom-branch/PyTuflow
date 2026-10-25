@@ -12,6 +12,7 @@
 - Original validated W4/QGIS checkpoint: `183f62c7ef4a1597670f23cd9999ffc019f9be7c`.
 - [SMB benchmark evidence and recommendation D](https://github.com/phantom-branch/PyTuflow/pull/20#issuecomment-6389083597): 216 accepted process trials and 312 three-trial medians, used independent normal source checkouts; no code from the experimental prototypes was pushed.
 - Recommendation D implementation: `28c5d9e66967899aab9b150ffefcf9aaabc4f241`; focused aggregation tests: `8b673ff3af703984ecf5b9c63559928da25e70b3`; all-missing fix: `fb2eaa0f7a7a7e623c6ba11d2dbc82c7014df1d1`.
+- Follow-up Codex P2 fixes: `0e18751b6021a1cae9d71c8c6583d278ae0ec27e`. Packed NetCDF time-block sizing uses a conservative decoded float64 payload estimate when scale/offset packing is present; each completed block and its filtered array are released before the next read, avoiding overlapping lifetimes. Dedicated regressions cover decoded dtype and weakref-based buffer disposal.
 - Read the PR head before testing. **The earlier QGIS and native SMB validation evidence covers the pre-D implementation only**; repeat native QGIS and SMB acceptance before marking the new code ready or merging.
 
 ## Configurable aggregate memory and bounded block reductions (recommendation D)
@@ -53,7 +54,8 @@ python -m pytest -q tests/test_result_time_correctness.py tests/test_map_output_
 - The streaming-extrema follow-up exposed a reader-context issue in `NCGrid.minimum()` (23 passed, 1 failed in the first follow-up run); this was corrected in `742f298`, without suppressions or expectation changes.
 - [Current Windows acceptance workflow](https://github.com/phantom-branch/PyTuflow/actions/runs/40085144957): Python 3.12/3.14, **24 focused** cases plus **457 existing** cases per interpreter, all passing. A subsequent Codex P2 finding identified mask loss for resident NumPy masked arrays; the follow-up adds **2 focused cases** (26 total) and preserves masks in resident/cache copies, stacking and reductions. [Reviewed W4 head Windows run](https://github.com/phantom-branch/PyTuflow/actions/runs/40085840750) passed all 26 focused and 457 existing tests per supported interpreter. That is pre-D evidence, not validation of the new implementation.
 - [Native QGIS/MDAL acceptance](https://github.com/phantom-branch/PyTuflow/pull/20#issuecomment-6388178669) passed at pre-D head `183f62c`: baseline and candidate **239/239 QGIS** each; **134 W3/W4 focused**; strict comparison exit 0. Fresh provider acceptance remains **required** for this changed code.
-- [Initial D focused/legacy Windows run](https://github.com/phantom-branch/PyTuflow/actions/runs/40169222591): see final job evidence for the precise counts. The extra all-missing test is exercised in the subsequent run; do not infer native SMB speedups from these functional tests.
+- [Initial D Windows run](https://github.com/phantom-branch/PyTuflow/actions/runs/40169222591): **36 dedicated and 457 existing** passed per Windows interpreter. The later all-missing run passed **37 + 457** per interpreter.
+- [Post-Codex memory fixes — Windows](https://github.com/phantom-branch/PyTuflow/actions/runs/40169892996): **39 dedicated and 457 existing** passed on each of Python 3.12 and 3.14, no failures/errors/skips. The correct raw runtime evidence is limited to these native Windows runner jobs; do not claim the production D version has repeated the local SMB/QGIS benchmark yet.
 
 ## Coordination and exclusions
 
