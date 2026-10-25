@@ -26,6 +26,54 @@ def _averaging_data(values: list[np.ndarray], *, combined_vector: bool = False) 
     return values
 
 
+
+def _qgis_cell_to_vertex(
+    values: np.ndarray, wet: np.ndarray, nodes: np.ndarray, angles: np.ndarray, nvertices: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Apply existing per-corner weights without reusing invalid/wet-state weights.
+
+    Retains the original public dry-only zero with an inactive mask; a wet-only
+    vertex with no valid observations is NaN. All vector components must be
+    valid together, rather than allowing each component to use different cells.
+    """
+    data = np.ma.asarray(values, dtype=float).filled(np.nan)
+    active_faces = np.asarray(wet, dtype=bool)
+    nfaces = nodes.shape[0]
+    if nodes.shape != angles.shape or nodes.ndim != 2 or nodes.shape[1] != 4:
+        raise ValueError("Expected matching N x 4 QGIS vertex mapping and weights")
+    if active_faces.ndim == 2:
+        if data.shape[:2] != active_faces.shape or active_faces.shape[1] != nfaces:
+            raise ValueError("Face data and wet masks must match the QGIS mesh")
+        interpolated = []
+        active_vertices = []
+        for t in range(active_faces.shape[0]):
+            output, mask = _qgis_cell_to_vertex(data[t], active_faces[t], nodes, angles, nvertices)
+            interpolated.append(output)
+            active_vertices.append(mask)
+        return np.stack(interpolated), np.stack(active_vertices)
+    if active_faces.shape != (nfaces,) or data.shape[0] != nfaces:
+        raise ValueError("Face data and wet masks must match the QGIS mesh")
+    flat = data.reshape(nfaces, -1)
+    usable = active_faces & np.isfinite(flat).all(axis=1)
+    node_ids = nodes.ravel()
+    available_weights = np.where(usable[:, None], angles, 0.)
+    denominator = np.bincount(
+        node_ids, weights=available_weights.ravel(), minlength=nvertices,
+    )
+    wet_angles = np.where(active_faces[:, None], angles, 0.)
+    vertex_active = np.bincount(
+        node_ids, weights=wet_angles.ravel(), minlength=nvertices,
+    ) > 0.
+    output = np.zeros((nvertices, flat.shape[1]), dtype=float)
+    output[vertex_active & (denominator == 0)] = np.nan
+    good = denominator > 0
+    for component in range(flat.shape[1]):
+        weighted = np.where(usable, flat[:, component], 0.)[:, None] * available_weights
+        numerator = np.bincount(node_ids, weights=weighted.ravel(), minlength=nvertices)
+        output[good, component] = numerator[good] / denominator[good]
+    return output.reshape((nvertices, *data.shape[1:])), vertex_active
+
+
 class CellDataMixin:
 
     def cell_data(self: 'PyMesh',
@@ -34,6 +82,25 @@ class CellDataMixin:
                   depth_averaging_method: str,
                   to_vertex: bool = False
                   ) -> tuple[np.ndarray, np.ndarray]:
+        # QGIS native geometry provides faces but not PyVista's interpolation
+        # arrays. Collect the existing face results first (including W8 depth
+        # reduction), then use the original QGIS face topology and angle weights.
+        # Never reuse wet/data-dependent weights across results or time steps.
+        from .mesh_geom import QgisMeshGeometry
+        if to_vertex and isinstance(self.geom, QgisMeshGeometry):
+            data_types = self.translate_data_type(data_type)
+            if data_types[0] == self.geom.data_type:
+                positions = self.geom.vertex_position(slice(None), get_z=True)
+                return positions[:, 2], np.ones(len(positions), dtype=bool)
+            face_values, face_wet = self.cell_data(
+                data_type, time_index, depth_averaging_method, False,
+            )
+            angle_weights = self.geom.cell_to_vertex_weights()
+            return _qgis_cell_to_vertex(
+                face_values, face_wet, self.geom.cell_nodes, angle_weights,
+                self.geom.vertices.shape[0],
+            )
+
         def cell2node(data_: np.ndarray, dry_mask: np.ndarray, wts_: np.ndarray | None) -> tuple[np.ndarray, np.ndarray]:
             data_[dry_mask] = 0
             if wts_ is None:
