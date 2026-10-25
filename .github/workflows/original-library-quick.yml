@@ -43,7 +43,6 @@ jobs:
       - name: Run quick retained editing, save and comparison contracts
         shell: pwsh
         env:
-          PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
           PYTHONNOUSERSITE: "1"
         run: |
           New-Item -ItemType Directory -Force -Path reports | Out-Null
