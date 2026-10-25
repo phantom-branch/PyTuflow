@@ -24,9 +24,10 @@ canonicalised.
 
 The downstream [ryan-tools PR #162](https://github.com/Chain-Frost/ryan-tools/pull/162)
 fixes unconditional casefolding in bounded directory and wildcard checks.
-That change is independent of ryan-tools performance PR #161 and must land
-before final Linux replay. CI initially pins the exact reviewed #162 commit;
-update to its accepted/merged SHA before final acceptance.
+That change is independent of ryan-tools performance PR #161. **#162 was
+squash-merged with all four workflows passing** at
+`993eb083dec15b1155d7ae61a28d65003357ff77`. Linux CI now pins this
+accepted consumer commit rather than an unmerged development SHA.
 
 ## Historical diagnostic leads (not current acceptance)
 
@@ -58,8 +59,9 @@ update to its accepted/merged SHA before final acceptance.
 
 ## Acceptance — must complete before #36
 
-- [ ] ryan-tools #162 passes **Linux and Windows** tests, lint and consumer CI;
-  merge it, reconcile active #161, repin the exact accepted revision.
+- [x] ryan-tools #162 passed **Linux and Windows** tests, lint and consumer CI;
+  squash-merged at `993eb083dec15b1155d7ae61a28d65003357ff77`.
+  Remaining #161 performance work remains independently owned.
 - [ ] PyTUFLOW Linux-focused regressions pass under native Python 3.14.
 - [ ] Full public 161-TCF / 174-run Linux replay is classified case by case;
   no unclassified missing/extra identities, source exceptions or skipped scans.
