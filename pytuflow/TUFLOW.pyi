@@ -11,14 +11,20 @@ from datetime import datetime
 from os import PathLike
 from typing import TypeAlias
 
+from numpy import float64 as _float64
+from numpy.ma.core import MaskedConstant as _MaskedConstant
+
 from .tuflow_results_gpkg import ResData_GPKG as ResData_GPKG
 
 
-_XY: TypeAlias = tuple[list[float], list[float]]
-_Times: TypeAlias = list[float] | list[datetime]
-_SeriesValues: TypeAlias = list[float] | list[list[float]]
+_ProfileNumber: TypeAlias = float | _float64 | _MaskedConstant
+_XY: TypeAlias = tuple[list[_ProfileNumber], list[_ProfileNumber]]
+_Times: TypeAlias = list[float | None] | list[datetime]
+_SeriesValue: TypeAlias = float | str | None
+_SeriesValues: TypeAlias = list[_SeriesValue] | list[list[_SeriesValue]]
 _SeriesResult: TypeAlias = tuple[bool, str, tuple[_Times, _SeriesValues]]
-_ProfileResult: TypeAlias = tuple[bool, str, _XY]
+_PipePolygons: TypeAlias = list[list[tuple[float, float]]]
+_ProfileResult: TypeAlias = tuple[bool, str, _XY | _PipePolygons]
 _ScalarResult: TypeAlias = tuple[bool, str, float]
 _PipeVertex: TypeAlias = tuple[float, float] | tuple[()]
 
@@ -30,7 +36,7 @@ class ResData:
     def __del__(self) -> None: ...
     def format(self) -> str: ...
     def name(self) -> str: ...
-    def source(self) -> str: ...
+    def source(self) -> str | PathLike[str]: ...
     def close(self) -> None: ...
     def load(self, file: str | PathLike[str]) -> tuple[bool, str]: ...
     def channels(self) -> list[str]: ...
