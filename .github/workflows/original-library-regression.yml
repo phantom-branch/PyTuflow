@@ -73,6 +73,38 @@ jobs:
         run: |
           python -m pytest -q tests/ci --junitxml="$env:RUNNER_TEMP/original-regression/infrastructure.xml"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Derive immutable regression baseline cache key
+        id: baseline-key
+        if: matrix.dependencies == 'baseline'
+        run: |
+          $key = python ci/baseline_cache.py key --upstream "$env:UPSTREAM_SHA" --fork "$env:FORK_BASELINE_SHA"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "value=$key" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      - name: Restore strictly keyed baseline evidence
+        id: baseline-cache
+        if: matrix.dependencies == 'baseline'
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ runner.temp }}/original-regression/upstream
+            ${{ runner.temp }}/original-regression/baseline
+          key: pytuflow-w5-baseline-v1-${{ steps.baseline-key.outputs.value }}
+      - name: Validate cached reports before any baseline reuse
+        id: baseline-verification
+        if: matrix.dependencies == 'baseline'
+        run: |
+          python ci/baseline_cache.py verify --root "$env:RUNNER_TEMP/original-regression" --upstream "$env:UPSTREAM_SHA" --fork "$env:FORK_BASELINE_SHA"
+          if ($LASTEXITCODE -eq 0) {
+            "valid=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Host "Reusing validated immutable baseline evidence."
+          } else {
+            "valid=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Host "No matching complete baseline evidence: rerunning both baselines."
+            foreach ($name in @("upstream", "baseline")) {
+              $path = "$env:RUNNER_TEMP/original-regression/$name"
+              if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Recurse -Force }
+            }
+          }
       - name: Checkout pinned canonical upstream
         uses: actions/checkout@v5
         with:
@@ -81,15 +113,36 @@ jobs:
           path: pristine-upstream
           persist-credentials: false
       - name: Run canonical upstream (raw failures retained)
+        if: matrix.dependencies != 'baseline' || steps.baseline-verification.outputs.valid != 'true'
         continue-on-error: true
         run: |
           python ci/run_regression.py --source ../pristine-upstream --ref "$env:UPSTREAM_SHA" --label upstream --report-dir "$env:RUNNER_TEMP/original-regression/upstream"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Run recorded fork baseline (raw failures retained)
+        if: matrix.dependencies != 'baseline' || steps.baseline-verification.outputs.valid != 'true'
         continue-on-error: true
         run: |
           python ci/run_regression.py --source . --ref "$env:FORK_BASELINE_SHA" --label fork-baseline --report-dir "$env:RUNNER_TEMP/original-regression/baseline"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Verify fresh baseline reports before caching
+        id: fresh-baseline
+        if: matrix.dependencies == 'baseline' && steps.baseline-verification.outputs.valid != 'true'
+        run: |
+          python ci/baseline_cache.py verify --root "$env:RUNNER_TEMP/original-regression" --upstream "$env:UPSTREAM_SHA" --fork "$env:FORK_BASELINE_SHA"
+          if ($LASTEXITCODE -eq 0) {
+            "valid=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          } else {
+            "valid=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Host "Incomplete baseline evidence; do not write to cache. Comparison gate will still fail closed."
+          }
+      - name: Cache independently verified baseline evidence
+        if: matrix.dependencies == 'baseline' && steps.baseline-cache.outputs.cache-hit != 'true' && steps.fresh-baseline.outputs.valid == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ runner.temp }}/original-regression/upstream
+            ${{ runner.temp }}/original-regression/baseline
+          key: pytuflow-w5-baseline-v1-${{ steps.baseline-key.outputs.value }}
       - name: Run exact PR head (raw failures retained)
         continue-on-error: true
         run: |

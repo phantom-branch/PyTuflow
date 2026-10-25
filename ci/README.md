@@ -221,3 +221,42 @@ evidence. See `agent_workstreams/W5_original_library_regression_ci.md` and the
 PR conversation for the latest validated commit, Actions URLs and outstanding
 capability/product items. Do not infer Windows or QGIS acceptance from a local
 Linux run.
+
+## Fast feedback and strict baseline-cache reuse (CI-only)
+
+This is an **additional**, faster check. It never replaces the complete W5
+original-library gate, its unchanged upstream/fork commits or its strict
+comparison. No solvers, external models, venvs, worktrees or warning suppression.
+
+- The fast Windows 3.12/3.14 workflow selects a bounded set of original-library
+  comparison infrastructure, nested-edit, existing save ownership, inherited
+  regression and undo-contract tests. Failure is hard-fail. It deliberately
+  does not claim all package tests passed.
+- W5's three matrix jobs remain required for full acceptance. Candidate tests
+  still run **every time**, across all five required groups and with the current
+  raw-failure versus baseline gate unchanged.
+- For the two *pinned dependency* jobs only, an immutable cache may reuse
+  **both** complete upstream and recorded fork baseline runs. Its identity
+  includes source SHAs, entire installed dependency inventory/interpreter,
+  runner Windows image version, executable test harness and corrected FM test
+  overlay hashes. The floating-current-dependency job always reruns all three.
+- A cache hit is never trusted merely because it exists. Before any reuse,
+  \`ci/baseline_cache.py verify\` loads **both** reports through the existing
+  strict JUnit/JSON/capability validator and verifies exact source, interpreter,
+  packages, overlay and harness identity. Any mismatch/deleted JUnit/malformed
+  report triggers full baseline reruns. Fresh evidence must pass the same
+  validator before it may be saved for later runs.
+- Existing strict comparisons run even if cached baselines are valid; missing,
+  altered or incomplete reports still fail. The original provenance JSON/Logs
+  remain intact; cached reports intentionally preserve their original source
+  and run paths rather than misleadingly relabelling the execution.
+- A first-run cache miss cannot make the full test suite faster. Only
+  subsequent runs with genuinely identical pinned environments can omit the
+  approximately 7 minutes of upstream and fork baseline tests per matrix job.
+  W5's current-dependency job and PR candidate tests are intentionally not
+  cached.
+
+The cache identity must never be loosened to use approximate dependency
+versions, loose key prefixes or a moving source branch. Do not cache the
+candidate run or omit independent full acceptance when preparing the single
+consolidated upstream contribution.

@@ -1,0 +1,58 @@
+name: Fast original-library source contracts
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/**"
+      - "tests/**"
+      - "ci/**"
+      - "pyproject.toml"
+      - ".github/workflows/original-library-quick.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: original-library-quick-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fast-contracts:
+    name: Windows Python ${{ matrix.python }} fast contracts
+    runs-on: windows-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: ci/requirements-regression.txt
+      - name: Install documented regression dependencies
+        shell: pwsh
+        run: |
+          python -m pip install -r ci/requirements-regression.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run quick retained editing, save and comparison contracts
+        shell: pwsh
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+          PYTHONNOUSERSITE: "1"
+        run: |
+          New-Item -ItemType Directory -Force -Path reports | Out-Null
+          python -m pytest -q tests/ci tests/tmf/test_nested_remove_input_compatibility.py tests/tmf/test_inherited_regression_contracts.py tests/tmf/test_safe_model_save_ownership.py tests/tmf/test_altered_inputs.py --junitxml=reports/quick.xml
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Archive quick failure evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-original-library-${{ matrix.python }}
+          path: reports/
+          if-no-files-found: warn
