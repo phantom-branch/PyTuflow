@@ -1,0 +1,111 @@
+name: Numerical result reductions (W8)
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/_outputs/pymesh/**"
+      - "tests/test_numerical_depth_averaging.py"
+      - "tests/test_numerical_mesh_reductions.py"
+      - "tests/test_numerical_fv_reader.py"
+      - "tests/test_map_output_pymesh.py"
+      - "tests/nc_mesh/**"
+      - "tests/xmdf/**"
+      - "tests/regression_test_comparisons/**"
+      - "pyproject.toml"
+      - "requirements-dev.txt"
+      - "agent_workstreams/W8_numerical_result_reductions.md"
+      - ".github/workflows/numerical-result-reductions.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  numerical-regressions:
+    name: Windows Python ${{ matrix.python-version }} numerical regressions
+    runs-on: windows-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - name: Install the existing development dependency baseline
+        run: python -m pip install -c requirements-dev.txt -e . pytest
+      - name: Record source and runtime
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force numerical-reports | Out-Null
+          git rev-parse HEAD | Tee-Object numerical-reports/head.txt
+          python -c "import sys, platform, pytuflow; print(sys.version); print(platform.platform()); print(pytuflow.__file__)" | Tee-Object numerical-reports/runtime.txt
+          python -m pip freeze | Out-File numerical-reports/dependencies.txt
+      - name: Analytical and real-reader numerical contracts
+        run: >-
+          python -m pytest -q
+          tests/test_numerical_depth_averaging.py
+          tests/test_numerical_mesh_reductions.py
+          tests/test_numerical_fv_reader.py
+          --junitxml=numerical-reports/focused.xml
+      - name: Checkout the unchanged fork baseline
+        if: always()
+        uses: actions/checkout@v5
+        with:
+          repository: phantom-branch/PyTuflow
+          ref: e162c04330d24c37bee3ade94479cc4602651060
+          path: numerical-baseline
+          persist-credentials: false
+      - name: Record affected legacy baseline
+        if: always()
+        continue-on-error: true
+        working-directory: numerical-baseline
+        shell: pwsh
+        run: |
+          python -c "from pathlib import Path; import pytuflow; print(pytuflow.__file__); assert Path(pytuflow.__file__).absolute().is_relative_to(Path.cwd().absolute())"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pytest -q tests/test_map_output_pymesh.py --junitxml=../numerical-reports/baseline-pymesh.xml
+          exit $LASTEXITCODE
+      - name: Record affected legacy candidate
+        if: always()
+        continue-on-error: true
+        run: python -m pytest -q tests/test_map_output_pymesh.py --junitxml=numerical-reports/candidate-pymesh.xml
+      - name: Require complete numerical and legacy reports
+        if: always()
+        shell: python
+        run: |
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          for name in ("focused", "baseline-pymesh", "candidate-pymesh"):
+              path = Path("numerical-reports") / f"{name}.xml"
+              root = ET.parse(path).getroot()
+              cases = list(root.iter("testcase"))
+              assert cases, f"{name}: no executed tests"
+              assert not list(root.iter("error")), f"{name}: collection or execution error"
+              assert not list(root.iter("skipped")), f"{name}: unexpected skipped tests"
+              if name == "focused":
+                  assert not list(root.iter("failure")), "Focused numerical contracts failed"
+              print(f"{name}: {len(cases)} cases; {len(list(root.iter('failure')))} failures")
+      - name: Gate additional legacy failures using existing comparator
+        if: always()
+        run: >-
+          python tests/compare_upstream_tmf_junit.py
+          --upstream numerical-reports/baseline-pymesh.xml
+          --fork numerical-reports/candidate-pymesh.xml
+      - name: Archive exact results and dependency versions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: numerical-reductions-python-${{ matrix.python-version }}
+          path: numerical-reports/
+          if-no-files-found: error
+          retention-days: 14

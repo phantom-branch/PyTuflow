@@ -1,0 +1,78 @@
+name: Result time correctness
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/_outputs/output.py"
+      - "pytuflow/_outputs/map_output.py"
+      - "pytuflow/_outputs/grid.py"
+      - "pytuflow/_outputs/nc_grid.py"
+      - "pytuflow/_outputs/helpers/nc_grid_var.py"
+      - "tests/test_result_time_correctness.py"
+      - "agent_workstreams/W3_results_time_correctness.md"
+      - ".github/workflows/result-time-correctness.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  result-times:
+    name: Windows Python ${{ matrix.python-version }} result times
+    runs-on: windows-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install package and feature-test dependency baseline
+        # pandas 3.1 exposes inherited deprecations with warnings-as-errors.
+        # W5/W7 own the general current-dependency/compatibility lane. This
+        # feature baseline does not alter the package's dependency metadata.
+        run: python -m pip install -e . pytest "pandas==2.3.3"
+      - name: Record exact source and environment
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force w3-test-reports | Out-Null
+          @'
+          import importlib.metadata as metadata
+          import importlib.util
+          import json
+          import platform
+          import subprocess
+          from pathlib import Path
+          import pytuflow
+          packages = ['numpy', 'pandas', 'pytest', 'netCDF4', 'rasterio', 'geopandas', 'shapely', 'h5py', 'pyvista']
+          report = {
+              'source_sha': subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip(),
+              'python': platform.python_version(),
+              'platform': platform.platform(),
+              'import_origin': pytuflow.__file__,
+              'packages': {name: metadata.version(name) for name in packages},
+              'qgis_available': importlib.util.find_spec('qgis') is not None,
+              'qgis_validation': 'Separate provider lane; not executed by this workflow.',
+          }
+          Path('w3-test-reports/environment.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+          print(json.dumps(report, indent=2))
+          '@ | python -
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run dedicated saved-time regressions
+        run: python -m pytest -q tests/test_result_time_correctness.py --junitxml=w3-test-reports/focused.xml
+      - name: Run existing PyMesh and time-series regressions
+        if: success() || failure()
+        run: python -m pytest -q tests/test_map_output_pymesh.py tests/test_time_series.py --junitxml=w3-test-reports/existing-results.xml
+      - name: Upload complete time-validation reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-times-python-${{ matrix.python-version }}
+          path: w3-test-reports/
+          if-no-files-found: error

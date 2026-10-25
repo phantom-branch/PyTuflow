@@ -1,0 +1,151 @@
+name: Safe model saves (W1)
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/_tmf/cf/cf_build_state.py"
+      - "pytuflow/_tmf/parsers/non_recursive_basic_parser.py"
+      - "pytuflow/_tmf/scope_writer.py"
+      - "tests/tmf/test_safe_model_saves.py"
+      - "tests/tmf/test_safe_model_save_ownership.py"
+      - "tests/tmf/test_safe_model_save_aliases.py"
+      - "tests/tmf/test_safe_model_save_inspection.py"
+      - "tests/tmf/test_scope_writer_progress.py"
+      - ".github/workflows/safe-model-saves.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  W1_BASELINE_SHA: e2086fba7796307429887d12f61c2e35542e5cd4
+  W1_EXISTING_TESTS: >-
+    tests/tmf/test_control_file.py
+    tests/tmf/test_scope_writer.py
+    tests/tmf/test_altered_inputs.py
+    tests/tmf/test_inputs.py
+    tests/tmf/test_input.py
+    tests/tmf/test_input_context.py
+    tests/tmf/test_cf_context.py
+    tests/tmf/test_context.py
+    tests/tmf/test_fv_cf.py
+    tests/tmf/test_scope.py
+    tests/tmf/test_events.py
+    tests/tmf/test_xs_db_from_cf.py
+    tests/test_deferred_file_references.py
+    tests/test_deferred_database_parity.py
+    tests/test_batch_dependencies.py
+
+jobs:
+  save-contract:
+    name: Windows Python ${{ matrix.python-version }} save contract
+    runs-on: windows-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install real PyTUFLOW package and test dependencies
+        run: python -m pip install -e . pytest
+      - name: Record source and environment
+        run: |
+          New-Item -ItemType Directory -Path reports -Force | Out-Null
+          git rev-parse HEAD | Tee-Object -FilePath reports/head-sha.txt
+          $env:W1_BASELINE_SHA | Set-Content reports/baseline-sha.txt
+          python -c "import pathlib, platform, sys, pytuflow; print(sys.version); print(platform.platform()); print(pytuflow.__file__); assert pathlib.Path(pytuflow.__file__).parent.samefile(pathlib.Path.cwd() / 'pytuflow')" | Tee-Object -FilePath reports/environment.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip freeze | Set-Content reports/dependencies.txt
+      - name: Run focused temporary-file save and writer contracts
+        id: focused
+        continue-on-error: true
+        run: |
+          python -m pytest -q tests/tmf/test_safe_model_saves.py tests/tmf/test_safe_model_save_ownership.py tests/tmf/test_safe_model_save_aliases.py tests/tmf/test_safe_model_save_inspection.py tests/tmf/test_scope_writer_progress.py --junitxml=reports/focused.xml
+          $status = $LASTEXITCODE
+          "pytest-exit=$status" | Add-Content $env:GITHUB_OUTPUT
+          exit $status
+      - name: Checkout pre-implementation W1 baseline
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ env.W1_BASELINE_SHA }}
+          path: baseline-w1
+          persist-credentials: false
+      - name: Run existing regressions on the baseline
+        id: baseline
+        working-directory: baseline-w1
+        continue-on-error: true
+        run: |
+          python -c "import pathlib, pytuflow; print(pytuflow.__file__); assert pathlib.Path(pytuflow.__file__).parent.samefile(pathlib.Path.cwd() / 'pytuflow')"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $selectedTests = $env:W1_EXISTING_TESTS -split '\s+'
+          python -m pytest -q @selectedTests --junitxml=../reports/baseline.xml
+          $status = $LASTEXITCODE
+          "pytest-exit=$status" | Add-Content $env:GITHUB_OUTPUT
+          exit $status
+      - name: Run existing regressions on the exact PR head
+        id: candidate
+        continue-on-error: true
+        run: |
+          $selectedTests = $env:W1_EXISTING_TESTS -split '\s+'
+          python -m pytest -q @selectedTests --junitxml=reports/candidate.xml
+          $status = $LASTEXITCODE
+          "pytest-exit=$status" | Add-Content $env:GITHUB_OUTPUT
+          exit $status
+      - name: Gate focused acceptance and additional regressions
+        if: always()
+        run: |
+          if ('${{ steps.focused.outputs.pytest-exit }}' -ne '0') {
+            throw 'Focused W1 acceptance did not pass; inspect the test log and focused.xml.'
+          }
+          foreach ($status in @('${{ steps.baseline.outputs.pytest-exit }}', '${{ steps.candidate.outputs.pytest-exit }}')) {
+            if ($status -notin @('0', '1')) {
+              throw "Existing regression run did not complete normally (pytest exit '$status')."
+            }
+          }
+          python tests/compare_upstream_tmf_junit.py --upstream reports/baseline.xml --fork reports/candidate.xml
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --check
+      - name: Summarise actual test outcomes
+        if: always()
+        run: |
+          @'
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          lines = ['## W1 safe model saves', '', '| Suite | Passed | Failed/errors | Skipped |', '| --- | ---: | ---: | ---: |']
+          for name in ('focused', 'baseline', 'candidate'):
+              report = Path('reports') / f'{name}.xml'
+              if not report.exists():
+                  lines.append(f'| {name} | unavailable | unavailable | unavailable |')
+                  continue
+              cases = list(ET.parse(report).iter('testcase'))
+              failed = sum(any(child.tag in {'failure', 'error'} for child in case) for case in cases)
+              skipped = sum(case.find('skipped') is not None for case in cases)
+              lines.append(f'| {name} | {len(cases) - failed - skipped} | {failed} | {skipped} |')
+          for label, file in (('Head', 'head-sha.txt'), ('Baseline', 'baseline-sha.txt')):
+              path = Path('reports') / file
+              lines.append(f'\n{label}: {path.read_text(encoding="utf-8").strip() if path.exists() else "unavailable"}')
+          summary = '\n'.join(lines) + '\n'
+          print(summary)
+          with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a', encoding='utf-8') as stream:
+              stream.write(summary)
+          '@ | python -
+      - name: Archive exact-head and baseline diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: safe-model-saves-windows-${{ matrix.python-version }}
+          path: reports
+          if-no-files-found: warn
+          retention-days: 14
