@@ -280,7 +280,17 @@ def database_source_references(
                 )
             # BC and materials support documented inline constants.
             continue
-        if kind == 'bc' and value.split('|', 1)[0].strip().casefold() == 'fews':
+        fews_source = kind == 'bc' and value.split('|', 1)[0].strip().casefold() == 'fews'
+        csv_columns = None
+        if kind == 'bc' and Path(value).suffix.casefold() == '.csv':
+            from .db.bc_dbase import BCDatabase
+
+            csv_columns = tuple(
+                _expanded(record[columns[index - 1]], context, kind=kind, row=key)
+                if 0 < index <= len(columns) else ''
+                for index in (BCDatabase.TIME_INDEX, BCDatabase.VALUE_INDEX)
+            )
+        if fews_source:
             # The BC Database FEWS form is "FEWS | filename.csv/.xml".
             # FEWS is a format selector, never a missing input file.
             fields = [item.strip() for item in value.split('|')]
@@ -290,6 +300,7 @@ def database_source_references(
                     f'Invalid FEWS BC Source at row {key}: {value}'
                 )
             value = fields[1]
+            csv_columns = () if Path(value).suffix.casefold() == '.csv' else None
         command = Command(
             f'Read File == {value}', config,
             parent=source_base if source_base is not None else Path(database.fpath),
@@ -297,7 +308,8 @@ def database_source_references(
         found = tuple(
             replace(make_file_reference(part),
                     origin=f'{kind} database row {key!s}', database_kind=None,
-                    requires_raster_metadata_scan=(kind == 'rainfall'))
+                    requires_raster_metadata_scan=(kind == 'rainfall'),
+                    csv_columns=csv_columns)
             for part in command.parts() if part.is_value_a_file()
         )
         if not found:

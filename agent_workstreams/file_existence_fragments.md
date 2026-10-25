@@ -70,3 +70,19 @@ compile unique signature slots and reuse their values within a prepared context;
 it must account for transitive variables, TEF substitution and scope decisions.
 Do not add cross-run key caching without those invalidation contracts.
 Next action: exact-head hosted CI and paired PR review; no merge or release authorised.
+
+## Required CSV header metadata (2026-10-25)
+
+Owner made rainfall CSV header verification part of rapid preflight. Ordinary BC
+CSV sources now expose immutable `csv_columns` with context-expanded time/value
+selectors; both batch evaluators preserve these through the source projection.
+Source CSVs are not opened by the parser projection. Constants and non-CSV sources
+retain existing handling; FEWS CSV sources expose an empty tuple to signal that
+ordinary named-column checking is unsupported. Missing selectors remain explicit.
+
+Validation: 170 focused fragment/batch/deferred/database-parity tests pass on
+Python 3.14. New tests prove transitive TEF/Set Variable selectors, repeated source
+paths with differing columns, ordinary/fragment parity and no source opens after
+initial parsing. Consumer PR 161 owns one-header-per-file inspection, per-run
+column diagnostics and default rapid-workflow integration. No benchmark rerun.
+Next action: review the paired exact-head CI; no merge or release authorised.

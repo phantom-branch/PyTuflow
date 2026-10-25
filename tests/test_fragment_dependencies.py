@@ -201,3 +201,35 @@ def test_failed_database_projection_invalidates_entire_run(tmp_path: Path) -> No
     assert not result.passed
     assert not result.fragments
     assert all(run.error and not run.file_references and not run.ordered_inputs for run in result.runs)
+
+
+def test_bc_csv_columns_follow_transitive_events_without_reading_sources(tmp_path: Path) -> None:
+    (tmp_path / "events.tef").write_text(
+        "Define Event == A\n BC Event Source == _col_ | <<Choice>>\nEnd Define\n"
+        "Define Event == B\n BC Event Source == _col_ | Other\nEnd Define\n"
+    )
+    (tmp_path / "bc.csv").write_text("Name,Source,Column 1,Column 2\nrain,rain.csv,Time,_col_\n")
+    top = tmp_path / "model.tcf"
+    top.write_text("Event File == events.tef\nSet Variable Choice == Selected\nBC Database == bc.csv\n")
+    model = TCF(top)
+    flags = ["-e1 A", "-e1 B", "-e1 A"]
+    with patch.object(Path, "open", side_effect=AssertionError("Opened a source CSV")):
+        expected = model.collect_batch_dependencies(flags)
+        result = model.collect_file_dependencies(flags)
+    assert result.passed
+    assert result.runs == expected.runs
+    assert [run.database_sources[0].csv_columns for run in result.runs] == [
+        ("Time", "Selected"),
+        ("Time", "Other"),
+        ("Time", "Selected"),
+    ]
+    assert result.fragment_reuses > 0
+
+
+def test_bc_fews_csv_does_not_claim_ordinary_header_selectors(tmp_path: Path) -> None:
+    (tmp_path / "bc.csv").write_text("Name,Source,Column 1,Column 2\nrain,FEWS | rain.csv,Time,Rain\n")
+    top = tmp_path / "model.tcf"
+    top.write_text("BC Database == bc.csv\n")
+    result = TCF(top).collect_file_dependencies(["-e1 A"])
+    assert result.passed
+    assert result.runs[0].database_sources[0].csv_columns == ()
