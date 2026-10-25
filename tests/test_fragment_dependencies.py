@@ -314,7 +314,8 @@ def test_custom_root_model_context_hook_falls_back(tmp_path: Path) -> None:
     def deny_context(*args: Any, **kwargs: Any) -> Any:
         raise RuntimeError("Custom root model context")
 
-    model.context = deny_context
+    root: Any = model
+    root.context = deny_context
     flags = ["-s1 DEV -e1 Q10"]
     expected = model.collect_batch_dependencies(flags)
     actual = model.collect_file_dependencies(flags)
