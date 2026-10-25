@@ -140,14 +140,9 @@ jobs:
           # The later strict comparison is authoritative. Do not leave a
           # stale LASTEXITCODE in a PowerShell step that records cache validity.
           exit 0
-      - name: Cache independently verified baseline evidence
-        if: matrix.dependencies == 'baseline' && steps.baseline-cache.outputs.cache-hit != 'true' && steps.fresh-baseline.outputs.valid == 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ${{ runner.temp }}/original-regression/upstream
-            ${{ runner.temp }}/original-regression/baseline
-          key: pytuflow-w5-baseline-v1-${{ steps.baseline-key.outputs.value }}
+      # PR-created caches are merge-ref scoped and cannot be shared with
+      # another PR. Default-branch seeding is handled by the separate trusted
+      # push/workflow_dispatch workflow; PR jobs are restore-only.
       - name: Run exact PR head (raw failures retained)
         continue-on-error: true
         run: |

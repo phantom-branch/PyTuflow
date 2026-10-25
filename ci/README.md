@@ -260,3 +260,40 @@ The cache identity must never be loosened to use approximate dependency
 versions, loose key prefixes or a moving source branch. Do not cache the
 candidate run or omit independent full acceptance when preparing the single
 consolidated upstream contribution.
+
+
+## Trusted default-branch baseline seeding across pull requests
+
+GitHub limits caches written by `pull_request` workflows to that PR's merge
+ref; sibling PRs cannot restore them. For reusable, shared baseline evidence
+the new `.github/workflows/original-library-baseline-seed.yml` runs **only
+trusted pushes or manual dispatches on `master`**. Its checkout is pinned
+to the triggering master SHA, permissions remain contents:read, and it
+never uses `pull_request_target` or untrusted-workflow triggers.
+
+The seeder uses the same Windows Python 3.12/3.14 pinned dependencies,
+`ci/baseline_cache.py` key algorithm, complete five-group legacy regression
+runner and unchanged baseline SHAs. A cache miss triggers fresh upstream and
+fork executions, followed by strict complete JSON/JUnit validation before
+saving. On a matching cache hit, both baselines must pass the same validator
+before either the seeder or a PR job can skip execution.
+
+The original-library PR workflow is **restore-only**: it never saves a
+short-lived PR-merge-ref cache. This avoids PR-local cache entries overshadowing
+the trusted master cache and prevents cross-PR cache poisoning. Its independent
+candidate test suite and all three strict W5 comparison gates are untouched.
+
+First-time trusted seeding is deliberately expensive. Subsequent PRs can restore
+only when exact source pins, Python environment/packages, runner image release,
+harness hash and test-only overlay hashes match. Missing, stale or tampered
+evidence still forces full baseline reruns. `master` seeding is triggered
+when the seeding workflow, W5 gate, CI harness or overlaid fixtures change,
+with an explicit manual dispatch for new runner images. Ordinary application
+commits do not unnecessarily rerun pinned baselines.
+
+**Acceptance sequencing**: prove seeder YAML, fast source tests, original
+full W5 matrix and Codex review before merging the CI PR. On merge to
+`master`, verify that the new trusted push seeder runs successfully and
+stores a cache accessible to a subsequent PR. The true cross-PR cache hit
+cannot be observed until the workflow exists on master; do not claim it
+in advance.
