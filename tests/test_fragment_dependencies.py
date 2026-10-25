@@ -323,3 +323,38 @@ def test_custom_root_model_context_hook_falls_back(tmp_path: Path) -> None:
     assert actual.runs == expected.runs
     assert actual.fallback_runs == 1
     assert actual.fallback_reason == "Custom model control file context hook"
+
+
+def test_tef_only_chained_event_substitutions_invalidate_fragments(tmp_path: Path) -> None:
+    """A later TEF pass must not reuse a dependency for a different event."""
+    (tmp_path / "events.tef").write_text(
+        "Define Event == A\n"
+        " BC Event Source == _y_ | first\n"
+        " BC Event Source == _x_ | _Y_\n"
+        "End Define\n"
+        "Define Event == B\n"
+        " BC Event Source == _y_ | second\n"
+        " BC Event Source == _x_ | _Y_\n"
+        "End Define\n",
+        encoding="utf-8",
+    )
+    top = tmp_path / "model.tcf"
+    top.write_text(
+        "Event File == events.tef\n"
+        "Read GIS Code == _x_.shp\n",
+        encoding="utf-8",
+    )
+    model = TCF(top)
+    flags = ["-e1 A", "-e1 B", "-e1 A"]
+    expected = model.collect_batch_dependencies(flags)
+    actual = model.collect_file_dependencies(flags)
+    assert expected.passed and actual.passed
+    assert actual.fallback_runs == 0, actual.fallback_reason
+    assert actual.runs == expected.runs
+    names = [
+        {ref.path_pattern.name for ref in run.file_references}
+        for run in actual.runs
+    ]
+    assert "first.shp" in names[0]
+    assert "second.shp" in names[1]
+    assert "first.shp" in names[2]
