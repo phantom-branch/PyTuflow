@@ -1,0 +1,41 @@
+name: FM Flood Relief Arch reference acceptance
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/fm-flood-relief-reference.yml"
+      - "tests/fm_lib/integration_tests/pre_converted/River_Sections_Flood_Relief_Arch/**"
+      - "pytuflow/_fm/**"
+      - "tests/fm_lib/integration_tests/test_conversion.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fm-reference:
+    name: Windows Python ${{ matrix.python-version }} FM reference
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install default package and pytest
+        run: python -m pip install -e . pytest
+      - name: Check installed dependencies
+        run: python -m pip check
+      - name: Verify Flood Relief Arch conversion against reference
+        run: python -m pytest -q tests/fm_lib/integration_tests/test_conversion.py::TestConversion::test_convert_river_flood_relief_arch --junitxml=fm-reference.xml
+      - name: Retain exact test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fm-flood-relief-reference-${{ matrix.python-version }}
+          path: fm-reference.xml
+          retention-days: 30
+          if-no-files-found: warn
