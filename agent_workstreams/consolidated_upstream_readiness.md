@@ -163,3 +163,26 @@ python ci/upstream_delta.py --repository . `
 
 The ownership boundary prevents test/tool changes from being mixed into
 functional PRs #20/#34 or unmerged diagnostics.
+
+## Preliminary GitHub source-delta triage (not final readiness)
+
+A read-only comparison at PR creation used official upstream
+`cf908cc922ca8448ed6002834877b0b377329eae` against fork
+`0aba6b79db0ecc4922b910867f2c96905acb8d3a`. GitHub reported the
+fork **64 commits ahead**, **zero behind**, and **214 changed file paths**.
+Location-only provisional buckets: **55** `pytuflow/` production,
+**47** `tests/`, **20** `ci/` or `.github/workflows/`, **84**
+`docs/` or `agent_workstreams/`, and **8** other paths. In this snapshot
+the latter eight include `README.md`, project/deferred design notes and
+`pyproject.toml`. These counts have not been checked by the new local
+inventory script yet and **must not be treated as an approved file list**.
+
+This already demonstrates why directly submitting fork `master` upstream
+is inappropriate: the comparison contains internal benchmark and validation
+reports, local planning handoffs, feature-specific acceptance workflows and
+substantial deferred/batch additions alongside substantive bug fixes. The
+upstream review needs explicit **keep / revise / exclude** decisions.
+
+The final comparison must be rerun after #34/#20 merge and after any new
+official upstream commits. If the upstream SHA changes, freeze a new pair
+and do not silently reuse these historical numbers.
