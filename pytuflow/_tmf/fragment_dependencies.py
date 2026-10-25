@@ -133,8 +133,17 @@ class _FragmentContext(BatchContext):
 
     def __init__(self, flags: Any, config: Any, expressions: ExpressionPool) -> None:
         self.expressions = expressions
+        # A subtree is keyed repeatedly through its ancestors. Keep each
+        # expression's complete key component once per run, never cross-run.
+        self._fragment_signature_values: dict[str, tuple[str, tuple[object, ...]]] = {}
         cast(Any, super()).__init__(flags, config=config)
         self.file_resolution = "deferred"
+
+    def _invalidate(self) -> None:
+        # Match BatchContext's invalidation boundary for accepted event,
+        # scenario and Set Variable changes. No stale signature may survive.
+        self._fragment_signature_values.clear()
+        super()._invalidate()
 
     def translate(self, item: Any) -> Any:
         from .tfpathlib import TuflowPath
@@ -352,31 +361,36 @@ class _Plan:
         # E/S flags alone describe a file's dependencies.
         values: list[tuple[str, tuple[object, ...]]] = []
         for text in self.expressions_by_input[id(inp)]:
-            expression = self.expressions.plans.get(text)
-            if expression is None:
-                expression = CompiledExpression.compile(text)
-                if len(self.expressions.plans) < _LIMIT:
-                    self.expressions.plans[text] = expression
-            try:
-                value = str(ctx.translate(text))
-                # A later constructor translation can still expand variable
-                # chains or TEF tokens exposed only by the second variable pass.
-                # For example <<A>> -> <<B>> -> _EVENT_ has no remaining "<<"
-                # but its cached fragment still depends on the event selection.
-                needs_bindings = "<<" in value
-                if not needs_bindings and ctx.event_variables:
-                    # TEF replacements themselves can cascade: _x_ -> _Y_
-                    # before a later ordinary translation resolves _Y_.
-                    # This applies even without any <<variable>> in the
-                    # source expression.
-                    folded = value.casefold()
-                    needs_bindings = any(str(token).casefold() in folded for token in ctx.event_variables)
-                binding = expression.bindings(ctx) if needs_bindings else ()
-                values.append((value, binding))
-            except (ValueError, TypeError):
-                # Inactive commands must not fail merely while forming a key.
-                # Their ordinary evaluation, if selected, determines the error.
-                values.append((text, expression.bindings(ctx)))
+            signature = ctx._fragment_signature_values.get(text)
+            if signature is None:
+                expression = self.expressions.plans.get(text)
+                if expression is None:
+                    expression = CompiledExpression.compile(text)
+                    if len(self.expressions.plans) < _LIMIT:
+                        self.expressions.plans[text] = expression
+                try:
+                    value = str(ctx.translate(text))
+                    # A later constructor translation can still expand variable
+                    # chains or TEF tokens exposed only by the second variable pass.
+                    # For example <<A>> -> <<B>> -> _EVENT_ has no remaining "<<"
+                    # but its cached fragment still depends on the event selection.
+                    needs_bindings = "<<" in value
+                    if not needs_bindings and ctx.event_variables:
+                        # TEF replacements themselves can cascade: _x_ -> _Y_
+                        # before a later ordinary translation resolves _Y_.
+                        # This applies even without any <<variable>> in the
+                        # source expression.
+                        folded = value.casefold()
+                        needs_bindings = any(str(token).casefold() in folded for token in ctx.event_variables)
+                    binding = expression.bindings(ctx) if needs_bindings else ()
+                    signature = value, binding
+                except (ValueError, TypeError):
+                    # Inactive commands must not fail merely while forming a key.
+                    # Their ordinary evaluation, if selected, determines the error.
+                    signature = text, expression.bindings(ctx)
+                if len(ctx._fragment_signature_values) < _LIMIT:
+                    ctx._fragment_signature_values[text] = signature
+            values.append(signature)
         scopes = tuple(ctx.in_context_by_scope(scope) for scope in self.scopes_by_input[id(inp)])
         return id(inp), (tuple(values), scopes)
 
