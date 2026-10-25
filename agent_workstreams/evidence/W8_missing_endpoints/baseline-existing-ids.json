@@ -1,0 +1,1398 @@
+[
+  {
+    "id": "tests.test_map_output.TestXMDF::test_add_data_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_add_data_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_long_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_long_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_maximums_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_maximums_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_maximums_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_maximums_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_vector_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_curtain_vector_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_point_datetime_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_point_datetime_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_point_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_point_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_point_v1_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_types_filter_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_types_filter_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_types_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_data_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_in_memory_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_in_memory_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_tracer_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_flux_tracer_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_load_2dm_only_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_load_2dm_only_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_load_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_load_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_looks_empty_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_maximum_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_maximum_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_maximum_multiple_result_types_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_maximum_multiple_result_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_minimum_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_minimum_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_minimum_multiple_result_types_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_minimum_multiple_result_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_profile_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_profile_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_profile_vec_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_profile_vec_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_4_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_4_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_5_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_5_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_6_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_6_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_7_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_7_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_long_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_long_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_quadtree_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_quadtree_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_vec_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_section_vec_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_4_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_4_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_vec_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_time_series_vec_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_times_filter_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_times_filter_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_times_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_times_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_zh_output_fixed_folder_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_zh_output_fixed_folder_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_zh_output_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestXMDF::test_zh_output_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_add_dataset_netcdf_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_add_dataset_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_curtain_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_curtain_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_data_types_filter_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_data_types_filter_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_data_types_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_data_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_dynamic_bed_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_dynamic_bed_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_extract_from_2d_result_netcdf_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_extract_from_2d_result_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_2d_in_memory_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_2d_in_memory_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_2d_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_2d_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_in_memory_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_in_memory_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_sal_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_flux_3d_sal_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_load_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_load_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_salinity_depth_averaged_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_salinity_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_salinity_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_velocity_depth_averaged_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_velocity_depth_averaged_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_velocity_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_velocity_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_water_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_maximum_water_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_minimum_salinity_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_minimum_salinity_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_profile_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_profile_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_averaging_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_averaging_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_long_lat_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_long_lat_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_section_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_time_series_averaging_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_time_series_averaging_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_time_series_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_time_series_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_times_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCMesh::test_times_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_4_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_4_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_5_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_5_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_curtain_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_point_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_types_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_data_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_load_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_load_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_loading_ontop_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_loading_ontop_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_maximum_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_maximum_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_minimum_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_minimum_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_profile_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_profile_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_profile_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_profile_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_3_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_3_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_4_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_4_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_5_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_5_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_6_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_6_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_7_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_7_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_8_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_8_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_9_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_9_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_section_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_time_series_2_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_time_series_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_time_series_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_time_series_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_times_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestCATCHJson::test_times_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_add_dataset_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_add_dataset_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_data_types_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_data_types_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_load_2_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_load_2_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_load_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_load_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_bed_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_bed_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_max_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_max_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_velocity_vector_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_maximum_velocity_vector_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_minimum_bed_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_minimum_bed_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_minimum_level_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_minimum_level_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_newer_format_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_newer_format_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_section_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_section_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_time_series_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_time_series_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_times_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestDAT::test_times_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_data_point",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_data_point_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_data_types",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_load",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_maximum",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_maximum_dataframe",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_diag_x",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_diag_y",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_horiz",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_horiz_long",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_polyline",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_section_vert",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_time_series",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestNCGrid::test_times",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_cell_mesh_latlong_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_cell_mesh_latlong_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_dat_mesh_python_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_dat_mesh_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_quadtree_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_quadtree_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_vertex_mesh_netcdf4_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output.TestMeshRegression::test_qgis_vertex_mesh_qgis_driver",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_add_dataset",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_data_point",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_data_point_datetime",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_data_point_feature",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_data_point_geodataframe",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_data_point_shapely_geom",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_flux",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_flux_in_memory",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_flux_integral",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_flux_tracer",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_load_2dm_only",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_maximum_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_maximum_multiple_result_types",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_minimum_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_minimum_multiple_result_types",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_section_7",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_section_from_feature",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_section_from_geodf",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_section_from_shapely_geom",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_surface",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_surface_max",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_surface_vector",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_surface_vector_max",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_zh_output",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestXMDF::test_zh_output_fixed_folder",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_add_dataset",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_data_types",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_load",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_load_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_maximum_bed_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_maximum_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_maximum_max_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_maximum_velocity_vector",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_minimum_bed_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_minimum_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_newer_format",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_section",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_time_series",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestDAT::test_times",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_add_dataset",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_dynamic_bed_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_extract_from_2d_result",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_flux_2d",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_flux_2d_in_memory",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_flux_3d",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_flux_3d_in_memory",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_flux_3d_sal",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_load",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_maximum_salinity",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_maximum_salinity_depth_averaged",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_maximum_velocity",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_maximum_velocity_depth_averaged",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_maximum_water_level",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_minimum_salinity",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_section_averaging",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_surface",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_surface_to_vertex",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_surface_vector",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCMesh::test_time_series_averaging",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_curtain",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_curtain_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_curtain_3",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_curtain_4",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_curtain_5",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_data_point",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_data_point_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_data_point_3",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_data_types",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_load",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_loading_ontop",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_maximum",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_minimum",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_profile",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_profile_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_3",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_4",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_5",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_6",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_7",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_8",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_section_9",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_time_series",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_time_series_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestCATCHJson::test_times",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestQuadtree::test_simple_line_1",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestQuadtree::test_simple_line_2",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_flux_grid_mesh",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_flux_grid_mesh_tracer",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_flux_unit_flow",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_flux_vel_depth",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_flux_vel_depth_tracer",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_surface",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_surface_local",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_surface_vector_direction",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_surface_vertex",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_surface_vertex_vector_direction",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh_section",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh_surface",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh_surface_vector",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh_surface_vertex_vector",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestNCGrid::test_to_mesh_time_series",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestGrid::test_grid_file",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestGrid::test_preloaded_array",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestPyMeshRegression::test_pymesh_cell_mesh_latlong",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestPyMeshRegression::test_pymesh_quadtree",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestPyMeshRegression::test_pymesh_vertex_mesh",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_map_output_pymesh.TestPyMeshRegression::test_qgis_dat_mesh",
+    "outcome": "passed"
+  }
+]

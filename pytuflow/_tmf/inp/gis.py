@@ -313,3 +313,7 @@ class GisInput(GisInputBase):
                 gis_lyr.close()
 
         return geoms, attr_files
+
+
+# Capture the built-in constructor before an extension can replace the method.
+_GIS_INPUT_CONTEXT = GisInput.context

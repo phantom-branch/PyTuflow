@@ -1050,7 +1050,7 @@ class Mesh(MapOutput):
                 df1 = pd.concat([df1, df2], axis=1) if not df1.empty else df2
             if df1.empty:
                 continue
-            df1.reset_index(inplace=True, drop=False)
+            df1 = df1.reset_index(drop=False)
             df1.columns = pd.MultiIndex.from_tuples([(name, x) for x in df1.columns])
             df = pd.concat([df, df1], axis=1) if not df.empty else df1
 

@@ -1,16 +1,37 @@
 """Opt-in secondary source discovery using cached TUFLOW database rows."""
+
+from __future__ import annotations
+
+import os
 from dataclasses import replace
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from .file_reference import FileReference, make_file_reference
 from .parsers.command import Command
+
+if TYPE_CHECKING:
+    from pandas import DataFrame
+
+    from .context import Context
+    from .inp.db import DatabaseInput
+    from .settings import TCFConfig
 
 
 class DeferredDatabaseResolutionError(ValueError):
     """Database sources cannot be completely inspected by the deferred API."""
 
 
-def _expanded(value, context, *, kind, row):
+def _cached_database_path_key(path: Path) -> str:
+    """Compare cached paths lexically using the host filesystem's case rules.
+
+    Do not resolve or stat paths: mapped drives and UNC aliases must retain
+    their original spelling, while POSIX case distinctions must be preserved.
+    """
+    return os.path.normcase(os.path.normpath(str(path)))
+
+
+def _expanded(value: object, context: Context, *, kind: str, row: object) -> str:
     """Expand model variables before classifying a table cell."""
     if value is None:
         return ''
@@ -25,7 +46,7 @@ def _expanded(value, context, *, kind, row):
     return translated
 
 
-def _inline_material(value, row):
+def _inline_material(value: str, row: object) -> bool:
     """Validate depth/n pairs the same way eager MatDBEntry.is_list identifies.
 
     Inline comma-delimited values are numeric depth and Manning n pairs,
@@ -47,7 +68,7 @@ def _inline_material(value, row):
     return True
 
 
-def _validate_soil_rows(frame, context):
+def _validate_soil_rows(frame: DataFrame, context: Context) -> None:
     """Validate supported inline soil methods without generating fictitious files.
 
     SoilDatabase.value() currently implements NONE, ILCL, GA, HO, CO and
@@ -103,7 +124,9 @@ def _validate_soil_rows(frame, context):
                         ) from exc
 
 
-def _ad_global_references(frame, context, config, database_path: Path) -> tuple[FileReference, ...]:
+def _ad_global_references(
+    frame: DataFrame, context: Context, config: TCFConfig, database_path: Path,
+) -> tuple[FileReference, ...]:
     """Project spatial AD constituent fields from an already-loaded CSV.
 
     The TUFLOW AD global database permits a numeric value or GIS file for
@@ -116,7 +139,7 @@ def _ad_global_references(frame, context, config, database_path: Path) -> tuple[
         raise DeferredDatabaseResolutionError(
             'AD Global Database is missing Initial Condition or Minimum Dispersion'
         )
-    result = []
+    result: list[FileReference] = []
     for key, row in frame.iterrows():
         for field in required:
             value = _expanded(row[columns[field]], context, kind='ad_global', row=key)
@@ -150,8 +173,8 @@ def _ad_global_references(frame, context, config, database_path: Path) -> tuple[
 
 
 def database_source_references(
-    build_input, context, kind: str | None, config,
-    *, source_base: Path | None = None,
+    build_input: DatabaseInput, context: Context, kind: str | None, config: TCFConfig,
+    *, source_base: Path | None = None, primary_path: Path | None = None,
 ) -> tuple[FileReference, ...]:
     """Describe context-specific secondary sources with no additional file I/O.
 
@@ -165,6 +188,17 @@ def database_source_references(
             f'Unsupported deferred database schema: {kind!r}'
         )
     databases = tuple(build_input.cf)
+    loaded_paths = tuple(getattr(build_input, '_database_loaded_paths', ()))
+    if primary_path is not None and loaded_paths:
+        if len(loaded_paths) != len(databases):
+            raise DeferredDatabaseResolutionError(f'Incomplete cached {kind} database path index')
+        # Match the paths captured during initial loading, not physical fpath:
+        # resolve() here would probe storage and could change mapped/UNC aliases.
+        selected = _cached_database_path_key(primary_path)
+        databases = tuple(
+            database for database, original in zip(databases, loaded_paths)
+            if _cached_database_path_key(original) == selected
+        )
     if len(databases) != 1:
         raise DeferredDatabaseResolutionError(
             f'Expected one cached {kind} database, found {len(databases)}'
@@ -196,7 +230,7 @@ def database_source_references(
             raise DeferredDatabaseResolutionError('Materials database has no value column')
         column = columns[0]
 
-    refs = []
+    refs: list[FileReference] = []
     for key, record in frame.iterrows():
         value = _expanded(record[column], context, kind=kind, row=key)
         if not value:

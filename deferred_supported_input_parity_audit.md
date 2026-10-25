@@ -4,6 +4,16 @@ Status: **in progress, not merge-ready**. Supporting PR #2 builds on upstream PR
 
 ## Parity contract
 
+**Current evidence (2026-10-22):** the
+[Windows acceptance update](deferred_file_resolution_implementation.md#windows-acceptance-update-2026-10-22)
+records the completed 161-TCF/174-run hosted replay, P/B local parity, separate
+[eager corrections](eager_source_completeness_fixes.md), and the precise activation
+limitation. The inventory/status entries below are the earlier implementation
+handoff and historical baseline, not a claim that those example gaps remain open.
+The owner has withdrawn the 42-run external check as an acceptance requirement.
+The implementation record preserves the externally completed 440-run result and
+its exact tested revisions separately from the later accessor repair.
+
 Compare records by **run flags, owning control file and command, physical source path, GeoPackage layer, database kind, database row/identifier, and secondary dependency**. Compare both eager-only and deferred-only records. A matching pair of partial sets is not a pass. Post-parse deferred `context()` and ordinary `.file_references` must not glob, stat, open files, enumerate GIS layers or connect to SQLite. Explicit `deferred_database_sources()` works only from databases parsed during the initial build-state load. Initial model parsing is **not** I/O free.
 
 A deferred `FileReference` marks whether directory, layer, GIS attribute, table-link or database inspection is still needed. Deferred references are **not** existence assertions. A database identifier (for example a 1d network Q/P curve named `aa`) is not a path.
@@ -38,7 +48,7 @@ A deferred `FileReference` marks whether directory, layer, GIS attribute, table-
 4. GIS attributes require the same element semantics for Shapefile and GeoPackage, including Ignore, Type, positional fields, database identifiers and row provenance. Do not substitute path-like heuristics for typed rules.
 5. Rainfall grids, GIS secondary files and GeoPackage `>>` layers require separate batched inspection. None of these validations is implied merely by returning a syntactic reference.
 6. Invalid and unsupported-but-valid inputs are different. Unsupported-but-valid cases are implementation blockers and remain **unresolved**, not accepted.
-7. Repeat targeted regression tests, original 42-run model, P (4), B (240), and example reproduction bundle (161 TCFs / 174 runs); report exact SHAs and filesystem/GIS operations before any speedup claim.
+7. Repeat targeted regression tests, P (4), B (240), and example reproduction bundle (161 TCFs / 174 runs); report exact SHAs and filesystem/GIS operations before any speedup claim. The owner removed the separate 42-run model requirement on 2026-10-22.
 8. The reference **Windows** baseline remains **107 TCFs / 119 runs accepted and 54 TCFs / 55 runs unresolved**, as supplied for PR143 head `b8d7adc` and PyTUFLOW head `65f24fa`. A full **Windows** sweep using the latest upstream and downstream heads is still required; historical Linux results are not an acceptance criterion.
 
 ## External engineering semantics

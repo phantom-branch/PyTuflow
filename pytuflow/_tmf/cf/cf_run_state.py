@@ -83,12 +83,23 @@ class ControlFileRunState(RunState, ControlFile):
 
         # try and resolve variables
         if not self.ctx.var_loaded:
-            var_inputs = self.bs.find_input(lhs='set variable', recursive=True)
+            # Batch dependency collection precomputes the immutable list of
+            # variable declarations once per parsed TCF. Each run still
+            # independently evaluates scopes and the active variable values.
+            compiled_assignments = getattr(self.ctx, '_batch_variable_assignments', None)
             var_map = {}
-            for var_input in var_inputs:
-                if self.ctx.in_context_by_scope(var_input.scope):
-                    var_name, var_val = var_input.command().parse_variable()
-                    var_map[var_name] = var_val
+            if compiled_assignments is not None:
+                for var_input, (var_name, var_val) in compiled_assignments:
+                    if self.ctx.in_context_by_scope(var_input.scope):
+                        var_map[var_name] = var_val
+            else:
+                var_inputs = getattr(self.ctx, '_batch_variable_inputs', None)
+                if var_inputs is None:
+                    var_inputs = self.bs.find_input(lhs='set variable', recursive=True)
+                for var_input in var_inputs:
+                    if self.ctx.in_context_by_scope(var_input.scope):
+                        var_name, var_val = var_input.command().parse_variable()
+                        var_map[var_name] = var_val
             self.ctx.load_variables(var_map)
 
         for inp in self._inputs:
@@ -98,5 +109,15 @@ class ControlFileRunState(RunState, ControlFile):
             if inp.lhs.upper() == 'PAUSE':
                 raise ValueError('Pause command encountered: {0}'.format(inp.rhs))
 
-            input_run_state = inp.context(context=self.ctx, parent=self)
+            # Opt-in batch-only fast path for independently proven literal
+            # inputs. Scope selection and PAUSE/failure handling stay here.
+            batch_factory = getattr(self.ctx, 'batch_input_state', None)
+            if batch_factory is None:
+                # Instrument only explicitly batch-tagged uncached contexts;
+                # standalone upstream-style contexts are unchanged.
+                if hasattr(self.ctx, '_batch_input_states_constructed'):
+                    self.ctx._batch_input_states_constructed += 1
+                input_run_state = inp.context(context=self.ctx, parent=self)
+            else:
+                input_run_state = batch_factory(inp, self)
             self.inputs.append(input_run_state)

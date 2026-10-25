@@ -48,7 +48,7 @@ class BCDatabaseRunState(DatabaseRunState):
         else:
             df = super().value(item)
             if isinstance(df, pd.DataFrame):
-                df.reset_index(inplace=True)
+                df = df.reset_index()
             name = None
             entry = self[item]
 

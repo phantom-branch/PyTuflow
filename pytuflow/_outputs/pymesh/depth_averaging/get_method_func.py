@@ -5,7 +5,8 @@ import numpy as np
 from .depth_averaging import single_level, multi_level, depth, elevation, sigma
 
 
-def get_method_func(uri: str) -> typing.Callable:
+def get_method_func(uri: str, *, layer_counts=None, layer_start=0) -> typing.Callable:
+    extent = {"layer_counts": layer_counts, "layer_start": layer_start}
     if uri is None:
         uri = 'sigma&0.0&1.0'
     if '?' in uri:
@@ -19,20 +20,20 @@ def get_method_func(uri: str) -> typing.Callable:
     vals = uri.split('&')
     if method.lower() == 'singlelevel':
         val = int(vals[0])
-        return lambda zlevels, values: single_level(val, zlevels, values, from_top)
+        return lambda zlevels, values: single_level(val, zlevels, values, from_top, **extent)
     elif method.lower() == 'multilevel':
         levels = [int(v) for v in vals][:2]
-        return lambda zlevels, values: multi_level(levels, zlevels, values, from_top)
+        return lambda zlevels, values: multi_level(levels, zlevels, values, from_top, **extent)
     elif method.lower() == 'depth':
         depth_value = [float(x) for x in vals][:2]
-        return lambda zlevels, values: depth(depth_value, zlevels, values, True)
+        return lambda zlevels, values: depth(depth_value, zlevels, values, True, **extent)
     elif method.lower() == 'height':
         height_value = [float(x) for x in vals][:2]
-        return lambda zlevels, values: depth(height_value, zlevels, values, False)
+        return lambda zlevels, values: depth(height_value, zlevels, values, False, **extent)
     elif method.lower() == 'elevation':
         elevation_value = [float(x) for x in vals][:2]
-        return lambda zlevels, values: elevation(elevation_value, zlevels, values)
+        return lambda zlevels, values: elevation(elevation_value, zlevels, values, **extent)
     elif method.lower() == 'sigma':
         fracs = [float(x) for x in vals][:2]
-        return lambda zlevels, values: sigma(fracs, zlevels, values)
+        return lambda zlevels, values: sigma(fracs, zlevels, values, **extent)
     return lambda a, b: np.nan

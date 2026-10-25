@@ -1,0 +1,172 @@
+name: Batch integration acceptance (P4)
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/_tmf/**"
+      - "tests/test_batch_integration.py"
+      - "tests/test_group_constructor_guards.py"
+      - "tests/verify_tutorial_integration.py"
+      - "tests/benchmark_tutorial_dependencies.py"
+      - "tests/test_tutorial_benchmark.py"
+      - "tests/compare_upstream_tmf_junit.py"
+      - "tests/test_upstream_tmf_comparison.py"
+      - ".github/workflows/batch-integration-acceptance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integrated-contracts:
+    name: Windows Python ${{ matrix.python-version }} integration
+    runs-on: windows-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install PyTUFLOW and regression dependencies
+        run: python -m pip install -e . pytest
+      - name: Compile integrated parser and tutorial differential
+        run: python -m compileall -q pytuflow/_tmf tests/test_batch_integration.py tests/verify_tutorial_integration.py
+      - name: P0/P1/P2/P3/P4 differential and regression contracts
+        run: >
+          python -m pytest -q
+          tests/test_batch_ordered_inputs.py
+          tests/test_batch_activation_index.py
+          tests/test_compiled_control_tree.py
+          tests/test_group_constructor_guards.py
+          tests/test_batch_integration.py
+          tests/test_batch_dependencies.py
+          tests/test_compiled_dependency_plan.py
+          tests/test_deferred_file_references.py
+          tests/test_deferred_database_parity.py
+          tests/test_tutorial_benchmark.py
+          tests/test_upstream_tmf_comparison.py
+      - name: Checkout pinned canonical upstream for TMF differential
+        uses: actions/checkout@v5
+        with:
+          repository: TUFLOW-Support/PyTuflow
+          ref: cf908cc922ca8448ed6002834877b0b377329eae
+          path: pristine-upstream
+          persist-credentials: false
+      - name: Run original upstream TMF suite (record baseline failures)
+        working-directory: pristine-upstream
+        continue-on-error: true
+        run: |
+          python -c "import pytuflow; print(pytuflow.__file__)"
+          python -m pytest -q tests/tmf --junitxml=../upstream-tmf.xml
+      - name: Checkout pre-P5 fork baseline (upstream deltas predate PR 12)
+        uses: actions/checkout@v5
+        with:
+          repository: phantom-branch/PyTuflow
+          ref: 3de5cd954a5bf6739377937c8ff2fe3341e86bfc
+          path: pre-p5-baseline
+          persist-credentials: false
+      - name: Run pre-P5 fork TMF suite
+        working-directory: pre-p5-baseline
+        continue-on-error: true
+        run: |
+          python -c "import pytuflow; print(pytuflow.__file__)"
+          python -m pytest -q tests/tmf --junitxml=../pre-p5-tmf.xml
+      - name: Run PR 12 fork TMF suite
+        continue-on-error: true
+        run: python -m pytest -q tests/tmf --junitxml=fork-tmf.xml
+      - name: Report original upstream differences present before P5
+        continue-on-error: true
+        run: python tests/compare_upstream_tmf_junit.py --upstream upstream-tmf.xml --fork pre-p5-tmf.xml
+      - name: Gate on new PR 12 regressions against pre-P5 fork master
+        run: python tests/compare_upstream_tmf_junit.py --upstream pre-p5-tmf.xml --fork fork-tmf.xml
+      - name: Archive full upstream compatibility diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: upstream-tmf-differential-${{ matrix.python-version }}
+          path: |
+            upstream-tmf.xml
+            pre-p5-tmf.xml
+            fork-tmf.xml
+          if-no-files-found: warn
+          retention-days: 14
+
+  verified-public-tutorial:
+    name: Windows 3.14 verified 161-TCF graph differential
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Checkout pinned PUBLIC tutorial fixture consumer
+        uses: actions/checkout@v5
+        with:
+          repository: Chain-Frost/ryan-tools
+          ref: b32adc258c63957e06b482c3280eb8a02c428a13
+          path: ryan-tools
+      - name: Checkout pinned public example-data submodule
+        shell: pwsh
+        run: git -C ryan-tools submodule update --init tests/test_data
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+          cache: pip
+      - name: Install PyTUFLOW and optional RSS sampler
+        run: python -m pip install -e . psutil
+      - name: Confirm parser head and pinned fixture
+        shell: pwsh
+        run: |
+          git rev-parse HEAD
+          git -C ryan-tools rev-parse HEAD
+          git -C ryan-tools/tests/test_data rev-parse HEAD
+          $bundle = "ryan-tools/tests/test_data/tuflow/example_input_preflight"
+          if (-not (Test-Path -LiteralPath "$bundle/examples.zip")) {
+            throw "Pinned public tutorial dataset unavailable"
+          }
+      - name: Full documented 161-TCF 174-run four-mode differential
+        shell: pwsh
+        run: |
+          python tests/verify_tutorial_integration.py --bundle "ryan-tools/tests/test_data/tuflow/example_input_preflight" --trials 1 --output "$env:RUNNER_TEMP/p4-tutorial-full.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Three-trial documented multi-context comparison
+        shell: pwsh
+        run: |
+          python tests/verify_tutorial_integration.py --bundle "ryan-tools/tests/test_data/tuflow/example_input_preflight" --tcf "EG16_~s1~_~s2~_002.tcf" --trials 3 --output "$env:RUNNER_TEMP/p4-tutorial-multicontext.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: P3 profiler and differential harness compatibility
+        shell: pwsh
+        run: |
+          python tests/benchmark_tutorial_dependencies.py --bundle "ryan-tools/tests/test_data/tuflow/example_input_preflight" --tcf "EG16_~s1~_~s2~_002.tcf" --trials 3 --output "$env:RUNNER_TEMP/p3-tutorial-multicontext.json"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Summarise public parser parity and counters
+        if: always()
+        shell: pwsh
+        run: |
+          foreach ($file in @("p4-tutorial-full.json","p4-tutorial-multicontext.json","p3-tutorial-multicontext.json")) {
+            $path = Join-Path $env:RUNNER_TEMP $file
+            if (Test-Path -LiteralPath $path) {
+              $report = Get-Content -Raw -LiteralPath $path | ConvertFrom-Json
+              "$file — status=$($report.status); TCFs=$($report.tested_tcfs); runs=$($report.tested_documented_runs); missing=$($report.counts.missing); extra=$($report.counts.extra)" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+            } else {
+              "$file — unavailable or incomplete" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY
+            }
+          }
+      - name: Upload public tutorial parser-only aggregate reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-p4-graph-differential
+          path: |
+            ${{ runner.temp }}/p4-tutorial-full.json
+            ${{ runner.temp }}/p4-tutorial-multicontext.json
+            ${{ runner.temp }}/p3-tutorial-multicontext.json
+          if-no-files-found: warn
+          retention-days: 14

@@ -1,0 +1,834 @@
+[
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-depth&0&0.5-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-height&0&0.5-20.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-height&0&0.5-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-depth&0&0.5-10.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-False-bed-sigma&0&1-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-height&0&0.5-20.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-elevation&-2&0-20.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-depth&0&0.5-10.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-elevation&-2&0-10.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-False-True-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-depth&0&0.5-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-elevation&-2&0-20.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-height&0&0.5-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-elevation&-2&0-10.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-False-bed-sigma&0&1-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-elevation&-2&0-20.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-elevation&-2&0-10.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[False-True-True-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-depth&0&0.5-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-height&0&0.5-20.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-elevation&-2&0-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-height&0&0.5-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-depth&0&0.5-10.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-elevation&-2&0-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-False-bed-sigma&0&1-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-height&0&0.5-20.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-elevation&-2&0-20.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-depth&0&0.5-10.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-elevation&-2&0-10.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-False-True-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-depth&0&0.5-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-elevation&-2&0-20.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-height&0&0.5-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-elevation&-2&0-10.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-False-bed-sigma&0&1-nan]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-depth&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-height&0&0.5-20.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-elevation&-2&0-20.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-surface-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-height&0&0.5-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-depth&0&0.5-10.0]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-elevation&-2&0-10.0]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_depth_averaging::test_missing_endpoint_requests_keep_physical_origins[True-True-True-bed-sigma&0&1-nan]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-point-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-point-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-surface-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-depth&0&0.5-nan-surface-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-point-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-point-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-surface-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-height&0&0.5-20.0-surface-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-elevation&-2&0-20.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-surface-sigma&0&1-nan-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-point-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-point-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-surface-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-height&0&0.5-nan-surface-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-point-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-point-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-surface-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-depth&0&0.5-10.0-surface-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-elevation&-2&0-10.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-point-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-point-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-surface-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[False-bed-sigma&0&1-nan-surface-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-point-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-point-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-surface-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-depth&0&0.5-nan-surface-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-height&0&0.5-20.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-point-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-point-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-surface-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-elevation&-2&0-20.0-surface-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-surface-sigma&0&1-nan-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-point-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-point-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-surface-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-height&0&0.5-nan-surface-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-time_series-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-time_series-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-section-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-section-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-depth&0&0.5-10.0-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-point-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-point-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-surface-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-elevation&-2&0-10.0-surface-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-point-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-point-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-surface-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_missing_endpoint_public_reader[True-bed-sigma&0&1-nan-surface-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[surface-surface-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-point-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-point-h5py]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-time_series-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-time_series-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-section-netcdf4]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-section-h5py]",
+    "outcome": "failed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-surface-netcdf4]",
+    "outcome": "passed"
+  },
+  {
+    "id": "tests.test_numerical_fv_reader::test_endpoint_single_layer_has_no_bounded_contribution[bed-surface-h5py]",
+    "outcome": "passed"
+  }
+]

@@ -1,247 +1,164 @@
+"""Layer-thickness averages for the Python FV mesh reader.
+
+NaN and masked result values are absent observations, not physical zero. Their
+overlap is excluded from both the weighted sum and contributing thickness,
+matching the supported QGIS missing-observation policy. Missing physical
+endpoints follow the explicit Python geometry contract documented in the handoff;
+QGIS can reject whole faces more conservatively. No positive valid overlap gives
+NaN. See agent_workstreams/W8_numerical_result_reductions.md for policy evidence
+and the deliberately retained provider differences.
+"""
+
 import numpy as np
 
 
-def multi_level(levels: list[int] | np.ndarray, zlevels: np.ndarray, values: np.ndarray, from_top: bool) -> np.ndarray:
-    levels = np.asarray(levels)
+def _profiles(zlevels: np.ndarray, values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Normalise scalar profiles without discarding a source missing-data mask."""
+    zlevels = np.atleast_2d(np.ma.asarray(zlevels, dtype=float).filled(np.nan))
+    values = np.atleast_2d(np.ma.asarray(values, dtype=float).filled(np.nan))
+    if zlevels.ndim != 2 or values.ndim != 2 or zlevels.shape[1] != values.shape[1] + 1:
+        raise ValueError("profiles require one more layer boundary than values per row")
+    rows = max(zlevels.shape[0], values.shape[0])
+    zlevels = np.broadcast_to(zlevels, (rows, zlevels.shape[1]))
+    values = np.broadcast_to(values, (rows, values.shape[1]))
+    return zlevels, values
 
-    # force 2D values & zlevels
-    if values.ndim == 1:
-        values = values.reshape(1, -1)
-    if zlevels.ndim == 1:
-        zlevels = zlevels.reshape(1, -1)
 
-    N, Z = zlevels.shape
-    if levels.ndim == 1:
-        levels = levels.reshape(1, -1)
-    if levels.shape[1] != 2:
-        raise ValueError("levels must contain exactly two values per row (top, bottom)")
+def _pairs(ranges: np.ndarray | list[float], rows: int, name: str) -> np.ndarray:
+    ranges = np.asarray(ranges, dtype=float)
+    if ranges.ndim == 1:
+        ranges = ranges.reshape(1, -1)
+    if ranges.ndim != 2 or ranges.shape[1] != 2:
+        raise ValueError(f"{name} must contain exactly two values per row")
+    return np.broadcast_to(ranges, (rows, 2))
 
-    # make elev shape (N,2) to match number of rows if single pair provided
-    levels = np.sort(levels, axis=1)
-    if levels.shape[0] == 1 and N > 1:
-        levels = np.repeat(levels, N, axis=0)
 
-    valid_layers = ~np.isnan(zlevels[:, :-1]) & ~np.isnan(zlevels[:, 1:])
-    diff = np.abs(np.diff(zlevels, axis=1))  # layer thickness
-    diff[~valid_layers] = 0.0  # layer thickness
+def _physical_profiles(zlevels, values, layer_counts, layer_start):
+    """Separate explicit padding from physical geometry and observations.
 
-    idx1 = np.clip(levels[:, 0] - 1, 0, Z - 1)
-    idx2 = np.clip(levels[:, 1] - 1, 0, Z - 1)
+    Ordinary direct arrays describe their entire physical column. Readers pass
+    counts from the provider; neither finite values nor finite coordinates can
+    identify padding when physical data are missing.
+    """
+    zlevels, values = _profiles(zlevels, values)
+    rows, width = values.shape
+    start = np.broadcast_to(np.asarray(layer_start), (rows,))
+    counts = width - start if layer_counts is None else np.broadcast_to(np.asarray(layer_counts), (rows,))
+    if (not np.issubdtype(start.dtype, np.integer) or not np.issubdtype(counts.dtype, np.integer)
+            or np.any(start < 0) or np.any(counts < 0) or np.any(start + counts > width)):
+        raise ValueError("physical layer start/count must be integers within the supplied profile")
+    columns = np.arange(width)[None, :]
+    physical = (columns >= start[:, None]) & (columns < (start + counts)[:, None])
+    boundaries = np.arange(width + 1)[None, :]
+    physical_boundaries = (boundaries >= start[:, None]) & (boundaries <= (start + counts)[:, None])
+    return np.where(physical_boundaries, zlevels, np.nan), np.where(physical, values, np.nan), start, counts
 
-    if not from_top:
-        diff = np.flip(diff, axis=1)
-        values = np.flip(values, axis=1)
 
-    valid = ~np.isnan(values)
-    first_idx = np.argmax(valid, axis=1)
-    has_valid = valid.any(axis=1)
-    range_ = np.arange(Z - 1)
-    cols = np.full(values.shape, -1)
-    cols[has_valid] = np.where(
-        range_ >= first_idx[has_valid, None],
-        range_ - first_idx[has_valid, None],
-        -1
+def _column_limits(zlevels: np.ndarray, start: np.ndarray, counts: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Read actual physical endpoints; never replace missing ones by interiors."""
+    rows = np.arange(zlevels.shape[0])
+    top = np.where(counts > 0, zlevels[rows, start], np.nan)
+    bottom = np.where(counts > 0, zlevels[rows, start + counts], np.nan)
+    return top, bottom
+
+
+def _overlap(zlevels: np.ndarray, top: np.ndarray, bottom: np.ndarray) -> np.ndarray:
+    """Physical intersection of each layer with one requested vertical interval."""
+    layer_top = np.maximum(zlevels[:, :-1], zlevels[:, 1:])
+    layer_bottom = np.minimum(zlevels[:, :-1], zlevels[:, 1:])
+    return np.maximum(
+        np.minimum(layer_top, top[:, None]) - np.maximum(layer_bottom, bottom[:, None]),
+        0.,
     )
 
-    # row-slice mask
-    slice_mask = (cols >= idx1[:, None]) & (cols <= idx2[:, None])
 
-    weights = diff * slice_mask
-    numerator = (weights * np.nan_to_num(values, nan=0.)).sum(axis=1)
+def _weighted_average(values: np.ndarray, weights: np.ndarray) -> np.ndarray:
+    valid = ~np.isnan(values) & (weights > 0)
+    weights = np.where(valid, weights, 0.)
+    products = np.zeros(values.shape, dtype=float)
+    np.multiply(values, weights, out=products, where=valid)
+    numerator = products.sum(axis=1)
     denominator = weights.sum(axis=1)
-
-    ok = (denominator > 0)
     result = np.full(numerator.shape, np.nan)
-    result[ok] = numerator[ok] / denominator[ok]
-
+    np.divide(numerator, denominator, out=result, where=denominator > 0)
     return result
 
 
-def single_level(level: int, zlevels: np.ndarray, values: np.ndarray, from_top: bool) -> np.ndarray:
-    return multi_level([level, level], zlevels, values, from_top)
-
-
-def depth(dist: np.ndarray | list[float], zlevels: np.ndarray, values: np.ndarray, from_top: bool) -> np.ndarray:
-    """Vectorized depth averaging over specified depth ranges."""
-    dist = np.asarray(dist)
-
-    # force 2D values & zlevels
-    if values.ndim == 1:
-        values = values.reshape(1, -1)
-    if zlevels.ndim == 1:
-        zlevels = zlevels.reshape(1, -1)
-
-    # ensure dist is (N, 2)
-    if dist.size == zlevels.shape[0]:
-        dist = np.column_stack((np.zeros(zlevels.shape[0]), dist))
-    else:
-        dist = dist.reshape(-1, 2)
-    if dist.size == 2:
-        dist = np.repeat(dist, zlevels.shape[0], axis=0)
+def multi_level(levels: list[int] | np.ndarray, zlevels: np.ndarray, values: np.ndarray, from_top: bool,
+                *, layer_counts=None, layer_start=0) -> np.ndarray:
+    """Average selected physical layer ordinals, excluding missing observations."""
+    zlevels, values, start, counts = _physical_profiles(zlevels, values, layer_counts, layer_start)
+    rows, boundary_count = zlevels.shape
+    levels = np.sort(_pairs(levels, rows, "levels"), axis=1)
+    if values.shape[1] == 0:
+        return np.full(rows, np.nan)
 
     valid_layers = ~np.isnan(zlevels[:, :-1]) & ~np.isnan(zlevels[:, 1:])
-    diff = np.abs(np.diff(zlevels, axis=1))
-    diff[~valid_layers] = 0.0 # layer thickness
+    thickness = np.where(valid_layers, np.abs(np.diff(zlevels, axis=1)), 0.)
+    # Readers know physical extents independently of missing observations and
+    # boundaries. Direct callers default to the full supplied physical column;
+    # padding requires explicit extents because NaNs alone cannot identify it.
+    physical_cols = np.arange(boundary_count - 1)[None, :]
+    physical = (physical_cols >= start[:, None]) & (physical_cols < (start + counts)[:, None])
+    cols = physical_cols - start[:, None] if from_top else (start + counts - 1)[:, None] - physical_cols
+    idx1 = np.clip(levels[:, 0] - 1, 0, boundary_count - 1)
+    idx2 = np.clip(levels[:, 1] - 1, 0, boundary_count - 1)
+    selected = physical & (cols >= idx1[:, None]) & (cols <= idx2[:, None])
+    return _weighted_average(values, np.where(selected, thickness, 0.))
 
-    # flip if measuring from bottom
+
+def single_level(level: int, zlevels: np.ndarray, values: np.ndarray, from_top: bool,
+                 *, layer_counts=None, layer_start=0) -> np.ndarray:
+    return multi_level([level, level], zlevels, values, from_top,
+                       layer_counts=layer_counts, layer_start=layer_start)
+
+
+def depth(dist: np.ndarray | list[float], zlevels: np.ndarray, values: np.ndarray, from_top: bool,
+          *, layer_counts=None, layer_start=0) -> np.ndarray:
+    """Average over depth below surface or height above bed, clipped to the column.
+
+    A pair is shared by all rows, including a two-row input. Explicit (N, 2)
+    arrays select a different interval per row. A single endpoint, or (N, 1)
+    endpoints, selects from zero; the legacy length-N endpoint form is retained
+    when it cannot be confused with a shared pair.
+    """
+    zlevels, values, start, counts = _physical_profiles(zlevels, values, layer_counts, layer_start)
+    rows = zlevels.shape[0]
+    dist = np.asarray(dist, dtype=float)
+    if dist.size == 1:
+        dist = np.array([[0., dist.item()]])
+    elif dist.ndim == 1 and dist.size != 2 and dist.size == rows:
+        dist = np.column_stack((np.zeros(rows), dist))
+    elif dist.ndim == 2 and dist.shape[1] == 1:
+        dist = np.column_stack((np.zeros(dist.shape[0]), dist[:, 0]))
+    dist = np.sort(_pairs(dist, rows, "dist"), axis=1)
+    top, bottom = _column_limits(zlevels, start, counts)
+    # Intersect in relative coordinates so small requested depths retain their
+    # precision even when the absolute elevation datum is large.
     if from_top:
-        cum_depths = diff.cumsum(axis=1)
+        zlevels = zlevels - top[:, None]
+        interval_top = -dist[:, 0]
+        interval_bottom = -dist[:, 1]
     else:
-        diff = np.flip(diff, axis=1)
-        cum_depths = diff.cumsum(axis=1)
-        values = np.flip(values, axis=1)
-
-    # ensure dist sorted & clipped at zero
-    dist = np.sort(dist, axis=1)
-    dist[:, 0] = np.clip(dist[:, 0], 0, None)
-
-    # total depth
-    total_depth = cum_depths[:, -1]
-
-    # rows where start depth exceeds total depth → nan
-    invalid = dist[:, 0] > total_depth
-
-    # find idx1
-    mask1 = cum_depths >= dist[:, [0]]
-    idx1 = np.where(mask1.any(axis=1), mask1.argmax(axis=1), -1)
-
-    # find idx2
-    mask2 = cum_depths >= dist[:, [1]]
-    idx2 = np.where(mask2.any(axis=1), mask2.argmax(axis=1), values.shape[1] - 1)
-
-    # build mask for row slices
-    rows = np.arange(cum_depths.shape[0])
-    cols = np.arange(cum_depths.shape[1])
-
-    # adjust fractional thickness at slice boundaries
-    diff = diff.copy()
-    valid = idx1 != -1
-
-    # adjust first cell thickness
-    diff[rows[valid], idx1[valid]] = cum_depths[rows[valid], idx1[valid]] - dist[valid, 0]
-
-    # adjust last cell thickness
-    last_full = np.maximum(idx2 - 1, 0)
-    diff[rows[valid], idx2[valid]] = np.minimum(
-        dist[valid, 1] - cum_depths[rows[valid], last_full[valid]],
-        diff[rows[valid], idx2[valid]]
-    )
-
-    # row-slice mask
-    slice_mask = (cols[None, :] >= idx1[:, None]) & (cols[None, :] <= idx2[:, None])
-
-    weights = diff * slice_mask
-    numerator = (weights * np.nan_to_num(values, nan=0.)).sum(axis=1)
-    denominator = weights.sum(axis=1)
-
-    ok = (denominator > 0)
-    result = np.full(numerator.shape, np.nan)
-    result[ok] = numerator[ok] / denominator[ok]
-
-    # apply invalid values
-    result[invalid] = np.nan
-
-    return result
+        zlevels = zlevels - bottom[:, None]
+        interval_top = dist[:, 1]
+        interval_bottom = dist[:, 0]
+    return _weighted_average(values, _overlap(zlevels, interval_top, interval_bottom))
 
 
-def elevation(elev: list[float], zlevels: np.ndarray, values: np.ndarray) -> np.ndarray:
-    elev = np.asarray(elev)
-    zlevels = np.asarray(zlevels)
-    values = np.asarray(values)
+def elevation(elev: list[float], zlevels: np.ndarray, values: np.ndarray,
+              *, layer_counts=None, layer_start=0) -> np.ndarray:
+    """Average the physical overlap with an absolute elevation interval."""
+    zlevels, values, _, _ = _physical_profiles(zlevels, values, layer_counts, layer_start)
+    elev = np.sort(_pairs(elev, zlevels.shape[0], "elev"), axis=1)
+    return _weighted_average(values, _overlap(zlevels, elev[:, 1], elev[:, 0]))
 
-    # ensure 2D profile arrays
-    if zlevels.ndim == 1:
-        zlevels = zlevels.reshape(1, -1)
-    if values.ndim == 1:
-        values = values.reshape(1, -1)
 
-    N, Z = zlevels.shape
-    if elev.ndim == 1:
-        elev = elev.reshape(1, -1)
-    if elev.shape[1] != 2:
-        raise ValueError("elev must contain exactly two values per row (top, bottom)")
-
-    # make elev shape (N,2) to match number of rows if single pair provided
-    if elev.shape[0] == 1 and N > 1:
-        elev = np.repeat(elev, N, axis=0)
-
-    # sort each row high->low (surface -> deeper)
-    elev = np.sort(elev, axis=1)[:, ::-1]
-    e_top = elev[:, 0]
-    e_bot = elev[:, 1]
-
-    # layer tops and bottoms (Z-1 layers)
-    layer_top = zlevels[:, :-1]  # shape (N, Z-1)
-    layer_bottom = zlevels[:, 1:]  # shape (N, Z-1)
-
-    # positive thickness of each layer (assuming zlevels is decreasing)
-    valid_layers = ~np.isnan(zlevels[:, :-1]) & ~np.isnan(zlevels[:, 1:])
-    diff = (layer_top - layer_bottom)  # shape (N, Z-1)
-    diff[~valid_layers] = 0.0  # layer thickness
-
-    # prepare output
-    result = np.full(N, np.nan)
-
-    # quick invalid checks: requested range entirely above surface or below bed
-    too_high = e_bot > zlevels[:, 0]  # lowest requested elev above surface
-    too_low = e_top < zlevels[:, -1]  # highest requested elev below bed
-    valid_domain = ~(too_high | too_low)
-
-    if not np.any(valid_domain):
-        return result
-
-    # find idx1: first layer where e_top falls into/above layer_bottom
-    mask1 = e_top[:, None] >= layer_bottom
-    idx1 = np.where(mask1.any(axis=1), mask1.argmax(axis=1), -1)  # -1 means above all layers
-
-    # find idx2: first layer where e_bot falls into/above layer_bottom
-    mask2 = e_bot[:, None] >= layer_bottom
-    idx2 = np.where(mask2.any(axis=1), mask2.argmax(axis=1), (Z - 2))  # default bottom-most layer index
-
-    # ensure idx2 >= idx1
-    idx2 = np.maximum(idx1, idx2)
-
-    rows = np.arange(N)
-    cols = np.arange(Z - 1)  # layer indices
-
-    # boolean include mask for whole layers (including boundaries)
-    include = (cols[None, :] >= idx1[:, None]) & (cols[None, :] <= idx2[:, None])
-
-    # Only rows that actually have a starting layer (idx1 >= 0) are adjusted
-    start_valid = idx1 >= 0
-    if np.any(start_valid):
-        r = rows[start_valid]
-        c = idx1[start_valid]
-        # thickness of upper partial layer
-        diff[r, c] = np.minimum(e_top[start_valid] - layer_bottom[r, c], diff[r, c])
-
-    # For lower boundary: only rows with a valid include and idx2 >= 0
-    end_valid = (idx2 >= 0) & valid_domain
-    if np.any(end_valid):
-        r = rows[end_valid]
-        c = idx2[end_valid]
-        # thickness of lower partial layer
-        partial = layer_top[r, c] - e_bot[end_valid]
-        # ensure we don't exceed the full layer thickness
-        diff[r, c] = np.minimum(partial, diff[r, c])
-
-    # guard against tiny negative numeric values
-    diff_adj = np.maximum(diff, 0.0)
-    diff_adj[~valid_layers] = 0.0
-
-    weights = diff_adj * include
-    numerator = (weights * np.nan_to_num(values, nan=0.)).sum(axis=1)
-    denominator = weights.sum(axis=1)
-
-    ok = (denominator > 0) & valid_domain
-    result[ok] = numerator[ok] / denominator[ok]
-
-    return result
-
-def sigma(fracs: list[float], zlevels: np.ndarray, values: np.ndarray) -> np.ndarray:
-    if zlevels.ndim == 1:
-        zlevels = zlevels.reshape(1, -1)
-    fracs = np.array(fracs).reshape(-1, 2)
-    column_depth = np.nanmax(zlevels, axis=1) - np.nanmin(zlevels, axis=1)
-    depths = column_depth.reshape(-1, 1) * fracs
-    return depth(depths, zlevels, values, from_top=False)
+def sigma(fracs: list[float], zlevels: np.ndarray, values: np.ndarray,
+          *, layer_counts=None, layer_start=0) -> np.ndarray:
+    """Average fractional column heights: zero is the bed and one the surface."""
+    zlevels, values, start, counts = _physical_profiles(zlevels, values, layer_counts, layer_start)
+    fracs = _pairs(fracs, zlevels.shape[0], "fracs")
+    top, bottom = _column_limits(zlevels, start, counts)
+    depths = (top - bottom)[:, None] * fracs
+    return depth(depths, zlevels, values, from_top=False, layer_counts=counts, layer_start=start)
