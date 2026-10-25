@@ -89,7 +89,7 @@ class Py2dm(PyMeshGeometry, GeometryLazyLoadMixin, VTKGeometryMixin):
         uses_fortran_indexing = nds['ind'].min() == 1
         if uses_fortran_indexing:
             nds['ind'] -= 1
-        nds.set_index('ind', inplace=True)
+        nds = nds.set_index('ind')
         return nds.to_numpy('f8')
 
     @staticmethod

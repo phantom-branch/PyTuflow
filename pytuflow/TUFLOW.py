@@ -1,6 +1,5 @@
-import os, sys
+import os
 import warnings
-sys.path.append(os.path.dirname(__file__))
 from .TUFLOW_results import ResData as _ResData
 from .TUFLOW_results2013 import ResData as _ResData2013
 from .tuflow_results_gpkg import ResData_GPKG

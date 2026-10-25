@@ -1,0 +1,871 @@
+{
+  "repositories": {
+    "upstream": "https://github.com/TUFLOW-Support/PyTuflow.git",
+    "fork": "https://github.com/phantom-branch/PyTuflow.git"
+  },
+  "source_shas": {
+    "upstream": "cf908cc922ca8448ed6002834877b0b377329eae",
+    "baseline": "e162c04330d24c37bee3ade94479cc4602651060",
+    "candidate": "4ca199c55d6d388a0019128332e8f0adafdace93"
+  },
+  "harness": {
+    "dirty": false,
+    "implementation_sha256": "04f50709f22b0020d6ad0c4a5baa2bbecfcfa22b46b988ce27824f6cde461005",
+    "sha": "4ca199c55d6d388a0019128332e8f0adafdace93",
+    "shared_test_overlays_sha256": {
+      "tests/fm_lib/common/compare_txt.py": "8450a89522faea16ca9f1af6f7c9f8cfb472feb9abb58f4857037c04e7fca160",
+      "tests/fm_lib/integration_tests/test_conversion.py": "9f890a1b337dd90dec5a0559067305908837729b43178db25139789440755dd1"
+    }
+  },
+  "groups": [
+    "qgis"
+  ],
+  "source_results": {
+    "upstream": {
+      "collected": 239,
+      "passed": 239,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xfail": 0,
+      "xpass": 0,
+      "raw_exit": 0,
+      "failing_ids": []
+    },
+    "baseline": {
+      "collected": 239,
+      "passed": 239,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xfail": 0,
+      "xpass": 0,
+      "raw_exit": 0,
+      "failing_ids": []
+    },
+    "candidate": {
+      "collected": 239,
+      "passed": 239,
+      "failed": 0,
+      "errors": 0,
+      "skipped": 0,
+      "xfail": 0,
+      "xpass": 0,
+      "raw_exit": 0,
+      "failing_ids": []
+    }
+  },
+  "comparisons": {
+    "candidate-comparison": {
+      "status": "passed",
+      "raw_exit": 0,
+      "problems": [],
+      "inherited_failures": [],
+      "fixed_failures": []
+    },
+    "upstream-completeness": {
+      "status": "passed",
+      "raw_exit": 0,
+      "problems": [],
+      "inherited_failures": [],
+      "fixed_failures": []
+    },
+    "upstream-comparison": {
+      "status": "passed",
+      "raw_exit": 0,
+      "problems": [],
+      "inherited_failures": [],
+      "fixed_failures": []
+    }
+  },
+  "runtime": {
+    "executable": "<qgis-runtime>\\bin\\python3.exe",
+    "python": "3.12.15 (main, Oct  2 2026, 17:29:02) [MSC v.1944 64 bit (AMD64)]",
+    "qgis": "4.2.3-Bel\u00e9m do Par\u00e1",
+    "qgis_release": "Bel\u00e9m do Par\u00e1",
+    "qt": "6.11.0",
+    "gdal": "GDAL 3.13.3 \"Iowa City\", released 2026/08/13",
+    "mdal": "No separate version API/export available",
+    "mdal_provider": "<qgis-runtime>\\apps\\qgis\\plugins\\provider_mdal.dll",
+    "mdal_provider_sha256": "6d0f860167c9bcdd3b23e6603c0da0bd7a561cdcf37de15d9bd1268d6744ea9b",
+    "providers": [
+      "OAPIF",
+      "WFS",
+      "arcgisfeatureserver",
+      "arcgisimageserver",
+      "arcgismapserver",
+      "arcgisvectortileservice",
+      "cesiumtiles",
+      "copc",
+      "delimitedtext",
+      "ept",
+      "esrii3s",
+      "gdal",
+      "gpx",
+      "hana",
+      "mbtilesvectortiles",
+      "mdal",
+      "memory",
+      "mesh_memory",
+      "mssql",
+      "ogr",
+      "oracle",
+      "pdal",
+      "postgres",
+      "postgresraster",
+      "quantizedmesh",
+      "sensorthings",
+      "spatialite",
+      "tiledscene",
+      "vectortile",
+      "virtual",
+      "virtualraster",
+      "vpc",
+      "vtpkvectortiles",
+      "wcs",
+      "wms",
+      "xyzvectortiles"
+    ],
+    "source": "<fork-checkout>\\pytuflow\\__init__.py",
+    "sha": "4ca199c55d6d388a0019128332e8f0adafdace93",
+    "dependencies": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.6",
+      "netCDF4": "1.7.5.1.post1",
+      "h5py": "3.14.0",
+      "pyvista": "0.49.1",
+      "vtk": "9.7.1",
+      "rasterio": "1.5.2",
+      "geopandas": "1.1.4",
+      "shapely": "2.1.2",
+      "pytest": "9.1.1",
+      "pygltflib": "1.16.5"
+    },
+    "hdf5": "1.14.6"
+  },
+  "hosted_ci": {
+    "conclusion": "success",
+    "headSha": "4ca199c55d6d388a0019128332e8f0adafdace93",
+    "jobs": [
+      {
+        "completedAt": "2026-10-24T08:14:13Z",
+        "conclusion": "success",
+        "databaseId": 120820591375,
+        "name": "Windows 3.14 baseline regression",
+        "startedAt": "2026-10-24T08:01:31Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-24T08:01:33Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-24T08:01:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:01:41Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v5",
+            "number": 2,
+            "startedAt": "2026-10-24T08:01:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:01:46Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v6",
+            "number": 3,
+            "startedAt": "2026-10-24T08:01:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:28Z",
+            "conclusion": "success",
+            "name": "Install documented baseline dependencies",
+            "number": 4,
+            "startedAt": "2026-10-24T08:01:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:28Z",
+            "conclusion": "skipped",
+            "name": "Install current dependencies allowed by package metadata",
+            "number": 5,
+            "startedAt": "2026-10-24T08:02:28Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:29Z",
+            "conclusion": "success",
+            "name": "Record dependency and source provenance",
+            "number": 6,
+            "startedAt": "2026-10-24T08:02:28Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:45Z",
+            "conclusion": "success",
+            "name": "Validate regression infrastructure",
+            "number": 7,
+            "startedAt": "2026-10-24T08:02:29Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:52Z",
+            "conclusion": "success",
+            "name": "Checkout pinned canonical upstream",
+            "number": 8,
+            "startedAt": "2026-10-24T08:02:45Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:06:27Z",
+            "conclusion": "success",
+            "name": "Run canonical upstream (raw failures retained)",
+            "number": 9,
+            "startedAt": "2026-10-24T08:02:52Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:09Z",
+            "conclusion": "success",
+            "name": "Run recorded fork baseline (raw failures retained)",
+            "number": 10,
+            "startedAt": "2026-10-24T08:06:27Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:14:03Z",
+            "conclusion": "success",
+            "name": "Run exact PR head (raw failures retained)",
+            "number": 11,
+            "startedAt": "2026-10-24T08:10:09Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:14:04Z",
+            "conclusion": "success",
+            "name": "Record upstream to fork differences",
+            "number": 12,
+            "startedAt": "2026-10-24T08:14:03Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:14:04Z",
+            "conclusion": "success",
+            "name": "Require complete canonical-upstream evidence independently of historical differences",
+            "number": 13,
+            "startedAt": "2026-10-24T08:14:04Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:14:05Z",
+            "conclusion": "success",
+            "name": "Gate complete candidate evidence against recorded fork baseline",
+            "number": 14,
+            "startedAt": "2026-10-24T08:14:04Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:14:05Z",
+            "conclusion": "success",
+            "name": "Write concise evidence summary",
+            "number": 15,
+            "startedAt": "2026-10-24T08:14:05Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:14:07Z",
+            "conclusion": "success",
+            "name": "Archive all raw results and comparison evidence",
+            "number": 16,
+            "startedAt": "2026-10-24T08:14:05Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:14:09Z",
+            "conclusion": "success",
+            "name": "Post Checkout pinned canonical upstream",
+            "number": 30,
+            "startedAt": "2026-10-24T08:14:07Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:14:09Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v6",
+            "number": 31,
+            "startedAt": "2026-10-24T08:14:09Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:14:11Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v5",
+            "number": 32,
+            "startedAt": "2026-10-24T08:14:09Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:14:11Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 33,
+            "startedAt": "2026-10-24T08:14:11Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/phantom-branch/PyTuflow/actions/runs/40076415079/job/120820591375"
+      },
+      {
+        "completedAt": "2026-10-24T08:13:55Z",
+        "conclusion": "success",
+        "databaseId": 120820591483,
+        "name": "Windows 3.12 baseline regression",
+        "startedAt": "2026-10-24T08:01:31Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-24T08:01:33Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-24T08:01:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:01:40Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v5",
+            "number": 2,
+            "startedAt": "2026-10-24T08:01:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:01:47Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v6",
+            "number": 3,
+            "startedAt": "2026-10-24T08:01:40Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:30Z",
+            "conclusion": "success",
+            "name": "Install documented baseline dependencies",
+            "number": 4,
+            "startedAt": "2026-10-24T08:01:47Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:30Z",
+            "conclusion": "skipped",
+            "name": "Install current dependencies allowed by package metadata",
+            "number": 5,
+            "startedAt": "2026-10-24T08:02:30Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:31Z",
+            "conclusion": "success",
+            "name": "Record dependency and source provenance",
+            "number": 6,
+            "startedAt": "2026-10-24T08:02:30Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:47Z",
+            "conclusion": "success",
+            "name": "Validate regression infrastructure",
+            "number": 7,
+            "startedAt": "2026-10-24T08:02:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:53Z",
+            "conclusion": "success",
+            "name": "Checkout pinned canonical upstream",
+            "number": 8,
+            "startedAt": "2026-10-24T08:02:47Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:06:29Z",
+            "conclusion": "success",
+            "name": "Run canonical upstream (raw failures retained)",
+            "number": 9,
+            "startedAt": "2026-10-24T08:02:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:10Z",
+            "conclusion": "success",
+            "name": "Run recorded fork baseline (raw failures retained)",
+            "number": 10,
+            "startedAt": "2026-10-24T08:06:29Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:13:45Z",
+            "conclusion": "success",
+            "name": "Run exact PR head (raw failures retained)",
+            "number": 11,
+            "startedAt": "2026-10-24T08:10:10Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:13:46Z",
+            "conclusion": "success",
+            "name": "Record upstream to fork differences",
+            "number": 12,
+            "startedAt": "2026-10-24T08:13:45Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:13:46Z",
+            "conclusion": "success",
+            "name": "Require complete canonical-upstream evidence independently of historical differences",
+            "number": 13,
+            "startedAt": "2026-10-24T08:13:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:13:47Z",
+            "conclusion": "success",
+            "name": "Gate complete candidate evidence against recorded fork baseline",
+            "number": 14,
+            "startedAt": "2026-10-24T08:13:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:13:47Z",
+            "conclusion": "success",
+            "name": "Write concise evidence summary",
+            "number": 15,
+            "startedAt": "2026-10-24T08:13:47Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:13:49Z",
+            "conclusion": "success",
+            "name": "Archive all raw results and comparison evidence",
+            "number": 16,
+            "startedAt": "2026-10-24T08:13:47Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:13:51Z",
+            "conclusion": "success",
+            "name": "Post Checkout pinned canonical upstream",
+            "number": 30,
+            "startedAt": "2026-10-24T08:13:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:13:51Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v6",
+            "number": 31,
+            "startedAt": "2026-10-24T08:13:51Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:13:53Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v5",
+            "number": 32,
+            "startedAt": "2026-10-24T08:13:51Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:13:53Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 33,
+            "startedAt": "2026-10-24T08:13:53Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/phantom-branch/PyTuflow/actions/runs/40076415079/job/120820591483"
+      },
+      {
+        "completedAt": "2026-10-24T08:10:22Z",
+        "conclusion": "success",
+        "databaseId": 120820591497,
+        "name": "Windows 3.14 current regression",
+        "startedAt": "2026-10-24T08:01:31Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-24T08:01:33Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-24T08:01:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:01:39Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v5",
+            "number": 2,
+            "startedAt": "2026-10-24T08:01:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:01:46Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v6",
+            "number": 3,
+            "startedAt": "2026-10-24T08:01:39Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:01:46Z",
+            "conclusion": "skipped",
+            "name": "Install documented baseline dependencies",
+            "number": 4,
+            "startedAt": "2026-10-24T08:01:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:46Z",
+            "conclusion": "success",
+            "name": "Install current dependencies allowed by package metadata",
+            "number": 5,
+            "startedAt": "2026-10-24T08:01:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:46Z",
+            "conclusion": "success",
+            "name": "Record dependency and source provenance",
+            "number": 6,
+            "startedAt": "2026-10-24T08:02:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:01Z",
+            "conclusion": "success",
+            "name": "Validate regression infrastructure",
+            "number": 7,
+            "startedAt": "2026-10-24T08:02:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:06Z",
+            "conclusion": "success",
+            "name": "Checkout pinned canonical upstream",
+            "number": 8,
+            "startedAt": "2026-10-24T08:03:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:05:44Z",
+            "conclusion": "success",
+            "name": "Run canonical upstream (raw failures retained)",
+            "number": 9,
+            "startedAt": "2026-10-24T08:03:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:07:58Z",
+            "conclusion": "success",
+            "name": "Run recorded fork baseline (raw failures retained)",
+            "number": 10,
+            "startedAt": "2026-10-24T08:05:44Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:14Z",
+            "conclusion": "success",
+            "name": "Run exact PR head (raw failures retained)",
+            "number": 11,
+            "startedAt": "2026-10-24T08:07:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:14Z",
+            "conclusion": "success",
+            "name": "Record upstream to fork differences",
+            "number": 12,
+            "startedAt": "2026-10-24T08:10:14Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:15Z",
+            "conclusion": "success",
+            "name": "Require complete canonical-upstream evidence independently of historical differences",
+            "number": 13,
+            "startedAt": "2026-10-24T08:10:14Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:15Z",
+            "conclusion": "success",
+            "name": "Gate complete candidate evidence against recorded fork baseline",
+            "number": 14,
+            "startedAt": "2026-10-24T08:10:15Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:16Z",
+            "conclusion": "success",
+            "name": "Write concise evidence summary",
+            "number": 15,
+            "startedAt": "2026-10-24T08:10:15Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:17Z",
+            "conclusion": "success",
+            "name": "Archive all raw results and comparison evidence",
+            "number": 16,
+            "startedAt": "2026-10-24T08:10:16Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:19Z",
+            "conclusion": "success",
+            "name": "Post Checkout pinned canonical upstream",
+            "number": 30,
+            "startedAt": "2026-10-24T08:10:17Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:19Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v6",
+            "number": 31,
+            "startedAt": "2026-10-24T08:10:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:20Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v5",
+            "number": 32,
+            "startedAt": "2026-10-24T08:10:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:10:20Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 33,
+            "startedAt": "2026-10-24T08:10:20Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/phantom-branch/PyTuflow/actions/runs/40076415079/job/120820591497"
+      },
+      {
+        "completedAt": "2026-10-24T08:03:14Z",
+        "conclusion": "success",
+        "databaseId": 120820591520,
+        "name": "Windows 3.12 installed wheel",
+        "startedAt": "2026-10-24T08:01:31Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-24T08:01:33Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-24T08:01:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:01:39Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v5",
+            "number": 2,
+            "startedAt": "2026-10-24T08:01:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:01:48Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v6",
+            "number": 3,
+            "startedAt": "2026-10-24T08:01:40Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:42Z",
+            "conclusion": "success",
+            "name": "Install declared test and build dependencies",
+            "number": 4,
+            "startedAt": "2026-10-24T08:01:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:56Z",
+            "conclusion": "success",
+            "name": "Build sdist then build wheel from sdist without a virtual environment",
+            "number": 5,
+            "startedAt": "2026-10-24T08:02:42Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:00Z",
+            "conclusion": "success",
+            "name": "Install built wheel into the configured job interpreter",
+            "number": 6,
+            "startedAt": "2026-10-24T08:02:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:08Z",
+            "conclusion": "success",
+            "name": "Verify installed origin, public API, resources and CLI outside checkout",
+            "number": 7,
+            "startedAt": "2026-10-24T08:03:00Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:11Z",
+            "conclusion": "success",
+            "name": "Archive built distributions and complete smoke evidence",
+            "number": 8,
+            "startedAt": "2026-10-24T08:03:08Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:11Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v6",
+            "number": 15,
+            "startedAt": "2026-10-24T08:03:11Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:13Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v5",
+            "number": 16,
+            "startedAt": "2026-10-24T08:03:11Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:13Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 17,
+            "startedAt": "2026-10-24T08:03:13Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/phantom-branch/PyTuflow/actions/runs/40076415079/job/120820591520"
+      },
+      {
+        "completedAt": "2026-10-24T08:03:05Z",
+        "conclusion": "success",
+        "databaseId": 120820591688,
+        "name": "Windows 3.14 installed wheel",
+        "startedAt": "2026-10-24T08:01:31Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-24T08:01:32Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-24T08:01:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:01:39Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v5",
+            "number": 2,
+            "startedAt": "2026-10-24T08:01:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:01:46Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v6",
+            "number": 3,
+            "startedAt": "2026-10-24T08:01:39Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:35Z",
+            "conclusion": "success",
+            "name": "Install declared test and build dependencies",
+            "number": 4,
+            "startedAt": "2026-10-24T08:01:46Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:45Z",
+            "conclusion": "success",
+            "name": "Build sdist then build wheel from sdist without a virtual environment",
+            "number": 5,
+            "startedAt": "2026-10-24T08:02:35Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:49Z",
+            "conclusion": "success",
+            "name": "Install built wheel into the configured job interpreter",
+            "number": 6,
+            "startedAt": "2026-10-24T08:02:45Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:02:59Z",
+            "conclusion": "success",
+            "name": "Verify installed origin, public API, resources and CLI outside checkout",
+            "number": 7,
+            "startedAt": "2026-10-24T08:02:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:01Z",
+            "conclusion": "success",
+            "name": "Archive built distributions and complete smoke evidence",
+            "number": 8,
+            "startedAt": "2026-10-24T08:02:59Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:01Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v6",
+            "number": 15,
+            "startedAt": "2026-10-24T08:03:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:03Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v5",
+            "number": 16,
+            "startedAt": "2026-10-24T08:03:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-24T08:03:03Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 17,
+            "startedAt": "2026-10-24T08:03:03Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/phantom-branch/PyTuflow/actions/runs/40076415079/job/120820591688"
+      }
+    ],
+    "status": "completed"
+  },
+  "prior_review": {
+    "sha": "4ca199c55d6d388a0019128332e8f0adafdace93",
+    "unresolved_threads": 0,
+    "findings": 0
+  },
+  "acceptance": "passed",
+  "recommendation": "Ready to mark non-draft and consider merging; owner retains merge decision. No merge performed."
+}

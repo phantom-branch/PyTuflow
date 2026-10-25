@@ -1,0 +1,47 @@
+{
+  "counts": {
+    "baseline": {
+      "qgis": {
+        "collected": 239,
+        "error": 0,
+        "failed": 0,
+        "passed": 239,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      }
+    },
+    "candidate": {
+      "qgis": {
+        "collected": 239,
+        "error": 0,
+        "failed": 0,
+        "passed": 239,
+        "skipped": 0,
+        "xfail": 0,
+        "xpass": 0
+      }
+    }
+  },
+  "fixed_failures": [],
+  "inherited_failures": [],
+  "inherited_skips": [],
+  "problems": [],
+  "schema_version": 1,
+  "skipped_groups": [],
+  "sources": {
+    "baseline": {
+      "checkout_unchanged": true,
+      "repository": "<upstream-checkout>",
+      "requested_ref": "cf908cc922ca8448ed6002834877b0b377329eae",
+      "sha": "cf908cc922ca8448ed6002834877b0b377329eae"
+    },
+    "candidate": {
+      "checkout_unchanged": true,
+      "repository": "<fork-checkout>",
+      "requested_ref": "e162c04330d24c37bee3ade94479cc4602651060",
+      "sha": "e162c04330d24c37bee3ade94479cc4602651060"
+    }
+  },
+  "status": "passed"
+}
