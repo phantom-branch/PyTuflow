@@ -346,9 +346,15 @@ def test_tef_only_chained_event_substitutions_invalidate_fragments(tmp_path: Pat
     )
     model = TCF(top)
     flags = ["-e1 A", "-e1 B", "-e1 A"]
+    # An independent, unoptimised run is the semantic oracle here. The
+    # ordinary batch command-template cache must not preserve event A's
+    # constructor expansion when event B has the same first-pass text.
+    baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
     expected = model.collect_batch_dependencies(flags)
     actual = model.collect_file_dependencies(flags)
-    assert expected.passed and actual.passed
+    assert baseline.passed and expected.passed and actual.passed
+    assert expected.runs == baseline.runs
+    assert expected.commands_cloned == 0
     assert actual.fallback_runs == 0, actual.fallback_reason
     assert actual.runs == expected.runs
     names = [
