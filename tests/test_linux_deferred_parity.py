@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import sqlite3
 import sys
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -72,3 +74,24 @@ def test_deferred_and_eager_nested_reference_agree(tmp_path: Path) -> None:
     assert inventories[0] == inventories[1]
     assert "selected.shp" in inventories[1]
     assert "other.shp" not in inventories[1]
+
+
+def test_gpkg_case_only_siblings_select_exact_database_and_layer(tmp_path: Path) -> None:
+    """A layer check must not silently read an unrelated differently cased GPKG."""
+    for filename, layer in (
+        ("Boundary.gpkg", "2d_bc_upper"),
+        ("boundary.gpkg", "2d_bc_lower"),
+    ):
+        with closing(sqlite3.connect(tmp_path / filename)) as connection:
+            connection.execute("CREATE TABLE gpkg_contents (table_name TEXT)")
+            connection.execute("INSERT INTO gpkg_contents VALUES (?)", (layer,))
+            connection.commit()
+
+    for filename, layer, wrong_layer in (
+        ("Boundary.gpkg", "2d_bc_upper", "2d_bc_lower"),
+        ("boundary.gpkg", "2d_bc_lower", "2d_bc_upper"),
+    ):
+        chosen = TuflowPath.init_case_insensitive_path(filename, tmp_path)
+        assert chosen.dbpath == tmp_path / filename
+        assert TuflowPath(f"{chosen} >> {layer}").exists()
+        assert not TuflowPath(f"{chosen} >> {wrong_layer}").exists()
