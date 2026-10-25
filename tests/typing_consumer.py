@@ -64,3 +64,4 @@ def consume_legacy_payloads(reader: ResData) -> None:
         assert_type(profile[0][0], tuple[float, float])
     assert_type(reader.getPipes(), list[list[tuple[float, float] | tuple[()]]])
     assert_type(reader.referenceTime(), datetime | None)
+    assert_type(reader.units(), str | None)

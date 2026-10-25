@@ -15,7 +15,8 @@ every method or that calls cannot raise.
 | Methods | Original implementation contract |
 | --- | --- |
 | `__init__`, `__del__`, `close`, `setReferenceTime` | No returned value. Date assignment asserts 2016 format; close clears the reader. |
-| `format`, `name`, `units` | Strings; unloaded fallback is `''`. |
+| `format`, `name` | Strings; unloaded fallback is `''`. |
+| `units` | String or `None` for GPKG before units are available (including a failed load); façade-unloaded fallback is `''`. |
 | `source` | Filename is forwarded unchanged, including a supplied path object for TPC/INFO; unloaded fallback is `''`. |
 | `load` | `(bool, str)` from TPC/INFO/GPKG loaders or unrecognised-extension error. TPC `loadTPC` resets the initial message to `''`. |
 | `channels`, `nodes`, `channelConnections`, `channelsUpstream`, `channelsDownstream` | Lists of identifier strings; empty fallback. |
@@ -45,6 +46,9 @@ calls can raise in the original implementation. Some backend error returns
 have inconsistent tuple arity. The declarations do not repair those runtime
 limitations, invent successful return values for them, or add `None` merely
 because a call raises. Focused tests record the INFO/GPKG limitations.
+The CSV regression locally filters only the original reader's positional
+`re.split` maxsplit deprecation on Python 3.13+, without changing that reader
+or weakening the suite's other warning checks.
 
 The runtime module exports `ResData`, `ResData_GPKG`, `os` and `warnings` in
 the current fork. The stub preserves them and the root `pytuflow.ResData`

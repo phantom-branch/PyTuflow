@@ -175,6 +175,11 @@ def test_series_preserves_strings_and_masked_values(nested, strings) -> None:
     assert _accepts((error, message, (times, payload)), _stub_namespace()["_SeriesResult"])
 
 
+# Original reader uses re.split's positional maxsplit, deprecated in 3.13+.
+# Keep that implementation unchanged; suppress only this known warning here.
+@pytest.mark.filterwarnings(
+    r"ignore:'maxsplit' is passed as positional argument:DeprecationWarning:pytuflow\.TUFLOW_results$"
+)
 def test_csv_flow_regime_loader_retains_string_payload(tmp_path) -> None:
     from pytuflow.TUFLOW_results import ResData
 
@@ -253,6 +258,7 @@ def test_2013_and_gpkg_profile_shapes_and_reference_time() -> None:
     reader = _reader(gpkg)
     assert isinstance(reader.referenceTime(), datetime)
     assert reader.getPipes() == [[()]]
+    assert reader.units() is None
 
 
 def test_gpkg_numeric_array_and_unloaded_timesteps() -> None:
@@ -281,3 +287,13 @@ def test_tpc_load_message_and_path_source(tmp_path) -> None:
     reader = _reader()
     assert reader.load(path) == (False, "")
     assert reader.source() is path
+
+
+def test_failed_gpkg_load_retains_null_units(tmp_path) -> None:
+    reader = _reader()
+    with pytest.warns(DeprecationWarning):
+        error, message = reader.load(tmp_path / "missing.gpkg")
+    assert error and isinstance(message, str)
+    assert reader.units() is None
+    declared = inspect.get_annotations(_stub_namespace()["ResData"].units, eval_str=True)
+    assert _accepts(reader.units(), declared["return"])
