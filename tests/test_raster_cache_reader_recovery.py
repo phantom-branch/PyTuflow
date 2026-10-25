@@ -48,7 +48,7 @@ def test_one_surface_does_not_preallocate_time_cube(tmp_path, count):
 
 
 def test_lru_hits_and_evicts_in_access_order(tmp_path, monkeypatch):
-    reader = NCGrid(make_nc(tmp_path))
+    reader = NCGrid(make_nc(tmp_path), memory_budget_bytes=4 * 9 * 8)
     original = reader._value
     reads = []
 
@@ -65,7 +65,7 @@ def test_lru_hits_and_evicts_in_access_order(tmp_path, monkeypatch):
         reader._surface("water level", 4)
         assert reads == [0, 1, 2, 3, 4]
     assert list(reader._surface_cache["water level"]) == [2, 3, 0, 4]
-    assert len(reader._surface_cache["water level"]) <= 4
+    assert reader._surface_cache_bytes <= reader.memory_budget_bytes
 
 
 @pytest.mark.parametrize("selector,indexes", [
@@ -89,7 +89,7 @@ def test_selectors_preserve_order_repetition_and_shape(tmp_path, selector, index
         if len(indexes) == 1:
             reference = reference[0]
         np.testing.assert_array_equal(observed, reference)
-    assert len(reader._surface_cache["water level"]) <= 4
+    assert reader._surface_cache_bytes <= reader.memory_budget_bytes
 
 
 @pytest.mark.parametrize("bad", [[12], [-13], np.array([1.5]), [[1, 2]]])
@@ -209,9 +209,7 @@ def test_reductions_stream_time_slices_without_allocating_cube(tmp_path):
     reader = NCGrid(make_nc(tmp_path, 120))
     assert reader.maximum("water level") == 1079.
     assert reader.minimum("water level") == 0.
-    cache = reader._surface_cache["water level"]
-    assert len(cache) <= 4
-    assert all(x.shape == (3, 3) for x in cache.values())
+    assert reader._surface_cache_bytes == 0
     assert "water level" not in reader._cached_data
 
 @pytest.mark.parametrize("temporal", [False, True])
@@ -231,3 +229,107 @@ def test_resident_masked_grid_preserves_missing_cells_and_extrema(temporal):
     assert np.ma.getmaskarray(with_masks).any()
     assert grid.maximum("water level") == (4. if temporal else 3.)
     assert grid.minimum("water level") == 1.
+
+
+@pytest.mark.parametrize("budget", [0, -1, 1.5, True])
+def test_memory_budget_must_be_positive_integer(tmp_path, budget):
+    with pytest.raises(ValueError, match="memory_budget_bytes"):
+        NCGrid(make_nc(tmp_path), memory_budget_bytes=budget)
+
+
+def test_aggregate_lru_eviction_across_variables(tmp_path):
+    reader = NCGrid(make_nc(tmp_path), memory_budget_bytes=3 * 9 * 8)
+    with reader._open():
+        reader._surface("water level", 0)
+        reader._surface("water level", 1)
+        reader._surface("bed level", -1)
+        assert reader._surface_cache_bytes == 3 * 9 * 8
+        reader._surface("water level", 0)  # refresh oldest
+        assert reader._surface_cache_bytes <= reader.memory_budget_bytes
+        assert ("water level", 1) not in reader._surface_lru
+        assert ("bed level", None) in reader._surface_lru
+        assert ("water level", 0) in reader._surface_lru
+        reader._surface("water level", 2)
+        assert ("bed level", None) not in reader._surface_lru
+        assert reader._surface_cache_bytes <= reader.memory_budget_bytes
+
+
+def test_large_slice_returned_without_retention(tmp_path):
+    reader = NCGrid(make_nc(tmp_path), memory_budget_bytes=8)
+    with reader._open():
+        np.testing.assert_array_equal(reader._surface("water level", 0), expected(0))
+        assert reader._surface_cache_bytes == 0
+        assert not reader._surface_lru
+
+
+def test_configured_capacity_not_limited_to_four_slices(tmp_path):
+    reader = NCGrid(make_nc(tmp_path), memory_budget_bytes=12 * 9 * 8)
+    with reader._open():
+        for i in range(12):
+            reader._surface("water level", i)
+    assert len(reader._surface_cache["water level"]) == 12
+    assert reader._surface_cache_bytes == 12 * 9 * 8
+
+
+def test_reductions_batch_into_contiguous_reads_and_do_not_retain(tmp_path, monkeypatch):
+    reader = NCGrid(make_nc(tmp_path, 40), memory_budget_bytes=3 * 4 * 9 * 8)
+    original = reader._value
+    selections = []
+
+    def spy(dtype, idx):
+        selections.append(idx)
+        return original(dtype, idx)
+
+    monkeypatch.setattr(reader, "_value", spy)
+    # Existing lazy surfaces cannot add to working block allocation.
+    reader.surface("water level", 0)
+    assert reader._surface_cache_bytes
+    selections.clear()
+    assert reader.maximum("water level") == 359.
+    assert reader.minimum("water level") == 0.
+    assert len(selections) < 80
+    assert len(selections) >= 2
+    assert all(isinstance(index, slice) for index in selections)
+    assert all(0 <= index.start < index.stop <= 40 for index in selections)
+    assert max(index.stop - index.start for index in selections) <= 4
+    assert reader._surface_cache_bytes == 0
+
+
+def test_cache_hit_reuses_time_count_metadata(tmp_path, monkeypatch):
+    reader = NCGrid(make_nc(tmp_path, 12))
+    orig_times = reader.times
+    calls = []
+
+    def time_spy(*args, **kwargs):
+        calls.append((args, kwargs))
+        return orig_times(*args, **kwargs)
+
+    monkeypatch.setattr(reader, "times", time_spy)
+    with reader._open():
+        for _ in range(5):
+            reader._surface("water level", 0)
+    assert len(calls) <= 1
+
+
+def test_mask_bytes_are_charged_across_shared_cache(tmp_path, monkeypatch):
+    reader = NCGrid(make_nc(tmp_path), memory_budget_bytes=2 * (9 * 8 + 9))
+    original = reader._value
+
+    def masked(dtype, idx):
+        value = original(dtype, idx)
+        if dtype == "water level":
+            mask = np.zeros((3, 3), dtype=bool)
+            mask[0, 0] = True
+            return np.ma.array(value, mask=mask)
+        return value
+
+    monkeypatch.setattr(reader, "_value", masked)
+    with reader._open():
+        one = reader._surface("water level", 0)
+        assert np.ma.isMaskedArray(one)
+        assert np.ma.is_masked(one[0, 0])
+        assert reader._surface_cache_bytes == 9 * 8 + 9
+        reader._surface("water level", 1)
+        assert reader._surface_cache_bytes == 2 * (9 * 8 + 9)
+        reader._surface("water level", 2)
+        assert reader._surface_cache_bytes == 2 * (9 * 8 + 9)
