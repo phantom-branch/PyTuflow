@@ -90,3 +90,7 @@ class DatabaseInput(FileInput):
         # docstring inherited
         ctx = context if context else Context(run_context, config=self.config)
         return ControlFileInputRunState(self, ctx, parent)
+
+
+# Retain the original constructor before an extension can replace the method.
+_DATABASE_INPUT_CONTEXT = DatabaseInput.context

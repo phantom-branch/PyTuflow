@@ -13,20 +13,24 @@ from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
+from types import MethodType
 from typing import TYPE_CHECKING
 
 from .compiled_control_tree import CompiledControlTree
 from .compiled_dependency_plan import CompiledVariablePlan
 from .group_input_reuse import LiteralInputGroupCache
-from .context import Context
-from .scope import GlobalScope, ScenarioScope
+from .context import Context, _CONTEXT_APPEND_ATTRIBUTES, _CONTEXT_APPEND_MRO
+from .event import EventDatabase, _EVENT_DATABASE_APPEND_ATTRIBUTES, _EVENT_DATABASE_APPEND_MRO
+from .scope import (
+    GlobalScope, ScenarioScope, ScopeList, _SCOPE_APPEND_DEFINITIONS,
+    _SCOPE_APPEND_INSTANCE_ATTRIBUTES, _SCOPE_LIST_APPEND_ATTRIBUTES,
+)
 from .tfpathlib import TuflowPath
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from .file_reference import DeferredDatabaseActivation, DeferredDatabaseSource, FileReference
-    from .scope import ScopeList
     from .cf.tcf import TCF
 
 
@@ -427,6 +431,182 @@ class BatchContext(Context):
         self.translation_misses += 1
         self._batch_translations[key] = translated
         return translated
+
+
+# Retain the entire raw callback surface, including the inherited methods
+# invoked through super(). New/replaced class descriptors are unsupported too.
+_BATCH_CONTEXT_APPEND_ATTRIBUTES = tuple(BatchContext.__dict__.items())
+_BATCH_CONTEXT_APPEND_MRO = BatchContext.__mro__
+_APPEND_CONTEXT_INSTANCE_ATTRIBUTES = tuple({
+    **dict(_CONTEXT_APPEND_ATTRIBUTES),
+    **dict(_BATCH_CONTEXT_APPEND_ATTRIBUTES),
+}.items())
+
+
+def _raw_class_attribute(cls: type, name: str):
+    """Return an unbound class attribute without executing any descriptor."""
+    for owner in type.__getattribute__(cls, '__mro__'):
+        namespace = type.__getattribute__(owner, '__dict__')
+        if name in namespace:
+            return namespace[name]
+    return None
+
+
+def _original_instance_callbacks(instance, namespace: dict, originals) -> bool:
+    # An assigned dict subclass can override even membership/index lookup.
+    # Custom keys can also execute equality hooks during a plain lookup.
+    # Inspect only ordinary storage so proving dispatch cannot run callbacks.
+    if type(namespace) is not dict or any(type(key) is not str for key in namespace):
+        return False
+    for name, original in originals:
+        if name not in namespace:
+            continue
+        replacement = namespace[name]
+        if (type(replacement) is not MethodType
+                or replacement.__func__ is not original
+                or replacement.__self__ is not instance):
+            return False
+    return True
+
+
+def _batch_append_context_is_trusted(context) -> bool:
+    """Prove context dispatch is built in before retaining UUID positions.
+
+    Scope selection, translation, command/reference creation and resolution
+    all dispatch through this context. A custom callback anywhere in that
+    chain can edit previous parent inputs. Inspect raw dictionaries only;
+    proving a property or a constructor must never execute it an extra time.
+    """
+    if type(context) is not BatchContext:
+        return False
+    for cls, mro, originals in (
+        (Context, _CONTEXT_APPEND_MRO, _CONTEXT_APPEND_ATTRIBUTES),
+        (BatchContext, _BATCH_CONTEXT_APPEND_MRO, _BATCH_CONTEXT_APPEND_ATTRIBUTES),
+        *_SCOPE_APPEND_DEFINITIONS,
+    ):
+        namespace = type.__getattribute__(cls, '__dict__')
+        if (type.__getattribute__(cls, '__mro__') != mro
+                or len(namespace) != len(originals)
+                or any(name not in namespace or namespace[name] is not original
+                       for name, original in originals)):
+            return False
+    namespace = object.__getattribute__(context, '__dict__')
+    if not _original_instance_callbacks(context, namespace, _APPEND_CONTEXT_INSTANCE_ATTRIBUTES):
+        return False
+    # Do not retrieve context.event_db: an extension could make it a property.
+    # The unchanged class surface above proves this raw instance slot is used.
+    event_db = namespace.get('event_db')
+    if (type(event_db) is not EventDatabase
+            or type.__getattribute__(EventDatabase, '__mro__') != _EVENT_DATABASE_APPEND_MRO
+            or any(_raw_class_attribute(EventDatabase, name) is not original
+                   for name, original in _EVENT_DATABASE_APPEND_ATTRIBUTES)):
+        return False
+    event_namespace = object.__getattribute__(event_db, '__dict__')
+    return _original_instance_callbacks(event_db, event_namespace, _EVENT_DATABASE_APPEND_ATTRIBUTES)
+
+
+def _batch_append_scope_is_trusted(scopes) -> bool:
+    """Inspect scope data after the context proof checked raw class definitions.
+
+    Public setters preserve ScopeList/Scope subclasses and their callbacks.
+    Do not invoke membership, iteration overrides, getters or comparisons to
+    decide whether those objects are safe for the private append recorder.
+    """
+    if scopes is None:
+        return True
+    if type(scopes) is not ScopeList:
+        return False
+    namespace = object.__getattribute__(scopes, '__dict__')
+    if not _original_instance_callbacks(scopes, namespace, _SCOPE_LIST_APPEND_ATTRIBUTES):
+        return False
+    for scope in list.__iter__(scopes):
+        originals = next((attributes for cls, attributes in _SCOPE_APPEND_INSTANCE_ATTRIBUTES
+                          if type(scope) is cls), None)
+        if originals is None:
+            return False
+        namespace = object.__getattribute__(scope, '__dict__')
+        if not _original_instance_callbacks(scope, namespace, originals):
+            return False
+        names = namespace.get('names')
+        if (type(names) is not list
+                or any(type(name) is not str for name in names)
+                or type(namespace.get('type')) is not str
+                or (namespace.get('var') is not None and type(namespace['var']) is not str)
+                or any(type(namespace.get(flag)) is not bool
+                       for flag in ('known', '_neg', '_else'))):
+            return False
+    return True
+
+
+def _batch_append_input_scope_is_trusted(inp, known_input_types) -> bool:
+    """Prove the normal scope getter will read the inspected raw instance slot."""
+    from .abc.bld_state import BuildState, _BUILD_STATE_SCOPE, _BUILD_STATE_DICTIONARY
+    from .inp.inp_build_state import _INPUT_BUILD_SCOPE
+
+    cls = type(inp)
+    if not any(cls is known_type for known_type in known_input_types):
+        return False
+    if (_raw_class_attribute(cls, 'scope') is not _INPUT_BUILD_SCOPE
+            or type.__getattribute__(BuildState, '__dict__').get('scope') is not _BUILD_STATE_SCOPE
+            or _raw_class_attribute(cls, '__getattribute__') is not object.__getattribute__
+            or _raw_class_attribute(cls, '__getattr__') is not None
+            or _raw_class_attribute(cls, '__dict__') is not _BUILD_STATE_DICTIONARY
+            or _raw_class_attribute(cls, '_scope') is not None):
+        return False
+    namespace = object.__getattribute__(inp, '__dict__')
+    return (type(namespace) is dict and all(type(key) is str for key in namespace)
+            and '_scope' in namespace
+            and _batch_append_scope_is_trusted(namespace['_scope']))
+
+
+def _plain_scope_value(value) -> bool:
+    return type(value) is str or (
+        type(value) is list and all(type(item) is str for item in value)
+    )
+
+
+def _batch_append_scope_sources_are_trusted(namespace: dict, known_input_types) -> bool:
+    """Check stable scope-producing data once before a fresh recorder exists.
+
+    Context flags and variable/event maps build available scopes. Public event
+    entries also participate in resolution through nested items(). Compiled
+    READs may also inspect other declarations' scopes while constructing an
+    input. Validate those sources once, without evaluating any scope, under
+    the batch's existing stable-source contract.
+    """
+    for prefix in ('S', 'E'):
+        for slot in (prefix, *(f'{prefix}{i}' for i in range(1, 10))):
+            if slot in namespace and not _plain_scope_value(namespace[slot]):
+                return False
+    for attribute in ('var_map', 'event_variables'):
+        values = namespace.get(attribute)
+        if (type(values) is not dict
+                or any(type(key) is not str or not _plain_scope_value(value)
+                       for key, value in values.items())):
+            return False
+    # Canonical event_variables() calls each public event entry's items().
+    # Bypass virtual access while proving those nested mappings and values.
+    for name, values in dict.items(namespace['event_db']):
+        if (type(name) is not str or type(values) is not dict
+                or any(type(key) is not str or not _plain_scope_value(value)
+                       for key, value in values.items())):
+            return False
+    if not _batch_append_scope_is_trusted(namespace.get('_batch_scopes')):
+        return False
+    assignments = namespace.get('_batch_variable_assignments')
+    if assignments is None:
+        return True
+    if type(assignments) is not tuple:
+        return False
+    for assignment in assignments:
+        if type(assignment) is not tuple or len(assignment) != 2:
+            return False
+        inp, declaration = assignment
+        if (type(declaration) is not tuple or len(declaration) != 2
+                or any(type(value) is not str for value in declaration)
+                or not _batch_append_input_scope_is_trusted(inp, known_input_types)):
+            return False
+    return True
 
 
 @dataclass(frozen=True, slots=True)

@@ -708,3 +708,20 @@ class VariableScope(Scope):
     def resolvable(self) -> bool:
         # docstring inherited
         return True
+
+
+# Retain raw built-in definitions before public scope extensions are installed.
+# The internal writer-only _BlockScope deliberately uses ordinary append.
+_SCOPE_APPEND_TYPES = (
+    GlobalScope, ScenarioScope, EventScope, EventDefineScope,
+    OneDimScope, OutputZoneScope, ControlScope, VariableScope,
+)
+_SCOPE_APPEND_DEFINITIONS = tuple(
+    (cls, cls.__mro__, tuple(cls.__dict__.items()))
+    for cls in (ScopeList, Scope, *_SCOPE_APPEND_TYPES)
+)
+_SCOPE_LIST_APPEND_ATTRIBUTES = _SCOPE_APPEND_DEFINITIONS[0][2]
+_SCOPE_APPEND_INSTANCE_ATTRIBUTES = tuple(
+    (cls, tuple({**Scope.__dict__, **cls.__dict__}.items()))
+    for cls in _SCOPE_APPEND_TYPES
+)

@@ -344,3 +344,4 @@ class InputBuildState(BuildState, Input):
 
 # Capture the built-in constructor before an extension can replace the method.
 _INPUT_BUILD_CONTEXT = InputBuildState.context
+_INPUT_BUILD_SCOPE = InputBuildState.__dict__['scope']
