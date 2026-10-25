@@ -424,7 +424,13 @@ class NCGrid(Grid):
         varname = self._stnd2var[dtype]
         with self._open() as nc:
             var = nc.variables[varname]
-            return max(1, int(np.prod(var.shape[1:])) * np.dtype(var.dtype).itemsize)
+            itemsize = np.dtype(var.dtype).itemsize
+            # Automatic scale/offset decoding can promote on-disk int16
+            # samples to float64. Budget for the decoded payload, not
+            # the packed storage dtype, plus transient working headroom.
+            if 'scale_factor' in var.ncattrs() or 'add_offset' in var.ncattrs():
+                itemsize = max(itemsize, np.dtype('f8').itemsize)
+            return max(1, int(np.prod(var.shape[1:])) * itemsize)
 
     def _time_chunk_length(self, dtype: str) -> int:
         varname = self._stnd2var[dtype]

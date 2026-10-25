@@ -342,3 +342,48 @@ def test_all_missing_extrema_yield_nan_without_warnings(tmp_path):
     assert np.isnan(reader.maximum("water level"))
     assert np.isnan(reader.minimum("water level"))
     assert reader._surface_cache_bytes == 0
+
+
+def test_packed_netcdf_block_budget_uses_decoded_float_dtype(tmp_path, monkeypatch):
+    path = make_nc(tmp_path, 40)
+    with Dataset(path, "a") as nc:
+        depth = nc.createVariable("depth", "i2", ("time", "y", "x"))
+        depth.scale_factor = np.float64(0.5)
+        depth.add_offset = np.float64(1.0)
+        depth.set_auto_maskandscale(False)
+        depth[:] = np.arange(40 * 9, dtype=np.int16).reshape(40, 3, 3)
+    reader = NCGrid(path, memory_budget_bytes=3 * 4 * 9 * 8)
+    assert reader._source_slice_nbytes("depth") >= 9 * 8
+    original = reader._value
+    reads = []
+
+    def spy(dtype, idx):
+        if dtype == "depth":
+            reads.append(idx)
+        return original(dtype, idx)
+
+    monkeypatch.setattr(reader, "_value", spy)
+    assert reader.minimum("depth") == 1.
+    assert reader.maximum("depth") == 180.5
+    assert len(reads) >= 2
+    assert all(isinstance(i, slice) and i.stop - i.start <= 4 for i in reads)
+
+
+def test_previous_block_is_released_before_next_read(tmp_path, monkeypatch):
+    import weakref
+
+    reader = NCGrid(make_nc(tmp_path, 40), memory_budget_bytes=3 * 4 * 9 * 8)
+    original = reader._value
+    observed = []
+
+    def spy(dtype, idx):
+        if dtype == "water level" and isinstance(idx, slice):
+            assert all(ref() is None for ref in observed)
+            value = original(dtype, idx)
+            observed.append(weakref.ref(value))
+            return value
+        return original(dtype, idx)
+
+    monkeypatch.setattr(reader, "_value", spy)
+    assert reader.maximum("water level") == 359.
+    assert len(observed) >= 2

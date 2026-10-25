@@ -448,8 +448,12 @@ class Grid(MapOutput):
             # Preserve masked physical zero and existing NaN-only filtering.
             valid = block.compressed() if np.ma.isMaskedArray(block) else block.ravel()
             valid = valid[~np.isnan(valid)]
-            if valid.size:
-                extreme = (np.max(valid) if maximum else np.min(valid)).item()
+            extreme = ((np.max(valid) if maximum else np.min(valid)).item()
+                       if valid.size else None)
+            # Before the next I/O call, release this block and its filtered
+            # copy. Otherwise two consecutive blocks can overlap in memory.
+            del valid, block
+            if extreme is not None:
                 result = extreme if result is None else (
                     max(result, extreme) if maximum else min(result, extreme)
                 )
