@@ -405,3 +405,7 @@ class TCF(ControlFileLoadMixin, TuflowControlFileMixin, TCFBuildState):
         from ..fragment_dependencies import collect_file_dependencies
 
         return collect_file_dependencies(self, run_flags)
+
+
+# Retain the original constructor for conservative fragment-cache eligibility.
+_TCF_CONTEXT = TCF.context
