@@ -9,6 +9,7 @@ from .._pytuflow_types import PathLike
 from ..results import ResultTypeError
 
 from .pymesh import PyXMDF, NCEngine, H5Engine
+from ._backend_capability import require_mesh_backend
 
 
 class XMDF(Mesh):
@@ -145,6 +146,12 @@ class XMDF(Mesh):
 
         if not Path(fpath).exists():
             raise FileNotFoundError(f'File does not exist: {fpath}')
+        require_mesh_backend(
+            driver,
+            qgis_available=has_qgis,
+            h5py_available=H5Engine.available(),
+            netcdf4_available=NCEngine.available(),
+        )
 
         if Path(fpath).suffix.lower() == '.sup':
             sup = SuperFile(fpath)
