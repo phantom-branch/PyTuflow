@@ -29,6 +29,28 @@ squash-merged with all four workflows passing** at
 `993eb083dec15b1155d7ae61a28d65003357ff77`. Linux CI now pins this
 accepted consumer commit rather than an unmerged development SHA.
 
+## Native Linux strict archive classification (current evidence)
+
+[Workflow 40214006051](https://github.com/phantom-branch/PyTuflow/actions/runs/40214006051)
+examined all **161 TCFs and 174 run combinations** without changing the ZIP.
+Only **8/174** were accepted because the original archive contains eight
+known filename-case mismatches. All 183 eager-only references map exactly to
+183 deferred-only references after *diagnostic* casefold comparison, with no
+unmatched non-case variants; this is **not** a valid strict-mode parity pass.
+The biggest mismatches are `Materials.csv` / `materials.csv` (137),
+`2d_rf_EG03_007_R.shp` / `2d_RF_EG03_007_R.shp` (28), plus WLL and
+`.SHP` extension differences. A corresponding 137 cached-material database
+errors must be treated as invalid inputs, not silent successful resolution.
+[Full eight-pair evidence](https://github.com/phantom-branch/PyTuflow/pull/4#issuecomment-6400696226).
+
+The [merged downstream harness #164](https://github.com/Chain-Frost/ryan-tools/pull/164)
+introduces an explicitly opt-in `--linux-case-overlay` mode that creates
+bounded, logged case-alias symlinks **only in the temporary extracted model**,
+including Shapefile sidecars. The immutable ZIP, hashes, member names and
+original files remain unmodified. The separate case-corrected campaign uses
+this valid-input fixture for full eager/deferred/batch acceptance; it does
+**not** reclassify the raw strict Linux archive as passing.
+
 ## Historical diagnostic leads (not current acceptance)
 
 - [Ubuntu run 39652484033](https://github.com/phantom-branch/PyTuflow/actions/runs/39652484033):
@@ -63,8 +85,10 @@ accepted consumer commit rather than an unmerged development SHA.
   squash-merged at `993eb083dec15b1155d7ae61a28d65003357ff77`.
   Remaining #161 performance work remains independently owned.
 - [ ] PyTUFLOW Linux-focused regressions pass under native Python 3.14.
-- [ ] [ryan-tools #158](https://github.com/Chain-Frost/ryan-tools/pull/158#issuecomment-6400303356) has corrected the differential harness's unconditional case-folding of POSIX physical path and owning-command identities. Re-run with an accepted SHA so the comparator cannot collapse two case-only Linux sources into a false pass.
-- [ ] Full public 161-TCF / 174-run Linux replay is classified case by case;
+- [x] [ryan-tools #163](https://github.com/Chain-Frost/ryan-tools/pull/163) fixed casefold-conflated POSIX physical identities; merged at `aa191bb8987ae293e1aff80c9bc67d62713fac11` with six passing workflows. The unmerged, optional benchmark #158 retains a separately owned *owner-command* casefold follow-up before its later merge.
+- [x] Raw public 161-TCF / 174-run **strict Linux** replay is classified: 8/174 valid, 183 exact pairs due eight case-only filenames, report retained. This invalid raw fixture is not marked passing.
+- [x] ryan-tools #164 temporary case-correction harness merged and full cross-platform CI passed at `78e1637c7500a307449ce2b38a6fa7c60bf7043a`.
+- [ ] Full **case-corrected temporary model copy** 161-TCF / 174-run Linux replay is classified case by case;
   no unclassified missing/extra identities, source exceptions or skipped scans.
 - [ ] Resolve genuine implementation defects in this PR or linked narrow fixes,
   without weakening strict Linux filenames, modifying fixture hashes,
