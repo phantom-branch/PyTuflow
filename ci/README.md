@@ -297,3 +297,12 @@ full W5 matrix and Codex review before merging the CI PR. On merge to
 stores a cache accessible to a subsequent PR. The true cross-PR cache hit
 cannot be observed until the workflow exists on master; do not claim it
 in advance.
+
+The trusted seeding workflow also has a **dependent independent-runner smoke
+job** for each pinned Python version. Once the seeder succeeds, this job
+reinstalls the same dependencies, recomputes the key and *requires*
+`actions/cache/restore` to return an exact cache hit, then fully validates
+both recovered reports/JUnits again. This demonstrates a default-branch
+cross-job cache hit without modifying production or needing an unrelated
+dummy pull request. Any runner image/dependency drift fails closed rather
+than masquerading as a successful shared cache.

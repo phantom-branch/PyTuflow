@@ -130,3 +130,55 @@ jobs:
           path: ${{ runner.temp }}/original-regression/
           retention-days: 30
           if-no-files-found: warn
+
+  verify-cache-hit:
+    if: github.repository == 'phantom-branch/PyTuflow' && github.ref == 'refs/heads/master'
+    needs: baselines
+    name: Windows Python ${{ matrix.python }} verify seeded cache hit
+    runs-on: windows-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.14"]
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          path: source
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: source/ci/requirements-regression.txt
+      - name: Install same pinned regression dependencies
+        run: |
+          python -m pip install -r ci/requirements-regression.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Recompute shared cache key from independent interpreter
+        id: baseline-key
+        run: |
+          $key = python ci/baseline_cache.py key --upstream "$env:UPSTREAM_SHA" --fork "$env:FORK_BASELINE_SHA"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "value=$key" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      - name: Independently restore seeded default-branch cache
+        id: baseline-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ runner.temp }}/original-regression/upstream
+            ${{ runner.temp }}/original-regression/baseline
+          key: pytuflow-w5-baseline-v1-${{ steps.baseline-key.outputs.value }}
+      - name: Require real hit and independently verify complete evidence
+        run: |
+          if ('${{ steps.baseline-cache.outputs.cache-hit }}' -ne 'true') {
+            throw 'Default-branch cache was not restored with the exact immutable key.'
+          }
+          python ci/baseline_cache.py verify --root "$env:RUNNER_TEMP/original-regression" --upstream "$env:UPSTREAM_SHA" --fork "$env:FORK_BASELINE_SHA"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Host "Complete cache hit confirmed across independent master jobs."
