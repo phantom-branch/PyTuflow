@@ -233,3 +233,36 @@ def test_bc_fews_csv_does_not_claim_ordinary_header_selectors(tmp_path: Path) ->
     result = TCF(top).collect_file_dependencies(["-e1 A"])
     assert result.passed
     assert result.runs[0].database_sources[0].csv_columns == ()
+
+
+def test_tef_token_exposed_by_second_variable_pass_invalidates_fragment(tmp_path: Path) -> None:
+    """A late _EVENT_ token must not reuse another event's file reference."""
+    (tmp_path / "events.tef").write_text(
+        "Define Event == A\n BC Event Source == _EVENT_ | first\nEnd Define\n"
+        "Define Event == B\n BC Event Source == _EVENT_ | second\nEnd Define\n",
+        encoding="utf-8",
+    )
+    top = tmp_path / "model.tcf"
+    top.write_text(
+        "Event File == events.tef\n"
+        "Set Variable A == <<B>>\n"
+        "Set Variable B == _EVENT_\n"
+        "Read GIS Code == <<A>>.shp\n",
+        encoding="utf-8",
+    )
+    model = TCF(top)
+    flags = ["-e1 A", "-e1 B", "-e1 A"]
+    expected = model.collect_batch_dependencies(flags)
+    actual = model.collect_file_dependencies(flags)
+    assert expected.passed and actual.passed
+    assert actual.fallback_runs == 0, actual.fallback_reason
+    assert actual.runs == expected.runs
+    assert actual.runs[0].file_references == actual.runs[2].file_references
+    assert actual.runs[0].file_references != actual.runs[1].file_references
+    names = [
+        {ref.path_pattern.name for ref in run.file_references}
+        for run in actual.runs
+    ]
+    assert "first.shp" in names[0]
+    assert "second.shp" in names[1]
+    assert "first.shp" in names[2]
