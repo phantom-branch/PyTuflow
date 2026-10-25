@@ -137,13 +137,19 @@ code remains useful locally.
 
 ## Coordination / open-PR clean-up
 
-This combined PR supersedes individual integration of #14/#15/#24/#25/#28
-**only after** combined CI, final native experiment and Codex review pass.
-Until then, the five original branches and their review histories remain
-available; do not merge or close them automatically. At acceptance, add a
-cross-reference and close them as superseded without deleting their
-branches or evidence. The eventual single upstream contribution remains
-owned by #36.
+Source pull requests #14/#15/#24/#25/#28 were **closed administratively
+as superseded** on 25 October 2026 after a source-blob comparison verified
+all non-overlapping changed files were byte-identical on the combined branch,
+the shared P6/P7/P10 code/CI files were reconciled and the first combined
+Windows 3.12/3.14 contract gates passed. They were **not merged** into
+`master`; their original branches, discussion and private evidence remain
+available. This housekeeping is not final combined acceptance.
+
+The consolidated #39 PR remains draft until full original-library parity,
+native SMB end-to-end measurement, performance decision and final review.
+If a component fails integration, repair it here or reopen an original
+source PR for an isolated fix; never silently discard its contract.
+The eventual single upstream contribution remains owned by #36.
 
 [#4](https://github.com/phantom-branch/PyTuflow/pull/4) Linux
 deferred-parity tracking is **intentionally left open** and is explicitly
