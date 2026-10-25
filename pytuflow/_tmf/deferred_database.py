@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
-import os
 
 from .file_reference import FileReference, make_file_reference
 from .parsers.command import Command
