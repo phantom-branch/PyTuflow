@@ -36,13 +36,13 @@ Use an existing separate upstream checkout and a separate updated fork checkout.
 In PowerShell, replace the following locations with the agent's **actual existing** network-drive checkout/report directories (not C:).
 
 ```powershell
-$Fork = 'F:\\Repos\\PyTuflow-fork'
-$Upstream = 'F:\\Repos\\PyTuflow-upstream'
-$Reports = 'F:\\Temp\\PyTuflowTyping_20261025'
+$Fork = 'F:\Repos\PyTuflow-fork'
+$Upstream = 'F:\Repos\PyTuflow-upstream'
+$Reports = 'F:\Temp\PyTuflowTyping_20261025'
 Get-Command pyright
 pyright --version
-& py -3.14 "$Fork\\ci\\typing_baseline.py" --source-root $Upstream --output-dir "$Reports\\upstream" --targets 3.9 3.10 3.11 3.12 3.13 3.14
-& py -3.14 "$Fork\\ci\\typing_baseline.py" --source-root $Fork --output-dir "$Reports\\fork" --targets 3.9 3.10 3.11 3.12 3.13 3.14 --verifytypes
+& py -3.14 "$Fork\ci\typing_baseline.py" --source-root $Upstream --output-dir "$Reports\upstream" --targets 3.9 3.10 3.11 3.12 3.13 3.14
+& py -3.14 "$Fork\ci\typing_baseline.py" --source-root $Fork --output-dir "$Reports\fork" --targets 3.9 3.10 3.11 3.12 3.13 3.14 --verifytypes
 ```
 
 The `py -3.14` interpreter only *runs the diagnostic script*; the `--pythonversion` switches ask Pyright to analyse source for other versions. **This is not evidence that Python 3.9 can install or import the wheel.** Running `--verifytypes` against a checkout assesses source-visible public interface completeness; a separate installed-wheel check is required before claiming a distributable typing contract.
