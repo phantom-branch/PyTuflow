@@ -1,0 +1,67 @@
+name: QGIS cell-to-vertex interpolation maths (W10)
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/_outputs/pymesh/mesh_geom/qgismesh_geom.py"
+      - "pytuflow/_outputs/pymesh/cell_data_mixin.py"
+      - "tests/test_qgis_vertex_angle_math.py"
+      - ".github/workflows/qgis-cell-vertex-maths.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  angle-maths:
+    name: Windows Python ${{ matrix.python-version }} angle interpolation
+    runs-on: windows-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+    env:
+      PYTEST_DISABLE_PLUGIN_AUTOLOAD: "1"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install documented dependencies without venv
+        run: python -m pip install -c requirements-dev.txt -e . pytest
+      - name: Record source identity
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force w10-reports | Out-Null
+          git rev-parse HEAD | Tee-Object w10-reports/head.txt
+          python -c "import sys, pytuflow; print(sys.version); print(pytuflow.__file__)" | Tee-Object w10-reports/runtime.txt
+          python -m pip freeze | Out-File w10-reports/dependencies.txt
+      - name: Exercise interpolation maths and existing numerical contracts
+        run: >-
+          python -m pytest -q
+          tests/test_qgis_vertex_angle_math.py
+          tests/test_qgis_centroid_math.py
+          --junitxml=w10-reports/interpolation.xml
+      - name: Require executed test evidence
+        if: always()
+        shell: python
+        run: |
+          from pathlib import Path
+          from xml.etree import ElementTree
+          root = ElementTree.parse(Path("w10-reports/interpolation.xml")).getroot()
+          cases = list(root.iter("testcase"))
+          assert len(cases) >= 14, f"Incomplete focused run: {len(cases)}"
+          for problem in ("error", "failure", "skipped"):
+              assert not list(root.iter(problem)), f"Unexpected {problem}"
+          print(f"Standalone analytical cases passed: {len(cases)}")
+      - name: Upload provenance and JUnit (not live QGIS acceptance)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w10-angle-maths-python-${{ matrix.python-version }}
+          path: w10-reports/
+          if-no-files-found: error
+          retention-days: 14
