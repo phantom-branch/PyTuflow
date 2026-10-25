@@ -157,10 +157,17 @@ def _join(fragments: Iterable[DependencyFragment]) -> DependencyFragment:
     activations: list[DeferredDatabaseActivation] = []
     for fragment in fragments:
         offset = len(commands)
-        commands.extend(replace(item, command_index=item.command_index + offset) for item in fragment.commands)
-        refs.extend(replace(item, command_index=item.command_index + offset) for item in fragment.references)
+        if offset:
+            # Only later fragments need their relative ordinals rebased.
+            commands.extend(replace(item, command_index=item.command_index + offset) for item in fragment.commands)
+            refs.extend(replace(item, command_index=item.command_index + offset) for item in fragment.references)
+            activations.extend(replace(item, sequence=item.sequence + offset) for item in fragment.activations)
+        else:
+            # Frozen first-fragment records already have the correct ordinals.
+            commands.extend(fragment.commands)
+            refs.extend(fragment.references)
+            activations.extend(fragment.activations)
         sources.extend(fragment.sources)
-        activations.extend(replace(item, sequence=item.sequence + offset) for item in fragment.activations)
     return DependencyFragment(tuple(commands), tuple(refs), tuple(sources), tuple(activations))
 
 

@@ -358,3 +358,41 @@ def test_tef_only_chained_event_substitutions_invalidate_fragments(tmp_path: Pat
     assert "first.shp" in names[0]
     assert "second.shp" in names[1]
     assert "first.shp" in names[2]
+
+
+def test_join_reuses_zero_offset_records_and_rebases_later_fragments(tmp_path: Path) -> None:
+    """Avoid copying frozen first records but preserve all later public ordinals."""
+    from pytuflow._tmf.batch_dependencies import BatchInputCommand, BatchInputReference
+    from pytuflow._tmf.file_reference import DeferredDatabaseActivation, FileReference
+    from pytuflow._tmf.fragment_dependencies import DependencyFragment, _join
+
+    def fragment(label: str) -> DependencyFragment:
+        path = tmp_path / f"{label}.csv"
+        ref = FileReference(path.parent, path.name, path, None, label, False, False, False, False)
+        command = BatchInputCommand(label, 0, tmp_path / "model.tcf", 1, "BC Database", f"BC Database == {label}.csv", 1)
+        reference = BatchInputReference(label, 0, command.owner_control_file, 1, ref)
+        activation = DeferredDatabaseActivation(0, label, "bc", path, "BC Database", command.owner_control_file, 1)
+        return DependencyFragment((command,), (reference,), (), (activation,))
+
+    first = fragment("first")
+    second = fragment("second")
+    output = _join((first, second))
+    assert len(output.commands) == len(output.references) == len(output.activations) == 2
+    assert output.commands[0] is first.commands[0]
+    assert output.references[0] is first.references[0]
+    assert output.activations[0] is first.activations[0]
+    assert output.commands[1].command_index == 1
+    assert output.references[1].command_index == 1
+    assert output.activations[1].sequence == 1
+    assert output.commands[1].input_uuid == second.commands[0].input_uuid
+    assert output.references[1].reference is second.references[0].reference
+    assert second.commands[0].command_index == 0
+    assert second.references[0].command_index == 0
+    assert second.activations[0].sequence == 0
+
+    # One already-offset-correct immutable subtree needs no new records.
+    single = _join((first,))
+    assert single == first
+    assert single.commands[0] is first.commands[0]
+    assert single.references[0] is first.references[0]
+    assert single.activations[0] is first.activations[0]
