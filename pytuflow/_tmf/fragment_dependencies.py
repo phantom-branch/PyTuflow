@@ -342,7 +342,11 @@ class _Plan:
                 # For example <<A>> -> <<B>> -> _EVENT_ has no remaining "<<"
                 # but its cached fragment still depends on the event selection.
                 needs_bindings = "<<" in value
-                if not needs_bindings and expression.variables and ctx.event_variables:
+                if not needs_bindings and ctx.event_variables:
+                    # TEF replacements themselves can cascade: _x_ -> _Y_
+                    # before a later ordinary translation resolves _Y_.
+                    # This applies even without any <<variable>> in the
+                    # source expression.
                     folded = value.casefold()
                     needs_bindings = any(str(token).casefold() in folded for token in ctx.event_variables)
                 binding = expression.bindings(ctx) if needs_bindings else ()
