@@ -10,31 +10,31 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     # Keep names visible to static analysers without loading readers at import.
-    from .info import INFO
-    from .tpc import TPC
-    from .gpkg_1d import GPKG1D
-    from .gpkg_2d import GPKG2D
-    from .gpkg_rl import GPKGRL
-    from .fm_ts import FMTS
-    from .fv_bc_tide import FVBCTide
-    from .hyd_tables_check import HydTablesCheck
-    from .bc_tables_check import BCTablesCheck
-    from .cross_sections import CrossSections
-    from .fm_dat import DATCrossSections
-    from .xmdf import XMDF
-    from .nc_mesh import NCMesh
-    from .catch_json import CATCHJson
-    from .dat import DAT
-    from .nc_grid import NCGrid
-    from .lp2d import LP2D
-    from .map_output import MapOutput
-    from .time_series import TimeSeries
-    from .tabular_output import TabularOutput
-    from .mesh import Mesh
-    from .grid import Grid
-    from .grid_mesh import GridMesh
-    from .output import Output
-    from .pymesh import FormatConvention
+    from .info import INFO as INFO
+    from .tpc import TPC as TPC
+    from .gpkg_1d import GPKG1D as GPKG1D
+    from .gpkg_2d import GPKG2D as GPKG2D
+    from .gpkg_rl import GPKGRL as GPKGRL
+    from .fm_ts import FMTS as FMTS
+    from .fv_bc_tide import FVBCTide as FVBCTide
+    from .hyd_tables_check import HydTablesCheck as HydTablesCheck
+    from .bc_tables_check import BCTablesCheck as BCTablesCheck
+    from .cross_sections import CrossSections as CrossSections
+    from .fm_dat import DATCrossSections as DATCrossSections
+    from .xmdf import XMDF as XMDF
+    from .nc_mesh import NCMesh as NCMesh
+    from .catch_json import CATCHJson as CATCHJson
+    from .dat import DAT as DAT
+    from .nc_grid import NCGrid as NCGrid
+    from .lp2d import LP2D as LP2D
+    from .map_output import MapOutput as MapOutput
+    from .time_series import TimeSeries as TimeSeries
+    from .tabular_output import TabularOutput as TabularOutput
+    from .mesh import Mesh as Mesh
+    from .grid import Grid as Grid
+    from .grid_mesh import GridMesh as GridMesh
+    from .output import Output as Output
+    from .pymesh import FormatConvention as FormatConvention
 
 
 _EXPORT_MODULES = {
