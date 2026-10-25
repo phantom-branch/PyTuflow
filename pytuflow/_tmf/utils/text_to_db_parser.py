@@ -44,5 +44,8 @@ def text_to_db_parser(fpath: PathLike) -> pd.DataFrame:
                     except ValueError:
                         pass
             rows.append(row)
-    df = pd.DataFrame(rows)
+    # Free-form TMF records may omit trailing optional material fields.
+    # Pad explicitly: pandas 3.1 deprecates implicit padding of ragged rows.
+    width = max((len(row) for row in rows), default=0)
+    df = pd.DataFrame([row + [float('nan')] * (width - len(row)) for row in rows])
     return df.set_index(df.columns[0])
