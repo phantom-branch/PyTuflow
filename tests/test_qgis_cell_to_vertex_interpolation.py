@@ -9,6 +9,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from qgis.core import QgsApplication, QgsProviderRegistry, QgsMeshLayer
+from netCDF4 import Dataset
 
 from pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom import QgisMeshGeometry
 from pytuflow._outputs.pymesh.cell_data_mixin import _qgis_cell_to_vertex
@@ -153,3 +154,32 @@ def test_qgis_vertex_position_scope_and_cached_subset(qapp, mixed_mesh):
     np.testing.assert_allclose(reverse, local_pos[[2, 1, 0]], equal_nan=True)
     np.testing.assert_allclose(geom.vertex_position(slice(None), scope='global'),
                                global_pos, equal_nan=True)
+
+
+@pytest.mark.parametrize("driver", [
+    "qgis geometry data extractor",
+    "qgis geometry netcdf4",
+    "qgis geometry h5py",
+])
+def test_qgis_vertex_wet_state_not_reused_between_times(qapp, tmp_path, driver):
+    path = tmp_path / "changing-wet.nc"
+    _write_fv(path)
+    with Dataset(path, "a") as nc:
+        state = nc["stat"][:]
+        state[1] = [0, 1, 1, 0]
+        nc["stat"][:] = state
+    reader = NCMesh(path, driver=driver)
+    native = NCMesh(path, driver="netcdf4")
+    first = reader.surface("tracer", 0., to_vertex=True)
+    second = reader.surface("tracer", 1., to_vertex=True)
+    first_expected = native.surface("tracer", 0., to_vertex=True)
+    second_expected = native.surface("tracer", 1., to_vertex=True)
+    for result, expected in ((first, first_expected), (second, second_expected)):
+        np.testing.assert_allclose(result[["x", "y", "value"]],
+                                   expected[["x", "y", "value"]],
+                                   rtol=1e-12, atol=1e-12, equal_nan=True)
+        np.testing.assert_array_equal(result["active"], expected["active"])
+    np.testing.assert_array_equal(first["active"].to_numpy()[:8],
+                                  [True] * 8)
+    np.testing.assert_array_equal(second["active"].to_numpy()[:8],
+                                  [False] * 4 + [True] * 4)
