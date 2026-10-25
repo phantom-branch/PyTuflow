@@ -1,0 +1,48 @@
+name: Pandas 3.1 output compatibility
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/pandas31-output-compatibility.yml"
+      - "pytuflow/_outputs/map_output.py"
+      - "pytuflow/_outputs/pymesh/mesh_geom/py2dm.py"
+      - "tests/test_pandas31_output_compatibility.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-pandas31:
+    name: Windows Python ${{ matrix.python-version }} / pandas 3.1
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install declared package and current pandas
+        run: python -m pip install -e . pytest "pandas>=3.1,<3.2"
+      - name: Verify dependency consistency
+        run: python -m pip check
+      - name: Record Python/pandas provenance
+        run: |
+          python -c "import sys, pandas, numpy, pytuflow; print('Python:', sys.version); print('pandas:', pandas.__version__); print('NumPy:', numpy.__version__); print('PyTUFLOW:', pytuflow.__file__)"
+      - name: Validate 2DM and line output contracts
+        run: python -m pytest -q tests/test_pandas31_output_compatibility.py --junitxml=pandas-geometry.xml
+      - name: Validate complete Python mesh suite
+        run: python -m pytest -q tests/test_map_output_pymesh.py --junitxml=pandas-python-mesh.xml
+      - name: Retain all test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pandas-output-${{ matrix.python-version }}
+          path: |
+            pandas-geometry.xml
+            pandas-python-mesh.xml
+          retention-days: 30
+          if-no-files-found: warn
