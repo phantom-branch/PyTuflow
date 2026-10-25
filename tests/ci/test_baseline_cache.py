@@ -50,8 +50,11 @@ def test_key_changes_on_source_environment_and_harness(tmp_path: Path) -> None:
 
 
 def test_cache_miss_or_missing_junit_cannot_authorise_reuse(tmp_path: Path) -> None:
-    with pytest.raises(ReportError):
-        verify_baselines(tmp_path, tmp_path, UPSTREAM, FORK)
+    # Do not require the project's real overlay fixture files in a temp dir;
+    # the missing report is the evidence error this test is exercising.
+    with patch("ci.baseline_cache.expected_overlays", return_value={}):
+        with pytest.raises(ReportError):
+            verify_baselines(tmp_path, tmp_path, UPSTREAM, FORK)
 
 
 @pytest.mark.parametrize(("property_name", "wrong"), [
