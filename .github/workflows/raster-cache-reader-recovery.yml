@@ -1,0 +1,46 @@
+name: Raster cache and reader recovery
+
+on:
+  push:
+    branches:
+      - fix/raster-cache-reader-recovery
+  pull_request:
+    paths:
+      - 'pytuflow/_outputs/grid.py'
+      - 'pytuflow/_outputs/nc_grid.py'
+      - 'tests/test_raster_cache_reader_recovery.py'
+      - '.github/workflows/raster-cache-reader-recovery.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  result-cache:
+    name: Windows Python ${{ matrix.python }} raster cache
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.12', '3.14']
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install test dependencies
+        run: python -m pip install -e . pytest "pandas==2.3.3"
+      - name: Focused cache and reader tests
+        run: python -m pytest -q tests/test_raster_cache_reader_recovery.py --junitxml=focused-cache.xml
+      - name: Existing time, mesh and series regressions
+        run: python -m pytest -q tests/test_result_time_correctness.py tests/test_map_output_pymesh.py tests/test_time_series.py --junitxml=existing-results.xml
+      - name: Upload JUnit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: raster-cache-python-${{ matrix.python }}
+          path: |
+            focused-cache.xml
+            existing-results.xml
+          if-no-files-found: error
