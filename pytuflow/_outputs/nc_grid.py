@@ -114,7 +114,7 @@ class NCGrid(Grid):
     10   9.487831           45.560959
     """
 
-    def __init__(self, fpath: PathLike):
+    def __init__(self, fpath: PathLike, *, memory_budget_bytes: int = 256 * 1024 * 1024):
         self.fpath = Path(fpath)
         self._loaded = False
         self._stnd2var = {}
@@ -137,7 +137,7 @@ class NCGrid(Grid):
         if not has_nc:
             raise ImportError('NetCDF4 library is required to read NCGrid files.')
 
-        super().__init__(fpath)
+        super().__init__(fpath, memory_budget_bytes=memory_budget_bytes)
 
     @staticmethod
     def _looks_like_this(fpath: PathLike) -> bool:
@@ -419,6 +419,18 @@ class NCGrid(Grid):
         if self._loaded:
             return
         self._loaded = True
+
+    def _source_slice_nbytes(self, dtype: str) -> int:
+        varname = self._stnd2var[dtype]
+        with self._open() as nc:
+            var = nc.variables[varname]
+            return max(1, int(np.prod(var.shape[1:])) * np.dtype(var.dtype).itemsize)
+
+    def _time_chunk_length(self, dtype: str) -> int:
+        varname = self._stnd2var[dtype]
+        with self._open() as nc:
+            chunks = nc.variables[varname].chunking()
+            return int(chunks[0]) if isinstance(chunks, (list, tuple)) and chunks else 1
 
     def _value(self, dtype: str, idx: tuple | int | np.ndarray | slice) -> float | np.ndarray:
         varname = self._stnd2var[dtype]

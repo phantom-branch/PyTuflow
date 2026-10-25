@@ -72,7 +72,7 @@ class Grid(MapOutput):
     197540  293778.75  6178586.25    NaN   False
     """
 
-    def __init__(self, fpath: PathLike | dict):
+    def __init__(self, fpath: PathLike | dict, *, memory_budget_bytes: int = 256 * 1024 * 1024):
         d = None
         if isinstance(fpath, dict):
             d, fpath = fpath, 'memory'
@@ -87,6 +87,15 @@ class Grid(MapOutput):
         # Ordinary reads retain at most four slices and 64 MiB per variable.
         # Preloaded/in-memory results are kept separately in _cached_data.
         self._surface_cache: dict[str, OrderedDict[int | None, np.ndarray]] = {}
+        self._surface_lru: OrderedDict[tuple[str, int | None], None] = OrderedDict()
+        self._surface_cache_bytes = 0
+        if not isinstance(memory_budget_bytes, (int, np.integer)) or isinstance(memory_budget_bytes, (bool, np.bool_)) or memory_budget_bytes <= 0:
+            raise ValueError("memory_budget_bytes must be a positive integer")
+        # A shared retained/transient working allowance per reader. It does
+        # not cover caller-owned results, imported datasets or HDF5 caches.
+        self.memory_budget_bytes = int(memory_budget_bytes)
+        self._header_cache: dict[str, tuple[bool, tuple, int]] = {}
+        self._header_source_id = None
         self._data = None
 
         if d is None:
@@ -217,101 +226,135 @@ class Grid(MapOutput):
                     self._data = grid.as_array()
         return self._data[idx]
 
-    def _surface(self, dtype: str, time_index: int | np.ndarray | slice) -> np.ndarray:
-        """Return selected surfaces in request order using a bounded lazy LRU.
+    @staticmethod
+    def _retained_bytes(value: np.ndarray) -> int:
+        """Count stored data and an allocated mask (if any)."""
+        size = int(value.nbytes)
+        if np.ma.isMaskedArray(value) and value.mask is not np.ma.nomask:
+            size += int(np.asarray(value.mask).nbytes)
+        return size
 
-        A lazy variable retains at most four individual surfaces and 64 MiB
-        (unless a single surface is larger, in which case that one surface is
-        retained). This does not constrain results explicitly loaded into
-        memory or the returned array for a request selecting many timesteps.
+    def _forget_surface(self, name: str, index: int | None):
+        """Remove an entry from the shared reader LRU and per-type view."""
+        identifier = (name, index)
+        self._surface_lru.pop(identifier, None)
+        cache = self._surface_cache.get(name)
+        if cache is not None and index in cache:
+            self._surface_cache_bytes -= self._retained_bytes(cache.pop(index))
+            if not cache:
+                self._surface_cache.pop(name, None)
+
+    def _clear_surface_cache(self):
+        self._surface_cache.clear()
+        self._surface_lru.clear()
+        self._surface_cache_bytes = 0
+
+    def _header(self, dtype: str) -> tuple[bool, tuple, int]:
+        """Memoise immutable grid metadata, invalidated when _info changes."""
+        if self._header_source_id != id(self._info):
+            self._header_cache.clear()
+            self._header_source_id = id(self._info)
+        key = dtype.lower()
+        if key not in self._header_cache:
+            row = self._info[self._info['data_type'] == dtype].iloc[0]
+            static = bool(row['static'])
+            info = tuple(row[x] for x in ('dx', 'dy', 'ox', 'oy', 'ncol', 'nrow', 'nodatavalue'))
+            # Use the existing W3 public time contract once, not on every
+            # surface access. Preserve irregular tuples and singleton axes.
+            count = 0 if static else len(self.times(dtype))
+            self._header_cache[key] = (static, info, count)
+        return self._header_cache[key]
+
+    def _surface(self, dtype: str, time_index: int | np.ndarray | slice) -> np.ndarray:
+        """Return requested slices in order from an aggregate per-reader LRU.
+
+        Cached data plus allocated masks are bounded by memory_budget_bytes
+        across all variables. An oversized individual surface is returned
+        without retention. Caller-owned output arrays are excluded.
         """
         key = dtype.lower()
-        is_static = self._is_static(dtype)
+        is_static, _, count = self._header(dtype)
         if is_static:
             indexes = [None]
+        elif isinstance(time_index, slice):
+            indexes = list(range(*time_index.indices(count)))
+        elif isinstance(time_index, (int, np.integer)):
+            indexes = [int(time_index)]
         else:
-            count = len(self.times(dtype))
-            if isinstance(time_index, slice):
-                indexes = list(range(*time_index.indices(count)))
-            elif isinstance(time_index, (int, np.integer)):
-                indexes = [int(time_index)]
+            requested = np.asarray(time_index)
+            if requested.ndim == 0:
+                requested = requested.reshape(1)
+            if requested.ndim != 1:
+                raise IndexError('Time selector must be one-dimensional.')
+            if np.issubdtype(requested.dtype, np.bool_):
+                if requested.size != count:
+                    raise IndexError('Boolean time selector must match the time axis.')
+                indexes = np.flatnonzero(requested).tolist()
+            elif requested.size == 0:
+                indexes = []
+            elif np.issubdtype(requested.dtype, np.integer):
+                indexes = requested.tolist()
             else:
-                requested = np.asarray(time_index)
-                if requested.ndim == 0:
-                    requested = requested.reshape(1)
-                if requested.ndim != 1:
-                    raise IndexError('Time selector must be one-dimensional.')
-                if np.issubdtype(requested.dtype, np.bool_):
-                    if requested.size != count:
-                        raise IndexError('Boolean time selector must match the time axis.')
-                    indexes = np.flatnonzero(requested).tolist()
-                elif requested.size == 0:
-                    indexes = []
-                elif np.issubdtype(requested.dtype, np.integer):
-                    indexes = requested.tolist()
-                else:
-                    raise IndexError('Time selector must contain integer indexes.')
+                raise IndexError('Time selector must contain integer indexes.')
+        if not is_static:
             indexes = [i + count if i < 0 else i for i in indexes]
             if any(i < 0 or i >= count for i in indexes):
                 raise IndexError('Time index out of range.')
 
-        # Grid(dict) and explicit load_into_memory store the full source array.
-        # Preserve those intentional memory semantics and never create another
-        # per-slice cache for data already resident in memory.
         if key in self._cached_data:
             source = self._cached_data[key]
             if is_static:
                 return source.copy()
-            if len(indexes) == 0:
+            if not indexes:
                 return source[:0].copy()
             if len(indexes) == 1:
                 return source[indexes[0]].copy()
             return source[indexes].copy()
 
         cache = self._surface_cache.setdefault(key, OrderedDict())
-        budget = 64 * 1024 * 1024
         values = []
         for ti in indexes:
+            identifier = (key, ti)
             if ti in cache:
                 cache.move_to_end(ti)
+                self._surface_lru.move_to_end(identifier)
                 value = cache[ti]
             else:
-                # asanyarray retains NumPy masked-array subclasses.
                 value = np.asanyarray(
                     self._value(dtype, slice(None) if is_static else ti)
                 ).copy()
-                # A single large surface can exceed the byte budget, but no
-                # additional surface may be retained alongside it.
-                while cache and (
-                    len(cache) >= 4
-                    or sum(v.nbytes for v in cache.values()) + value.nbytes > budget
-                    or value.nbytes > budget
-                ):
-                    cache.popitem(last=False)
-                cache[ti] = value
+                size = self._retained_bytes(value)
+                if size <= self.memory_budget_bytes:
+                    while (self._surface_lru
+                           and self._surface_cache_bytes + size > self.memory_budget_bytes):
+                        oldest = next(iter(self._surface_lru))
+                        self._forget_surface(*oldest)
+                    # The previous eviction may have removed this variable's
+                    # dictionary entirely; reinstate the same live object.
+                    self._surface_cache[key] = cache
+                    cache[ti] = value
+                    self._surface_lru[identifier] = None
+                    self._surface_cache_bytes += size
             values.append(value.copy())
 
         if len(values) == 1:
             return values[0]
         if not values:
-            _, _, _, _, ncol, nrow, _ = self._grid_info(dtype)
+            _, _, _, _, ncol, nrow, _ = self._header(dtype)[1]
             return np.empty((0, int(nrow), int(ncol)))
         if any(np.ma.isMaskedArray(v) for v in values):
             return np.ma.stack(values, axis=0)
         return np.stack(values, axis=0)
 
     def load_into_memory(self, data_types: str | list[str]):
-        """Explicitly retain all data for the requested variables.
-
-        Unlike ordinary _surface reads, this operation intentionally loads
-        every timestep, without the lazy cache's byte or slice budget.
-        """
+        """Explicit full-memory mode, separate from the bounded lazy cache."""
         for dtype in self._figure_out_data_types(data_types, None):
             key = dtype.lower()
             if key not in self._cached_data:
                 self._cached_data[key] = np.asanyarray(self._value(dtype, slice(None))).copy()
-                self._cached_timesteps[key] = set(range(len(self.times(dtype))))
-            self._surface_cache.pop(key, None)
+                self._cached_timesteps[key] = set(range(self._header(dtype)[2]))
+            for ti in list(self._surface_cache.get(key, ())):
+                self._forget_surface(key, ti)
 
     def to_mesh(self, base_topology: 'str | Grid | None' = None, direction_convention = 'arithmetic') -> GridMesh:
         """Converts the grid to a :class:`GridMesh<pytuflow.GridMesh>` object, essentially converting the grid
@@ -366,23 +409,52 @@ class Grid(MapOutput):
             base_topology = Grid(d)
         return GridMesh(self.fpath, self, base_topology, direction_convention)
 
+    def _source_slice_nbytes(self, dtype: str) -> int:
+        """Conservative float64 grid estimate; NCGrid overrides for dtype."""
+        _, info, _ = self._header(dtype)
+        return max(1, int(info[4]) * int(info[5]) * 8)
+
+    def _time_chunk_length(self, dtype: str) -> int:
+        """NetCDF readers override this with the source time-chunk size."""
+        return 1
+
     def _stream_extreme(self, dtype: str, maximum: bool) -> float:
-        """Reduce temporal grids one slice at a time, without stacking the cube."""
+        """Reduce temporal grids via bounded contiguous time-block reads.
+
+        A third of the reader allowance is reserved for input data; the rest
+        provides working headroom for masks and temporary arrays. Retained lazy
+        slices are evicted first so these two budgets cannot silently stack.
+        """
         reducer = np.nanmax if maximum else np.nanmin
-        if self._is_static(dtype):
+        if self._header(dtype)[0]:
             return float(reducer(self._surface(dtype, -1)))
-        combine = max if maximum else min
+        _, _, count = self._header(dtype)
+        self._clear_surface_cache()
+        if dtype.lower() in self._cached_data:
+            # Explicit preload or Grid(dict) is already resident in memory.
+            source = self._cached_data[dtype.lower()]
+            block_len = max(1, min(count, self.memory_budget_bytes // (3 * self._source_slice_nbytes(dtype))))
+        else:
+            source = None
+            block_len = max(1, min(count, self.memory_budget_bytes // (3 * self._source_slice_nbytes(dtype))))
+        chunk = max(1, self._time_chunk_length(dtype))
+        if block_len >= chunk:
+            block_len = max(chunk, (block_len // chunk) * chunk)
         result = None
-        for ti in range(len(self.times(dtype))):
-            values = np.asanyarray(self._surface(dtype, ti))
-            valid = values.compressed() if np.ma.isMaskedArray(values) else values.ravel()
+        for start in range(0, count, block_len):
+            stop = min(count, start + block_len)
+            block = np.asanyarray(source[start:stop] if source is not None
+                                  else self._value(dtype, slice(start, stop)))
+            # Preserve masked physical zero and existing NaN-only filtering.
+            valid = block.compressed() if np.ma.isMaskedArray(block) else block.ravel()
             valid = valid[~np.isnan(valid)]
             if valid.size:
-                value = (np.max(valid) if maximum else np.min(valid)).item()
-                result = value if result is None else combine(result, value)
+                extreme = (np.max(valid) if maximum else np.min(valid)).item()
+                result = extreme if result is None else (
+                    max(result, extreme) if maximum else min(result, extreme)
+                )
         if result is None:
-            # Preserve NumPy's original empty/all-NaN diagnostic contract.
-            return float(reducer(np.array([] if not self.times(dtype) else [np.nan])))
+            return float(reducer(np.array([] if count == 0 else [np.nan])))
         return float(result)
 
     def maximum(self, data_types: str | list[str]) -> float | pd.DataFrame:
@@ -1132,10 +1204,10 @@ class Grid(MapOutput):
         return n, m
 
     def _grid_info(self, dtype: str) -> tuple[float, float, float, float, int, int, float]:
-        return self._info[self._info['data_type'] == dtype].iloc[0, :][['dx', 'dy', 'ox', 'oy', 'ncol', 'nrow', 'nodatavalue']].values
+        return self._header(dtype)[1]
 
     def _is_static(self, dtype: str) -> bool:
-        return self._info[self._info['data_type'] == dtype].iloc[0]['static']
+        return self._header(dtype)[0]
 
     @staticmethod
     def gridline(line: list[tuple[float, float]],
