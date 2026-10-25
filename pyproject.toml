@@ -44,6 +44,7 @@ classifiers = [
 packages = ["pytuflow"]
 include = [
   "pytuflow/py.typed",
+  "pytuflow/TUFLOW.pyi",
   "pytuflow/_tmf/tmf/data/*.json",
   "pytuflow/_fm_to_estry/data/*.json",
   "pytuflow/_outputs/data/*.json",
