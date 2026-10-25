@@ -128,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
             metric, valid = run_command(
                 command, root, output / f"verifytypes-{target}.json",
             )
-            report["targets"][target]["installed_api_types"] = metric
+            report["targets"][target]["public_api_types"] = metric
             healthy &= valid
 
     (output / "summary.json").write_text(
