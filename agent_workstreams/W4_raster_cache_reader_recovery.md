@@ -9,24 +9,29 @@
 - Streaming reductions: `57badb0cce19b7114a39f130a22fe29023d98a78`.
 - Reader ownership fix for minimum: `742f298e28a77b00f958a96dc89ddf3c1af0b8e5`.
 - Mask-preservation fix following Codex P2 finding: `20d1cc5b68b5a8b3a3f058f7ff56baa1970c6a66`.
-- This documentation-only follow-up records the contract separately; validate the actual branch head when comparing results.
+- Original validated W4/QGIS checkpoint: `183f62c7ef4a1597670f23cd9999ffc019f9be7c`.
+- [SMB benchmark evidence and recommendation D](https://github.com/phantom-branch/PyTuflow/pull/20#issuecomment-6389083597): 216 accepted process trials and 312 three-trial medians, used independent normal source checkouts; no code from the experimental prototypes was pushed.
+- Recommendation D implementation: `28c5d9e66967899aab9b150ffefcf9aaabc4f241`; focused aggregation tests: `8b673ff3af703984ecf5b9c63559928da25e70b3`; all-missing fix: `fb2eaa0f7a7a7e623c6ba11d2dbc82c7014df1d1`.
+- Read the PR head before testing. **The earlier QGIS and native SMB validation evidence covers the pre-D implementation only**; repeat native QGIS and SMB acceptance before marking the new code ready or merging.
 
-## Lazy-cache contract
+## Configurable aggregate memory and bounded block reductions (recommendation D)
 
-`Grid._surface()` and `NCGrid._surface()` now retain an LRU dictionary **per variable**, not a float64 time cube. The ordinary retained cache has these hard limits:
+The previous W4 four-slice / 64 MiB-per-variable cache was replaced by a **single reader-wide LRU** spanning `(data_type, time_index)` entries. An entry accounts for its NumPy array data **plus any allocated mask**. Results from different variables compete for the same budget; a slice larger than that budget is returned but **not retained**. Cached surfaces and returned arrays remain independent defensive copies and preserve `MaskedArray` semantics.
 
-- **At most four slices per variable.**
-- **At most 64 MiB of stored arrays per variable**, except when one individual surface exceeds 64 MiB; one such surface may be retained alone.
-- Reads of one timestep therefore allocate **one two-dimensional source slice** and its returned copy, never an all-time cube. Temporary returned arrays for an explicit multi-index selection or full time selection may still be large by the caller's request.
-- The bound concerns the retained `_surface_cache` (not other Python/NumPy temporaries or provider-internal buffers); it does not multiply with the length of the file's time axis.
-- A hit updates LRU order; eviction removes the least-recently-used slice. Returned data are independent copies, so a caller cannot corrupt cached values. NumPy `MaskedArray` subclasses retain their masks through copies, temporal stacking and extrema calculations.
-- The old `_cached_data` remains reserved for `Grid(dict)` / `load_into_memory`, which are intentionally **unbounded** with respect to the lazy budget, loading the entire variable when explicitly requested.
+- Configure the reader through the optional keyword `memory_budget_bytes` on `Grid(...)` or `NCGrid(...)`.
+- **Default: 256 MiB per reader**, not 1 GiB; e.g. `NCGrid(path, memory_budget_bytes=512 * 1024**2)` for the measured multi-variable hotset, or `1024 * 1024**2` for an explicitly chosen 1 GiB limit. Values must be positive integers.
+- There is **no independent four-slice cap**; the aggregate bytes govern retained slices. Changing the budget affects one reader instance, not a process-wide pool. Multiple readers can each use the configured allowance.
+- The historical `_surface_cache` per-type views remain available internally; `_surface_lru` and `_surface_cache_bytes` record reader-wide eviction and retained bytes.
+- Explicit `load_into_memory()` and resident `Grid(dict)` are **intentionally not bound** by the reader's lazy budget; they retain the full original/preloaded arrays.
+- Source/library HDF5 caches, Python runtime allocations, caller-owned output arrays, and oversized single-surface operations lie outside this retained budget and require process-level planning.
 
-Temporal selection accepts integers and NumPy integer scalars, 1-D integer lists/tuples/ndarrays, 1-D Boolean masks, and Python slices including zero bounds, reverse direction and non-unit steps. It normalises Python-style negative indices, preserves requested order and repeated timesteps, and rejects invalid/out-of-range selectors. A single selected timestep retains the existing squeezed 2-D return shape; multi-timestep requests stack into time-first arrays; empty selection produces an empty time-first array. Static variables retain one 2-D slice.
+**Reductions:** `maximum()` and `minimum()` bypass the surface-LRU path for time scans. They evict the retained lazy cache at scan start and read **contiguous blocks** via the existing NetCDF reader instead of one slice at a time. The block-step size derives from the variable's on-disk dtype/shape, up to **one-third** of `memory_budget_bytes` for input payload and remaining headroom for mask, selection and reducer temporaries. When feasible, block size is aligned downward to the NetCDF time-chunk length, with a partial final block. A single slice larger than the allowance can still be read as one unavoidable operation. This is a **bounded working allocation heuristic**, not a cap on peak RSS or HDF5's internal cache.
 
-`maximum()` and `minimum()` reduce incrementally across requested timesteps without materialising an all-time array; the NCGrid public wrappers keep the NetCDF handle open during both operations. Flux already loops across timesteps and now benefits from the bounded cache. The previously inherited memory pseudo-path lookup on `Grid(dict)` has been corrected to use its resident data for point/time-series reads.
+An ordinary reduction **clears prior retained cache entries before using the working block allowance**. Thus it does not quietly stack an additional block buffer on a full 1 GiB reader cache. The unchanged explicit full-memory mode remains an opt-in exception. Ordinary surface extraction still uses the aggregate cache; repeated/ordered/negative/Boolean selectors preserve the W3 time contract and requested shapes.
 
-For reference, the old float64 allocation at 500 × 2000 × 2000 would be **16 GB per variable**, versus one 2000 × 2000 slice at **32 MB**. This is analytical allocation arithmetic, not a native benchmark. New tests examine actual retained array shapes and slice counts for small generated time axes.
+**Metadata:** `Grid._header()` memoises time counts, static status and spatial header values once per variable from the loaded, normally immutable `_info` DataFrame; replacement of that DataFrame invalidates the memoised entries. Callers that intentionally mutate metadata **in place** should use a new Grid/NCGrid reader. This avoids rebuilding the public `times()` results on every cache hit while leaving public `times()` unchanged.
+
+For illustration, the benchmark's compressed SMB 40-step × 1536² float64 extrema took about **3.88 s** with W4's prior single-step scan versus **1.21 s** with a **256 MiB block prototype** (four steps per read). Its 288 MiB three-variable flux hotset fitted at **512 MiB aggregate** (not at 256 MiB). Those are results from the separately executed **prototype**, not an assertion of equivalent performance in this production implementation. A new matched Windows/SMB comparison is required.
 
 ## NetCDF reader ownership contract
 
@@ -46,11 +51,12 @@ python -m pytest -q tests/test_result_time_correctness.py tests/test_map_output_
 
 - [First validated Windows implementation run](https://github.com/phantom-branch/PyTuflow/actions/runs/40084833007): both Windows Python 3.12 and 3.14 jobs passed **23 focused** and **457 inherited W3/PyMesh/time-series** tests, with no failures.
 - The streaming-extrema follow-up exposed a reader-context issue in `NCGrid.minimum()` (23 passed, 1 failed in the first follow-up run); this was corrected in `742f298`, without suppressions or expectation changes.
-- [Current Windows acceptance workflow](https://github.com/phantom-branch/PyTuflow/actions/runs/40085144957): Python 3.12/3.14, **24 focused** cases plus **457 existing** cases per interpreter, all passing. A subsequent Codex P2 finding identified mask loss for resident NumPy masked arrays; the follow-up adds **2 focused cases** (26 total) and preserves masks in resident/cache copies, stacking and reductions. The new exact-head run must be checked separately rather than claimed passing in advance.
-- This work does **not** claim an actual QGIS/MDAL provider run. QGIS/MDAL comparison on an installed QGIS 4 runtime remains a separate acceptance lane to be conducted using the actual provider and the accepted W3 baseline. Never treat a non-QGIS run as passing the QGIS suite.
+- [Current Windows acceptance workflow](https://github.com/phantom-branch/PyTuflow/actions/runs/40085144957): Python 3.12/3.14, **24 focused** cases plus **457 existing** cases per interpreter, all passing. A subsequent Codex P2 finding identified mask loss for resident NumPy masked arrays; the follow-up adds **2 focused cases** (26 total) and preserves masks in resident/cache copies, stacking and reductions. [Reviewed W4 head Windows run](https://github.com/phantom-branch/PyTuflow/actions/runs/40085840750) passed all 26 focused and 457 existing tests per supported interpreter. That is pre-D evidence, not validation of the new implementation.
+- [Native QGIS/MDAL acceptance](https://github.com/phantom-branch/PyTuflow/pull/20#issuecomment-6388178669) passed at pre-D head `183f62c`: baseline and candidate **239/239 QGIS** each; **134 W3/W4 focused**; strict comparison exit 0. Fresh provider acceptance remains **required** for this changed code.
+- [Initial D focused/legacy Windows run](https://github.com/phantom-branch/PyTuflow/actions/runs/40169222591): see final job evidence for the precise counts. The extra all-missing test is exercised in the subsequent run; do not infer native SMB speedups from these functional tests.
 
 ## Coordination and exclusions
 
-Retain the W3 time-unit and timestep-selection contract. The source and tests are W4-owned; W5/#19 retains shared regression infrastructure and W8/#23 owns numerical FV reductions. Do not modify those workstreams to manufacture green CI. No production dependency pins, deferred/graph workflows, solver runs, native SMB benchmarks, private model data, merge or release are included in this implementation.
+Retain the W3 time-unit and timestep-selection contract. The source and tests are W4-owned; W5/#19 retains shared regression infrastructure and W8/#23 owns numerical FV reductions. Do not modify those workstreams to manufacture green CI. No production dependency pins, deferred/graph workflows, solver runs, private model data, merge or release are included. The separate approved native SMB benchmark was performed before D implementation, with only sanitised aggregates posted.
 
-The first Codex review on documentation head `c6697f0` found a genuine P2 mask-preservation issue; the follow-up implementation and regression tests are in `20d1cc5`. Re-review the new head after its CI gates pass. Final readiness also requires the separate native QGIS/MDAL lane. Any QGIS results and Codex review findings must be recorded explicitly.
+The earlier Codex P2 mask-preservation issue was fixed in `20d1cc5` and the review thread resolved. Recommendation D changes need a **new Codex review on the exact head**, followed by native QGIS/MDAL and SMB performance acceptance. Do not merge or claim acceptance on the strength of the prior W4 reviews.
