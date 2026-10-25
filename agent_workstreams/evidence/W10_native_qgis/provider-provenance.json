@@ -1,0 +1,178 @@
+{
+  "package": "<candidate-checkout>\\pytuflow\\__init__.py",
+  "modules": {
+    "nc_mesh": {
+      "origin": "<candidate-checkout>\\pytuflow\\_outputs\\nc_mesh.py",
+      "has_qgis": true,
+      "h5py": true,
+      "netcdf4": true
+    },
+    "xmdf": {
+      "origin": "<candidate-checkout>\\pytuflow\\_outputs\\xmdf.py",
+      "has_qgis": true,
+      "h5py": true,
+      "netcdf4": true
+    }
+  },
+  "providers": [
+    "OAPIF",
+    "WFS",
+    "arcgisfeatureserver",
+    "arcgisimageserver",
+    "arcgismapserver",
+    "arcgisvectortileservice",
+    "cesiumtiles",
+    "copc",
+    "delimitedtext",
+    "ept",
+    "esrii3s",
+    "gdal",
+    "gpx",
+    "hana",
+    "mbtilesvectortiles",
+    "mdal",
+    "memory",
+    "mesh_memory",
+    "mssql",
+    "ogr",
+    "oracle",
+    "pdal",
+    "postgres",
+    "postgresraster",
+    "quantizedmesh",
+    "sensorthings",
+    "spatialite",
+    "tiledscene",
+    "vectortile",
+    "virtual",
+    "virtualraster",
+    "vpc",
+    "vtpkvectortiles",
+    "wcs",
+    "wms",
+    "xyzvectortiles"
+  ],
+  "class_origins": {
+    "NCMesh": "<candidate-checkout>\\pytuflow\\_outputs\\nc_mesh.py",
+    "XMDF": "<candidate-checkout>\\pytuflow\\_outputs\\xmdf.py",
+    "NCGrid": "<candidate-checkout>\\pytuflow\\_outputs\\nc_grid.py"
+  },
+  "output_exports": [
+    "INFO",
+    "TPC",
+    "GPKG1D",
+    "GPKG2D",
+    "GPKGRL",
+    "FMTS",
+    "FVBCTide",
+    "HydTablesCheck",
+    "BCTablesCheck",
+    "CrossSections",
+    "DATCrossSections",
+    "XMDF",
+    "NCMesh",
+    "CATCHJson",
+    "DAT",
+    "NCGrid",
+    "LP2D",
+    "MapOutput",
+    "TimeSeries",
+    "TabularOutput",
+    "Mesh",
+    "Grid",
+    "GridMesh",
+    "Output",
+    "FormatConvention"
+  ],
+  "sys_path_unchanged": true,
+  "available_provider_controls": [
+    {
+      "reader": "NCMesh",
+      "driver": "qgis geometry data extractor",
+      "fixture": "tests/nc_mesh/fv_res.nc",
+      "types": [
+        "bed level",
+        "velocity",
+        "water level"
+      ],
+      "driver_class": "pytuflow._outputs.pymesh.pyncmesh.PyNCMesh"
+    },
+    {
+      "reader": "NCMesh",
+      "driver": "qgis geometry netcdf4",
+      "fixture": "tests/nc_mesh/fv_res.nc",
+      "types": [
+        "bed level",
+        "water level",
+        "velocity"
+      ],
+      "driver_class": "pytuflow._outputs.pymesh.pyncmesh.PyNCMesh"
+    },
+    {
+      "reader": "NCMesh",
+      "driver": "qgis geometry h5py",
+      "fixture": "tests/nc_mesh/fv_res.nc",
+      "types": [
+        "bed level",
+        "water level",
+        "velocity"
+      ],
+      "driver_class": "pytuflow._outputs.pymesh.pyncmesh.PyNCMesh"
+    },
+    {
+      "reader": "XMDF",
+      "driver": "qgis geometry data extractor",
+      "fixture": "tests/xmdf/run.xmdf",
+      "types": [
+        "bed level",
+        "max depth",
+        "max vector velocity",
+        "max velocity",
+        "max water level",
+        "depth",
+        "vector velocity",
+        "velocity",
+        "water level",
+        "tmax water level"
+      ],
+      "driver_class": "pytuflow._outputs.pymesh.pyxmdf.PyXMDF"
+    },
+    {
+      "reader": "XMDF",
+      "driver": "qgis geometry netcdf4",
+      "fixture": "tests/xmdf/run.xmdf",
+      "types": [
+        "bed level",
+        "max depth",
+        "max vector velocity",
+        "max velocity",
+        "max water level",
+        "depth",
+        "vector velocity",
+        "velocity",
+        "water level",
+        "tmax water level"
+      ],
+      "driver_class": "pytuflow._outputs.pymesh.pyxmdf.PyXMDF"
+    },
+    {
+      "reader": "XMDF",
+      "driver": "qgis geometry h5py",
+      "fixture": "tests/xmdf/run.xmdf",
+      "types": [
+        "bed level",
+        "max depth",
+        "max vector velocity",
+        "max velocity",
+        "max water level",
+        "depth",
+        "vector velocity",
+        "velocity",
+        "water level",
+        "tmax water level"
+      ],
+      "driver_class": "pytuflow._outputs.pymesh.pyxmdf.PyXMDF"
+    }
+  ],
+  "stub_substitution": false
+}
