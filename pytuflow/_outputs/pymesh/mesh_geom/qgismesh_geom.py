@@ -1,3 +1,4 @@
+import operator
 import typing
 from collections import OrderedDict
 from pathlib import Path
@@ -17,6 +18,34 @@ except ImportError:
 
 from . import PyMeshGeometry
 from .. import ellipsoid_distance, Transform2D, PointMixin, PointLike
+
+
+
+def _face_centroid(vertices: np.ndarray) -> np.ndarray:
+    """Area-weighted native-mesh face centroid with optional native vertex Z."""
+    coords = np.asarray(vertices, dtype=np.float64)
+    if coords.ndim != 2 or coords.shape[0] < 3 or coords.shape[1] != 3:
+        raise ValueError("A mesh face needs at least three XYZ vertices")
+    if not np.isfinite(coords[:, :2]).all():
+        raise ValueError("Mesh face has non-finite XY coordinates")
+
+    # Shift first to avoid cancellation for large projected CRS coordinates.
+    xy = coords[:, :2] - coords[0, :2]
+    shifted = np.roll(xy, -1, axis=0)
+    cross = xy[:, 0] * shifted[:, 1] - shifted[:, 0] * xy[:, 1]
+    twice_area = float(np.sum(cross))
+    extent = float(np.max(np.abs(xy)))
+    if not np.isfinite(twice_area) or abs(twice_area) <= np.finfo(float).eps * extent**2:
+        raise ValueError("Mesh face has zero or invalid signed area")
+    centroid_xy = coords[0, :2] + np.sum((xy + shifted) * cross[:, None], axis=0) / (3. * twice_area)
+
+    z = np.nan
+    if np.isfinite(coords[:, 2]).all():
+        # Integrate piecewise-linear native Z over a signed triangle fan.
+        triangles = xy[1:-1, 0] * xy[2:, 1] - xy[2:, 0] * xy[1:-1, 1]
+        z_means = (coords[0, 2] + coords[1:-1, 2] + coords[2:, 2]) / 3.
+        z = float(np.dot(triangles, z_means) / twice_area)
+    return np.array([centroid_xy[0], centroid_xy[1], z], dtype=np.float64)
 
 
 class PointMixinQgis(PointMixin):
@@ -51,6 +80,7 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
         self._tri_count = 0
         self._ibed = -1
         self._vertex_positions_cache = None
+        self._cell_positions_cache: dict[int, np.ndarray] = {}
         self.dtype = np.float64
 
     @property
@@ -101,6 +131,64 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
     def cell_vertices(self, cell_id: int) -> list[int]:
         self.init_spatial_index()
         return list(self._mesh.face(cell_id))
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Return original-face centroids as N × 3 coordinates in face ID order.
+
+        XY are planimetric polygon-area centroids in the native mesh CRS. Z is
+        integrated from native mesh vertex elevations where *all* exist; it is
+        NaN where native vertex Z is unavailable (not a fabricated bed level).
+        QGIS geometry uses the native mesh CRS as global and the configured
+        `self.trans` transform for local coordinates (identity by default).
+        """
+        if scope not in ('global', 'local'):
+            raise ValueError("scope must be 'global' or 'local'")
+        if not self._loaded:
+            self.load()
+        self.init_spatial_index()
+        face_count = self._mesh.faceCount()
+
+        if isinstance(cell_id, slice):
+            face_ids = list(range(face_count)[cell_id])
+        else:
+            if isinstance(cell_id, (bool, np.bool_)):
+                raise TypeError('Boolean cell indices are not supported')
+            try:
+                face_ids = [operator.index(cell_id)]
+            except TypeError:
+                try:
+                    face_ids = list(cell_id)
+                except TypeError as exc:
+                    raise TypeError('cell_id must be an integer, iterable of integers, or slice') from exc
+        validated = []
+        for face_id in face_ids:
+            if isinstance(face_id, (bool, np.bool_)):
+                raise TypeError('Boolean cell indices are not supported')
+            try:
+                index = operator.index(face_id)
+            except TypeError as exc:
+                raise TypeError('Cell indices must be integers') from exc
+            if index < 0 or index >= face_count:
+                raise IndexError(f'Cell index {index} outside [0, {face_count})')
+            validated.append(index)
+
+        result = np.empty((len(validated), 3), dtype=np.float64)
+        for i, index in enumerate(validated):
+            if index not in self._cell_positions_cache:
+                face = self._mesh.face(index)
+                vertices = []
+                for vertex_id in face:
+                    vertex = self._mesh.vertex(vertex_id)
+                    # QgsMeshVertex is a QgsPoint; 2-D meshes have no native Z.
+                    has_z = vertex.is3D() if hasattr(vertex, 'is3D') else False
+                    z = float(vertex.z()) if has_z else np.nan
+                    vertices.append((vertex.x(), vertex.y(), z))
+                self._cell_positions_cache[index] = _face_centroid(np.asarray(vertices))
+            result[i, :] = self._cell_positions_cache[index]
+
+        if scope == 'local' and len(result):
+            return self.trans.transform(result)
+        return result
 
     def vertex_position(self, vertex_id: int | typing.Iterable[int] | slice, get_z: bool = True, *args, **kwargs) -> np.ndarray:
         if not self._loaded:

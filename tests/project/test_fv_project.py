@@ -222,8 +222,10 @@ class TestFVBaseFeatureApplyToControlFiles:
         block.append_input('Output Interval == 300.')
         inp = fvc.append_input('Include == outputs.fvc')
         # A new Include can have an unloaded placeholder for outputs.fvc.
-        # Replace it with the explicitly built include: one physical save
-        # destination must have exactly one control-file owner.
+        # Check the existing owner before replacing it: there must be exactly
+        # one control-file object for each physical save destination.
+        assert len(inp.cf) == 1
+        assert inp.cf[0].fpath == include.fpath
         inp.cf[:] = [include]
         assert len(inp.cf) == 1
 
