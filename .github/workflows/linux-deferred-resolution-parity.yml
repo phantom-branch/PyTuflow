@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: Chain-Frost/ryan-tools
-          ref: b780e0feb5b9178f7d020b98f241639f95ceddac
+          ref: 78e1637c7500a307449ce2b38a6fa7c60bf7043a
           path: ryan-tools
       - name: Initialise immutable public TUFLOW example archive
         working-directory: ryan-tools
