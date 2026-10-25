@@ -12,6 +12,7 @@ from pytuflow import (
     FVProject,
     HPCProject,
     NCGrid,
+    ResData,
     NCMesh,
     TCF,
     TuflowBinaries,
@@ -31,6 +32,8 @@ def consume_public_api(
     assert_type(context, Context)
     assert_type(binary_registry, TuflowBinaries)
     assert_type(NCGrid(path), NCGrid)
+    assert_type(ResData().format(), str)
+    assert_type(ResData().getTimeSeriesData('Channel_1', 'Q')[0], bool)
     assert_type(NCMesh(path), NCMesh)
     assert_type(XMDF(path, twodm=path), XMDF)
     assert_type(HPCProject, type[HPCProject])
