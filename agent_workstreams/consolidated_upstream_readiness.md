@@ -38,13 +38,22 @@ completed. Do not rename, rebase, cherry-pick or merge another agent's branches.
   floor if independently supported; QGIS/Python 3.12 and standalone 3.14
   must remain working. Do not lower runtime metadata just to match original
   upstream's incorrect 3.9 claim.
-- Optional, not prerequisite by default: Linux deferred follow-up #4,
-  diagnostic profiling PRs #24/#25/#28, experimental benchmark branches.
-  Escalate a diagnostic finding into a scoped fix only if a regression warrants it.
+- **Mandatory prior gate:** Linux parity [#4](https://github.com/phantom-branch/PyTuflow/pull/4)
+  **must be accepted and merged before this consolidated #36 review/freeze**.
+  Require its native Ubuntu focused regressions, complete public 161-TCF /
+  174-run eager/deferred/batch parity and documented TUFLOW Linux case policy.
+  Its consumer dependency [ryan-tools #162](https://github.com/Chain-Frost/ryan-tools/pull/162)
+  must merge first. Do not count historical Linux diagnostics, skipped Linux CI,
+  case-mismatched files, or incomplete secondary scans as accepted evidence.
+- Optional: diagnostic profiling PRs #24/#25/#28 and experimental benchmark
+  branches. Escalate a finding into a scoped fix only when justified.
 
 ## Milestone A — Freeze and run the complete consolidated acceptance
 
-1. Verify #34 and #20 merged; obtain a clean **normal** fork checkout at the
+1. Verify #34, #20 and **#4 (after ryan-tools #162)** merged with passing,
+   exact-head Linux/Windows acceptance; record the published Linux inventory,
+   mode policy, parser and consumer SHAs before freezing anything. Then obtain
+   a clean **normal** fork checkout at the
    resulting exact `master` SHA, plus a separate clean checkout of official
    upstream at its newly verified `master` SHA. Do not use virtualenvs or
    new Git worktrees. Confirm no test run changes tracked source or fixtures.
