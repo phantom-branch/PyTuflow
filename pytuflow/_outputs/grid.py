@@ -454,7 +454,10 @@ class Grid(MapOutput):
                     max(result, extreme) if maximum else min(result, extreme)
                 )
         if result is None:
-            return float(reducer(np.array([] if count == 0 else [np.nan])))
+            if count == 0:
+                raise ValueError('Cannot reduce an empty time axis.')
+            # Avoid NumPy all-NaN RuntimeWarnings with warnings-as-errors.
+            return float('nan')
         return float(result)
 
     def maximum(self, data_types: str | list[str]) -> float | pd.DataFrame:

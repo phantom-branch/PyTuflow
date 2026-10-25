@@ -332,3 +332,13 @@ def test_mask_bytes_are_charged_across_shared_cache(tmp_path, monkeypatch):
         assert reader._surface_cache_bytes == 2 * (9 * 8 + 9)
         reader._surface("water level", 2)
         assert reader._surface_cache_bytes == 2 * (9 * 8 + 9)
+
+
+def test_all_missing_extrema_yield_nan_without_warnings(tmp_path):
+    path = make_nc(tmp_path, 8)
+    with Dataset(path, "a") as nc:
+        nc.variables["water_level"][:] = np.nan
+    reader = NCGrid(path)
+    assert np.isnan(reader.maximum("water level"))
+    assert np.isnan(reader.minimum("water level"))
+    assert reader._surface_cache_bytes == 0
