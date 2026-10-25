@@ -137,7 +137,22 @@ class _FragmentContext(BatchContext):
         self.file_resolution = "deferred"
 
     def translate(self, item: Any) -> Any:
-        return self.expressions.translate(self, item)
+        from .tfpathlib import TuflowPath
+
+        # Within a completed run context, the existing BatchContext invalidation
+        # contract covers new flags, events and variable declarations. Repeated
+        # subtree-key checks can therefore reuse the translated value without
+        # rebuilding a cross-run expression binding key each time.
+        if not self._batch_active or not isinstance(item, (str, TuflowPath)):
+            return self.expressions.translate(self, item)
+        key = str(item)
+        if key in self._batch_translations:
+            self.translation_hits += 1
+            return self._batch_translations[key]
+        translated = self.expressions.translate(self, item)
+        self.translation_misses += 1
+        self._batch_translations[key] = translated
+        return translated
 
 
 @dataclass(frozen=True, slots=True)

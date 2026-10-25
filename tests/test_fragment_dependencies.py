@@ -396,3 +396,25 @@ def test_join_reuses_zero_offset_records_and_rebases_later_fragments(tmp_path: P
     assert single.commands[0] is first.commands[0]
     assert single.references[0] is first.references[0]
     assert single.activations[0] is first.activations[0]
+
+
+def test_fragment_context_memo_reuses_translations_and_invalidates_on_variables() -> None:
+    """Within-run reuse must not alias values after an approved variable change."""
+    from pytuflow._tmf.fragment_dependencies import ExpressionPool, _FragmentContext
+    from pytuflow._tmf.settings import TCFConfig
+
+    pool = ExpressionPool()
+    ctx = _FragmentContext("-s1 DEV", TCFConfig(), pool)
+    ctx.load_variables({"A": "first"})
+    expression = "input_<<A>>.csv"
+    assert ctx.translate(expression) == "input_first.csv"
+    before = pool.evaluations + pool.reuses
+    assert ctx.translate(expression) == "input_first.csv"
+    assert pool.evaluations + pool.reuses == before
+    assert ctx.translation_hits >= 1
+
+    ctx.load_variables({"A": "second"})
+    assert ctx.translate(expression) == "input_second.csv"
+    assert pool.evaluations + pool.reuses == before + 1
+    assert ctx.translate(expression) == "input_second.csv"
+    assert pool.evaluations + pool.reuses == before + 1
