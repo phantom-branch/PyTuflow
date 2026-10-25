@@ -5,6 +5,7 @@ at collection time: it is not a standalone-Python substitute for provider
 validation. Initially reproduces the inherited unimplemented-weight gap.
 """
 from pathlib import Path
+from math import atan2, pi
 
 import numpy as np
 import pytest
@@ -106,7 +107,8 @@ def test_connected_triangle_and_quad_real_mdal_angle_parity(qapp, tmp_path):
         "E3T 1 1 2 3 1\n"
         "E4Q 2 2 5 6 4 1\n"
         "ND 1 0 0 0\nND 2 2 0 0\nND 3 0 2 0\n"
-        "ND 4 2 2 0\nND 5 4 0 0\nND 6 4 2 0\n",
+        "ND 4 3 2 0\nND 5 4 0 0\nND 6 4 2 0\n"
+        "ND 7 9 9 0\n",
         encoding="ascii",
     )
     lyr = QgsMeshLayer(str(path), "shared", "mdal")
@@ -118,14 +120,21 @@ def test_connected_triangle_and_quad_real_mdal_angle_parity(qapp, tmp_path):
     nodes = geom.cell_nodes
     assert nodes.shape == weights.shape == (2, 4)
     assert geom.vertices.shape[0] == lyr.dataProvider().vertexCount()
-    np.testing.assert_allclose(weights[0, 1], 1 / 3, rtol=1e-12, atol=1e-12)
-    np.testing.assert_allclose(weights[1, 0], 2 / 3, rtol=1e-12, atol=1e-12)
+    # Independently: triangle corner is 45 degrees, irregular quad corner
+    # between (2, 0) and (1, 2) is atan2(2, 1), not a right angle.
+    triangle_angle, quad_angle = pi / 4, atan2(2, 1)
+    total_angle = triangle_angle + quad_angle
+    np.testing.assert_allclose(weights[0, 1], triangle_angle / total_angle, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(weights[1, 0], quad_angle / total_angle, rtol=1e-12, atol=1e-12)
+    assert len(geom.vertices) == 7  # Include a native isolated vertex.
     assert weights[0, 3] == 0.
     active_values, active = _qgis_cell_to_vertex(
         np.array([3., 9.]), [True, True], nodes, weights, len(geom.vertices),
     )
-    np.testing.assert_allclose(active_values[1], 7., rtol=1e-12, atol=1e-12)
+    expected = (3 * triangle_angle + 9 * quad_angle) / total_angle
+    np.testing.assert_allclose(active_values[1], expected, rtol=1e-12, atol=1e-12)
     assert active[1]
+    assert active_values[6] == 0 and not active[6]
     dry_values, dry_active = _qgis_cell_to_vertex(
         np.array([3., 9.]), [True, False], nodes, weights, len(geom.vertices),
     )
@@ -154,6 +163,13 @@ def test_qgis_vertex_position_scope_and_cached_subset(qapp, mixed_mesh):
     np.testing.assert_allclose(reverse, local_pos[[2, 1, 0]], equal_nan=True)
     np.testing.assert_allclose(geom.vertex_position(slice(None), scope='global'),
                                global_pos, equal_nan=True)
+    assert geom._vertex_positions_cache is not None
+    # Also exercise provider extraction without a full-mesh cache, including
+    # duplicates: chunked bed values must retain the caller's vertex order.
+    geom._vertex_positions_cache = None
+    subset = [2, 0, 2, 1]
+    np.testing.assert_allclose(geom.vertex_position(subset, get_z=True),
+                               global_pos[subset], equal_nan=True)
 
 
 @pytest.mark.parametrize("driver", [

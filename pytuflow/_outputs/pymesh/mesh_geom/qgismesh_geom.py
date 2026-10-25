@@ -265,7 +265,7 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
             return self.trans.transform(cached) if scope == 'local' else cached
 
         cache_result = False
-        if isinstance(vertex_id, slice) == slice(None) and get_z:
+        if isinstance(vertex_id, slice) and vertex_id == slice(None) and get_z:
             cache_result = True
 
         if isinstance(vertex_id, (list, tuple)):
@@ -292,14 +292,14 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
                 ]
             else:
                 from .. import QgisDataExtractor
-                a_vert_index = np.sort(vertex_id)
+                a_vert_index, inverse = np.unique(vertex_id, return_inverse=True)
                 values = []
                 for vertid, count, idx in QgisDataExtractor.chunk_indexes(a_vert_index):
                     extracted = np.array(
                         self.lyr.dataProvider().datasetValues(QgsMeshDatasetIndex(self._ibed, 0), vertid, count).values()
                     )
                     values.append(extracted[idx])
-                a[:, 2] = np.hstack(values) if values else np.empty(0)
+                a[:, 2] = np.hstack(values)[inverse] if values else np.empty(0)
         if cache_result:
             self._vertex_positions_cache = a
         return self.trans.transform(a) if scope == 'local' and len(a) else a
