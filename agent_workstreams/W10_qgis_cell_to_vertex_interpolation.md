@@ -1,6 +1,6 @@
 # W10 — Restore QGIS-backed cell-to-vertex interpolation
 
-**Status:** Draft; confirmed inherited public-API gap, implementation pending genuine QGIS/MDAL acceptance. This is an upstream bug-fix candidate, not a new interpolator.
+**Status:** Implementation and tests pushed on this draft branch; actual QGIS/MDAL execution and final exact-head acceptance remain outstanding. This is an upstream bug-fix candidate, not a new interpolator.
 
 - Fork: `phantom-branch/PyTuflow`, branch `fix/qgis-cell-to-vertex-interpolation`
 - Branch base: merged W9/#26 on `master` at `73e0041f1fa5e3ce074fd71e8c5ffb36a6cf7d07`
@@ -45,3 +45,25 @@ For QGIS *native vertex-centred* data, `vertex_data()` is a distinct path and mu
 ## Agent delivery
 
 Continue on this **existing** branch; complete implementation and tests (not another planning document), push to this draft PR, publish exact-head QGIS + Windows evidence and request final Codex review. Keep it draft/unmerged until accepted.
+
+## W10 implementation checkpoint (25 October 2026)
+
+Initial implementation on branch `fix/qgis-cell-to-vertex-interpolation`:
+
+- `fe97185614cb06b663ca5dcad055821343c273d6`: Adds `QgisMeshGeometry.cell_to_vertex_weights()` using original `QgsMesh` faces and the same normalised per-corner angle convention as `PyNCMeshGeometry`. Topology is populated *lazily*, with triangle slot four repeating the third vertex at zero weight. The full native vertex array includes isolated vertices. The original `to_vertex=False` face-centroid implementation remains unchanged.
+- `98cd641c74a187781f3df548fe28771390c4106c`: Adds a QGIS-specific cell-to-vertex reduction. Existing cell-centred results are first acquired with `to_vertex=False`, including W8 FV depth averaging, then projected with per-result/time validity. This avoids reusing cached wet-weight arrays across components or time. A valid vector contribution requires all components present; actual zero remains valid, wet/all-missing returns NaN and dry-only returns zero with an inactive flag. Other reader backends retain their existing code.
+- `d1dd59e9e2ec11bc1dcb5a8c2650cce01be36684` and follow-up `2469756b35899c62ce2b4e959cf3799444fe5b7b`: Pure/standalone analytical regression cases with an independent shared triangle/quad angle reference, masked vectors, wet/dry, all-missing and two different time steps.
+- `f405d6c7075044f7733d906b5e8cacfc40dcdb7a`, `a51cb9610ebf0b5f8936638f801ba99415c125eb`, `c398d8a1cd85360d866c6d7fce051f3148f96a70`, and `9b64ed5af74189e7bd942547a86e1167926a8eb2`: Extend genuine-QGIS regression coverage with a connected triangle+quad 2DM, native-vs-QGIS 2D/FV-3D public `surface(to_vertex=True)` comparisons for all three extraction combinations, local/global vertex scope, and changing wet masks across two physical output times. Adjust one test to obtain lazily populated `cell_nodes` **after** creating the weights.
+- `ccf8d5aee22a221bb48c14553a9a84337f41062e`: Honour explicit global/local vertex coordinate scope while preserving original cached native positions. When no separate provider Bed Elevation group exists, retrieve genuine native mesh vertex Z if present and return NaN when not.
+- `15f2bcd00cc05c8faf3fc50ae0849d2e9a45299c`: Safely merge the existing `master` with W2/#18 without changing three unrelated W2 paths.
+- `5ca5306b73255475d919d63d0adbe53e3dd6aecd`: Add an independent Windows Python 3.12/3.14 workflow for provider-independent angle-weighting regression tests.
+
+### Verified analytical evidence and remaining gates
+
+The new standalone `tests/test_qgis_vertex_angle_math.py` covers a shared node where triangle internal angle is 45° and quadrilateral internal angle is 90°. Existing angle weighting gives weights 1/3 and 2/3; the interpolated scalar values 3 and 9 therefore produce **7** at the shared node. This was independently reproduced with NumPy. Other tests distinguish dry-only zero from wet missing NaN and exclude partially masked vector cells. The new standalone workflow passed both Windows Python 3.12/3.14 jobs on source head `a51cb9610ebf0b5f8936638f801ba99415c125eb`. Exact-current-head hosted workflow jobs have been requested and must be checked independently.
+
+Codex reviewed `a51cb96` and identified a test-order issue (reading `geom.cell_nodes` before lazy weighting). The test is corrected in `c398d8a`; no algorithmic issue was demonstrated by that review, and review needs refreshing on a final tested implementation head.
+
+**Native QGIS/MDAL validation has not been run here.** The new `tests/test_qgis_cell_to_vertex_interpolation.py` is required to be executed by an agent with installed QGIS 4 and genuine MDAL, along with `tests/test_qgis_surface_cell_positions.py`, the relevant W8/W9 numerical suites, and native NetCDF reader parity cases. Reproduce the inherited `NotImplementedError` on the unchanged pre-W10 `master` in the same QGIS runtime and publish baseline/candidate JUnit, source/runtime/MDAL provenance and exact raw exits. Check expected shapes, masks, missing/wet/zero/multi-time semantics, vector components and coordinate scope. Do not infer parity from standalone CI.
+
+The entire work remains **draft, unmerged and unreleased**, with no direct upstream PR or push; this should be independently validated before inclusion in the consolidated upstream-compatible contribution.
