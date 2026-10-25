@@ -22,8 +22,8 @@ def test_exact_filename_preferred_with_case_only_siblings(tmp_path: Path) -> Non
     upper.write_text("1,0.03\n", encoding="utf-8")
     lower.write_text("2,0.04\n", encoding="utf-8")
 
-    assert TuflowPath.init_case_insensitive_path("Materials.csv", tmp_path).dbpath == upper
-    assert TuflowPath.init_case_insensitive_path("materials.csv", tmp_path).dbpath == lower
+    assert TuflowPath.init_case_insensitive_path("Materials.csv", tmp_path).dbpath == Path("Materials.csv")
+    assert TuflowPath.init_case_insensitive_path("materials.csv", tmp_path).dbpath == Path("materials.csv")
 
 
 def test_nonexact_ambiguous_filename_fails_closed(tmp_path: Path) -> None:
@@ -37,7 +37,7 @@ def test_nonexact_ambiguous_filename_fails_closed(tmp_path: Path) -> None:
 def test_unique_nonexact_filename_preserves_found_spelling(tmp_path: Path) -> None:
     actual = tmp_path / "Materials.csv"
     actual.touch()
-    assert TuflowPath.init_case_insensitive_path("materials.csv", tmp_path).dbpath == actual
+    assert TuflowPath.init_case_insensitive_path("materials.csv", tmp_path).dbpath == Path("Materials.csv")
 
 
 def test_symlink_alias_keeps_original_spelling(tmp_path: Path) -> None:
@@ -48,7 +48,7 @@ def test_symlink_alias_keeps_original_spelling(tmp_path: Path) -> None:
         alias.symlink_to(target)
     except OSError:
         pytest.skip("No symlink support")
-    assert TuflowPath.init_case_insensitive_path("linked.csv", tmp_path).dbpath == alias
+    assert TuflowPath.init_case_insensitive_path("linked.csv", tmp_path).dbpath == Path("linked.csv")
 
 
 def test_deferred_and_eager_nested_reference_agree(tmp_path: Path) -> None:
@@ -92,6 +92,7 @@ def test_gpkg_case_only_siblings_select_exact_database_and_layer(tmp_path: Path)
         ("boundary.gpkg", "2d_bc_lower", "2d_bc_upper"),
     ):
         chosen = TuflowPath.init_case_insensitive_path(filename, tmp_path)
-        assert chosen.dbpath == tmp_path / filename
-        assert TuflowPath(f"{chosen} >> {layer}").exists()
-        assert not TuflowPath(f"{chosen} >> {wrong_layer}").exists()
+        assert chosen.dbpath == Path(filename)
+        full_path = tmp_path / chosen.dbpath
+        assert TuflowPath(f"{full_path} >> {layer}").exists()
+        assert not TuflowPath(f"{full_path} >> {wrong_layer}").exists()
