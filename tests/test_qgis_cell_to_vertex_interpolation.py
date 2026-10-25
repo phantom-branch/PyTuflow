@@ -12,6 +12,7 @@ from qgis.core import QgsApplication, QgsProviderRegistry, QgsMeshLayer
 
 from pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom import QgisMeshGeometry
 from pytuflow._outputs.pymesh.cell_data_mixin import _qgis_cell_to_vertex
+from pytuflow._outputs.pymesh.transform import Transform2D
 
 from pytuflow import NCMesh
 from tests.test_numerical_fv_reader import _write_fv
@@ -136,3 +137,19 @@ def test_connected_triangle_and_quad_real_mdal_angle_parity(qapp, tmp_path):
     )
     np.testing.assert_allclose(missing_values[1], 3., rtol=1e-12, atol=1e-12)
     assert missing_active[1] and np.isnan(missing_values[[3, 4, 5]]).all()
+
+
+def test_qgis_vertex_position_scope_and_cached_subset(qapp, mixed_mesh):
+    geom = mixed_mesh
+    global_pos = geom.vertex_position(slice(None), get_z=True)
+    assert global_pos.shape[1] == 3
+    geom.trans = Transform2D(translate=[17., -21.])
+    local_pos = geom.vertex_position(slice(None), scope='local')
+    np.testing.assert_allclose(local_pos[:, :2], global_pos[:, :2] + [17., -21.],
+                               rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(local_pos[:, 2], global_pos[:, 2], equal_nan=True)
+    # Cache path must respect scope and requested ordering, not return global.
+    reverse = geom.vertex_position([2, 1, 0], scope='local', get_z=True)
+    np.testing.assert_allclose(reverse, local_pos[[2, 1, 0]], equal_nan=True)
+    np.testing.assert_allclose(geom.vertex_position(slice(None), scope='global'),
+                               global_pos, equal_nan=True)
