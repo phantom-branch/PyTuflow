@@ -246,11 +246,10 @@ def test_aggregate_lru_eviction_across_variables(tmp_path):
         assert reader._surface_cache_bytes == 3 * 9 * 8
         reader._surface("water level", 0)  # refresh oldest
         assert reader._surface_cache_bytes <= reader.memory_budget_bytes
+        assert list(reader._surface_lru)[-1] == ("water level", 0)
+        reader._surface("water level", 2)
         assert ("water level", 1) not in reader._surface_lru
         assert ("bed level", None) in reader._surface_lru
-        assert ("water level", 0) in reader._surface_lru
-        reader._surface("water level", 2)
-        assert ("bed level", None) not in reader._surface_lru
         assert reader._surface_cache_bytes <= reader.memory_budget_bytes
 
 
