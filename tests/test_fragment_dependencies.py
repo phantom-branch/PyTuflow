@@ -266,3 +266,59 @@ def test_tef_token_exposed_by_second_variable_pass_invalidates_fragment(tmp_path
     assert "first.shp" in names[0]
     assert "second.shp" in names[1]
     assert "first.shp" in names[2]
+
+
+def test_custom_included_control_file_context_hook_falls_back(tmp_path: Path) -> None:
+    model = model_files(tmp_path)
+    include: Any = model.find_input(lhs="geometry control file")[0]
+    child: Any = include.cf[0]
+
+    def deny_context(*args: Any, **kwargs: Any) -> Any:
+        raise RuntimeError("Custom child context rejected the run")
+
+    child.context = deny_context
+    flags = ["-s1 DEV -e1 Q10", "-s1 EXG -e1 Q100"]
+    expected = model.collect_batch_dependencies(flags)
+    actual = model.collect_file_dependencies(flags)
+    assert not expected.passed and not actual.passed
+    assert actual.runs == expected.runs
+    assert actual.fallback_runs == len(flags)
+    assert actual.fallback_reason == "Custom included control file context hook"
+    assert all("Custom child context" in (run.error or "") for run in actual.runs)
+
+
+def test_custom_control_file_class_hook_falls_back(tmp_path: Path) -> None:
+    model = model_files(tmp_path)
+    include: Any = model.find_input(lhs="geometry control file")[0]
+    child: Any = include.cf[0]
+    ordinary_class = type(child)
+
+    def deny_context(self: Any, *args: Any, **kwargs: Any) -> Any:
+        raise RuntimeError("Custom control file class context")
+
+    # Creating a class-level override also bypasses the inherited base
+    # method. Snapshot only originally trusted class implementations.
+    with patch.object(ordinary_class, "context", deny_context):
+        flags = ["-s1 DEV -e1 Q10"]
+        expected = model.collect_batch_dependencies(flags)
+        actual = model.collect_file_dependencies(flags)
+    assert not expected.passed and not actual.passed
+    assert actual.runs == expected.runs
+    assert actual.fallback_runs == 1
+    assert actual.fallback_reason == "Custom included control file context hook"
+
+
+def test_custom_root_model_context_hook_falls_back(tmp_path: Path) -> None:
+    model = model_files(tmp_path)
+
+    def deny_context(*args: Any, **kwargs: Any) -> Any:
+        raise RuntimeError("Custom root model context")
+
+    model.context = deny_context
+    flags = ["-s1 DEV -e1 Q10"]
+    expected = model.collect_batch_dependencies(flags)
+    actual = model.collect_file_dependencies(flags)
+    assert not expected.passed and not actual.passed
+    assert actual.runs == expected.runs
+    assert actual.fallback_runs == 1
+    assert actual.fallback_reason == "Custom model control file context hook"
