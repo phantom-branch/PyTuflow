@@ -69,7 +69,7 @@ def test_unparseable_output_is_not_accepted(tmp_path: Path) -> None:
     process = SimpleNamespace(returncode=1, stdout="not-json", stderr="")
     with patch.object(audit.subprocess, "run", return_value=process):
         aggregate, valid = audit.run_command(
-            ["pyright"], tmp_path, tmp_path / "pyright-3.9.json",
+            ["pyright"], tmp_path, tmp_path / "pyright-3.12.json",
         )
     assert not valid
     assert aggregate["tool_error"] == "Pyright did not return JSON"
