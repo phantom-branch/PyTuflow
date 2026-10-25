@@ -1,0 +1,675 @@
+FFFFFFFFFFFFF                                                            [100%]
+================================== FAILURES ===================================
+____________________________ test_native_centroid _____________________________
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_native_centroid0/generated.nc')
+
+    def test_native_centroid(mesh):
+        geom=QgisMeshGeometry(mesh)
+>       actual=geom.cell_position(slice(None))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:28: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x000002525D5A8DD0>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+_ test_public_surface[salinity-columns0-first0-sigma&0&1-qgis geometry data extractor] _
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_salinity_c0/generated.nc')
+driver = 'qgis geometry data extractor', data_type = 'salinity'
+columns = ['value'], first = [15.0], average = 'sigma&0&1'
+record_property = <function record_property.<locals>.append_property at 0x00000252604431A0>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x0000025260432750>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+_ test_public_surface[salinity-columns0-first0-sigma&0&1-qgis geometry netcdf4] _
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_salinity_c1/generated.nc')
+driver = 'qgis geometry netcdf4', data_type = 'salinity', columns = ['value']
+first = [15.0], average = 'sigma&0&1'
+record_property = <function record_property.<locals>.append_property at 0x00000252605E2AC0>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x000002526045EFC0>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+_ test_public_surface[salinity-columns0-first0-sigma&0&1-qgis geometry h5py] __
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_salinity_c2/generated.nc')
+driver = 'qgis geometry h5py', data_type = 'salinity', columns = ['value']
+first = [15.0], average = 'sigma&0&1'
+record_property = <function record_property.<locals>.append_property at 0x00000252605E2CA0>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x00000252604C0FE0>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+_ test_public_surface[tracer-columns1-first1-sigma&0&1-qgis geometry data extractor] _
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_tracer_col0/generated.nc')
+driver = 'qgis geometry data extractor', data_type = 'tracer'
+columns = ['value'], first = [10.0], average = 'sigma&0&1'
+record_property = <function record_property.<locals>.append_property at 0x0000025260443100>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x000002526049E510>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+_ test_public_surface[tracer-columns1-first1-sigma&0&1-qgis geometry netcdf4] _
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_tracer_col1/generated.nc')
+driver = 'qgis geometry netcdf4', data_type = 'tracer', columns = ['value']
+first = [10.0], average = 'sigma&0&1'
+record_property = <function record_property.<locals>.append_property at 0x000002526058C0E0>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x0000025260462570>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+__ test_public_surface[tracer-columns1-first1-sigma&0&1-qgis geometry h5py] ___
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_tracer_col2/generated.nc')
+driver = 'qgis geometry h5py', data_type = 'tracer', columns = ['value']
+first = [10.0], average = 'sigma&0&1'
+record_property = <function record_property.<locals>.append_property at 0x000002526058C220>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x000002525F2F3D70>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+_ test_public_surface[velocity-columns2-first2-sigma&0&1-qgis geometry data extractor] _
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_velocity_c0/generated.nc')
+driver = 'qgis geometry data extractor', data_type = 'velocity'
+columns = ['value-x', 'value-y'], first = [3.0, 4.0], average = 'sigma&0&1'
+record_property = <function record_property.<locals>.append_property at 0x000002526058CE00>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x0000025260433B60>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+_ test_public_surface[velocity-columns2-first2-sigma&0&1-qgis geometry netcdf4] _
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_velocity_c1/generated.nc')
+driver = 'qgis geometry netcdf4', data_type = 'velocity'
+columns = ['value-x', 'value-y'], first = [3.0, 4.0], average = 'sigma&0&1'
+record_property = <function record_property.<locals>.append_property at 0x000002526058C9A0>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x00000252604C9EB0>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+_ test_public_surface[velocity-columns2-first2-sigma&0&1-qgis geometry h5py] __
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_velocity_c2/generated.nc')
+driver = 'qgis geometry h5py', data_type = 'velocity'
+columns = ['value-x', 'value-y'], first = [3.0, 4.0], average = 'sigma&0&1'
+record_property = <function record_property.<locals>.append_property at 0x000002526058CB80>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x00000252605B3BC0>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+_ test_public_surface[water surface elevation-columns3-first3-None-qgis geometry data extractor] _
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_water_surf0/generated.nc')
+driver = 'qgis geometry data extractor', data_type = 'water surface elevation'
+columns = ['value'], first = [0.0], average = None
+record_property = <function record_property.<locals>.append_property at 0x000002526058EB60>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x000002526060D5E0>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+_ test_public_surface[water surface elevation-columns3-first3-None-qgis geometry netcdf4] _
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_water_surf1/generated.nc')
+driver = 'qgis geometry netcdf4', data_type = 'water surface elevation'
+columns = ['value'], first = [0.0], average = None
+record_property = <function record_property.<locals>.append_property at 0x000002526058EF20>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x00000252604CAC60>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+_ test_public_surface[water surface elevation-columns3-first3-None-qgis geometry h5py] _
+
+mesh = WindowsPath('<reports>/baseline-tmp/test_public_surface_water_surf2/generated.nc')
+driver = 'qgis geometry h5py', data_type = 'water surface elevation'
+columns = ['value'], first = [0.0], average = None
+record_property = <function record_property.<locals>.append_property at 0x000002526058CC20>
+
+    @pytest.mark.parametrize('driver',['qgis geometry data extractor','qgis geometry netcdf4','qgis geometry h5py'])
+    @pytest.mark.parametrize('data_type,columns,first,average',[
+        ('salinity',['value'],[15.],'sigma&0&1'),
+        ('tracer',['value'],[10.],'sigma&0&1'),
+        ('velocity',['value-x','value-y'],[3.,4.],'sigma&0&1'),
+        ('water surface elevation',['value'],[0.],None),
+    ])
+    def test_public_surface(mesh,driver,data_type,columns,first,average,record_property):
+        result=NCMesh(mesh,driver=driver)
+        kwargs={'averaging_method':average} if average else {}
+>       frame=result.surface(data_type,0.,to_vertex=False,**kwargs)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+<reports>\test_before_after.py:41: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_outputs\mesh.py:480: in surface
+    data, mask = self._driver.surface(data_type, time, averaging_method, to_vertex, coord_scope)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+pytuflow\_outputs\pymesh\pymesh.py:526: in surface
+    pos = self.geom.cell_position(slice(None), scope=coord_scope)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom.QgisMeshGeometry object at 0x00000252605CEB40>
+cell_id = slice(None, None, None), scope = 'global'
+
+    def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
+        """Returns the centroid position of the cell ID(s).
+    
+        Parameters
+        ----------
+        cell_id : int | typing.Iterable[int]
+            The cell ID(s) to return the position for.
+        scope : str, optional
+            The coordinate scope to return the position in. Options are ``"global"`` or ``"local"``.
+    
+        Returns
+        -------
+        pd.DataFrame
+            The x,y,z centroid positions of the cell IDs.
+        """
+>       raise NotImplementedError("cell_position method not implemented yet.")
+E       NotImplementedError: cell_position method not implemented yet.
+
+pytuflow\_outputs\pymesh\mesh_geom\pymesh_geom.py:238: NotImplementedError
+=========================== short test summary info ===========================
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_native_centroid
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[salinity-columns0-first0-sigma&0&1-qgis geometry data extractor]
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[salinity-columns0-first0-sigma&0&1-qgis geometry netcdf4]
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[salinity-columns0-first0-sigma&0&1-qgis geometry h5py]
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[tracer-columns1-first1-sigma&0&1-qgis geometry data extractor]
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[tracer-columns1-first1-sigma&0&1-qgis geometry netcdf4]
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[tracer-columns1-first1-sigma&0&1-qgis geometry h5py]
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[velocity-columns2-first2-sigma&0&1-qgis geometry data extractor]
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[velocity-columns2-first2-sigma&0&1-qgis geometry netcdf4]
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[velocity-columns2-first2-sigma&0&1-qgis geometry h5py]
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[water surface elevation-columns3-first3-None-qgis geometry data extractor]
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[water surface elevation-columns3-first3-None-qgis geometry netcdf4]
+FAILED ..\..\temp\pytuflow-w9-qgis-20261025\test_before_after.py::test_public_surface[water surface elevation-columns3-first3-None-qgis geometry h5py]
+13 failed in 5.97s
