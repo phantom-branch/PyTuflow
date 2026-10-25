@@ -326,8 +326,13 @@ class BatchContext(Context):
             and '<<' not in command_text
             and '>>' not in command_text
             and '~' not in command_text
-            and (not plan.direct_variables
-                 or self.translate(command_text) == command_text)
+            # A TEF replacement can expose another event token even when
+            # there are no <<variables>> in the original READ. The command
+            # constructor performs a further translation; copying a cached
+            # prototype before that translation would retain the previous
+            # event's expanded path. Require a stable second pass for *all*
+            # templates, not only those with direct variables.
+            and self.translate(command_text) == command_text
         )
         if eligible:
             # The same parsed input provides a frozen configuration snapshot
