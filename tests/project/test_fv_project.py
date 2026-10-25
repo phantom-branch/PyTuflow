@@ -221,11 +221,13 @@ class TestFVBaseFeatureApplyToControlFiles:
         block.append_input('Output Parameters == h, v, d')
         block.append_input('Output Interval == 300.')
         inp = fvc.append_input('Include == outputs.fvc')
-        # The missing include already has a parsed placeholder. Replace that
-        # placeholder with the generated include, retaining one save destination.
+        # A new Include can have an unloaded placeholder for outputs.fvc.
+        # Check the existing owner before replacing it: there must be exactly
+        # one control-file object for each physical save destination.
         assert len(inp.cf) == 1
         assert inp.cf[0].fpath == include.fpath
         inp.cf[:] = [include]
+        assert len(inp.cf) == 1
 
         # Apply output_nc feature — should insert via placement_rule which should end up in the include file not main fvc
         (project_dir / 'model').mkdir(parents=True, exist_ok=True)
