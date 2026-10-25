@@ -8,7 +8,10 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from qgis.core import QgsApplication, QgsProviderRegistry
+from qgis.core import QgsApplication, QgsProviderRegistry, QgsMeshLayer
+
+from pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom import QgisMeshGeometry
+from pytuflow._outputs.pymesh.cell_data_mixin import _qgis_cell_to_vertex
 
 from pytuflow import NCMesh
 from tests.test_numerical_fv_reader import _write_fv
@@ -91,3 +94,45 @@ def test_repeated_qgis_vertex_interpolation_is_stable(fv):
     np.testing.assert_allclose(first[["x", "y", "value"]], second[["x", "y", "value"]],
                                rtol=0, atol=0, equal_nan=True)
     np.testing.assert_array_equal(first["active"], second["active"])
+
+
+def test_connected_triangle_and_quad_real_mdal_angle_parity(qapp, tmp_path):
+    """Shared vertex must integrate two *different* corner angles."""
+    path = tmp_path / "shared-triangle-quad.2dm"
+    path.write_text(
+        "MESH2D\n"
+        "E3T 1 1 2 3 1\n"
+        "E4Q 2 2 5 6 4 1\n"
+        "ND 1 0 0 0\nND 2 2 0 0\nND 3 0 2 0\n"
+        "ND 4 2 2 0\nND 5 4 0 0\nND 6 4 2 0\n",
+        encoding="ascii",
+    )
+    lyr = QgsMeshLayer(str(path), "shared", "mdal")
+    assert lyr.isValid() and lyr.dataProvider().faceCount() == 2
+    geom = QgisMeshGeometry(path)
+    geom.lyr = lyr
+    geom.load()
+    weights = geom.cell_to_vertex_weights()
+    nodes = geom.cell_nodes
+    assert nodes.shape == weights.shape == (2, 4)
+    assert geom.vertices.shape[0] == lyr.dataProvider().vertexCount()
+    np.testing.assert_allclose(weights[0, 1], 1 / 3, rtol=1e-12, atol=1e-12)
+    np.testing.assert_allclose(weights[1, 0], 2 / 3, rtol=1e-12, atol=1e-12)
+    assert weights[0, 3] == 0.
+    active_values, active = _qgis_cell_to_vertex(
+        np.array([3., 9.]), [True, True], nodes, weights, len(geom.vertices),
+    )
+    np.testing.assert_allclose(active_values[1], 7., rtol=1e-12, atol=1e-12)
+    assert active[1]
+    dry_values, dry_active = _qgis_cell_to_vertex(
+        np.array([3., 9.]), [True, False], nodes, weights, len(geom.vertices),
+    )
+    np.testing.assert_allclose(dry_values[1], 3., rtol=1e-12, atol=1e-12)
+    assert dry_active[1]
+    np.testing.assert_allclose(dry_values[[3, 4, 5]], 0.)
+    assert not dry_active[[3, 4, 5]].any()
+    missing_values, missing_active = _qgis_cell_to_vertex(
+        np.array([3., np.nan]), [True, True], nodes, weights, len(geom.vertices),
+    )
+    np.testing.assert_allclose(missing_values[1], 3., rtol=1e-12, atol=1e-12)
+    assert missing_active[1] and np.isnan(missing_values[[3, 4, 5]]).all()
