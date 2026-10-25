@@ -1,0 +1,30 @@
+{
+  "candidate.xml": {
+    "collected": 1118,
+    "passed": 1118,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "baseline-existing.xml": {
+    "collected": 349,
+    "passed": 349,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "pre-fix-reproduction.xml": {
+    "collected": 208,
+    "passed": 160,
+    "failed": 48,
+    "errors": 0,
+    "skipped": 0
+  },
+  "baseline-endpoints.xml": {
+    "collected": 208,
+    "passed": 88,
+    "failed": 120,
+    "errors": 0,
+    "skipped": 0
+  }
+}

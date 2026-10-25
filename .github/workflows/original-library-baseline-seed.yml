@@ -1,0 +1,184 @@
+name: Seed trusted original-library regression baselines
+
+# Only trusted master runs may populate the cross-PR default-branch cache.
+# Do not use pull_request_target, issue_comment or workflow_run triggers.
+on:
+  push:
+    branches: [master]
+    paths:
+      - "ci/**"
+      - ".github/workflows/original-library-regression.yml"
+      - ".github/workflows/original-library-baseline-seed.yml"
+      - "tests/fm_lib/integration_tests/test_conversion.py"
+      - "tests/fm_lib/common/compare_txt.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: w5-trusted-seed-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  UPSTREAM_SHA: cf908cc922ca8448ed6002834877b0b377329eae
+  FORK_BASELINE_SHA: e162c04330d24c37bee3ade94479cc4602651060
+
+jobs:
+  baselines:
+    if: github.repository == 'phantom-branch/PyTuflow' && github.ref == 'refs/heads/master'
+    name: Windows Python ${{ matrix.python }} trusted seed
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.14"]
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          path: source
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: source/ci/requirements-regression.txt
+      - name: Install identical pinned regression dependencies
+        run: |
+          python -m pip install -r ci/requirements-regression.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Validate existing regression evidence harness
+        run: |
+          New-Item -ItemType Directory -Path "$env:RUNNER_TEMP/original-regression" -Force | Out-Null
+          python -m pytest -q tests/ci --junitxml="$env:RUNNER_TEMP/original-regression/infrastructure.xml"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Derive shared immutable content-addressed key
+        id: baseline-key
+        run: |
+          $key = python ci/baseline_cache.py key --upstream "$env:UPSTREAM_SHA" --fork "$env:FORK_BASELINE_SHA"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "value=$key" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      - name: Restore existing default-branch cache
+        id: baseline-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ runner.temp }}/original-regression/upstream
+            ${{ runner.temp }}/original-regression/baseline
+          key: pytuflow-w5-baseline-v1-${{ steps.baseline-key.outputs.value }}
+      - name: Verify cache and decide whether complete baselines are required
+        id: baseline-verification
+        run: |
+          python ci/baseline_cache.py verify --root "$env:RUNNER_TEMP/original-regression" --upstream "$env:UPSTREAM_SHA" --fork "$env:FORK_BASELINE_SHA"
+          if ($LASTEXITCODE -eq 0) {
+            "valid=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Host "Verified reusable master cache hit."
+          } else {
+            "valid=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+            Write-Host "Trusted seed: complete baseline execution required."
+            foreach ($name in @("upstream", "baseline")) {
+              $path = "$env:RUNNER_TEMP/original-regression/$name"
+              if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Recurse -Force }
+            }
+          }
+          exit 0
+      - name: Checkout pinned canonical upstream
+        if: steps.baseline-verification.outputs.valid != 'true'
+        uses: actions/checkout@v5
+        with:
+          repository: TUFLOW-Support/PyTuflow
+          ref: ${{ env.UPSTREAM_SHA }}
+          persist-credentials: false
+          path: pristine-upstream
+      - name: Run canonical upstream baseline
+        if: steps.baseline-verification.outputs.valid != 'true'
+        continue-on-error: true
+        run: |
+          python ci/run_regression.py --source ../pristine-upstream --ref "$env:UPSTREAM_SHA" --label upstream --report-dir "$env:RUNNER_TEMP/original-regression/upstream"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Run recorded fork baseline
+        if: steps.baseline-verification.outputs.valid != 'true'
+        continue-on-error: true
+        run: |
+          python ci/run_regression.py --source . --ref "$env:FORK_BASELINE_SHA" --label fork-baseline --report-dir "$env:RUNNER_TEMP/original-regression/baseline"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Require complete evidence before saving or accepting cache
+        id: evidence
+        run: |
+          python ci/baseline_cache.py verify --root "$env:RUNNER_TEMP/original-regression" --upstream "$env:UPSTREAM_SHA" --fork "$env:FORK_BASELINE_SHA"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Seed default-branch cache for future pull requests
+        if: steps.baseline-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ runner.temp }}/original-regression/upstream
+            ${{ runner.temp }}/original-regression/baseline
+          key: pytuflow-w5-baseline-v1-${{ steps.baseline-key.outputs.value }}
+      - name: Archive trusted source evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: w5-trusted-seed-${{ matrix.python }}
+          path: ${{ runner.temp }}/original-regression/
+          retention-days: 30
+          if-no-files-found: warn
+
+  verify-cache-hit:
+    if: github.repository == 'phantom-branch/PyTuflow' && github.ref == 'refs/heads/master'
+    needs: baselines
+    name: Windows Python ${{ matrix.python }} verify seeded cache hit
+    runs-on: windows-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.14"]
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: source
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          path: source
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: source/ci/requirements-regression.txt
+      - name: Install same pinned regression dependencies
+        run: |
+          python -m pip install -r ci/requirements-regression.txt
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Recompute shared cache key from independent interpreter
+        id: baseline-key
+        run: |
+          $key = python ci/baseline_cache.py key --upstream "$env:UPSTREAM_SHA" --fork "$env:FORK_BASELINE_SHA"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          "value=$key" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+      - name: Independently restore seeded default-branch cache
+        id: baseline-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ runner.temp }}/original-regression/upstream
+            ${{ runner.temp }}/original-regression/baseline
+          key: pytuflow-w5-baseline-v1-${{ steps.baseline-key.outputs.value }}
+      - name: Require real hit and independently verify complete evidence
+        run: |
+          if ('${{ steps.baseline-cache.outputs.cache-hit }}' -ne 'true') {
+            throw 'Default-branch cache was not restored with the exact immutable key.'
+          }
+          python ci/baseline_cache.py verify --root "$env:RUNNER_TEMP/original-regression" --upstream "$env:UPSTREAM_SHA" --fork "$env:FORK_BASELINE_SHA"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Write-Host "Complete cache hit confirmed across independent master jobs."

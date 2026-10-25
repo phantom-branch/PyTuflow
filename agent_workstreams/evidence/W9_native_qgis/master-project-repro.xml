@@ -1,0 +1,64 @@
+<testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="2.076" timestamp="2026-10-25T04:01:37.725309+08:00" hostname="&lt;host&gt;"><testcase classname="tests.project.test_fv_project.TestFVBaseFeatureApplyToControlFiles" name="test_apply_inserts_via_placement_rule_with_include_file" time="0.451"><failure message="ValueError: Duplicate save destination: &lt;reports&gt;\master-project-repro-tmp\test_apply_inserts_via_placeme0\fv_project\runs\outputs.fvc">self = &lt;tests.project.test_fv_project.TestFVBaseFeatureApplyToControlFiles object at 0x000001724DA23110&gt;
+project_dir = WindowsPath('&lt;reports&gt;/master-project-repro-tmp/test_apply_inserts_via_placeme0/fv_project')
+
+    def test_apply_inserts_via_placement_rule_with_include_file(self, project_dir):
+        """apply_to_control_files uses placement_rule to find the last control-file command."""
+        from pytuflow.project.fv.project import get_available_features
+        OutputNetcdf = get_available_features()['outputnc']
+        from pytuflow import FVC
+    
+        # Create bare-bones project (no estry)
+        p = FVProject('mymodel', project_dir, crs='EPSG:32760', features=[])
+        p.create()
+    
+        fvc_path = project_dir / 'runs' / 'mymodel_001.fvc'
+        fvc = FVC(fvc_path)
+    
+        include = FVC()
+        include.fpath = project_dir / 'runs' / 'outputs.fvc'
+        include.parent = fvc
+        inp = include.append_input('Output == Points')
+        block = inp.block_control()
+        block.append_input('Read GIS PO == &lt;path/to/3d_po.shp&gt;')
+        block.append_input('Output Parameters == h, v, d')
+        block.append_input('Output Interval == 300.')
+        inp = fvc.append_input('Include == outputs.fvc')
+        inp.cf.append(include)
+    
+        # Apply output_nc feature — should insert via placement_rule which should end up in the include file not main fvc
+        (project_dir / 'model').mkdir(parents=True, exist_ok=True)
+        feature = OutputNetcdf()
+        variables = {'model_name': 'mymodel', 'iter': '001'}
+        feature.apply_to_control_files({'fvc': fvc}, variables)
+&gt;       fvc.write('inplace')
+
+tests\project\test_fv_project.py:231: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+pytuflow\_tmf\cf\cf_build_state.py:1262: in write
+    transaction.save(inc)
+pytuflow\_tmf\cf\cf_build_state.py:630: in save
+    self._validate_destinations()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = &lt;pytuflow._tmf.cf.cf_build_state._SaveTransaction object at 0x000001724DA21400&gt;
+
+    def _validate_destinations(self) -&gt; None:
+        destinations = {}
+        parent_destinations = set()
+        identities = {}
+        sources = {}
+        for original in self.originals.values():
+            if isinstance(original, (ControlFileBuildState, DatabaseBuildState)) and original.fpath:
+                if original.TUFLOW_TYPE not in (const.CONTROLFILE.BLOCK, const.CONTROLFILE.BC_BLOCK):
+                    sources.setdefault(_path_key(original.fpath), set()).add(id(original))
+            if isinstance(original, ControlFileBuildState):
+                for key in original._source_texts:
+                    sources.setdefault(key, set()).add(id(original))
+        for output in self.outputs:
+            destination = output.destination
+            key = _path_key(destination)
+            if key in destinations:
+&gt;               raise ValueError(f'Duplicate save destination: {destination}')
+E               ValueError: Duplicate save destination: &lt;reports&gt;\master-project-repro-tmp\test_apply_inserts_via_placeme0\fv_project\runs\outputs.fvc
+
+pytuflow\_tmf\cf\cf_build_state.py:431: ValueError</failure></testcase></testsuite></testsuites>

@@ -1,4 +1,12 @@
+from __future__ import annotations
+
 import logging
+import re
+import shutil
+import stat
+import tempfile
+from copy import copy, deepcopy
+from dataclasses import dataclass
 import io
 import os.path
 import typing
@@ -37,6 +45,606 @@ if typing.TYPE_CHECKING:
     from .cf_run_state import ControlFileRunState
 
 logger = logging.getLogger('pytuflow')
+
+
+def _path_key(path: PathLike) -> str:
+    """Compare lexical paths without resolving drive mappings or symlinks."""
+    return os.path.normcase(os.path.normpath(str(Path(path).absolute())))
+
+
+def _path_exists(path: Path) -> bool:
+    """Only a missing path is absent; inspection failures must stop a save."""
+    # Path.exists() suppresses all OSError on Python 3.14.  In particular,
+    # treating an unreadable destination as new would omit its recovery copy.
+    try:
+        path.stat()
+    except FileNotFoundError:
+        return False
+    return True
+
+
+def _increment(path: PathLike, inc: str | None) -> Path:
+    # Keep native Path keys compatible with the original reference caches;
+    # TuflowPath has a different hash from an equal WindowsPath.
+    return Path(path if inc is None else increment_fpath(path, inc))
+
+
+def _copy_scopes(scopes: ScopeList) -> ScopeList:
+    # Scope's factory __new__ requires arguments, so copy/deepcopy cannot
+    # reconstruct it.  Preserve each concrete scope class and its data.
+    result = ScopeList()
+    for scope in scopes:
+        detached = object.__new__(type(scope))
+        detached.__dict__.update(deepcopy(scope.__dict__))
+        result.append(detached)
+    return result
+
+
+def _input_signature(inp: InputBuildState) -> tuple:
+    blocks = tuple(
+        tuple(_input_signature(item) for item in child.inputs.inputs(include_hidden=True))
+        for child in inp.cf or ()
+        if child.TUFLOW_TYPE in (const.CONTROLFILE.BLOCK, const.CONTROLFILE.BC_BLOCK)
+    )
+    return (inp.command().original_text, tuple(repr(scope) for scope in inp.scope), blocks)
+
+
+def _source_signature(cf: ControlFileBuildState, source: PathLike) -> tuple:
+    """Describe one physical source in the existing flattened include model."""
+    main = _path_key(source) == _path_key(cf.fpath)
+    signature = []
+    seen_trds = set()
+    for inp in cf.inputs.inputs(include_hidden=True):
+        if main and inp.trd is not None:
+            key = _path_key(inp.trd)
+            if key not in seen_trds:
+                seen_trds.add(key)
+                ref = inp.trd_input
+                signature.append(('read-file', key, _input_signature(ref) if ref is not None else None))
+        elif (main and inp.trd is None) or (inp.trd is not None and _path_key(inp.trd) == _path_key(source)):
+            signature.append(_input_signature(inp))
+    return tuple(signature)
+
+
+@dataclass(frozen=True)
+class _SourceText:
+    data: bytes
+    signature: tuple
+
+    def encode(self, text: str, signature: tuple) -> bytes:
+        if signature == self.signature:
+            return self.data
+        # The parser and writer work with LF.  Restore the source convention
+        # once, including absence of a final newline.  Mixed files are copied
+        # exactly when unchanged; an edited mixed file uses its first newline.
+        match = re.search(br'\r\n|\r|\n', self.data)
+        newline = match.group().decode('ascii') if match else '\n'
+        text = text.replace('\r\n', '\n').replace('\r', '\n')
+        if not self.data.endswith((b'\n', b'\r')):
+            text = text.removesuffix('\n')
+        bom = b'\xef\xbb\xbf' if self.data.startswith(b'\xef\xbb\xbf') else b''
+        return bom + text.replace('\n', newline).encode('utf-8', errors='surrogateescape')
+
+
+class ModelSaveError(RuntimeError):
+    """A replacement failed; inspect recovery_paths if rollback was incomplete.
+
+    Live objects retain their pre-save paths and pending history.  Each entry in
+    recovery_paths maps an unrestored destination to a retained copy of its
+    original bytes.  An unrestored new destination has no original backup.
+    """
+
+    def __init__(self, failed_destination: Path, replaced_paths: tuple[Path, ...],
+                 unrestored_paths: tuple[Path, ...], recovery_paths: dict[Path, Path]):
+        self.failed_destination = failed_destination
+        self.replaced_paths = replaced_paths
+        self.unrestored_paths = unrestored_paths
+        self.recovery_paths = recovery_paths
+        copies = ', '.join(f'{destination} -> {backup}'
+                           for destination, backup in recovery_paths.items()) or 'none'
+        outcome = 'original destinations restored' if not unrestored_paths else (
+            f'rollback incomplete for {", ".join(map(str, unrestored_paths))}; '
+            f'recovery copies: {copies}'
+        )
+        super().__init__(f'Model save failed replacing {failed_destination}: {outcome}. '
+                         'Pending model changes and history have been retained.')
+
+
+def _remove_temporary(path: Path | None, error: BaseException | None = None) -> None:
+    if path is None:
+        return
+    try:
+        path.unlink(missing_ok=True)
+    except OSError as cleanup_error:
+        message = f'Could not remove save temporary file {path}: {cleanup_error}'
+        if error is not None:
+            error.add_note(message)
+        else:
+            logger.warning(message)
+
+
+def _stage_bytes(destination: Path, data: bytes) -> Path:
+    """Fully write and close a temporary file on the destination filesystem."""
+    fd, name = tempfile.mkstemp(prefix=f'.{destination.name}.pytuflow-', suffix='.tmp',
+                                dir=destination.parent)
+    staged = Path(name)
+    try:
+        try:
+            stream = os.fdopen(fd, 'wb')
+        except BaseException:
+            os.close(fd)
+            raise
+        with stream:
+            stream.write(data)
+            stream.flush()
+            os.fsync(stream.fileno())
+    except BaseException as error:
+        _remove_temporary(staged, error)
+        raise
+    return staged
+
+
+@dataclass
+class _SaveOutput:
+    owner: ControlFileBuildState | DatabaseBuildState
+    source: Path
+    destination: Path
+    inputs: Inputs | None = None
+    data: bytes | None = None
+    source_text: _SourceText | None = None
+    signature: tuple = ()
+    staged: Path | None = None
+    backup: Path | None = None
+
+
+class _SaveTransaction:
+    """Plan on detached objects; publish disk and object state in that order.
+
+    Each os.replace is atomic on a supporting filesystem.  The complete model
+    is not an atomic transaction and there is no crash/power-loss guarantee.
+    Backups support recovery from exceptions during the replacement sequence.
+    """
+
+    _INPUT_FIELDS = (
+        '_command', 'config', 'part_count', 'resolved', '_has_variable',
+        '_files', '_rhs_files', '_file_to_original', '_file_to_scope',
+        '_files_loaded', '_has_missing_files', '_cf_loaded_paths', '_database_loaded_paths',
+    )
+
+    def __init__(self, root: ControlFileBuildState):
+        self.originals: dict[int, object] = {}
+        self.copies: dict[int, object] = {}
+        self.reverse: dict[int, object] = {}
+        self.outputs: list[_SaveOutput] = []
+        self.assigned: dict[int, Path] = {}
+        self.moves: dict[str, Path] = {}
+        self.saved: set[int] = set()
+        self.root = self._clone_control(root, None)
+
+    def _remember(self, original, detached):
+        self.originals[id(original)] = original
+        self.copies[id(original)] = detached
+        self.reverse[id(detached)] = original
+        return detached
+
+    @staticmethod
+    def _copy_config(config):
+        detached = from_config(config)
+        if isinstance(detached.variables, dict):
+            detached.variables = detached.variables.copy()
+        return detached
+
+    def _clone_control(self, original, parent):
+        if id(original) in self.copies:
+            return self.copies[id(original)]
+        detached = self._remember(original, copy(original))
+        detached.parent = parent
+        detached.config = self._copy_config(original.config)
+        detached.altered_inputs = AlteredInputs()
+        if isinstance(original, DatabaseBuildState):
+            detached._df = original._df.copy(deep=True)
+            return detached
+        detached._scope = _copy_scopes(original._scope)
+        detached._source_texts = original._source_texts.copy()
+        detached.inputs = Inputs([
+            self._clone_input(inp, detached, original)
+            for inp in original.inputs.inputs(include_hidden=True)
+        ])
+        detached._read_file_inputs = [
+            self._clone_input(inp, detached, original) for inp in original._read_file_inputs
+        ]
+        if getattr(original, 'parent_input', None) is not None:
+            detached.parent_input = self.copies[id(original.parent_input)]
+        return detached
+
+    def _clone_input(self, original, parent, source_owner):
+        if id(original) in self.copies:
+            return self.copies[id(original)]
+        detached = self._remember(original, copy(original))
+        detached.parent = parent
+        # EventDatabase's deepcopy only copies its mapping and drops event
+        # inputs.  Keep configuration semantics and detach the mutable command
+        # pieces used by rendering/reload explicitly instead.
+        detached._command = copy(original.command())
+        detached._command.config = self._copy_config(original.command().config)
+        detached._command._expander = deepcopy(original.command()._expander)
+        detached._command._expander.variables = detached._command.config.variables
+        detached._command._define_blocks = deepcopy(original.command().define_blocks)
+        if hasattr(original.command(), 'fv_blocks'):
+            detached._command.fv_blocks = list(original.command().fv_blocks)
+        detached.config = detached._command.config
+        detached._scope = _copy_scopes(original.scope)
+        for key, value in original.__dict__.items():
+            if key in self._INPUT_FIELDS and isinstance(value, (list, dict)):
+                setattr(detached, key, value.copy())
+        # rhs/lhs edits currently reinitialise an input.  Recover its original
+        # source ownership without changing the editing/undo implementation.
+        ownership = source_owner._save_source_owners.get(id(original))
+        if ownership and original.uuid != ownership[0] and original.trd is None:
+            detached.trd, detached.trd_input = ownership[1:]
+        if detached.trd_input is not None:
+            detached.trd_input = self._clone_input(detached.trd_input, parent, source_owner)
+        detached.cf = [self._clone_control(child, parent) for child in original.cf or ()]
+        return detached
+
+    @staticmethod
+    def _set_reference(inp: InputBuildState, value: PathLike) -> None:
+        """Update only a detached command, retaining child identity and scopes."""
+        command = inp.command()
+        value = str(value)
+        if command.value_orig == value:
+            return
+        leading = ''.join(re.findall(r'^\n*', command.original_text))
+        text = f'{leading}{command.leading_whitespace}{command.command_orig} == {value}'
+        command.original_text = command.re_add_comments(text, True)
+        command.value_orig = value
+        command.reload_value()
+        inp.part_count = command.part_count
+        inp.resolved = '<<' not in str(command.value)
+
+    def _assign(self, owner, source: Path, destination: Path) -> bool:
+        if id(owner) in self.assigned:
+            if _path_key(self.assigned[id(owner)]) != _path_key(destination):
+                raise ValueError(f'One save owner has conflicting destinations: {source}')
+            return False
+        self.assigned[id(owner)] = destination
+        self.moves[_path_key(source)] = destination
+        return True
+
+    def _plan_children(self, owner: ControlFileBuildState, inc: str | None) -> None:
+        self.saved.add(id(owner))
+        for inp in owner.inputs.inputs(include_hidden=True):
+            self.saved.add(id(inp))
+            if inp.TUFLOW_TYPE in (const.INPUT.BLOCK, const.INPUT.BC_BLOCK, const.INPUT.GRID_DEFINITION_FILE_INPUT):
+                for child in inp.cf:
+                    self._plan_children(child, inc)
+            elif inp.dirty and any(isinstance(child, (ControlFileBuildState, DatabaseBuildState))
+                                   for child in inp.cf):
+                increment_reference = bool(inp.cf) and all(child.loaded for child in inp.cf)
+                for index, child in enumerate(inp.cf):
+                    if isinstance(child, DatabaseBuildState):
+                        source = Path(child.fpath).absolute()
+                        destination = _increment(source, inc) if child.loaded else source
+                        if self._assign(child, source, destination):
+                            child.fpath = destination
+                            self.saved.add(id(child))
+                            self.outputs.append(_SaveOutput(child, source, destination))
+                    else:
+                        self._plan_control(child, inc)
+                    # Constructors can canonicalise child.fpath while these
+                    # aligned indexes retain a directory alias.  Keep that
+                    # lexical spelling and advance its filename too, without
+                    # probing or reloading the owned child.
+                    index_name = ('_database_loaded_paths' if isinstance(child, DatabaseBuildState)
+                                  else '_cf_loaded_paths')
+                    loaded_paths = getattr(inp, index_name, ())
+                    if index < len(loaded_paths):
+                        lexical_source = Path(loaded_paths[index]).absolute()
+                        lexical_destination = (_increment(lexical_source, inc)
+                                               if child.loaded else lexical_source)
+                        self.moves.setdefault(_path_key(lexical_source), lexical_destination)
+                if increment_reference:
+                    self._set_reference(inp, _increment(inp.rhs, inc))
+
+    def _plan_control(self, owner: ControlFileBuildState, inc: str | None) -> None:
+        if owner.fpath is None or owner.fpath == Path():
+            raise ValueError('Control file path is not set; provide fpath before writing.')
+        source = Path(owner.fpath).absolute()
+        destination = _increment(source, inc) if owner.loaded else source
+        if not self._assign(owner, source, destination):
+            return
+        owner._fpath = destination
+        child_inc = None if inc is None else get_iter_number(destination.stem, get_geom_suffix(destination.stem))
+        self._plan_children(owner, child_inc)
+        inputs, trds = owner._get_trd_inputs(owner)
+        for trd_path, details in trds.items():
+            trd_source = Path(trd_path).absolute()
+            trd_inputs = details['inputs']
+            source_text = owner._source_texts.get(_path_key(trd_source))
+            signature = _source_signature(owner, trd_source)
+            changed = source_text is None or signature != source_text.signature
+            source_exists = _path_exists(trd_source)
+            if source_exists and not changed and not any(inp.dirty for inp in trd_inputs):
+                continue
+            target = _increment(trd_source, child_inc) if source_exists else trd_source
+            self.moves[_path_key(trd_source)] = target
+            ref = details['inpref']
+            self._set_reference(ref, _increment(ref.rhs, child_inc) if source_exists else ref.rhs)
+            updated_refs = set()
+            for inp in trd_inputs.inputs(include_hidden=True):
+                inp.trd = target
+                if inp.trd_input is not None and id(inp.trd_input) not in updated_refs:
+                    updated_refs.add(id(inp.trd_input))
+                    if source_exists:
+                        self._set_reference(inp.trd_input, _increment(inp.trd_input.rhs, child_inc))
+            self.outputs.append(_SaveOutput(owner, trd_source, target, trd_inputs,
+                                           source_text=source_text))
+        self.outputs.append(_SaveOutput(owner, source, destination, inputs,
+                                       source_text=owner._source_texts.get(_path_key(source))))
+
+    def _map_path(self, value):
+        if value is None or str(value) in ('', '.'):
+            return value
+        mapped = self.moves.get(_path_key(value))
+        return mapped if mapped is not None else value
+
+    def _prepare_objects(self) -> None:
+        for detached in self.copies.values():
+            detached.config.control_file = self._map_path(detached.config.control_file)
+            detached.config.tcf = self._map_path(detached.config.tcf)
+            if not isinstance(detached, InputBuildState):
+                if isinstance(detached, ControlFileBuildState):
+                    detached._fpath = self._map_path(detached.fpath)
+                continue
+            command = detached.command()
+            command.parent = self._map_path(command.parent)
+            command.config.control_file = self._map_path(command.config.control_file)
+            command.config.tcf = self._map_path(command.config.tcf)
+            command.value_expanded_path = self._map_path(command.value_expanded_path)
+            for name in ('_files', '_rhs_files', '_cf_loaded_paths', '_database_loaded_paths'):
+                if hasattr(detached, name):
+                    setattr(detached, name, [self._map_path(path) for path in getattr(detached, name)])
+            detached._file_to_original = {
+                self._map_path(path): self._map_path(pattern)
+                for path, pattern in detached._file_to_original.items()
+            }
+            detached._file_to_scope = {
+                str(self._map_path(path)): scopes for path, scopes in detached._file_to_scope.items()
+            }
+
+    def _validate_destinations(self) -> None:
+        destinations = {}
+        parent_destinations = set()
+        identities = {}
+        sources = {}
+        for original in self.originals.values():
+            if isinstance(original, (ControlFileBuildState, DatabaseBuildState)) and original.fpath:
+                if original.TUFLOW_TYPE not in (const.CONTROLFILE.BLOCK, const.CONTROLFILE.BC_BLOCK):
+                    sources.setdefault(_path_key(original.fpath), set()).add(id(original))
+            if isinstance(original, ControlFileBuildState):
+                for key in original._source_texts:
+                    sources.setdefault(key, set()).add(id(original))
+        for output in self.outputs:
+            destination = output.destination
+            key = _path_key(destination)
+            if key in destinations:
+                raise ValueError(f'Duplicate save destination: {destination}')
+            destinations[key] = output
+            if key != _path_key(output.source) and key in sources:
+                raise ValueError(f'Save destination would overwrite another source: {destination}')
+            try:
+                info = destination.lstat()
+            except FileNotFoundError:
+                info = None
+            if info is not None and stat.S_ISLNK(info.st_mode):
+                raise ValueError(f'Save destination is a symbolic link: {destination}')
+            parent_info = destination.parent.stat()
+            parent_destination = (parent_info.st_dev, parent_info.st_ino,
+                                  os.path.normcase(destination.name))
+            if parent_info.st_ino and parent_destination in parent_destinations:
+                raise ValueError(f'Duplicate physical save destination through a directory alias: {destination}')
+            parent_destinations.add(parent_destination)
+            if info is not None:
+                if not stat.S_ISREG(info.st_mode):
+                    raise ValueError(f'Save destination is not a regular file: {destination}')
+                if not info.st_mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH):
+                    raise PermissionError(f'Save destination is read-only: {destination}')
+                identity = (info.st_dev, info.st_ino)
+                if info.st_ino and identity in identities:
+                    raise ValueError(f'Duplicate physical save destination: {destination}')
+                identities[identity] = destination
+            if output.source_text is not None and _path_exists(output.source):
+                if output.source.read_bytes() != output.source_text.data:
+                    raise ValueError(f'Source changed on disk since loading: {output.source}')
+
+    def _render(self) -> None:
+        for output in self.outputs:
+            if output.inputs is None:
+                continue  # Database subclasses render to their staging path.
+            output.signature = _source_signature(output.owner, output.destination)
+            if output.source_text is None or output.signature != output.source_text.signature:
+                self._check_include_representation(output.owner)
+            buffer = io.StringIO()
+            output.owner._write(buffer, output.inputs)
+            if output.source_text is not None:
+                output.data = output.source_text.encode(buffer.getvalue(), output.signature)
+            else:
+                output.data = buffer.getvalue().encode('utf-8', errors='surrogateescape')
+            output.owner._source_texts.pop(_path_key(output.source), None)
+            output.owner._source_texts[_path_key(output.destination)] = _SourceText(output.data, output.signature)
+
+    @staticmethod
+    def _check_include_representation(owner: ControlFileBuildState) -> None:
+        # Ordered/empty/scoped include editing belongs to W6.  Until that
+        # representation exists, fail before publication instead of dropping
+        # a directive or merging distinct occurrences during an edited save.
+        represented = set()
+        paths = {}
+        unsupported = False
+        for inp in owner.inputs.inputs(include_hidden=True):
+            if inp.trd is not None:
+                represented.add(id(inp.trd_input))
+                key = _path_key(inp.trd)
+                if key in paths and paths[key] is not inp.trd_input:
+                    unsupported = True
+                paths[key] = inp.trd_input
+        for ref in owner._read_file_inputs:
+            if id(ref) not in represented or ScopeWriter.input_scope(ref):
+                unsupported = True
+        if unsupported:
+            raise ValueError(
+                f'Cannot safely edit {owner.fpath}: empty, missing, repeated or scoped Read File '
+                'directives are not representable by the current flattened include writer. '
+                'Original files are unchanged; ordered include editing is deferred to W6 / PR #21.'
+            )
+
+    def _stage(self) -> None:
+        for output in self.outputs:
+            output.staged = _stage_bytes(output.destination, output.data or b'')
+            if output.inputs is None:
+                database = output.owner
+                database.fpath = output.staged
+                try:
+                    database.write('inplace')
+                    with output.staged.open('r+b') as stream:
+                        os.fsync(stream.fileno())
+                finally:
+                    database.fpath = output.destination
+            mode_source = output.destination if _path_exists(output.destination) else output.source
+            if _path_exists(mode_source):
+                os.chmod(output.staged, stat.S_IMODE(mode_source.stat().st_mode))
+        # Back up every existing destination before the first replacement.
+        for output in self.outputs:
+            if _path_exists(output.destination):
+                output.backup = _stage_bytes(output.destination, output.destination.read_bytes())
+                shutil.copystat(output.destination, output.backup)
+
+    def _replace(self) -> None:
+        replaced = []
+        try:
+            for output in self.outputs:
+                os.replace(output.staged, output.destination)
+                replaced.append(output)
+        except BaseException as error:
+            # A network filesystem can complete a rename and then lose the
+            # acknowledgement.  Check the attempted target as well as the
+            # replacements whose calls returned successfully.  If inspection
+            # fails, attempt recovery conservatively and retain its backup if
+            # that also fails.
+            try:
+                if output.backup is None:
+                    output.destination.stat()
+                    attempted_changed = True
+                else:
+                    attempted_changed = output.destination.read_bytes() != output.backup.read_bytes()
+            except FileNotFoundError:
+                attempted_changed = output.backup is not None
+            except OSError:
+                attempted_changed = True
+            if attempted_changed:
+                replaced.append(output)
+            unrestored = []
+            recovery = {}
+            for completed in reversed(replaced):
+                backup_bytes = None
+                try:
+                    if completed.backup is None:
+                        completed.destination.unlink()
+                    else:
+                        backup_bytes = completed.backup.read_bytes()
+                        os.replace(completed.backup, completed.destination)
+                except OSError as rollback_error:
+                    # A rollback can also succeed before its acknowledgement
+                    # is lost.  Do not report a consumed backup as recoverable.
+                    try:
+                        if completed.backup is None:
+                            try:
+                                completed.destination.stat()
+                            except FileNotFoundError:
+                                restored = True
+                            else:
+                                restored = False
+                        else:
+                            restored = backup_bytes is not None and completed.destination.read_bytes() == backup_bytes
+                    except OSError:
+                        restored = False
+                    if restored:
+                        continue
+                    unrestored.append(completed.destination)
+                    if completed.backup is not None:
+                        # Remove this backup from ordinary cleanup before
+                        # inspecting it.  A stat error is not proof of absence
+                        # and must never discard an original recovery copy.
+                        backup = completed.backup
+                        completed.backup = None
+                        try:
+                            backup.stat()
+                        except FileNotFoundError:
+                            backup = None
+                            if backup_bytes is not None:
+                                try:
+                                    backup = _stage_bytes(completed.destination, backup_bytes)
+                                except OSError as recovery_error:
+                                    error.add_note(f'Could not recreate recovery copy: {recovery_error}')
+                        except OSError as inspection_error:
+                            error.add_note(f'Could not inspect recovery copy {backup}; '
+                                           f'retaining it: {inspection_error}')
+                        if backup is not None:
+                            recovery[completed.destination] = backup
+                    error.add_note(f'Rollback failed for {completed.destination}: {rollback_error}')
+            raise ModelSaveError(output.destination, tuple(item.destination for item in replaced),
+                                 tuple(unrestored), recovery) from error
+
+    def _state_updates(self) -> list[tuple[object, dict]]:
+        updates = []
+        for original_id, detached in self.copies.items():
+            original = self.originals[original_id]
+            if isinstance(detached, InputBuildState):
+                values = {name: getattr(detached, name) for name in self._INPUT_FIELDS if hasattr(detached, name)}
+                values['trd'] = detached.trd
+                values['trd_input'] = self.reverse.get(id(detached.trd_input), detached.trd_input)
+            elif isinstance(detached, ControlFileBuildState):
+                values = {'_fpath': detached.fpath, 'config': detached.config,
+                          '_source_texts': detached._source_texts,
+                          '_save_source_owners': {
+                              id(self.reverse[id(inp)]): (inp.uuid, inp.trd,
+                                  self.reverse.get(id(inp.trd_input), inp.trd_input))
+                              for inp in detached.inputs.inputs(include_hidden=True)
+                          }}
+            else:
+                values = {'_fpath': detached.fpath, 'config': detached.config}
+            if id(detached) in self.saved:
+                values['_dirty'] = False
+                if id(detached) in self.assigned:
+                    values['loaded'] = True
+                if hasattr(original, 'altered_inputs'):
+                    # Retain previous undo blocks, exactly as clear() does,
+                    # without calling setters on unsaved siblings.
+                    updates.append((original.altered_inputs,
+                                    {'_updated_inputs': original.altered_inputs._updated_inputs + [[]]}))
+            updates.append((original, values))
+        return updates
+
+    def save(self, inc: str | None) -> None:
+        self._plan_control(self.root, inc)
+        self._validate_destinations()
+        self._prepare_objects()
+        self._render()
+        updates = self._state_updates()
+        try:
+            self._stage()
+            self._replace()
+        except BaseException as error:
+            for output in self.outputs:
+                _remove_temporary(output.staged, error)
+                _remove_temporary(output.backup, error)
+            raise
+        # Prepared plain assignments cannot invoke setters, reload children,
+        # serialise data or perform filesystem operations after publication.
+        for original, values in updates:
+            original.__dict__.update(values)
+        for output in self.outputs:
+            _remove_temporary(output.backup)
 
 
 class ControlFileBuildState(BuildState, ControlFile):
@@ -90,6 +698,9 @@ class ControlFileBuildState(BuildState, ControlFile):
         self.loaded = False
 
         self._fpath = Path(path).resolve() if path is not None else None
+        self._source_texts = {}
+        self._save_source_owners = {}
+        self._read_file_inputs = []
         self._dirty = False
         self._active_trd = None  # the active TRD file that is being loaded
         self._active_trd_inp = None
@@ -354,10 +965,16 @@ class ControlFileBuildState(BuildState, ControlFile):
         Solution Scheme == HPC
         Hardware == GPU
         """
-        if inp in self.inputs:
+        # The input must belong to this exact owner. Input.__eq__ compares
+        # command text, so equal commands in siblings are not interchangeable.
+        if inp.parent is self and any(current is inp for current in self.inputs):
             inputs = Inputs()
             inputs.append(inp)
-            self.inputs.remove(inp)
+            # Inputs.remove() also matches by text. Remove the same instance
+            # from both the complete and visible views of this Inputs object.
+            all_inputs = self.inputs.inputs(include_hidden=True)
+            all_inputs.pop(next(i for i, current in enumerate(all_inputs) if current is inp))
+            list.pop(self.inputs, next(i for i, current in enumerate(self.inputs) if current is inp))
             self.record_change(inputs, 'remove_input')
             if self.root_cf and self.root_cf != self:
                 self.root_cf.record_change(inputs, 'remove_input')
@@ -365,7 +982,7 @@ class ControlFileBuildState(BuildState, ControlFile):
         else:
             for inp1 in self.inputs:
                 if inp1.TUFLOW_TYPE == const.INPUT.CF and inp1.cf:
-                    for cf in inp.cf:
+                    for cf in inp1.cf:
                         inp2 = cf.remove_input(inp)
                         if inp2:
                             return inp2
@@ -613,6 +1230,22 @@ class ControlFileBuildState(BuildState, ControlFile):
         ControlFileBuildState
             The control file that was written.
 
+        Notes
+        -----
+        Every affected control file, read file and database is staged before
+        existing destinations or live object state are changed. A replacement
+        failure raises :class:`ModelSaveError` after attempting rollback; its
+        ``unrestored_paths`` and ``recovery_paths`` describe incomplete recovery.
+        Multiple file replacements are not globally atomic, and concurrent
+        writers or process/power loss are outside this recovery contract.
+
+        Control files use UTF-8 with surrogateescape, preserving source BOM,
+        newline convention and final-newline presence. Unchanged source bytes
+        are retained exactly. New files use UTF-8 without BOM and LF. Edited
+        include layouts that the flattened writer cannot represent are rejected
+        before writing. Direct standalone database writes are not covered by
+        this control-file transaction.
+
         Examples
         --------
         .. code-block:: tuflow
@@ -631,51 +1264,8 @@ class ControlFileBuildState(BuildState, ControlFile):
         >>> hardware_inp.rhs = 'CPU'
         >>> control_file.write('inplace')
         """
-        if not self.fpath or self.fpath == Path():
-            inc = 'inplace'
-
-        if self.loaded:  # if not loaded, don't increment because the user has probably specified the filepath manually
-            self.fpath = increment_fpath(self.fpath, inc)
-        geom_ext = get_geom_suffix(self.fpath.stem)
-        inc_children = inc if inc is None else get_iter_number(self.fpath.stem, geom_ext)
-        if inc == 'inplace' and not inc_children:
-            inc_children = 'inplace'
-
-        # write children first so that path references are updated
-        for inp in self.find_input(callback=lambda x: x.TUFLOW_TYPE in [const.INPUT.CF, const.INPUT.DB]):
-            if inp.dirty:
-                inc_rhs = True
-                for cf in inp.cf:
-                    if not cf.loaded:
-                        inc_rhs = False
-                    cf.write(inc_children)
-                if inc_rhs:
-                    inp.rhs = increment_fpath(inp.rhs, inc_children)
-
-        inputs, trds = self._get_trd_inputs(self)
-
-        # write trd files
-        for fpath, d_inputs in trds.items():
-            trd_inputs = d_inputs['inputs']
-            ref_inp = d_inputs['inpref']
-            if not fpath.exists() or any(x.dirty for x in trd_inputs):
-                if fpath.exists():  # only increment name if the file already exists
-                    trd_fpath = increment_fpath(fpath, inc_children)
-                    ref_inp.rhs = increment_fpath(ref_inp.rhs, inc_children)  # update reference to TRD file
-                else:
-                    trd_fpath = fpath
-                with open(trd_fpath, 'w') as fo:
-                    self._write(fo, trd_inputs)
-                for inp in trd_inputs:
-                    inp.trd = trd_fpath
-
-        # write self
-        with self.fpath.open('w') as fo:
-            self._write(fo, inputs)
-
-        self.fpath = self.fpath
-        self.loaded = True
-        self.altered_inputs.clear()
+        transaction = _SaveTransaction(self)
+        transaction.save(inc)
         return self
 
     def preview(self, buf: TextIO | None = None):
@@ -755,6 +1345,7 @@ class ControlFileBuildState(BuildState, ControlFile):
         if not self.config:
             self.config = self._generate_initial_config(p)
 
+        source_bytes = Path(p).read_bytes()
         parser = self._parser(p, self.config)
         # parser needs to be accessed in a loop like this to maintain the state of the parser for FV blocks
         while True:
@@ -763,6 +1354,9 @@ class ControlFileBuildState(BuildState, ControlFile):
             except StopIteration:
                 break
             self._append_input(command, self._active_trd, self._active_trd_inp)
+        self._source_texts[_path_key(p)] = _SourceText(
+            source_bytes, _source_signature(self, p),
+        )
 
     def _parser(self, path: Path, config: TCFConfig) -> typing.Iterator[Command]:
         return get_commands(path, config)
@@ -841,11 +1435,13 @@ class ControlFileBuildState(BuildState, ControlFile):
             if trd is not None:
                 logger.error(f'Nested TRD files are currently not supported. Command: {inp}')
                 raise ValueError(f'Nested TRD files are currently not supported. Command: {inp}')
+            self._read_file_inputs.append(inp)
             self._load_trd(inp)
             return inp
         self.inputs.append(inp)
         inp.trd = trd
         inp.trd_input = trd_input
+        self._save_source_owners[id(inp)] = (inp.uuid, trd, trd_input)
         self.config.spatial_database = cmd.config.spatial_database
         self.config.spatial_database_tcf = cmd.config.spatial_database_tcf
         return inp

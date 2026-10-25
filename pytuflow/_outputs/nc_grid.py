@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Union, Generator
 import logging
@@ -41,6 +41,12 @@ class NCGrid(Grid):
     cheap to initialise.
 
     The netCDF4 library is required to use this class.
+
+    Relative times are returned in hours. Fixed units from microseconds through
+    days are supported, with optional ISO reference dates and UTC offsets.
+    Standard/Gregorian calendars are supported from 1582-10-15 onwards;
+    proleptic Gregorian dates use Python's datetime range. Unsupported units,
+    reference formats and calendars raise ValueError rather than being guessed.
 
     Parameters
     ----------
@@ -108,7 +114,7 @@ class NCGrid(Grid):
     10   9.487831           45.560959
     """
 
-    def __init__(self, fpath: PathLike):
+    def __init__(self, fpath: PathLike, *, memory_budget_bytes: int = 256 * 1024 * 1024):
         self.fpath = Path(fpath)
         self._loaded = False
         self._stnd2var = {}
@@ -116,6 +122,11 @@ class NCGrid(Grid):
 
         #: str: The units of time in the netCDF file.
         self.time_units = 'h'
+        #: str | None: The original time-coordinate units, including its reference text.
+        self.source_time_units = None
+        #: str: The source calendar (``standard`` when the attribute is omitted).
+        self.source_calendar = 'standard'
+        self._time_unit_seconds = 3600.
 
         if not has_nc:
             raise ImportError('netCDF4 is not installed.')
@@ -126,7 +137,7 @@ class NCGrid(Grid):
         if not has_nc:
             raise ImportError('NetCDF4 library is required to read NCGrid files.')
 
-        super().__init__(fpath)
+        super().__init__(fpath, memory_budget_bytes=memory_budget_bytes)
 
     @staticmethod
     def _looks_like_this(fpath: PathLike) -> bool:
@@ -261,6 +272,11 @@ class NCGrid(Grid):
         with self._open():
             return super().maximum(data_types)
 
+    def minimum(self, data_types: str | list[str]) -> float | pd.DataFrame:
+        self._load()
+        with self._open():
+            return super().minimum(data_types)
+
     def surface(self, data_type: str = None, time: TimeLike = 0, to_vertex: bool = False, coord_scope: str = 'global',
                 direction_to_vector: bool = False, direction_convention = 'arithmetic') -> pd.DataFrame:
         self._load()
@@ -294,20 +310,31 @@ class NCGrid(Grid):
     @contextmanager
     def _open(self):
         if self._nc is not None:
+            # The outer context (or explicit open_reader caller) owns the
+            # existing handle. Inner contexts must not close it.
             yield self._nc
             return
-        with Dataset(self.fpath, 'r') as self._nc:
-            yield self._nc
-        self._nc = None
+        reader = Dataset(self.fpath, 'r')
+        self._nc = reader
+        try:
+            yield reader
+        finally:
+            # Clear state even when extraction raises; never leave a closed
+            # Dataset available for the next operation.
+            if self._nc is reader:
+                self._nc = None
+            if reader.isopen():
+                reader.close()
 
     def open_reader(self):
         if self._nc is None:
             self._nc = Dataset(self.fpath, 'r')
 
     def close(self):
-        if self._nc is not None:
-            self._nc.close()
-            self._nc = None
+        reader = self._nc
+        self._nc = None
+        if reader is not None and reader.isopen():
+            reader.close()
 
     def _initial_load(self):
         self.name = self.fpath.stem
@@ -315,22 +342,29 @@ class NCGrid(Grid):
             self.reference_time = self._reference_time(nc)
             self._load_info(nc)
 
-    def _reference_time(self, nc: Dataset) -> datetime | None:
+    def _reference_time(self, nc: Dataset) -> datetime:
         if 'time' not in nc.variables:
-            return None
-        units = nc.variables['time'].units
-        if 'hour' in units:
-            self.time_units = 'h'
-        elif 'second' in units:
-            self.time_units = 's'
-        else:
-            self.time_units = units.split(' ')[0]
+            return self.reference_time
+        time = nc.variables['time']
+        if time.dimensions != ('time',):
+            raise ValueError('NetCDF time coordinate must be one-dimensional on the time dimension.')
+        units = getattr(time, 'units', None)
+        if not isinstance(units, str) or not units.strip():
+            raise ValueError('NetCDF time coordinate must declare supported time units.')
+        self.source_time_units = units
+        self.source_calendar = getattr(time, 'calendar', 'standard')
+        if self.source_calendar not in ('standard', 'gregorian', 'proleptic_gregorian'):
+            raise ValueError(f'Unsupported NetCDF time calendar: {self.source_calendar!r}')
 
-        if 'since' in units.lower():
-            self.has_reference_time = True
-
-        return self._parse_time_units_string(units, r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}(?:\:\d{2})?',
-                                             ['%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M'])[0]
+        reference, self.time_units = self._parse_time_units_string(units)
+        self._time_unit_seconds = {'us': 1e-6, 'ms': 1e-3, 's': 1., 'm': 60., 'h': 3600., 'd': 86400.}[
+            self.time_units
+        ]
+        self.has_reference_time = 'since' in units.lower().split()
+        if (self.source_calendar != 'proleptic_gregorian'
+                and reference < datetime(1582, 10, 15, tzinfo=timezone.utc)):
+            raise ValueError('Standard/Gregorian time calendars require dates on or after 1582-10-15.')
+        return reference
 
     def _load_info(self, nc: Dataset):
         d = {'data_type': [], 'type': [], 'is_max': [], 'is_min': [], 'static': [], 'start': [], 'end': [], 'dt': [],
@@ -351,9 +385,23 @@ class NCGrid(Grid):
                 d['end'].append(0)
                 d['dt'].append(0)
             else:
-                dt = self._calculate_time_step(np.array(var.times) * 3600.)
-                start = float(var.times[0])
-                end = float(var.times[-1])
+                if np.ma.is_masked(var.times):
+                    raise ValueError('NetCDF time coordinate contains missing samples.')
+                seconds = np.asarray(var.times, dtype=float) * self._time_unit_seconds
+                if not np.isfinite(seconds).all() or (np.diff(seconds) <= 0).any():
+                    raise ValueError('NetCDF time coordinate must contain finite, strictly increasing samples.')
+                if seconds.size:
+                    try:
+                        first = self.reference_time + timedelta(seconds=float(seconds[0]))
+                        self.reference_time + timedelta(seconds=float(seconds[-1]))
+                    except OverflowError as exc:
+                        raise ValueError('NetCDF time samples exceed the supported datetime range.') from exc
+                    if (self.source_calendar != 'proleptic_gregorian'
+                            and first < datetime(1582, 10, 15, tzinfo=timezone.utc)):
+                        raise ValueError('Standard/Gregorian time calendars require dates on or after 1582-10-15.')
+                dt = self._calculate_time_step(seconds)
+                start = float(seconds[0] / 3600.) if seconds.size else 0.
+                end = float(seconds[-1] / 3600.) if seconds.size else 0.
                 d['start'].append(start)
                 d['end'].append(end)
                 d['dt'].append(dt)
@@ -371,6 +419,24 @@ class NCGrid(Grid):
         if self._loaded:
             return
         self._loaded = True
+
+    def _source_slice_nbytes(self, dtype: str) -> int:
+        varname = self._stnd2var[dtype]
+        with self._open() as nc:
+            var = nc.variables[varname]
+            itemsize = np.dtype(var.dtype).itemsize
+            # Automatic scale/offset decoding can promote on-disk int16
+            # samples to float64. Budget for the decoded payload, not
+            # the packed storage dtype, plus transient working headroom.
+            if 'scale_factor' in var.ncattrs() or 'add_offset' in var.ncattrs():
+                itemsize = max(itemsize, np.dtype('f8').itemsize)
+            return max(1, int(np.prod(var.shape[1:])) * itemsize)
+
+    def _time_chunk_length(self, dtype: str) -> int:
+        varname = self._stnd2var[dtype]
+        with self._open() as nc:
+            chunks = nc.variables[varname].chunking()
+            return int(chunks[0]) if isinstance(chunks, (list, tuple)) and chunks else 1
 
     def _value(self, dtype: str, idx: tuple | int | np.ndarray | slice) -> float | np.ndarray:
         varname = self._stnd2var[dtype]

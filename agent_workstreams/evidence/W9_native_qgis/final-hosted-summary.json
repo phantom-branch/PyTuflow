@@ -1,0 +1,47 @@
+{
+  "3.12-baseline": {
+    "status": "passed",
+    "counts": {
+      "collected": 1403,
+      "passed": 1387,
+      "failed": 4,
+      "error": 0,
+      "skipped": 12,
+      "xfail": 0,
+      "xpass": 0
+    },
+    "inherited_failures": 4,
+    "fixed_failures": 0,
+    "problems": []
+  },
+  "3.14-baseline": {
+    "status": "passed",
+    "counts": {
+      "collected": 1403,
+      "passed": 1387,
+      "failed": 4,
+      "error": 0,
+      "skipped": 12,
+      "xfail": 0,
+      "xpass": 0
+    },
+    "inherited_failures": 4,
+    "fixed_failures": 0,
+    "problems": []
+  },
+  "3.14-current": {
+    "status": "passed",
+    "counts": {
+      "collected": 1403,
+      "passed": 1148,
+      "failed": 243,
+      "error": 0,
+      "skipped": 12,
+      "xfail": 0,
+      "xpass": 0
+    },
+    "inherited_failures": 243,
+    "fixed_failures": 0,
+    "problems": []
+  }
+}

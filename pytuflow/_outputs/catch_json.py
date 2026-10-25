@@ -540,11 +540,11 @@ class CATCHJson(MapOutput):
                 if i > -1:
                     data_types[i] = 'velocity'
                     if isinstance(ret, pd.DataFrame):
-                        ret.rename(columns={'vector velocity': 'velocity'}, inplace=True)
+                        ret = ret.rename(columns={'vector velocity': 'velocity'})
                 if j > -1:
                     data_types[j] = 'max velocity'
                     if isinstance(ret, pd.DataFrame):
-                        ret.rename(columns={'max vector velocity': 'max velocity'}, inplace=True)
+                        ret = ret.rename(columns={'max vector velocity': 'max velocity'})
                 if len(pnts) == 1:
                     return ret
                 if df.empty:
