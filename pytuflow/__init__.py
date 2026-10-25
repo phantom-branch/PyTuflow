@@ -6,31 +6,31 @@ if _TYPE_CHECKING:
     # Public type references remain statically discoverable while reader
     # implementations are imported only when accessed at runtime.
     from ._outputs import (
-        INFO,
-        TPC,
-        GPKG1D,
-        GPKG2D,
-        GPKGRL,
-        FMTS,
-        FVBCTide,
-        HydTablesCheck,
-        BCTablesCheck,
-        CrossSections,
-        DATCrossSections,
-        XMDF,
-        NCMesh,
-        CATCHJson,
-        DAT,
-        NCGrid,
-        LP2D,
-        MapOutput,
-        TimeSeries,
-        TabularOutput,
-        Mesh,
-        Grid,
-        GridMesh,
-        Output,
-        FormatConvention,
+        INFO as INFO,
+        TPC as TPC,
+        GPKG1D as GPKG1D,
+        GPKG2D as GPKG2D,
+        GPKGRL as GPKGRL,
+        FMTS as FMTS,
+        FVBCTide as FVBCTide,
+        HydTablesCheck as HydTablesCheck,
+        BCTablesCheck as BCTablesCheck,
+        CrossSections as CrossSections,
+        DATCrossSections as DATCrossSections,
+        XMDF as XMDF,
+        NCMesh as NCMesh,
+        CATCHJson as CATCHJson,
+        DAT as DAT,
+        NCGrid as NCGrid,
+        LP2D as LP2D,
+        MapOutput as MapOutput,
+        TimeSeries as TimeSeries,
+        TabularOutput as TabularOutput,
+        Mesh as Mesh,
+        Grid as Grid,
+        GridMesh as GridMesh,
+        Output as Output,
+        FormatConvention as FormatConvention,
     )
 
 
@@ -50,8 +50,8 @@ from .TUFLOW import *
 from . import _outputs as _outputs_api
 from ._tmf import *
 from ._fm import GXY, FMDAT
-from .util import TuflowBinaries, TuflowFVBinaries, pytuflow_logging, misc
-from .project import HPCProject, FVProject
+from .util import TuflowBinaries as TuflowBinaries, TuflowFVBinaries, pytuflow_logging as pytuflow_logging, misc
+from .project import HPCProject as HPCProject, FVProject as FVProject
 
 
 name = 'PyTuflow'
