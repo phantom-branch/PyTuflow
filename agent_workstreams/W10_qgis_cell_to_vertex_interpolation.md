@@ -1,6 +1,6 @@
 # W10 — Restore QGIS-backed cell-to-vertex interpolation
 
-**Status:** Implementation and tests pushed on this draft branch; actual QGIS/MDAL execution and final exact-head acceptance remain outstanding. This is an upstream bug-fix candidate, not a new interpolator.
+**Status:** Real Windows QGIS/MDAL acceptance passed on source/test checkpoint `af3cede953e625c365641293915aad6b47d46919`. Exact delivery-head hosted gates and final review are tracked in the PR acceptance comment. Draft, unmerged, unreleased. This is an upstream bug-fix candidate, not a new interpolator.
 
 - Fork: `phantom-branch/PyTuflow`, branch `fix/qgis-cell-to-vertex-interpolation`
 - Branch base: merged W9/#26 on `master` at `73e0041f1fa5e3ce074fd71e8c5ffb36a6cf7d07`
@@ -64,6 +64,6 @@ The new standalone `tests/test_qgis_vertex_angle_math.py` covers a shared node w
 
 Codex reviewed `a51cb96` and identified a test-order issue (reading `geom.cell_nodes` before lazy weighting). The test is corrected in `c398d8a`; no algorithmic issue was demonstrated by that review, and review needs refreshing on a final tested implementation head.
 
-**Native QGIS/MDAL validation has not been run here.** The new `tests/test_qgis_cell_to_vertex_interpolation.py` is required to be executed by an agent with installed QGIS 4 and genuine MDAL, along with `tests/test_qgis_surface_cell_positions.py`, the relevant W8/W9 numerical suites, and native NetCDF reader parity cases. Reproduce the inherited `NotImplementedError` on the unchanged pre-W10 `master` in the same QGIS runtime and publish baseline/candidate JUnit, source/runtime/MDAL provenance and exact raw exits. Check expected shapes, masks, missing/wet/zero/multi-time semantics, vector components and coordinate scope. Do not infer parity from standalone CI.
+**Native QGIS/MDAL validation now passed:** see [the committed acceptance record](evidence/W10_native_qgis/README.md). The unchanged current master `0aba6b79db0ecc4922b910867f2c96905acb8d3a` reproduced the inherited public `surface('tracer', 0., to_vertex=True)` NotImplementedError. Initial W10 execution passed 18/19 and demonstrated reordered bed Z values. Checkpoint `af3cede953e625c365641293915aad6b47d46919` preserves requested bed-data ordering (including duplicates) and enables the intended full-mesh vertex cache. Final real-provider W10: 19/19; seven identical affected modules: baseline 1148/1148, candidate 1148/1148, plus nine new analytical tests all passing. No errors or skips. The real connected triangle/irregular-quad case checks independent weights and an isolated native vertex; all three extraction combinations match native NetCDF for tested 2D/FV-3D scalar/vector cases. QGIS 4.2.3 / Python 3.12.15 / Qt 6.11.0 / GDAL 3.13.3; real MDAL identity and imported-source hashes are retained. Source/test hashes in provenance bind documentation-only delivery commits to the tested checkpoint. Hosted gates and final review remain distinct from native acceptance.
 
 The entire work remains **draft, unmerged and unreleased**, with no direct upstream PR or push; this should be independently validated before inclusion in the consolidated upstream-compatible contribution.
