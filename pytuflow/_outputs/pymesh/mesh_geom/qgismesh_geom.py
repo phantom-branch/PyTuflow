@@ -48,6 +48,39 @@ def _face_centroid(vertices: np.ndarray) -> np.ndarray:
     return np.array([centroid_xy[0], centroid_xy[1], z], dtype=np.float64)
 
 
+
+def _angle_weights(vertices: np.ndarray, cell_nodes: np.ndarray, is_triangle: np.ndarray) -> np.ndarray:
+    """Normalised native-cell corner-angle weights (the PyNCMesh convention).
+
+    Triangle slot four repeats corner three for safe indexing but has zero weight.
+    Geometry is independent of wet/dry state and of the requested result type.
+    """
+    coords = np.asarray(vertices, dtype=np.float64)
+    nodes = np.asarray(cell_nodes, dtype=np.int64)
+    triangles = np.asarray(is_triangle, dtype=bool)
+    if nodes.ndim != 2 or nodes.shape[1] != 4 or triangles.shape != (nodes.shape[0],):
+        raise ValueError("Expected an N x 4 cell-node array and one triangle flag per cell")
+    if nodes.size == 0:
+        return np.empty((0, 4), dtype=np.float64)
+    if (nodes < 0).any() or (nodes >= coords.shape[0]).any():
+        raise ValueError("Mesh face refers to a nonexistent vertex")
+    xy = coords[nodes[:, [3, 0, 1, 2, 3, 0]], :2].copy()
+    xy[triangles, 4:6] = xy[triangles, 1:3]
+    edges = np.diff(xy, axis=1)
+    lengths = np.linalg.norm(edges, axis=-1)
+    left = edges[:, :-1]
+    right = edges[:, 1:]
+    denominator = lengths[:, :-1] * lengths[:, 1:]
+    cosine = np.divide(-np.sum(left * right, axis=-1), denominator,
+                       out=np.ones_like(denominator), where=denominator > 0)
+    angles = np.arccos(np.clip(cosine, -1., 1.))
+    angles[denominator <= 0] = 0.
+    angles[triangles, 3] = 0.
+    total = np.bincount(nodes.ravel(), weights=angles.ravel(), minlength=coords.shape[0])
+    return np.divide(angles, total[nodes], out=np.zeros_like(angles),
+                     where=total[nodes] > 0)
+
+
 class PointMixinQgis(PointMixin):
 
     @staticmethod
@@ -81,6 +114,7 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
         self._ibed = -1
         self._vertex_positions_cache = None
         self._cell_positions_cache: dict[int, np.ndarray] = {}
+        self._corner_weights: np.ndarray | None = None
         self.dtype = np.float64
 
     @property
@@ -131,6 +165,31 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
     def cell_vertices(self, cell_id: int) -> list[int]:
         self.init_spatial_index()
         return list(self._mesh.face(cell_id))
+
+    def cell_to_vertex_weights(self) -> np.ndarray:
+        """Use the original non-QGIS angle scheme with native MDAL face IDs."""
+        if not self._loaded:
+            self.load()
+        self.init_spatial_index()
+        if self._corner_weights is None:
+            face_df = self.cells_df
+            node_ids = face_df[['n1', 'n2', 'n3', 'n4']].to_numpy(dtype=np.int64, copy=True)
+            is_triangle = face_df['nnode'].to_numpy() == 3
+            if np.any(~np.isin(face_df['nnode'].to_numpy(), [3, 4])):
+                raise ValueError("Cell-to-vertex mapping supports triangle and quad faces")
+            node_ids[is_triangle, 3] = node_ids[is_triangle, 2]
+            # Unlike PyNCMeshGeometry, QGIS does not populate the base arrays.
+            # Only allocate these when vertex interpolation is requested.
+            coords = np.empty((self._mesh.vertexCount(), 3), dtype=np.float64)
+            for i in range(coords.shape[0]):
+                point = self._mesh.vertex(i)
+                coords[i, 0:2] = point.x(), point.y()
+                coords[i, 2] = point.z() if point.is3D() else np.nan
+            weights = _angle_weights(coords, node_ids, is_triangle)
+            self.cell_nodes = node_ids
+            self.vertices = coords
+            self._corner_weights = weights
+        return self._corner_weights
 
     def cell_position(self, cell_id: int | typing.Iterable[int] | slice, scope: str = 'global') -> np.ndarray:
         """Return original-face centroids as N × 3 coordinates in face ID order.
@@ -191,16 +250,18 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
         return result
 
     def vertex_position(self, vertex_id: int | typing.Iterable[int] | slice, get_z: bool = True, *args, **kwargs) -> np.ndarray:
+        scope = kwargs.pop('scope', 'global')
+        if isinstance(get_z, str):
+            scope, get_z = get_z, True  # inherited positional scope convention
+        if scope not in ('global', 'local'):
+            raise ValueError("scope must be 'global' or 'local'")
         if not self._loaded:
             self.load()
 
         self.init_spatial_index()
 
-        if self._vertex_positions_cache is not None:
-            return self._vertex_positions_cache[vertex_id]
-
         cache_result = False
-        if isinstance(vertex_id, slice) == slice(None) and get_z:
+        if isinstance(vertex_id, slice) and vertex_id == slice(None) and get_z:
             cache_result = True
 
         if isinstance(vertex_id, (list, tuple)):
@@ -212,24 +273,36 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
         if isinstance(vertex_id, slice):
             vertex_id = list(range(self.lyr.dataProvider().vertexCount()))[vertex_id]
 
+        if self._vertex_positions_cache is not None and get_z:
+            cached = self._vertex_positions_cache[vertex_id]
+            return self.trans.transform(cached) if scope == 'local' else cached
+
         a = np.full((len(vertex_id), 3), 0., dtype=np.float64)
         for i, vid in enumerate(vertex_id):
             v = self._mesh.vertex(vid)
             a[i, 0] = v.x()
             a[i, 1] = v.y()
         if get_z:
-            from .. import QgisDataExtractor
-            a_vert_index = np.sort(vertex_id)
-            values = []
-            for vertid, count, idx in QgisDataExtractor.chunk_indexes(a_vert_index):
-                extracted = np.array(
-                    self.lyr.dataProvider().datasetValues(QgsMeshDatasetIndex(self._ibed, 0), vertid, count).values()
-                )
-                values.append(extracted[idx])
-            a[:, 2] = np.hstack(values)
+            if self._ibed == -1:
+                # MDAL meshes need not have a separate Bed Elevation dataset.
+                # Do not invent zero heights when the native vertices are 2-D.
+                a[:, 2] = [
+                    self._mesh.vertex(vid).z() if self._mesh.vertex(vid).is3D() else np.nan
+                    for vid in vertex_id
+                ]
+            else:
+                from .. import QgisDataExtractor
+                a_vert_index, inverse = np.unique(vertex_id, return_inverse=True)
+                values = []
+                for vertid, count, idx in QgisDataExtractor.chunk_indexes(a_vert_index):
+                    extracted = np.array(
+                        self.lyr.dataProvider().datasetValues(QgsMeshDatasetIndex(self._ibed, 0), vertid, count).values()
+                    )
+                    values.append(extracted[idx])
+                a[:, 2] = np.hstack(values)[inverse] if values else np.empty(0)
         if cache_result:
             self._vertex_positions_cache = a
-        return a
+        return self.trans.transform(a) if scope == 'local' and len(a) else a
 
     def triangle_vertices(self, triangle_id: int) -> np.ndarray:
         if triangle_id in self._triangles:

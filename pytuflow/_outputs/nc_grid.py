@@ -114,7 +114,7 @@ class NCGrid(Grid):
     10   9.487831           45.560959
     """
 
-    def __init__(self, fpath: PathLike):
+    def __init__(self, fpath: PathLike, *, memory_budget_bytes: int = 256 * 1024 * 1024):
         self.fpath = Path(fpath)
         self._loaded = False
         self._stnd2var = {}
@@ -137,7 +137,7 @@ class NCGrid(Grid):
         if not has_nc:
             raise ImportError('NetCDF4 library is required to read NCGrid files.')
 
-        super().__init__(fpath)
+        super().__init__(fpath, memory_budget_bytes=memory_budget_bytes)
 
     @staticmethod
     def _looks_like_this(fpath: PathLike) -> bool:
@@ -272,6 +272,11 @@ class NCGrid(Grid):
         with self._open():
             return super().maximum(data_types)
 
+    def minimum(self, data_types: str | list[str]) -> float | pd.DataFrame:
+        self._load()
+        with self._open():
+            return super().minimum(data_types)
+
     def surface(self, data_type: str = None, time: TimeLike = 0, to_vertex: bool = False, coord_scope: str = 'global',
                 direction_to_vector: bool = False, direction_convention = 'arithmetic') -> pd.DataFrame:
         self._load()
@@ -305,20 +310,31 @@ class NCGrid(Grid):
     @contextmanager
     def _open(self):
         if self._nc is not None:
+            # The outer context (or explicit open_reader caller) owns the
+            # existing handle. Inner contexts must not close it.
             yield self._nc
             return
-        with Dataset(self.fpath, 'r') as self._nc:
-            yield self._nc
-        self._nc = None
+        reader = Dataset(self.fpath, 'r')
+        self._nc = reader
+        try:
+            yield reader
+        finally:
+            # Clear state even when extraction raises; never leave a closed
+            # Dataset available for the next operation.
+            if self._nc is reader:
+                self._nc = None
+            if reader.isopen():
+                reader.close()
 
     def open_reader(self):
         if self._nc is None:
             self._nc = Dataset(self.fpath, 'r')
 
     def close(self):
-        if self._nc is not None:
-            self._nc.close()
-            self._nc = None
+        reader = self._nc
+        self._nc = None
+        if reader is not None and reader.isopen():
+            reader.close()
 
     def _initial_load(self):
         self.name = self.fpath.stem
@@ -403,6 +419,24 @@ class NCGrid(Grid):
         if self._loaded:
             return
         self._loaded = True
+
+    def _source_slice_nbytes(self, dtype: str) -> int:
+        varname = self._stnd2var[dtype]
+        with self._open() as nc:
+            var = nc.variables[varname]
+            itemsize = np.dtype(var.dtype).itemsize
+            # Automatic scale/offset decoding can promote on-disk int16
+            # samples to float64. Budget for the decoded payload, not
+            # the packed storage dtype, plus transient working headroom.
+            if 'scale_factor' in var.ncattrs() or 'add_offset' in var.ncattrs():
+                itemsize = max(itemsize, np.dtype('f8').itemsize)
+            return max(1, int(np.prod(var.shape[1:])) * itemsize)
+
+    def _time_chunk_length(self, dtype: str) -> int:
+        varname = self._stnd2var[dtype]
+        with self._open() as nc:
+            chunks = nc.variables[varname].chunking()
+            return int(chunks[0]) if isinstance(chunks, (list, tuple)) and chunks else 1
 
     def _value(self, dtype: str, idx: tuple | int | np.ndarray | slice) -> float | np.ndarray:
         varname = self._stnd2var[dtype]
