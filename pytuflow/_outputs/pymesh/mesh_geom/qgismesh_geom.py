@@ -250,13 +250,19 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
         return result
 
     def vertex_position(self, vertex_id: int | typing.Iterable[int] | slice, get_z: bool = True, *args, **kwargs) -> np.ndarray:
+        scope = kwargs.pop('scope', 'global')
+        if isinstance(get_z, str):
+            scope, get_z = get_z, True  # inherited positional scope convention
+        if scope not in ('global', 'local'):
+            raise ValueError("scope must be 'global' or 'local'")
         if not self._loaded:
             self.load()
 
         self.init_spatial_index()
 
-        if self._vertex_positions_cache is not None:
-            return self._vertex_positions_cache[vertex_id]
+        if self._vertex_positions_cache is not None and get_z:
+            cached = self._vertex_positions_cache[vertex_id]
+            return self.trans.transform(cached) if scope == 'local' else cached
 
         cache_result = False
         if isinstance(vertex_id, slice) == slice(None) and get_z:
@@ -296,7 +302,7 @@ class QgisMeshGeometry(PyMeshGeometry, PointMixinQgis):
                 a[:, 2] = np.hstack(values) if values else np.empty(0)
         if cache_result:
             self._vertex_positions_cache = a
-        return a
+        return self.trans.transform(a) if scope == 'local' and len(a) else a
 
     def triangle_vertices(self, triangle_id: int) -> np.ndarray:
         if triangle_id in self._triangles:
