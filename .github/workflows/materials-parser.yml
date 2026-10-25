@@ -1,0 +1,53 @@
+name: Materials parser compatibility
+
+on:
+  pull_request:
+    paths:
+      - 'pytuflow/_tmf/utils/text_to_db_parser.py'
+      - 'pytuflow/_tmf/db/drivers/csv.py'
+      - 'pytuflow/_tmf/db/mat.py'
+      - 'tests/tmf/test_database.py'
+      - 'tests/tmf/test_materials_parser.py'
+      - '.github/workflows/materials-parser.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  materials:
+    runs-on: windows-latest
+    name: Windows Python ${{ matrix.python }} / pandas ${{ matrix.pandas }} materials
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.12', '3.14']
+        pandas: ['3.0.3', '3.1.0']
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install matched dependencies
+        shell: pwsh
+        run: |
+          Get-Content ci/requirements-regression.txt | Where-Object { $_ -notmatch '^(pandas|geopandas)==' } | Set-Content materials-requirements.txt
+          python -m pip install -r materials-requirements.txt 'geopandas==1.2.0' 'pandas==${{ matrix.pandas }}'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip check
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Record provenance
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory reports -Force | Out-Null
+          git rev-parse HEAD | Set-Content reports/head.txt
+          python -m pip freeze | Set-Content reports/dependencies.txt
+          python -c "import sys, pandas, pytuflow; print(sys.version); print(pandas.__version__); print(pytuflow.__file__)"
+      - name: Validate complete database suite and parser contracts
+        run: python -m pytest -q tests/tmf/test_database.py tests/tmf/test_materials_parser.py --junitxml=reports/materials.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: materials-${{ matrix.python }}-${{ matrix.pandas }}
+          path: reports
+          retention-days: 30
