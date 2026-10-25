@@ -278,9 +278,15 @@ class _Plan:
                     self.expressions.plans[text] = expression
             try:
                 value = str(ctx.translate(text))
-                # Deep unresolved substitution chains must retain their bindings:
-                # a subsequent constructor translation may expand another level.
-                binding = expression.bindings(ctx) if "<<" in value else ()
+                # A later constructor translation can still expand variable
+                # chains or TEF tokens exposed only by the second variable pass.
+                # For example <<A>> -> <<B>> -> _EVENT_ has no remaining "<<"
+                # but its cached fragment still depends on the event selection.
+                needs_bindings = "<<" in value
+                if not needs_bindings and expression.variables and ctx.event_variables:
+                    folded = value.casefold()
+                    needs_bindings = any(str(token).casefold() in folded for token in ctx.event_variables)
+                binding = expression.bindings(ctx) if needs_bindings else ()
                 values.append((value, binding))
             except (ValueError, TypeError):
                 # Inactive commands must not fail merely while forming a key.
