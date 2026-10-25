@@ -47,6 +47,12 @@ missing substantive job cannot satisfy the gate. Git diff uses all files and
 both sides of renames, without GitHub's 300-file path-filter limit. Explicit
 workflow dispatch continues to run the substantive jobs.
 
+Classification and final-gate control code use GitHub's merged PR checkout, so
+an older documentation branch does not need to copy the new helper first.
+Substantive Windows tests retain their exact PR-head checkouts. Existing code
+branches still need to incorporate any CI infrastructure their own substantive
+commands require; this change does not rewrite those branches automatically.
+
 Existing regression, baseline integrity and wheel-smoke commands are unchanged.
 Specialized QGIS, numerical, deferred and other workflows retain their existing
 triggers and acceptance roles; these two repository-wide gates do not replace
