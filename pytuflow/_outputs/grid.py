@@ -715,7 +715,7 @@ class Grid(MapOutput):
                     self.cache.set(vals, 'time_series', dtype, wkt)
                 vals = np.column_stack((self.times(dtype, fmt=time_fmt), vals))
                 df2 = pd.DataFrame(vals, columns=['time', f'{name}/{dtype}'])
-                df2.set_index('time', inplace=True)
+                df2 = df2.set_index('time')
                 df1 = pd.concat([df1, df2], axis=1) if not df1.empty else df2
             df = pd.concat([df, df1], axis=1) if not df.empty else df1
 
