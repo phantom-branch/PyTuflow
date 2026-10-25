@@ -63,6 +63,7 @@ accepted consumer commit rather than an unmerged development SHA.
   squash-merged at `993eb083dec15b1155d7ae61a28d65003357ff77`.
   Remaining #161 performance work remains independently owned.
 - [ ] PyTUFLOW Linux-focused regressions pass under native Python 3.14.
+- [ ] [ryan-tools #158](https://github.com/Chain-Frost/ryan-tools/pull/158#issuecomment-6400303356) has corrected the differential harness's unconditional case-folding of POSIX physical path and owning-command identities. Re-run with an accepted SHA so the comparator cannot collapse two case-only Linux sources into a false pass.
 - [ ] Full public 161-TCF / 174-run Linux replay is classified case by case;
   no unclassified missing/extra identities, source exceptions or skipped scans.
 - [ ] Resolve genuine implementation defects in this PR or linked narrow fixes,
