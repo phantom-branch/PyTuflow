@@ -666,6 +666,6 @@ class MapOutput(Output, ABC, PointMixin, LineStringMixin):
         if df2.empty:
             return df1
         if reset_index:
-            df2.reset_index(inplace=True, drop=False)
+            df2 = df2.reset_index(drop=False)
         df2.columns = pd.MultiIndex.from_tuples([(name, x) for x in df2.columns])
         return pd.concat([df1, df2], axis=1) if not df1.empty else df2

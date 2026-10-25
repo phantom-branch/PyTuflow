@@ -1,0 +1,29 @@
+{
+  "sha": "af3cede953e625c365641293915aad6b47d46919",
+  "origins": {
+    "qgis": "<qgis-runtime>\\apps\\qgis\\python\\qgis\\__init__.py",
+    "qgis.core": "<qgis-runtime>\\apps\\qgis\\python\\qgis\\core\\__init__.py",
+    "qgis._core": "<qgis-runtime>\\apps\\qgis\\python\\qgis\\_core.pyd",
+    "pytuflow": "<candidate-checkout>\\pytuflow\\__init__.py",
+    "pytuflow._outputs.pymesh.mesh_geom.qgismesh_geom": "<candidate-checkout>\\pytuflow\\_outputs\\pymesh\\mesh_geom\\qgismesh_geom.py",
+    "pytuflow._outputs.pymesh.cell_data_mixin": "<candidate-checkout>\\pytuflow\\_outputs\\pymesh\\cell_data_mixin.py",
+    "netCDF4": "<machine-path>",
+    "h5py": "<machine-path>",
+    "numpy": "<qgis-runtime>\\apps\\Python312\\Lib\\site-packages\\numpy\\__init__.py",
+    "pandas": "<qgis-runtime>\\apps\\Python312\\Lib\\site-packages\\pandas\\__init__.py"
+  },
+  "sha256": {
+    "pytuflow/_outputs/pymesh/mesh_geom/qgismesh_geom.py": "13ab59153319b6a4567fbaf5c0580bf185755cb01a09720df5cf68d052525b86",
+    "pytuflow/_outputs/pymesh/cell_data_mixin.py": "4b6e8dfc2cd6d2038bd88d48be1dc06cb11827c45afd451601b04c483c323a05",
+    "tests/test_qgis_cell_to_vertex_interpolation.py": "1a4f39f2ea1287fd7760a036c3f45b5d60802973f99675bc819e42ed603b734f",
+    "tests/test_qgis_vertex_angle_math.py": "7220c9c78af5488f6130691cc5f921bcc3f82e7e171771fc0a69951615b7146f"
+  },
+  "analytical": {
+    "triangle_angle": 0.7853981633974483,
+    "quad_angle": 1.1071487177940904,
+    "triangle_weight": 0.4149953542513913,
+    "quad_weight": 0.5850046457486088,
+    "shared_scalar": 6.5100278744916515,
+    "rectangle_shared_scalar": 7
+  }
+}
