@@ -37,6 +37,7 @@ def test_fragment_probe_counts_match_parser_without_changing_runs(tmp_path: Path
     assert result.runs == ordinary.runs
     assert report["run_count"] == report["contexts_constructed"] == len(flags)
     assert report["misses"] == result.fragment_evaluations
+    assert report["misses_with_new_local_signature"] + report["misses_with_reused_local_signature"] == report["misses"]
     assert report["hits"] == result.fragment_reuses
     assert report["lookups"] == result.fragment_evaluations + result.fragment_reuses
     assert report["hit_rate_percent"] > 0
@@ -52,6 +53,30 @@ def test_fragment_probe_counts_match_parser_without_changing_runs(tmp_path: Path
     with pytest.raises(RuntimeError, match="fresh fragment probe"):
         with probe.observe():
             pass
+
+
+def test_parent_misses_can_be_attributed_to_varying_children(tmp_path: Path) -> None:
+    """An unchanged control-file reference can have a dynamic child subtree."""
+    child = tmp_path / "geometry.tgc"
+    child.write_text("Read Grid Zpts == dynamic_<<E1>>.tif\n", encoding="utf-8")
+    top = tmp_path / "model.tcf"
+    top.write_text("Geometry Control File == geometry.tgc\n", encoding="utf-8")
+    model = TCF(top)
+    flags = ["-e1 A", "-e1 B", "-e1 A"]
+    expected = model.collect_batch_dependencies(flags)
+
+    probe = FragmentEvaluationProbe()
+    with probe.observe():
+        actual = model.collect_file_dependencies(flags)
+    report = probe.snapshot(actual)
+
+    assert actual.runs == expected.runs
+    assert actual.passed
+    assert report["misses_with_reused_local_signature"] >= 1
+    parent = report["by_input_type"]["ControlFileInput"]
+    assert parent["repeated_local_signature_misses"] >= 1
+    child = report["by_input_type"]["GridInput"]
+    assert child["new_local_signature_misses"] >= 2
 
 
 def test_probe_handles_complete_fallback_without_leaking_source(tmp_path: Path) -> None:
