@@ -337,16 +337,20 @@ def _original_control_file_context(cf: Any) -> bool:
     and no instance override can be treated as immutable fragments. Inspect
     raw definitions, avoiding execution of untrusted context descriptors.
     """
-    from .batch_dependencies import _raw_class_attribute
-    from .cf.cf_build_state import _CONTROL_FILE_BUILD_CONTEXT
-    from .cf.ecf import _ECF_CONTEXT, ECF
-    from .cf.fvc import _FVC_CONTEXT, FVC
-    from .cf.fvsed import _FVSED_CONTEXT, FVSed
-    from .cf.fvwq import _FVWQ_CONTEXT, FVWQ
-    from .cf.tcf import _TCF_CONTEXT, TCF
-    from .cf.tef import _TEF_CONTEXT, TEF
+    from .batch_dependencies import (
+        _raw_class_attribute,  # pyright: ignore[reportPrivateUsage]
+    )
+    from .cf.cf_build_state import (
+        _CONTROL_FILE_BUILD_CONTEXT,  # pyright: ignore[reportPrivateUsage]
+    )
+    from .cf.ecf import _ECF_CONTEXT, ECF  # pyright: ignore[reportPrivateUsage]
+    from .cf.fvc import _FVC_CONTEXT, FVC  # pyright: ignore[reportPrivateUsage]
+    from .cf.fvsed import _FVSED_CONTEXT, FVSed  # pyright: ignore[reportPrivateUsage]
+    from .cf.fvwq import _FVWQ_CONTEXT, FVWQ  # pyright: ignore[reportPrivateUsage]
+    from .cf.tcf import _TCF_CONTEXT, TCF  # pyright: ignore[reportPrivateUsage]
+    from .cf.tef import _TEF_CONTEXT, TEF  # pyright: ignore[reportPrivateUsage]
 
-    cls = type(cf)
+    cls = cast(type[Any], type(cf))
     special = {
         TCF: _TCF_CONTEXT,
         TEF: _TEF_CONTEXT,
@@ -459,7 +463,9 @@ class _Plan:
             )
         # Custom input hooks can mutate shared context/source state; never cache
         # them as pure evaluations. Only the original built-in methods qualify.
-        from .cf.cf_run_state import _batch_append_context_methods
+        from .cf.cf_run_state import (
+            _batch_append_context_methods,  # pyright: ignore[reportPrivateUsage]
+        )
 
         methods: Any = _batch_append_context_methods()
         method = methods.get(type(inp))
@@ -822,7 +828,7 @@ def collect_file_dependencies(
                 plan.expressions,
                 plan.scope_program if plan.use_scopes else None,
             )
-            ctx._batch_variable_assignments = plan.assignments
+            cast(Any, ctx)._batch_variable_assignments = plan.assignments
             prepare_run_context(model, ctx)
             fragment = _join(plan.evaluate(inp, ctx) for inp in plan.roots)
             # Match the ordinary activation contract, including duplicate UUID

@@ -224,8 +224,58 @@ def test_independent_optimisations_and_parent_full_key_have_complete_parity(
         (True, True),
     ):
 
-        def configure(self: Any, source: Any) -> None:
-            original(self, source, use_scopes=scopes, use_manifests=manifests)
+        def configure(
+            self: Any,
+            source: Any,
+            use_scopes: bool = scopes,
+            use_manifests: bool = manifests,
+        ) -> None:
+            original(self, source, use_scopes=use_scopes, use_manifests=use_manifests)
 
         with patch.object(_Plan, "__init__", configure):
             assert model.collect_file_dependencies(flags).runs == expected
+
+
+def test_different_selected_files_with_identical_contents_keep_uuid_provenance(
+    tmp_path: Path,
+) -> None:
+    for name in ("EXG", "DEV"):
+        (tmp_path / f"design_{name}.tgc").write_text(
+            "Read GIS Code == same.gpkg >> codes\n"
+        )
+    top = tmp_path / "model.tcf"
+    top.write_text(
+        "Set Variable VarCellSize == 32\nGeometry Control File == design_<<~s1~>>.tgc\n"
+    )
+    result = assert_parity(TCF(top), ["-s1 EXG", "-s1 DEV", "-s1 EXG"])
+    assert result.passed
+    uuids = [run.ordered_inputs[-1].input_uuid for run in result.runs]
+    assert uuids[0] != uuids[1]
+    assert uuids[0] == uuids[2]
+
+
+def test_ambiguous_cached_source_retains_ordinary_error(tmp_path: Path) -> None:
+    from typing import Any
+
+    (tmp_path / "geometry.tgc").write_text("Read GIS Code == code.shp\n")
+    top = tmp_path / "model.tcf"
+    top.write_text("Geometry Control File == geometry.tgc\n")
+    model = TCF(top)
+    include: Any = model.inputs[0]
+    include.cf.append(include.cf[0])
+    include._cf_loaded_paths.append(include._cf_loaded_paths[0])
+    result = assert_parity(model, ["-e1 A", "-e1 B"])
+    assert not result.passed
+    assert all("Ambiguous cached child" in (run.error or "") for run in result.runs)
+
+
+def test_changed_parsed_model_gets_fresh_manifests(tmp_path: Path) -> None:
+    (tmp_path / "geometry.tgc").write_text("Read GIS Code == first.shp\n")
+    top = tmp_path / "model.tcf"
+    top.write_text("Geometry Control File == geometry.tgc\n")
+    model = TCF(top)
+    first = assert_parity(model, ["-e1 A"])
+    model.inputs[0].cf[0].inputs[0].rhs = "second.shp"
+    second = assert_parity(model, ["-e1 A"])
+    assert first.runs[0].file_references[-1].path_pattern.name == "first.shp"
+    assert second.runs[0].file_references[-1].path_pattern.name == "second.shp"

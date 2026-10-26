@@ -83,3 +83,10 @@ def test_global_and_else_precedence_match_original() -> None:
             assert ctx.in_context_by_scope(scopes) == ordinary.in_context_by_scope(
                 scopes
             )
+
+
+def test_unresolved_selected_flags_use_original_variable_identity_semantics() -> None:
+    flags = {"s1": "<<Selected>>"}
+    scopes = ScopeList([Scope("SCENARIO", "EXG", var="<<Selected>>")])
+    ctx = _FragmentContext(flags, TCFConfig(), ExpressionPool(), ScopeProgram())
+    assert ctx.in_context_by_scope(scopes) == Context(flags).in_context_by_scope(scopes)

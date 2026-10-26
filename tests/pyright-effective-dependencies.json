@@ -1,0 +1,9 @@
+{
+  "typeCheckingMode": "strict",
+  "include": [
+    "../pytuflow/_tmf/compiled_scope.py",
+    "../pytuflow/_tmf/effective_dependencies.py",
+    "../pytuflow/_tmf/fragment_dependencies.py"
+  ],
+  "extraPaths": [".."]
+}
