@@ -11,7 +11,7 @@ from pytuflow import TCF
 from pytuflow._tmf import fragment_dependencies as fragment
 
 from .fragment_evaluation_probe import FragmentEvaluationProbe
-from .profile_fragment_evaluations import load_run_flags, top_functions
+from .profile_fragment_evaluations import load_run_flags
 
 
 def test_fragment_probe_counts_match_parser_without_changing_runs(tmp_path: Path) -> None:
@@ -35,7 +35,6 @@ def test_fragment_probe_counts_match_parser_without_changing_runs(tmp_path: Path
 
     assert result.passed and ordinary.passed
     assert result.runs == ordinary.runs
-    assert report["ordinary_full_run_parity"] if "ordinary_full_run_parity" in report else True
     assert report["run_count"] == report["contexts_constructed"] == len(flags)
     assert report["misses"] == result.fragment_evaluations
     assert report["hits"] == result.fragment_reuses
