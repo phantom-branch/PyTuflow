@@ -241,3 +241,20 @@ def test_linux_directory_wildcard_stays_strict_with_leaf_case_modes(tmp_path: Pa
     assert list(root.glob("Area_*/grid_*.tif", case_sensitivity=1)) == []
     assert list(root.glob("Area_*/Grid_*.tif", case_sensitivity=1)) == [upper]
     assert list(root.glob("Area_*/grid_*.tif", case_sensitivity=2)) == [upper]
+
+
+def test_linux_primary_tcf_filename_honours_case_policy(tmp_path: Path) -> None:
+    source = tmp_path / "Main.tcf"
+    source.write_text("! example\n", encoding="utf-8")
+    assert not TCF(tmp_path / "main.TCF").loaded
+    assert not TCF(tmp_path / "main.TCF", case_sensitivity=1).loaded
+    assert TCF(tmp_path / "Main.TCF", case_sensitivity=1).loaded
+    assert TCF(tmp_path / "main.TCF", case_sensitivity=2).loaded
+
+
+def test_linux_primary_tcf_directory_stays_strict(tmp_path: Path) -> None:
+    folder = tmp_path / "Models"
+    folder.mkdir()
+    (folder / "Main.tcf").write_text("! example\n", encoding="utf-8")
+    assert not TCF(tmp_path / "models" / "Main.tcf", case_sensitivity=2).loaded
+    assert TCF(folder / "main.TCF", case_sensitivity=2).loaded
