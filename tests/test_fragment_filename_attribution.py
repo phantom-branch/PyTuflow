@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import csv
 import json
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -129,15 +129,13 @@ def test_exception_restores_original_evaluator(tmp_path: Path) -> None:
     original_key = fragments._Plan._key
     original_init = fragments._FragmentContext.__init__
     attribution = PrivateFragmentAttribution()
-    with pytest.raises(RuntimeError, match="test exception"):
-        with attribution.observe():
-            raise RuntimeError("test exception")
+    with pytest.raises(RuntimeError, match="test exception"), attribution.observe():
+        raise RuntimeError("test exception")
     assert fragments._Plan.evaluate is original_eval
     assert fragments._Plan._key is original_key
     assert fragments._FragmentContext.__init__ is original_init
-    with pytest.raises(RuntimeError, match="new private fragment attribution probe"):
-        with attribution.observe():
-            pass
+    with pytest.raises(RuntimeError, match="new private fragment attribution probe"), attribution.observe():
+        pass
 
 
 def test_cli_writes_private_csvs_but_keeps_json_anonymous(tmp_path: Path) -> None:

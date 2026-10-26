@@ -51,7 +51,9 @@ jobs:
         run: |
           python -m pip install ruff pyright
           python -m ruff check pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py tests/test_fragment_filename_attribution.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m pyright pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Prove combined append, reuse, producer and diagnostic invariants
         run: >
           python -m pytest -q

@@ -241,12 +241,12 @@ def _original_control_file_context(cf: Any) -> bool:
     """
     from .batch_dependencies import _raw_class_attribute
     from .cf.cf_build_state import _CONTROL_FILE_BUILD_CONTEXT
-    from .cf.ecf import ECF, _ECF_CONTEXT
-    from .cf.fvc import FVC, _FVC_CONTEXT
-    from .cf.fvsed import FVSed, _FVSED_CONTEXT
-    from .cf.fvwq import FVWQ, _FVWQ_CONTEXT
-    from .cf.tcf import TCF, _TCF_CONTEXT
-    from .cf.tef import TEF, _TEF_CONTEXT
+    from .cf.ecf import _ECF_CONTEXT, ECF
+    from .cf.fvc import _FVC_CONTEXT, FVC
+    from .cf.fvsed import _FVSED_CONTEXT, FVSed
+    from .cf.fvwq import _FVWQ_CONTEXT, FVWQ
+    from .cf.tcf import _TCF_CONTEXT, TCF
+    from .cf.tef import _TEF_CONTEXT, TEF
 
     cls = type(cf)
     special = {

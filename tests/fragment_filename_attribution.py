@@ -168,12 +168,8 @@ class PrivateFragmentAttribution:
 
         def observed_key(plan: Any, inp: Any, ctx: Any) -> Any:
             started = perf_counter_ns()
-            try:
-                key = original_key(plan, inp, ctx)
-            except BaseException:
-                # Propagate the exact original exception, without returning
-                # a synthetic key or changing parser failure behaviour.
-                raise
+            # Preserve the evaluator's native exception and traceback.
+            key = original_key(plan, inp, ctx)
             elapsed = perf_counter_ns() - started
             if self._frames:
                 frame = self._frames[-1]
