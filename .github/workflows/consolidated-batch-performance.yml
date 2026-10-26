@@ -74,6 +74,44 @@ jobs:
           --junitxml=combined-contracts.xml
       - name: Demonstrate synthetic file references versus fragment lookups
         run: python -m pytest -q -s tests/test_fragment_counter_example.py
+      - name: Checkout pinned ryan-tools PR 161 consumer
+        if: matrix.python == '3.14'
+        uses: actions/checkout@v6
+        with:
+          repository: Chain-Frost/ryan-tools
+          ref: a710f24ffb1698e949937f56a0212b6ae599e54e
+          path: ryan-tools
+          submodules: false
+          persist-credentials: false
+      - name: Install and prepare paired preflight consumer
+        if: matrix.python == '3.14'
+        working-directory: ryan-tools
+        shell: pwsh
+        run: |
+          git submodule update --init tests/test_data
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install -e . --no-deps
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install pytest pyshp loguru pandas psutil
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Check parser and PR 161 consumer compatibility
+        if: matrix.python == '3.14'
+        working-directory: ryan-tools
+        env:
+          RYAN_TEST_STREAM_IO_PYTUFLOW: "1"
+          RYAN_TEST_BATCH_PYTUFLOW: "1"
+          RYAN_TEST_DEFERRED_PYTUFLOW: "1"
+        run: >-
+          python -m pytest -q
+          tests/orchestrators/tuflow/test_streaming_io_probe.py
+          tests/orchestrators/tuflow/test_streaming_combined_producer.py
+          tests/orchestrators/tuflow/test_batch_preflight_adapter.py
+          tests/orchestrators/tuflow/test_ordered_batch_adapter.py
+          tests/orchestrators/tuflow/test_batch_file_existence.py
+          tests/orchestrators/tuflow/test_threaded_dependency_inventory.py
+          tests/orchestrators/tuflow/test_input_preflight.py
+          tests/functions/tuflow/test_gis_attribute_dependencies.py
+          tests/functions/tuflow/test_csv_headers.py
       - name: Store test evidence
         if: always()
         uses: actions/upload-artifact@v4
