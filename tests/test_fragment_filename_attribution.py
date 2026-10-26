@@ -69,11 +69,16 @@ def test_complete_private_lookup_trace_links_commands_and_file_patterns(tmp_path
     assert len(sources) == stats["source_input_slots"]
     assert all(float(row["key_inclusive_ms"]) >= 0 for row in sources)
     assert all(float(row["p95_hit_exclusive_ms"]) >= 0 for row in sources)
-    assert {row["fragment_id"] for row in lookups} == {row["fragment_id"] for row in links} | {
-        row["fragment_id"] for row in lookups if row["fragment_id"] not in {
-            link["fragment_id"] for link in links
-        }
-    }
+    assert {link["fragment_id"] for link in links} <= {row["fragment_id"] for row in lookups}
+    assert all(int(row["input_slot"]) in {int(src["input_slot"]) for src in sources} for row in links)
+    assert any(
+        row["relationship"] == "direct" and row["resolved_file_pattern"].endswith("terrain.tif")
+        for row in links
+    )
+    assert any(
+        row["relationship"] == "descendant" and row["resolved_file_pattern"].endswith("terrain.tif")
+        for row in links
+    )
     assert any(row["owner_control_file"].endswith("boundary.tbc") for row in sources)
     assert any(row["resolved_file_pattern"].endswith("terrain.tif") for row in links)
     assert any(row["resolved_file_pattern"].endswith("inflow_ten.csv") for row in files)
