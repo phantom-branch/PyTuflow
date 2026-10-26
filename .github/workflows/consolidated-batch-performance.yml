@@ -8,6 +8,9 @@ on:
       - "tests/test_setting_group_reuse.py"
       - "tests/test_batch_dependencies.py"
       - "tests/test_fragment_dependencies.py"
+      - "tests/fragment_evaluation_probe.py"
+      - "tests/profile_fragment_evaluations.py"
+      - "tests/test_fragment_evaluation_probe.py"
       - "tests/test_profile_capture.py"
       - "tests/test_construction_attribution*.py"
       - "tests/test_profile_construction_attribution.py"
@@ -47,6 +50,7 @@ jobs:
           tests/test_group_constructor_guards.py
           tests/test_batch_dependencies.py
           tests/test_fragment_dependencies.py
+          tests/test_fragment_evaluation_probe.py
           tests/test_batch_ordered_inputs.py
           tests/test_compiled_control_tree.py
           tests/test_compiled_dependency_plan.py
