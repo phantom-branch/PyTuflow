@@ -66,7 +66,11 @@ a second new local output directory:
 
 Report the histogram/top anonymous input slots and by-input-type misses and key
 costs; also the number of command/reference/activation records that _join must
-rebase. Use cProfile self time (not nested cumulative) to discriminate _Plan._key,
+rebase. The probe now splits misses between **new local expression/scope signatures**
+and **already-seen local signatures with new whole-subtree keys**. The latter
+provides evidence of dynamic descendants (or database rows) forcing parent
+re-evaluation, but does not by itself prove that those misses can be removed.
+Use cProfile self time (not nested cumulative) to discriminate _Plan._key,
 CompiledExpression.bindings, _FragmentContext.translate, scope evaluation,
 _join and dataclasses.replace. Inclusive timings overlap; profiling and wrappers
 alter performance and must NEVER be compared to uninstrumented wall-time baselines.
