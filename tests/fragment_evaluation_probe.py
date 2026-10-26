@@ -29,7 +29,9 @@ class _InputRow:
     key_ns: int = 0
     first_local_misses: int = 0
     repeated_local_misses: int = 0
+    identical_uncached_misses: int = 0
     _local_signatures: set[tuple[Any, ...]] = field(default_factory=set, repr=False)
+    _complete_signatures: set[tuple[Any, ...]] = field(default_factory=set, repr=False)
 
 
 class FragmentEvaluationProbe:
@@ -85,19 +87,23 @@ class FragmentEvaluationProbe:
                 row.hits += 1
             else:
                 row.misses += 1
-                # The first expression/scope pair describes this input
-                # itself; the remaining key components describe descendants
-                # (or loaded database rows). A new *subtree* key with an
-                # already seen local signature identifies descendant-driven
-                # churn. Retain values only in this private probe; never emit
-                # them in the JSON report.
-                values, scopes = key[1]
-                local = (values[0], scopes[0])
-                if local in row._local_signatures:
-                    row.repeated_local_misses += 1
+                # Do not report repeated identical *complete* keys as
+                # changing descendants: a failed run or a full 10,000-entry
+                # cache can leave a key unevaluated/repeatedly uncached.
+                # These signatures are retained in memory ONLY for the probe.
+                if key in row._complete_signatures:
+                    row.identical_uncached_misses += 1
                 else:
-                    row.first_local_misses += 1
-                    row._local_signatures.add(local)
+                    row._complete_signatures.add(key)
+                    # First expression/scope is the local input; remaining
+                    # key components describe descendants/database rows.
+                    values, scopes = key[1]
+                    local = (values[0], scopes[0])
+                    if local in row._local_signatures:
+                        row.repeated_local_misses += 1
+                    else:
+                        row.first_local_misses += 1
+                        row._local_signatures.add(local)
             if self._runs:
                 recent = self._runs[-1]
                 recent["lookups"] += 1
@@ -149,6 +155,7 @@ class FragmentEvaluationProbe:
                 "misses": row.misses,
                 "new_local_signature_misses": row.first_local_misses,
                 "repeated_local_signature_misses": row.repeated_local_misses,
+                "identical_uncached_key_misses": row.identical_uncached_misses,
                 "key_ns": row.key_ns,
             })
         misses_per_run = [run["misses"] for run in self._runs]
@@ -170,9 +177,11 @@ class FragmentEvaluationProbe:
             "misses": misses,
             "misses_with_new_local_signature": sum(row.first_local_misses for row in rows),
             "misses_with_reused_local_signature": sum(row.repeated_local_misses for row in rows),
+            "misses_with_identical_uncached_key": sum(row.identical_uncached_misses for row in rows),
             "local_signature_note": (
-                "Repeated local signatures on a new subtree key indicate varying descendants/database rows; "
-                "this is not proof that the parent evaluation may be removed"
+                "Only new complete keys with repeated local signatures may indicate changing "
+                "descendants/database rows. Identical full keys repeatedly missing are separate "
+                "and may reflect cache saturation or failed-run invalidation."
             ),
             "hit_rate_percent": round(100 * hits / (hits + misses), 3) if hits + misses else 0.0,
             "key_inclusive_ns": self.lookup_ns,
@@ -236,6 +245,7 @@ class FragmentEvaluationProbe:
                     "misses": row.misses,
                     "new_local_signature_misses": row.first_local_misses,
                     "repeated_local_signature_misses": row.repeated_local_misses,
+                    "identical_uncached_key_misses": row.identical_uncached_misses,
                     "key_inclusive_ns": row.key_ns,
                 }
                 for row in ordered[:top]
