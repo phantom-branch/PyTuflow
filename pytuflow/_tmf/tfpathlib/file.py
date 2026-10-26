@@ -230,6 +230,49 @@ class TuflowPath(Path):
         except FileNotFoundError:
             return TuflowPath(path)
 
+    @staticmethod
+    def init_case_policy_path(path: str | Path, base_dir: str | Path = '',
+                              case_sensitivity: int = 0) -> 'TuflowPath':
+        """Apply TUFLOW Linux -cs0/-cs1/-cs2 to a single literal filename.
+
+        -cs0: strict file, extension and directory spelling (no I/O).
+        -cs1: exact filename stem, case-insensitive extension.
+        -cs2: case-insensitive filename and extension, strict directories.
+        Windows retains native filesystem semantics for every level.
+        Missing files keep their lexical spelling so existing eager callers
+        can record missing inputs rather than treating them as present.
+        """
+        if type(case_sensitivity) is not int or case_sensitivity not in (0, 1, 2):
+            raise ValueError('case_sensitivity must be 0, 1 or 2')
+        value = TuflowPath(path)
+        if os.name == 'nt' or case_sensitivity == 0:
+            return value
+        db, layer = value._split_db_and_lyr()
+        requested = Path(db)
+        folder = requested.parent
+        search_parent = folder if requested.is_absolute() else Path(base_dir) / folder
+        try:
+            if case_sensitivity == 1:
+                matches = [item.name for item in search_parent.iterdir()
+                           if item.name == requested.name or
+                           (item.stem == requested.stem and
+                            item.suffix.casefold() == requested.suffix.casefold())]
+            else:
+                matches = [item.name for item in search_parent.iterdir()
+                           if item.name.casefold() == requested.name.casefold()]
+        except (FileNotFoundError, NotADirectoryError):
+            return value
+        if requested.name in matches:
+            name = requested.name
+        elif len(matches) == 1:
+            name = matches[0]
+        elif not matches:
+            return value
+        else:
+            raise ValueError(f'Ambiguous TUFLOW -cs{case_sensitivity} filename {requested.name} in {search_parent}')
+        correct = requested.with_name(name)
+        return TuflowPath(correct) if layer is None else TuflowPath(f'{correct} >> {layer}')
+
     def geometry_types(self):
         if not self.is_vector_gis():
             raise ValueError('Path is not a vector GIS layer.')
