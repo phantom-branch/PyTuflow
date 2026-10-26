@@ -8,6 +8,7 @@ on:
       - "tests/test_setting_group_reuse.py"
       - "tests/test_batch_dependencies.py"
       - "tests/test_fragment_dependencies.py"
+      - "tests/test_fragment_inactive_scope.py"
       - "tests/fragment_evaluation_probe.py"
       - "tests/profile_fragment_evaluations.py"
       - "tests/test_fragment_evaluation_probe.py"
@@ -53,6 +54,7 @@ jobs:
           tests/test_group_constructor_guards.py
           tests/test_batch_dependencies.py
           tests/test_fragment_dependencies.py
+          tests/test_fragment_inactive_scope.py
           tests/test_fragment_evaluation_probe.py
           tests/test_fragment_filename_attribution.py
           tests/test_batch_ordered_inputs.py
