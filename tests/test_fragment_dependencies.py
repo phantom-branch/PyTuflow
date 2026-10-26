@@ -244,10 +244,7 @@ def test_tef_token_exposed_by_second_variable_pass_invalidates_fragment(tmp_path
     )
     top = tmp_path / "model.tcf"
     top.write_text(
-        "Event File == events.tef\n"
-        "Set Variable A == <<B>>\n"
-        "Set Variable B == _EVENT_\n"
-        "Read GIS Code == <<A>>.shp\n",
+        "Event File == events.tef\nSet Variable A == <<B>>\nSet Variable B == _EVENT_\nRead GIS Code == <<A>>.shp\n",
         encoding="utf-8",
     )
     model = TCF(top)
@@ -259,10 +256,7 @@ def test_tef_token_exposed_by_second_variable_pass_invalidates_fragment(tmp_path
     assert actual.runs == expected.runs
     assert actual.runs[0].file_references == actual.runs[2].file_references
     assert actual.runs[0].file_references != actual.runs[1].file_references
-    names = [
-        {ref.path_pattern.name for ref in run.file_references}
-        for run in actual.runs
-    ]
+    names = [{ref.path_pattern.name for ref in run.file_references} for run in actual.runs]
     assert "first.shp" in names[0]
     assert "second.shp" in names[1]
     assert "first.shp" in names[2]
@@ -340,8 +334,7 @@ def test_tef_only_chained_event_substitutions_invalidate_fragments(tmp_path: Pat
     )
     top = tmp_path / "model.tcf"
     top.write_text(
-        "Event File == events.tef\n"
-        "Read GIS Code == _x_.shp\n",
+        "Event File == events.tef\nRead GIS Code == _x_.shp\n",
         encoding="utf-8",
     )
     model = TCF(top)
@@ -357,10 +350,7 @@ def test_tef_only_chained_event_substitutions_invalidate_fragments(tmp_path: Pat
     assert expected.commands_cloned == 0
     assert actual.fallback_runs == 0, actual.fallback_reason
     assert actual.runs == expected.runs
-    names = [
-        {ref.path_pattern.name for ref in run.file_references}
-        for run in actual.runs
-    ]
+    names = [{ref.path_pattern.name for ref in run.file_references} for run in actual.runs]
     assert "first.shp" in names[0]
     assert "second.shp" in names[1]
     assert "first.shp" in names[2]
@@ -375,7 +365,9 @@ def test_join_reuses_zero_offset_records_and_rebases_later_fragments(tmp_path: P
     def fragment(label: str) -> DependencyFragment:
         path = tmp_path / f"{label}.csv"
         ref = FileReference(path.parent, path.name, path, None, label, False, False, False, False)
-        command = BatchInputCommand(label, 0, tmp_path / "model.tcf", 1, "BC Database", f"BC Database == {label}.csv", 1)
+        command = BatchInputCommand(
+            label, 0, tmp_path / "model.tcf", 1, "BC Database", f"BC Database == {label}.csv", 1
+        )
         reference = BatchInputReference(label, 0, command.owner_control_file, 1, ref)
         activation = DeferredDatabaseActivation(0, label, "bc", path, "BC Database", command.owner_control_file, 1)
         return DependencyFragment((command,), (reference,), (), (activation,))
@@ -452,11 +444,15 @@ def test_subtree_signature_parts_are_reused_per_run_and_invalidated(tmp_path: Pa
         assert second != first
         assert translated.call_count > first_calls
 
-    # Changing the run's event/flag context also invalidates the signature.
-    ctx.load_context_from_dict({"s1": "DEV", "e1": "Q100"})
+    # Context rejects redefining an existing flag slot. Remove the old event
+    # binding before loading its replacement, retaining the scenario slot.
+    delattr(ctx, "E1")
+    ctx.var_map.pop("E1")
+    ctx.event_variables.clear()
+    ctx.load_context_from_dict({"e1": "Q100"})
+    assert not ctx._fragment_signature_values
     ctx.load_variables({"Dir": "_event_"})
     assert not ctx._fragment_signature_values
     third = plan._key(boundary, ctx)
     assert third != first
     assert third != second
-
