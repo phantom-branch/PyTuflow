@@ -24,9 +24,11 @@ from typing import Any, cast
 if __package__:
     from .fragment_evaluation_probe import FragmentEvaluationProbe
     from .fragment_filename_attribution import PrivateFragmentAttribution
+    from .fragment_key_phase_attribution import PrivateKeyPhaseAttribution
 else:
     from fragment_evaluation_probe import FragmentEvaluationProbe
     from fragment_filename_attribution import PrivateFragmentAttribution
+    from fragment_key_phase_attribution import PrivateKeyPhaseAttribution
 
 
 def load_run_flags(path: Path) -> list[str | dict[str, str]]:
@@ -124,6 +126,10 @@ def main() -> None:
         "--private-file-attribution", action="store_true",
         help="LOCAL private filename/command/lookup CSVs; NEVER upload or commit these files",
     )
+    parser.add_argument(
+        "--private-key-phases", action="store_true",
+        help="LOCAL instrumented per-input translation/scope/key phase CSV; do not upload",
+    )
     args = parser.parse_args()
 
     flags = load_run_flags(args.runs_json)
@@ -139,9 +145,14 @@ def main() -> None:
     model = TCF(args.tcf.absolute())
     probe = FragmentEvaluationProbe()
     private = PrivateFragmentAttribution() if args.private_file_attribution else None
+    phases = PrivateKeyPhaseAttribution() if args.private_key_phases else None
     profiler = cProfile.Profile() if args.cprofile else None
     try:
-        with probe.observe(), (private.observe() if private is not None else nullcontext()):
+        with (
+            probe.observe(),
+            (private.observe() if private is not None else nullcontext()),
+            (phases.observe() if phases is not None else nullcontext()),
+        ):
             if profiler is not None:
                 profiler.enable()
             try:
@@ -160,6 +171,8 @@ def main() -> None:
         report["parser_reuses"] = fragments.fragment_reuses
         if private is not None:
             report["private_file_attribution"] = private.summary(fragments)
+        if phases is not None:
+            report["key_phase_breakdown"] = phases.snapshot(fragments)
         report["note"] = "Instrumented diagnostics only; not a native or accepted production benchmark"
         if profiler is not None:
             report["profile_top_self_time"] = top_functions(profiler)
@@ -172,11 +185,15 @@ def main() -> None:
     output.mkdir(parents=True, exist_ok=False)
     if private is not None:
         private.write_private(output, fragments)
+    if phases is not None:
+        phases.write_private(output, fragments)
     (output / "fragment_diagnostic.json").write_text(
         json.dumps(report, indent=2), encoding="utf-8"
     )
     if private is not None:
         print("PRIVATE detailed filename CSVs written locally. Do not upload or commit them.")
+    if phases is not None:
+        print("PRIVATE key phase details written locally. Do not upload or commit them.")
     print(
         "Complete parity passed; anonymous fragment breakdown created. "
         f"Lookups={report['lookups']}, misses={report['misses']}, "
