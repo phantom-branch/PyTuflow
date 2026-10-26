@@ -181,3 +181,43 @@ pre-review data remain separately labelled and do not establish correctness of t
 
 The final-source local suite passes 557 tests and the paired consumer suite passes 119, zero skips.
 A new review of the final documentation head is requested after publishing these corrected receipts.
+
+
+## BC comment-row follow-up, 27 October 2026
+
+An additional owner-supplied 36-context workload exposed an inherited failure in all six
+pre-fix evaluator modes. A comma-prefixed `!` comment is stripped by the CSV reader, leaving
+an entirely missing dataframe row. The deferred source validator incorrectly treated that row
+as a constant boundary and required numeric Column 2. The engine accepts the original input;
+no private source file has been edited to work around the parser.
+
+The source projection now excludes only BC rows whose index/Name and every data cell are
+missing, before applying the existing declaration checks. It uses a filtered view of the
+cached table; the parsed source snapshot and row order are preserved. Named blank-Source rows
+still require a numeric Column 2. Rows carrying any data and all other database kinds retain
+their previous validation. Six synthetic regressions cover comma-prefixed comments, separators,
+valid constants, invalid named/unnamed declarations, retained Source references, no extra I/O,
+source immutability and complete eager/deferred/batch/fragment provenance.
+
+Validation after the fix:
+
+- All 36 contexts now pass consumer file/header checks: 20 paths, one header, 36 selectors,
+  zero issues/fallbacks. Complete records agree across ordinary uncached/cached, full-key
+  reference fragments, preparation-only, manifest-only and combined evaluation.
+- The additional 240-context workload still passes all six modes and consumer checks:
+  32 paths, 12 headers and 240 selectors, zero issues/fallbacks. Its complete-record hash
+  is unchanged from its pre-fix successful result.
+- The original 480-context workload still passes and preserves its complete-record hash
+  `68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93`.
+- 563 local parser/deferred/context tests and 119 actual consumer tests pass, zero skips.
+  Ruff checks and the existing scoped strict Pyright gate pass. Default Pyright on the
+  changed deferred module passes. Exploratory whole-module strict checking retains 22
+  inherited diagnostics (51 at the pre-fix source), with no new diagnostic messages.
+- New regressions are included in the Windows 3.12/3.14 combined and deferred workflows.
+
+The unmodified parent still reproduces the original 36-context failure; post-fix full-key
+reference fragments therefore use the same corrected database projection as the other modes.
+Do not describe failed pre-fix timings as a performance baseline. Historical optimisation
+measurements above remain tied to their recorded source SHAs. New raw reports, flags, paths
+and source/command-list hashes remain private; only these aggregate conclusions are published.
+The PR description is the live receipt for the follow-up commit's hosted CI and exact-head review.

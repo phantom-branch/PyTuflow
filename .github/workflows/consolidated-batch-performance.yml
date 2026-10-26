@@ -10,6 +10,7 @@ on:
       - "tests/test_fragment_dependencies.py"
       - "tests/test_compiled_scope.py"
       - "tests/test_effective_dependency_manifests.py"
+      - "tests/test_bc_empty_rows.py"
       - "tests/pyright-effective-dependencies.json"
       - "agent_workstreams/compiled_effective_dependencies.md"
       - "agent_workstreams/evidence/2026-10-26-compiled-effective-dependencies/**"
@@ -57,7 +58,7 @@ jobs:
           python -m pip install ruff pyright
           python -m pyright -p tests/pyright-effective-dependencies.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m ruff check pytuflow/_tmf/compiled_scope.py pytuflow/_tmf/effective_dependencies.py tests/test_compiled_scope.py tests/test_effective_dependency_manifests.py tests/context_preparation_probe.py tests/fragment_evaluation_probe.py pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py tests/test_fragment_filename_attribution.py
+          python -m ruff check pytuflow/_tmf/compiled_scope.py pytuflow/_tmf/effective_dependencies.py tests/test_compiled_scope.py tests/test_effective_dependency_manifests.py tests/test_bc_empty_rows.py pytuflow/_tmf/deferred_database.py tests/context_preparation_probe.py tests/fragment_evaluation_probe.py pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py tests/test_fragment_filename_attribution.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m pyright pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -71,6 +72,7 @@ jobs:
           tests/test_fragment_dependencies.py
           tests/test_compiled_scope.py
           tests/test_effective_dependency_manifests.py
+          tests/test_bc_empty_rows.py
           tests/test_fragment_inactive_scope.py
           tests/test_fragment_evaluation_probe.py
           tests/test_fragment_filename_attribution.py
