@@ -50,6 +50,8 @@ def test_complete_private_lookup_trace_links_commands_and_file_patterns(tmp_path
     assert stats["cache_misses"] == actual.fragment_evaluations
     assert stats["distinct_resolved_patterns_in_fragment_links"] >= 4
     assert stats["failed_evaluate_calls"] == 0
+    assert stats["inactive_scope_skips"] > 0
+    assert stats["full_fragment_keys_avoided"] == stats["inactive_scope_skips"]
     assert sum(row["hits"] for row in stats["by_input_type"].values()) == stats["cache_hits"]
     assert sum(row["misses"] for row in stats["by_input_type"].values()) == stats["cache_misses"]
     assert stats["top_anonymous_hot_input_slots"]
