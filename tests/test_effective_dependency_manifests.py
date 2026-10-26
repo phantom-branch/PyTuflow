@@ -98,3 +98,134 @@ def test_missing_selected_file_does_not_reuse_prior_result(tmp_path: Path) -> No
     assert result.runs[1].error
     assert result.runs[2].error is None
     assert not result.runs[1].ordered_inputs
+
+
+def test_wildcard_include_preserves_all_matched_sources_and_order(
+    tmp_path: Path,
+) -> None:
+    for name in ("first", "second"):
+        (tmp_path / f"geometry_{name}.tgc").write_text(f"Read GIS Code == {name}.shp\n")
+    top = tmp_path / "model.tcf"
+    top.write_text("Geometry Control File == geometry_*.tgc\n")
+    result = assert_parity(TCF(top), ["-e1 A", "-e1 B"])
+    assert result.passed
+    assert {ref.path_pattern.name for ref in result.runs[0].file_references} >= {
+        "first.shp",
+        "second.shp",
+    }
+    assert result.runs[0].ordered_inputs == result.runs[1].ordered_inputs
+
+
+def test_selected_child_has_its_own_dependency_manifest(tmp_path: Path) -> None:
+    from pytuflow._tmf.fragment_dependencies import _Plan
+
+    (tmp_path / "design_EXG.tgc").write_text("Read GIS Code == fixed.shp\n")
+    (tmp_path / "design_DEV.tgc").write_text("Read GIS Code == <<~e1~>>.shp\n")
+    top = tmp_path / "model.tcf"
+    top.write_text("Geometry Control File == design_<<~s1~>>.tgc\n")
+    model = TCF(top)
+    plan = _Plan(model)
+    manifests = {
+        Path(child.fpath).stem: plan.file_manifests[id(child)]
+        for child in plan.children[id(model.inputs[0])]
+    }
+    assert manifests["design_EXG"].variables == ()
+    assert manifests["design_DEV"].variables == ("E1",)
+    result = assert_parity(model, ["-s1 EXG -e1 A", "-s1 EXG -e1 B", "-s1 DEV -e1 B"])
+    assert result.passed
+    assert result.fragment_reuses > 0
+
+
+def test_assembled_event_token_uses_full_key(tmp_path: Path) -> None:
+    from pytuflow._tmf.cf.cf_run_state import prepare_run_context
+    from pytuflow._tmf.fragment_dependencies import _FragmentContext, _Plan
+
+    (tmp_path / "events.tef").write_text(
+        "Define Event == A\n BC Event Source == _rain_ | first\nEnd Define\n"
+        "Define Event == B\n BC Event Source == _rain_ | second\nEnd Define\n"
+    )
+    top = tmp_path / "model.tcf"
+    top.write_text(
+        "Event File == events.tef\nSet Variable Part == ain\nRead GIS Code == _r<<Part>>_.shp\n"
+    )
+    model = TCF(top)
+    result = assert_parity(model, ["-e1 A", "-e1 B", "-e1 A"])
+    assert result.passed
+    assert [r.file_references[-1].path_pattern.name for r in result.runs] == [
+        "first.shp",
+        "second.shp",
+        "first.shp",
+    ]
+    plan = _Plan(model)
+    ctx = _FragmentContext("-e1 A", model.config, plan.expressions, plan.scope_program)
+    ctx._batch_variable_assignments = plan.assignments
+    prepare_run_context(model, ctx)
+    plan._key(model.inputs[-1], ctx)
+    assert plan.manifest_fallbacks["event-substitution"]
+
+
+def test_unknown_and_cyclic_lineage_use_full_key(tmp_path: Path) -> None:
+    from pytuflow._tmf.fragment_dependencies import _Plan
+
+    top = tmp_path / "model.tcf"
+    top.write_text(
+        "Set Variable A == <<B>>\nSet Variable B == <<A>>\nRead GIS Code == <<A>>.shp\n"
+    )
+    model = TCF(top)
+    plan = _Plan(model)
+    assert plan.manifests[id(model.inputs[-1])].fallback_reason == "cyclic-variable"
+    result = assert_parity(model, ["-e1 A", "-e1 B"])
+    assert not result.passed
+
+
+def test_case_spelling_uses_the_existing_path_policy(tmp_path: Path) -> None:
+    (tmp_path / "design_EXG.tgc").write_text("Read GIS Code == EXG.shp\n")
+    top = tmp_path / "model.tcf"
+    top.write_text("Geometry Control File == design_<<~s1~>>.tgc\n")
+    result = assert_parity(TCF(top), ["-s1 EXG", "-s1 exg", "-s1 EXG"])
+    assert result.passed
+    assert [r.file_references[0].path_pattern.name for r in result.runs] == [
+        "design_EXG.tgc",
+        "design_exg.tgc",
+        "design_EXG.tgc",
+    ]
+
+
+def test_dynamic_inline_read_file_uses_explicit_fallback(tmp_path: Path) -> None:
+    for name in ("EXG", "DEV"):
+        (tmp_path / f"design_{name}.trd").write_text(f"Read GIS Code == {name}.shp\n")
+    top = tmp_path / "model.tcf"
+    top.write_text("Read File == design_<<~s1~>>.trd\n")
+    result = assert_parity(TCF(top), ["-s1 EXG", "-s1 DEV"])
+    assert result.fallback_runs == 2
+    assert (
+        result.fallback_reason
+        == "Dynamic inline Read File requires the ordinary evaluator"
+    )
+
+
+def test_independent_optimisations_and_parent_full_key_have_complete_parity(
+    tmp_path: Path,
+) -> None:
+    from typing import Any
+    from unittest.mock import patch
+
+    from pytuflow._tmf.fragment_dependencies import _Plan
+    from tests.test_fragment_dependencies import model_files
+
+    model = model_files(tmp_path)
+    flags = ["-s1 DEV -e1 Q10", "-s1 EXG -e1 Q100", "-s1 DEV -e1 Q10"]
+    expected = assert_parity(model, flags).runs
+    original = _Plan.__init__
+    for scopes, manifests in (
+        (False, False),
+        (False, True),
+        (True, False),
+        (True, True),
+    ):
+
+        def configure(self: Any, source: Any) -> None:
+            original(self, source, use_scopes=scopes, use_manifests=manifests)
+
+        with patch.object(_Plan, "__init__", configure):
+            assert model.collect_file_dependencies(flags).runs == expected

@@ -8,10 +8,10 @@ Unknown, variable and extended scopes retain Context's ordinary evaluator.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from .scope import (
-    _SCOPE_APPEND_DEFINITIONS,
+    _SCOPE_APPEND_DEFINITIONS,  # pyright: ignore[reportPrivateUsage]  - original built-in proof table
     ControlScope,
     EventDefineScope,
     EventScope,
@@ -45,6 +45,11 @@ def _builtin_definitions() -> bool:
     )
 
 
+def _custom_attributes(scope: Any) -> bool:
+    attributes = cast(dict[str, object], vars(scope))
+    return any(callable(value) for value in attributes.values())
+
+
 class ScopeProgram:
     """Compile stable parsed scope lists once; never retain mutable contexts."""
 
@@ -69,6 +74,7 @@ class ScopeProgram:
             return ScopePredicate(())
         if type(scopes) is not ScopeList:
             return None
+        items = cast(list[Any], scopes)
         allowed = (
             ScenarioScope,
             EventScope,
@@ -79,16 +85,14 @@ class ScopeProgram:
             ControlScope,
         )
         if any(
-            type(scope) not in allowed
-            or any(callable(value) for value in vars(scope).values())
-            for scope in scopes
+            type(scope) not in allowed or _custom_attributes(scope) for scope in items
         ):
             return None
         # Context's GLOBAL membership check precedes all other predicates.
-        if any(type(scope) is GlobalScope and not scope.is_neg() for scope in scopes):
+        if any(type(scope) is GlobalScope and not scope.is_neg() for scope in items):
             return ScopePredicate(())
         conditions: list[tuple[str, frozenset[str], bool]] = []
-        for scope in scopes:
+        for scope in items:
             if type(scope) in (OneDimScope, OutputZoneScope, ControlScope):
                 continue
             if (
@@ -109,7 +113,7 @@ class ScopeProgram:
 
     def evaluate(self, scopes: Any, ctx: Any) -> bool | None:
         predicate = self.compile(scopes)
-        if predicate is None:
+        if predicate is None or not ctx._compiled_scope_eligible():
             self.fallbacks += 1
             return None
         self.evaluations += 1
