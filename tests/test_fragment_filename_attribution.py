@@ -50,6 +50,9 @@ def test_complete_private_lookup_trace_links_commands_and_file_patterns(tmp_path
     assert stats["cache_misses"] == actual.fragment_evaluations
     assert stats["distinct_resolved_patterns_in_fragment_links"] >= 4
     assert stats["failed_evaluate_calls"] == 0
+    assert sum(row["hits"] for row in stats["by_input_type"].values()) == stats["cache_hits"]
+    assert sum(row["misses"] for row in stats["by_input_type"].values()) == stats["cache_misses"]
+    assert stats["top_anonymous_hot_input_slots"]
     assert fragments._Plan.evaluate is original_evaluate
     assert fragments._Plan._key is original_key
     assert fragments._FragmentContext.__init__ is original_init
