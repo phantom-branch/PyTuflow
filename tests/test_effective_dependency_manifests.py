@@ -164,6 +164,118 @@ def test_assembled_event_token_uses_full_key(tmp_path: Path) -> None:
     assert plan.manifest_fallbacks["event-substitution"]
 
 
+@pytest.mark.parametrize("with_event_database", [False, True])
+def test_substitutions_assembling_new_flag_token_reject_compact_key(
+    tmp_path: Path, with_event_database: bool
+) -> None:
+    """Late <<~s1~>> assembled from variables must not alias distinct files."""
+    from pytuflow._tmf.cf.cf_run_state import prepare_run_context
+    from pytuflow._tmf.fragment_dependencies import _FragmentContext, _Plan
+
+    event_line = ""
+    if with_event_database:
+        (tmp_path / "events.tef").write_text(
+            "Define Event == W\n BC Event Source == _unrelated_ | constant\nEnd Define\n",
+            encoding="utf-8",
+        )
+        event_line = "Event File == events.tef\n"
+    top = tmp_path / "model.tcf"
+    top.write_text(
+        event_line
+        + "Set Variable Left == <\n"
+        + "Set Variable Right == >\n"
+        + "Read GIS Code == generated_<<Left>><~s1~><<Right>>.shp\n",
+        encoding="utf-8",
+    )
+    model = TCF(top)
+    flags = ["-s1 A -e1 W", "-s1 B -e1 W", "-s1 A -e1 W"]
+    result = assert_parity(model, flags)
+    assert result.passed
+    assert [run.file_references[-1].path_pattern.name for run in result.runs] == [
+        "generated_A.shp",
+        "generated_B.shp",
+        "generated_A.shp",
+    ]
+    plan = _Plan(model)
+    inp = model.inputs[-1]
+    manifest = plan.manifests[id(inp)]
+    assert manifest.variables == ("LEFT", "RIGHT")
+    for flag in flags[:2]:
+        ctx = _FragmentContext(
+            flag, model.config, plan.expressions, plan.scope_program
+        )
+        ctx._batch_variable_assignments = plan.assignments
+        prepare_run_context(model, ctx)
+        assert not manifest.event_independent(ctx)
+        assert plan._key(inp, ctx)[1][0] != "manifest"
+    assert plan.manifest_fallbacks.get("event-substitution", 0) >= 2
+
+
+def test_selected_tgc_does_not_hide_late_child_scenario_dependency(
+    tmp_path: Path,
+) -> None:
+    """Same selected TGC and cell size must not mask assembled flag-dependent GIS."""
+    for selected in ("EXG", "DEV"):
+        (tmp_path / f"design_{selected}_03.tgc").write_text(
+            "Read GIS Code == child_<<Left>><~s1~><<Right>>.shp\n",
+            encoding="utf-8",
+        )
+    top = tmp_path / "model.tcf"
+    top.write_text(
+        "Set Variable Left == <\n"
+        "Set Variable Right == >\n"
+        "Set Variable VarCellSize == 32\n"
+        "Geometry Control File == design_<<~s2~>>_03.tgc\n",
+        encoding="utf-8",
+    )
+    result = assert_parity(
+        TCF(top),
+        [
+            "-s2 EXG -s1 A",
+            "-s2 EXG -s1 B",
+            "-s2 DEV -s1 B",
+            "-s2 EXG -s1 A",
+        ],
+    )
+    assert result.passed
+    assert [run.file_references[-1].path_pattern.name for run in result.runs] == [
+        "child_A.shp",
+        "child_B.shp",
+        "child_B.shp",
+        "child_A.shp",
+    ]
+    assert [run.file_references[0].path_pattern.name for run in result.runs] == [
+        "design_EXG_03.tgc",
+        "design_EXG_03.tgc",
+        "design_DEV_03.tgc",
+        "design_EXG_03.tgc",
+    ]
+
+
+def test_known_transitive_flag_dependency_remains_compact(tmp_path: Path) -> None:
+    """The fix must not disable proofs for normally declared transitive tokens."""
+    from pytuflow._tmf.cf.cf_run_state import prepare_run_context
+    from pytuflow._tmf.fragment_dependencies import _FragmentContext, _Plan
+
+    top = tmp_path / "model.tcf"
+    top.write_text(
+        "Set Variable Alias == <<~s1~>>\nRead GIS Code == <<Alias>>.shp\n",
+        encoding="utf-8",
+    )
+    model = TCF(top)
+    plan = _Plan(model)
+    inp = model.inputs[-1]
+    assert plan.manifests[id(inp)].variables == ("ALIAS", "S1")
+    for flag in ("-s1 A", "-s1 B"):
+        ctx = _FragmentContext(
+            flag, model.config, plan.expressions, plan.scope_program
+        )
+        ctx._batch_variable_assignments = plan.assignments
+        prepare_run_context(model, ctx)
+        assert plan._key(inp, ctx)[1][0] == "manifest"
+    assert_parity(model, ["-s1 A", "-s1 B", "-s1 A"])
+
+
 def test_unknown_and_cyclic_lineage_use_full_key(tmp_path: Path) -> None:
     from pytuflow._tmf.fragment_dependencies import _Plan
 
