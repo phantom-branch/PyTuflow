@@ -185,3 +185,64 @@ unchanged. Ruff could not execute under local application control. Scoped
 Pyright had no new findings; three findings remain in pre-existing diagnostic
 lines. Hosted Windows 3.12/3.14 CI and a fresh Codex review are required on the
 published head.
+
+
+## Private per-input and per-filename cache attribution (26 October 2026)
+
+An additional **opt-in, private-only** diagnostic maps individual fragment-cache
+lookups to their original source control-file command and the resolved file/layer
+patterns held by the cached immutable fragment. Production PyTUFLOW, its cache
+and the ryan-tools consumer remain unchanged.
+
+Use a NEW local report folder outside the repo and a private explicit run-flags
+JSON from the user's actual 456 simulation commands. Do not fabricate the 24
+missing combinations; a future complete 480-command set may be used as supplied.
+
+```powershell
+python -m tests.profile_fragment_evaluations --tcf $env:TCF_PATH --runs-json $env:RUNS_JSON --output $env:PRIVATE_PROBE_OUTPUT --private-file-attribution
+```
+
+The ordinary-vs-fragment per-run provenance check must pass before writing the
+private CSVs. No BAT/CMD/TUFLOW solver is executed.
+
+| Output | Purpose | Disclosure |
+| --- | --- | --- |
+| ``fragment_diagnostic.json`` | Anonymised global counts and a private-trace summary | Safe aggregate; no filenames |
+| ``private_input_totals.csv`` | Source control-file path/line, command, lookups, hits/misses, total key time, nested-adjusted evaluation time, p50/p95 hit/miss times | PRIVATE |
+| ``private_lookup_trace.csv`` | One row per hit/miss: run ordinal, input slot, fragment ID, key time, inclusive and exclusive evaluation time | PRIVATE JOIN KEY |
+| ``private_fragment_files.csv`` | Fragment ID to resolved file/layer pattern, linked source input and direct/descendant ownership | PRIVATE |
+| ``private_file_totals.csv`` | Resolved file/layer, emitted logical references, hit/miss associations and non-additive associated timing | PRIVATE |
+
+Join ``input_slot`` to source rows and ``fragment_id`` to fragment/file mappings.
+Sort sources by ``key_inclusive_ms``, ``hit_exclusive_total_ms`` and ``hits``;
+check corresponding resolved filename associations. The trace has ~68k records
+on the last reported 456-run input plan, but paths are factored into separate
+CSV tables rather than repeated on every lookup.
+
+**Interpretation matters:**
+
+- A fragment hit is a Python cache reuse, not a physical file open/stat/scan.
+- Fragment references include complete descendant subtrees: a single hit can
+  be associated with many file patterns. Parent and child associations overlap.
+- File-level ``associated_*_ms`` is the whole fragment cost associated with
+  each resolved filename for correlation; it is **not additive across files**
+  and is not time spent accessing that file.
+- ``logical_run_references`` and ``logical_database_source_rows`` are separate
+  syntactic-dependency counts from completed runs, not cache-lookups or I/O.
+- Exclusive evaluator time subtracts nested fragment evaluation, but includes
+  key work and tracing overhead. Instrumented measurements cannot establish a
+  production speedup against prior ~16-second clean wall-time benchmarks.
+- The private CSVs contain actual source filenames, raw source command texts
+  and resolved paths. **Never publish, attach to PR #39, or paste these CSVs into
+  public review.** Only sanitised aggregate summaries may be published.
+- This opt-in instrumentation operates only in the calling process and patches
+  parser entry points temporarily; no production API or consumer behaviour changes.
+
+The new code is ``tests/fragment_filename_attribution.py``, called from the
+existing CLI with ``--private-file-attribution``. Host-side tests exercise
+counters, file/source joins, redaction, fallback and patch restoration. The
+private SMB trace itself must run on the user's own Windows environment.
+
+If timing suggests a candidate improvement, validate unchanged full provenance,
+then compare separate uninstrumented A/B/B/A trials. Do not optimise merely to
+reduce the number of cache hits or report per-file costs from these associations.
