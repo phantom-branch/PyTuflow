@@ -38,6 +38,8 @@ class _Source:
     eval_exclusive_ns: int = 0
     hit_exclusive_ns: list[int] = field(default_factory=list)
     miss_exclusive_ns: list[int] = field(default_factory=list)
+    hit_key_ns: list[int] = field(default_factory=list)
+    miss_key_ns: list[int] = field(default_factory=list)
     fragment_ids: set[int] = field(default_factory=set)
 
 
@@ -202,9 +204,11 @@ class PrivateFragmentAttribution:
                     if frame.hit:
                         source.hits += 1
                         source.hit_exclusive_ns.append(exclusive_ns)
+                        source.hit_key_ns.append(frame.key_ns)
                     else:
                         source.misses += 1
                         source.miss_exclusive_ns.append(exclusive_ns)
+                        source.miss_key_ns.append(frame.key_ns)
                     resolved = self._fragment(result, inp)
                     source.fragment_ids.add(resolved.serial)
                     self._lookups.append(
@@ -323,6 +327,9 @@ class PrivateFragmentAttribution:
                 "input_slot", "input_type", "owner_control_file", "source_line",
                 "command_name", "command_text", "lookups", "hits", "misses",
                 "distinct_fragment_objects", "key_inclusive_ms",
+                "hit_key_total_ms", "miss_key_total_ms",
+                "median_hit_key_ms", "p95_hit_key_ms",
+                "median_miss_key_ms", "p95_miss_key_ms",
                 "evaluate_exclusive_ms", "hit_exclusive_total_ms", "miss_exclusive_total_ms",
                 "median_hit_exclusive_ms", "p95_hit_exclusive_ms",
                 "median_miss_exclusive_ms", "p95_miss_exclusive_ms",
@@ -340,6 +347,14 @@ class PrivateFragmentAttribution:
                     "misses": s.misses,
                     "distinct_fragment_objects": len(s.fragment_ids),
                     "key_inclusive_ms": round(s.key_ns / 1_000_000, 6),
+                    "hit_key_total_ms": round(sum(s.hit_key_ns) / 1_000_000, 6),
+                    "miss_key_total_ms": round(sum(s.miss_key_ns) / 1_000_000, 6),
+                    "median_hit_key_ms": round(median(s.hit_key_ns) / 1_000_000, 6)
+                    if s.hit_key_ns else 0.0,
+                    "p95_hit_key_ms": _percentile(s.hit_key_ns, 0.95),
+                    "median_miss_key_ms": round(median(s.miss_key_ns) / 1_000_000, 6)
+                    if s.miss_key_ns else 0.0,
+                    "p95_miss_key_ms": _percentile(s.miss_key_ns, 0.95),
                     "evaluate_exclusive_ms": round(s.eval_exclusive_ns / 1_000_000, 6),
                     "hit_exclusive_total_ms": round(sum(s.hit_exclusive_ns) / 1_000_000, 6),
                     "miss_exclusive_total_ms": round(sum(s.miss_exclusive_ns) / 1_000_000, 6),
