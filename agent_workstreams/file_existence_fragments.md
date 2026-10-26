@@ -86,3 +86,23 @@ paths with differing columns, ordinary/fragment parity and no source opens after
 initial parsing. Consumer PR 161 owns one-header-per-file inspection, per-run
 column diagnostics and default rapid-workflow integration. No benchmark rerun.
 Next action: review the paired exact-head CI; no merge or release authorised.
+
+## Signature memo controlled comparison (2026-10-26)
+
+Owner explicitly authorized initial measurement despite failing CI, then repair
+and repeat. Both pinned A/B/B/A passes completed; full current-head 480-run
+uncached/cached/fragment provenance parity passed between passes. Initial median
+improvement of 5.44% did not reproduce: post-fix candidate is 0.48% slower.
+No reproducible incremental performance benefit is accepted.
+
+[Complete sanitized evidence and validation limits](evidence/2026-10-26-signature-memo/README.md).
+The regression test is repaired; 300 combined tests pass locally on Python 3.14.
+Final fragment-only tests: 25 passed; Ruff passes. Strict typing is not clean
+(24 diagnostics in the modified test file). Runtime parser bytes are unchanged
+by the test repair or final typing/style follow-up.
+
+Delivery: fix b6429ed is pushed to PR 39; this evidence and final test-only
+follow-up are committed on the same branch for publication with this checkpoint.
+Hosted final-head CI and review remain separate pending gates.
+No consumer repin, solver, merge or release. Next action: review evidence and
+exact-head checks; no further benchmark queued. Next review: 2026-11-02.

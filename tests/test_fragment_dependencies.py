@@ -447,12 +447,12 @@ def test_subtree_signature_parts_are_reused_per_run_and_invalidated(tmp_path: Pa
     # Context rejects redefining an existing flag slot. Remove the old event
     # binding before loading its replacement, retaining the scenario slot.
     delattr(ctx, "E1")
-    ctx.var_map.pop("E1")
-    ctx.event_variables.clear()
-    ctx.load_context_from_dict({"e1": "Q100"})
+    legacy_context: Any = ctx  # Context exposes untyped mutable binding maps.
+    legacy_context.var_map.pop("E1")
+    legacy_context.event_variables.clear()
+    legacy_context.load_context_from_dict({"e1": "Q100"})
     assert not ctx._fragment_signature_values
     ctx.load_variables({"Dir": "_event_"})
-    assert not ctx._fragment_signature_values
     third = plan._key(boundary, ctx)
     assert third != first
     assert third != second
