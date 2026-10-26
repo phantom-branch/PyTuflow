@@ -105,9 +105,13 @@ class CompiledExpression:
         # transitive-variable walk. Include the full run variable map in the
         # expression-cache key rather than sharing a value across scenario
         # flags that were absent from the original expression.
-        if events or any(
-            isinstance(value, str) and _has_partial_delimiter(value)
-            for value in found.values()
+        if (
+            events
+            or _has_partial_delimiter(self.text)
+            or any(
+                isinstance(value, str) and _has_partial_delimiter(value)
+                for value in found.values()
+            )
         ):
             # TEF substitutions and partial variable delimiters can reveal
             # additional variables absent from the original expression.
@@ -119,13 +123,17 @@ class CompiledExpression:
     def evaluate(self, ctx: Any) -> Any:
         # Only use the token join when no replacement can trigger a subsequent
         # replacement, numeric coercion, or arbitrary TEF substitution.
-        if not ctx.event_variables and all(
-            isinstance(ctx.var_map.get(name), str)
+        if (
+            not ctx.event_variables
+            and not _has_partial_delimiter(self.text)
+            and all(
+                isinstance(ctx.var_map.get(name), str)
             # Even a single angle bracket can combine with another binding
             # and expose a <<~s1~>> token on Context's second pass.
             and "<" not in ctx.var_map[name]
             and ">" not in ctx.var_map[name]
-            for name in self.variables
+                for name in self.variables
+            )
         ):
             return "".join(
                 str(ctx.var_map[_variable_name(value[2:-2])]) if token else value
