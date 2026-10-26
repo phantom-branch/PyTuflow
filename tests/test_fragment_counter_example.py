@@ -6,10 +6,13 @@ After the TCF is parsed, no source file access is permitted during projection.
 The test prints aggregate counts but never reveals private user workloads.
 """
 
+import csv
 from pathlib import Path
 from unittest.mock import patch
 
 from pytuflow import TCF
+
+from .fragment_filename_attribution import PrivateFragmentAttribution
 
 
 def test_456_contexts_20_files_many_fragments_are_not_file_reads(tmp_path: Path) -> None:
@@ -27,9 +30,11 @@ def test_456_contexts_20_files_many_fragments_are_not_file_reads(tmp_path: Path)
     model = TCF(tcf_path)
     flags = [f"-e1 E{i:03d}" for i in range(runs)]
 
+    attribution = PrivateFragmentAttribution()
     with (
         patch.object(Path, "open", side_effect=AssertionError("Unexpected physical file open")),
         patch.object(Path, "stat", side_effect=AssertionError("Unexpected physical stat")),
+        attribution.observe(),
     ):
         result = model.collect_file_dependencies(flags)
 
@@ -45,6 +50,30 @@ def test_456_contexts_20_files_many_fragments_are_not_file_reads(tmp_path: Path)
     assert lookups >= runs * (gis_commands + setting_commands)
     assert result.fragment_reuses > references
     assert result.fragment_evaluations < lookups
+    observed = attribution.summary(result)
+    assert observed["lookup_trace_rows"] == lookups
+    assert observed["cache_hits"] == result.fragment_reuses
+    assert observed["source_input_slots"] == gis_commands + setting_commands
+    assert observed["distinct_resolved_patterns_in_fragment_links"] == gis_commands
+
+    private = tmp_path / "private_synthetic_report"
+    private.mkdir()
+    attribution.write_private(private, result)
+    with (private / "private_file_totals.csv").open(newline="", encoding="utf-8-sig") as handle:
+        filename_rows = list(csv.DictReader(handle))
+    with (private / "private_lookup_trace.csv").open(newline="", encoding="utf-8-sig") as handle:
+        lookup_rows = list(csv.DictReader(handle))
+    assert len(filename_rows) == gis_commands
+    assert len(lookup_rows) == lookups
+    assert sum(int(row["logical_run_references"]) for row in filename_rows) == references
+    assert sum(int(row["fragment_hit_associations"]) for row in filename_rows) == (
+        result.fragment_reuses - setting_commands * (runs - 1)
+    )
+    print(
+        "PUBLIC SYNTHETIC FILE ATTRIBUTION: "
+        f"source_commands={observed['source_input_slots']}, "
+        f"resolved_patterns={len(filename_rows)}, lookup_trace_rows={len(lookup_rows)}"
+    )
     print(
         "PUBLIC SYNTHETIC EXAMPLE: "
         f"runs={runs}, unique_paths={len(unique_paths)}, "
