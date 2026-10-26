@@ -19,6 +19,7 @@ from .batch_dependencies import (
     BatchInputCommand,
     BatchInputReference,
 )
+from .compiled_scope import ScopeProgram
 from .context import Context
 from .file_reference import (
     DeferredDatabaseActivation,
@@ -131,7 +132,11 @@ class ExpressionPool:
 class _FragmentContext(BatchContext):
     _batch_variable_assignments: tuple[tuple[Any, tuple[str, str]], ...]
 
-    def __init__(self, flags: Any, config: Any, expressions: ExpressionPool) -> None:
+    def __init__(self, flags: Any, config: Any, expressions: ExpressionPool,
+                 scopes: ScopeProgram | None = None) -> None:
+        self._scope_program = scopes
+        self._compiled_flag_names: dict[str, frozenset[str]] = {}
+        self._compiled_event_names: tuple[tuple[str, ...], frozenset[str]] = ((), frozenset())
         self.expressions = expressions
         # A subtree is keyed repeatedly through its ancestors. Keep each
         # expression's complete key component once per run, never cross-run.
@@ -143,7 +148,38 @@ class _FragmentContext(BatchContext):
         # Match BatchContext's invalidation boundary for accepted event,
         # scenario and Set Variable changes. No stale signature may survive.
         self._fragment_signature_values.clear()
+        self._compiled_flag_names.clear()
+        self._compiled_event_names = ((), frozenset())
         super()._invalidate()
+
+    def _compiled_membership(self, kind: str) -> frozenset[str]:
+        from .scope import Scope
+
+        names = self._compiled_flag_names.get(kind)
+        if names is None:
+            # Normalise selected flag values through the original constructors
+            # once per invalidation, including alternatives and negative names.
+            names = frozenset(
+                name.lower() for value in self._create_list(kind)
+                for part in Scope(kind, value).explode() for name in part.names
+            )
+            self._compiled_flag_names[kind] = names
+        if kind == "E" and self.event_variables:
+            keys = tuple(self.event_variables)
+            if keys != self._compiled_event_names[0]:
+                self._compiled_event_names = keys, frozenset(
+                    name.lower() for key in keys
+                    for part in Scope("EVENT DEFINE", key).explode() for name in part.names
+                )
+            return names | self._compiled_event_names[1]
+        return names
+
+    def in_context_by_scope(self, req_scope: Any) -> bool:
+        if self._scope_program is not None:
+            active = self._scope_program.evaluate(req_scope, self)
+            if active is not None:
+                return active
+        return super().in_context_by_scope(req_scope)
 
     def translate(self, item: Any) -> Any:
         from .tfpathlib import TuflowPath
@@ -291,6 +327,7 @@ class _Plan:
             raise NotImplementedError("Custom model control file context hook")
         self.model = model
         self.expressions = ExpressionPool()
+        self.scope_program = ScopeProgram()
         self.cache: dict[tuple[int, tuple[object, ...]], DependencyFragment] = {}
         self.pending: dict[tuple[int, tuple[object, ...]], DependencyFragment] = {}
         self.evaluations = 0
@@ -338,6 +375,7 @@ class _Plan:
         method = methods.get(type(inp))
         if getattr(inp.context, "__func__", None) is not method:
             raise NotImplementedError("Custom input context hook")
+        self.scope_program.compile(inp.scope)
         expressions = [str(inp.rhs or "")]
         scopes = [inp.scope]
         children: tuple[Any, ...] = tuple(cast(Any, inp).cf) if type(inp) is ControlFileInput else ()
@@ -495,7 +533,7 @@ def collect_file_dependencies(model: Any, run_flags: Iterable[str | dict[str, st
             flags if isinstance(flags, str) else " ".join(f"-{key.lstrip('-')} {value}" for key, value in flags.items())
         )
         try:
-            ctx = _FragmentContext(flags, model.config, plan.expressions)
+            ctx = _FragmentContext(flags, model.config, plan.expressions, plan.scope_program)
             ctx._batch_variable_assignments = plan.assignments
             prepare_run_context(model, ctx)
             fragment = _join(plan.evaluate(inp, ctx) for inp in plan.roots)
