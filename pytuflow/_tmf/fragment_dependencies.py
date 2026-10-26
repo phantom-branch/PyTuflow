@@ -91,9 +91,20 @@ class CompiledExpression:
             if has_events
             else ()
         )
-        if events:
-            # Event values may introduce variables absent from the expression.
-            # The complete variable map is conservative for this complex case.
+        # Single angle brackets can join with literals/other substitutions
+        # to *create* a previously untracked <<variable>> token. Unlike
+        # complete tokens, these fragments are not discovered by the normal
+        # transitive-variable walk. Include the full run variable map in the
+        # expression-cache key rather than sharing a value across scenario
+        # flags that were absent from the original expression.
+        partial_delimiter = any(
+            isinstance(value, str)
+            and ("<" in _TOKEN.sub("", value) or ">" in _TOKEN.sub("", value))
+            for value in found.values()
+        )
+        if events or partial_delimiter:
+            # TEF substitutions and partial variable delimiters can reveal
+            # additional variables absent from the original expression.
             return tuple(
                 sorted((str(k), repr(v)) for k, v in ctx.var_map.items())
             ), events
@@ -104,8 +115,10 @@ class CompiledExpression:
         # replacement, numeric coercion, or arbitrary TEF substitution.
         if not ctx.event_variables and all(
             isinstance(ctx.var_map.get(name), str)
-            and "<<" not in ctx.var_map[name]
-            and ">>" not in ctx.var_map[name]
+            # Even a single angle bracket can combine with another binding
+            # and expose a <<~s1~>> token on Context's second pass.
+            and "<" not in ctx.var_map[name]
+            and ">" not in ctx.var_map[name]
             for name in self.variables
         ):
             return "".join(
