@@ -11,6 +11,7 @@ import pytest
 
 from pytuflow import TCF
 from pytuflow._tmf import TuflowPath
+from pytuflow._tmf.settings import TCFConfig
 
 pytestmark = pytest.mark.skipif(sys.platform != "linux", reason="Linux filesystem semantics")
 
@@ -96,3 +97,90 @@ def test_gpkg_case_only_siblings_select_exact_database_and_layer(tmp_path: Path)
         full_path = tmp_path / chosen.dbpath
         assert TuflowPath(f"{full_path} >> {layer}").exists()
         assert not TuflowPath(f"{full_path} >> {wrong_layer}").exists()
+
+
+@pytest.mark.parametrize(
+    ("case_sensitivity", "requested", "expected_file"),
+    [
+        (0, "materials.csv", "materials.csv"),
+        (1, "materials.csv", "materials.csv"),
+        (2, "materials.csv", "Materials.csv"),
+        (0, "Materials.CSV", "Materials.CSV"),
+        (1, "Materials.CSV", "Materials.csv"),
+        (2, "MATERIALS.CSV", "Materials.csv"),
+    ],
+)
+def test_linux_literal_case_modes(case_sensitivity: int, requested: str, expected_file: str, tmp_path: Path) -> None:
+    """Default -cs0 must retain incorrect filenames; -cs1/-cs2 match TUFLOW."""
+    (tmp_path / "Materials.csv").write_text("Material, Manning\n1,0.04\n", encoding="utf-8")
+    selected = TuflowPath.init_case_policy_path(requested, tmp_path, case_sensitivity)
+    assert selected.dbpath == Path(expected_file)
+    assert (tmp_path / selected.dbpath).is_file() == (expected_file == "Materials.csv")
+
+
+def test_linux_strict_default_and_database_input_status(tmp_path: Path) -> None:
+    """PyTUFLOW eager and explicit deferred materialisation must flag bad casing."""
+    actual = tmp_path / "Materials.csv"
+    actual.write_text("Material, Manning\n1,0.04\n", encoding="utf-8")
+    tcf = tmp_path / "case_policy.tcf"
+    tcf.write_text("Read Materials File == Materials.csv\n", encoding="utf-8")
+
+    assert TCFConfig().case_sensitivity == 0
+    assert TCF(tcf).config.case_sensitivity == 0
+
+    tcf.write_text("Read Materials File == materials.csv\n", encoding="utf-8")
+    strict = TCF(tcf)
+    assert strict.config.case_sensitivity == 0
+    strict_input = strict.find_input(lhs="Read Materials File")[0]
+    assert strict_input.has_missing_files
+    strict_deferred = strict.context(file_resolution="deferred").find_input(lhs="Read Materials File")[0]
+    assert strict_deferred.file_references[0].path_pattern.name == "materials.csv"
+
+    tolerant = TCF(tcf, config=TCFConfig(case_sensitivity=2))
+    tolerant_input = tolerant.find_input(lhs="Read Materials File")[0]
+    assert not tolerant_input.has_missing_files
+    assert tolerant_input.files[0].name == "Materials.csv"
+
+
+@pytest.mark.parametrize(
+    ("level", "expected"),
+    [(0, "Materials.CSV"), (1, "Materials.csv"), (2, "Materials.csv")],
+)
+def test_linux_extension_only_policy(level: int, expected: str, tmp_path: Path) -> None:
+    (tmp_path / "Materials.csv").touch()
+    selected = TuflowPath.init_case_policy_path("Materials.CSV", tmp_path, level)
+    assert selected.dbpath.name == expected
+
+
+def test_linux_directories_remain_case_sensitive_under_cs2(tmp_path: Path) -> None:
+    (tmp_path / "Model").mkdir()
+    (tmp_path / "Model" / "Materials.csv").touch()
+    actual = TuflowPath.init_case_policy_path("model/materials.csv", tmp_path, 2)
+    assert actual.dbpath == Path("model/materials.csv")
+    assert not (tmp_path / actual.dbpath).exists()
+    correct_directory = TuflowPath.init_case_policy_path("Model/materials.csv", tmp_path, 2)
+    assert correct_directory.dbpath == Path("Model/Materials.csv")
+
+
+def test_linux_case_policy_with_distinct_filename_siblings(tmp_path: Path) -> None:
+    (tmp_path / "Materials.csv").touch()
+    (tmp_path / "materials.csv").touch()
+    assert TuflowPath.init_case_policy_path("materials.csv", tmp_path, 2).dbpath == Path("materials.csv")
+    with pytest.raises(ValueError, match="Ambiguous"):
+        TuflowPath.init_case_policy_path("MATERIALS.csv", tmp_path, 2)
+
+
+@pytest.mark.parametrize("case_sensitivity", [-1, 3, True, "2", None])
+def test_invalid_tuflow_case_sensitivity_rejected(case_sensitivity: object) -> None:
+    with pytest.raises(ValueError, match="case_sensitivity"):
+        TCFConfig(case_sensitivity=case_sensitivity)
+
+
+def test_linux_wildcard_filename_mode_not_directory_mode(tmp_path: Path) -> None:
+    (tmp_path / "Model").mkdir()
+    source = tmp_path / "Model" / "Grid_01.TIF"
+    source.touch()
+    assert list(TuflowPath(tmp_path / "Model").glob("grid_*.tif", case_sensitivity=0)) == []
+    assert list(TuflowPath(tmp_path / "Model").glob("grid_*.tif", case_sensitivity=1)) == []
+    assert list(TuflowPath(tmp_path / "Model").glob("grid_*.tif", case_sensitivity=2)) == [source]
+    assert list(TuflowPath(tmp_path).glob("model/grid_*.tif", case_sensitivity=2)) == []
