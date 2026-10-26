@@ -136,7 +136,7 @@ def test_linux_strict_default_and_database_input_status(tmp_path: Path) -> None:
     strict_deferred = strict.context(file_resolution="deferred").find_input(lhs="Read Materials File")[0]
     assert strict_deferred.file_references[0].path_pattern.name == "materials.csv"
 
-    tolerant = TCF(tcf, config=TCFConfig(case_sensitivity=2))
+    tolerant = TCF(tcf, case_sensitivity=2)
     tolerant_input = tolerant.find_input(lhs="Read Materials File")[0]
     assert not tolerant_input.has_missing_files
     assert tolerant_input.files[0].name == "Materials.csv"
@@ -184,3 +184,14 @@ def test_linux_wildcard_filename_mode_not_directory_mode(tmp_path: Path) -> None
     assert list(TuflowPath(tmp_path / "Model").glob("grid_*.tif", case_sensitivity=1)) == []
     assert list(TuflowPath(tmp_path / "Model").glob("grid_*.tif", case_sensitivity=2)) == [source]
     assert list(TuflowPath(tmp_path).glob("model/grid_*.tif", case_sensitivity=2)) == []
+
+
+def test_tcf_case_level_argument_validation(tmp_path: Path) -> None:
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text("! Empty model\n", encoding="utf-8")
+    for level in (0, 1, 2):
+        assert TCF(tcf, case_sensitivity=level).config.case_sensitivity == level
+    with pytest.raises(ValueError, match="case_sensitivity"):
+        TCF(tcf, case_sensitivity=3)
+    with pytest.raises(ValueError, match="not both"):
+        TCF(tcf, config=TCFConfig(tcf=tcf), case_sensitivity=2)
