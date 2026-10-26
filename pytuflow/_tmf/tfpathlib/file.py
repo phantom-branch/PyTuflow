@@ -252,6 +252,8 @@ class TuflowPath(Path):
         requested = Path(db)
         folder = requested.parent
         search_parent = folder if requested.is_absolute() else Path(base_dir) / folder
+        if (search_parent / requested.name).exists():
+            return value
         try:
             if case_sensitivity == 1:
                 matches = [item.name for item in search_parent.iterdir()
@@ -469,16 +471,22 @@ class TuflowPath(Path):
             directory = Path(self) / file_pattern.parent
             if not directory.is_dir():
                 return
+            wildcard = any(ch in file_pattern.name for ch in '*?[')
+            if not wildcard and (directory / file_pattern.name).exists():
+                yield directory / file_pattern.name
+                return
             try:
                 candidates = tuple(directory.iterdir())
             except OSError:
                 raise
-            for candidate in candidates:
-                if not fnmatch.fnmatchcase(candidate.name.casefold(), file_pattern.name.casefold()):
-                    continue
-                if case_sensitivity == 1 and not fnmatch.fnmatchcase(candidate.stem, file_pattern.stem):
-                    continue
-                yield candidate
+            matches = [
+                candidate for candidate in candidates
+                if fnmatch.fnmatchcase(candidate.name.casefold(), file_pattern.name.casefold())
+                and (case_sensitivity != 1 or fnmatch.fnmatchcase(candidate.stem, file_pattern.stem))
+            ]
+            if not wildcard and len(matches) > 1:
+                raise ValueError(f'Ambiguous TUFLOW -cs{case_sensitivity} filename: {file_pattern}')
+            yield from matches
 
         p = TuflowPath(pattern)
         self_db, self_lyrname = self._split_db_and_lyr()
