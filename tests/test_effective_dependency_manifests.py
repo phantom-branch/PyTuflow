@@ -269,6 +269,22 @@ def test_fragment_expression_pool_handles_assembled_flag_token_without_tef() -> 
     assert pool.reuses == 4
 
 
+def test_fragment_expression_pool_uses_context_for_literal_bracket_fragments() -> None:
+    """Malformed/partial original tokens must never take the one-pass shortcut."""
+    from pytuflow._tmf.context import Context
+    from pytuflow._tmf.fragment_dependencies import ExpressionPool
+
+    pool = ExpressionPool()
+    expression = "source_<<<<Alias>>>>.shp"
+    for scenario in ("A", "B", "A"):
+        context = Context(f"-s1 {scenario}")
+        context.load_variables({"Alias": "~s1~"})
+        assert pool.translate(context, expression) == context.translate(expression)
+    # Source-literal bracket pieces require a conservative context-dependent key.
+    assert pool.evaluations == 2
+    assert pool.reuses == 1
+
+
 def test_known_transitive_flag_dependency_remains_compact(tmp_path: Path) -> None:
     """The fix must not disable proofs for normally declared transitive tokens."""
     from pytuflow._tmf.cf.cf_run_state import prepare_run_context
