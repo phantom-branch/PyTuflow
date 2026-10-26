@@ -29,6 +29,47 @@ squash-merged with all four workflows passing** at
 `993eb083dec15b1155d7ae61a28d65003357ff77`. Linux CI now pins this
 accepted consumer commit rather than an unmerged development SHA.
 
+## Implemented TUFLOW-matching path policy
+
+The default `TCFConfig.case_sensitivity=0` uses TUFLOW Linux `-cs0`
+(strict file stems, extensions and directory components). Levels can be
+selected explicitly when constructing the model, for example:
+
+```python
+from pytuflow import TCF
+from pytuflow._tmf.settings import TCFConfig
+
+model = TCF("runs/model.tcf")  # Linux strict -cs0; Windows native semantics
+model_cs1 = TCF("runs/model.tcf", config=TCFConfig(case_sensitivity=1))
+model_cs2 = TCF("runs/model.tcf", config=TCFConfig(case_sensitivity=2))
+```
+
+Linux `-cs1` allows case-insensitive **extensions only**; `-cs2`
+allows case-insensitive **final filename and extension**, but parent
+directory component spelling always remains strict. Windows continues to use
+its native case-insensitive filesystem matching at all configured levels.
+
+The policy is set at **model construction** (before the build-state is
+parsed) to prevent a misleading partial policy override on a later run
+context. Eager discovery and explicit `.files` materialisation use the
+configured mode. Deferred `.file_references` retain the original lexical
+spelling by design, so consumers can verify the **requested** input and
+honour the same model case policy. A missing eager reference is recorded in
+`has_missing_files` or a failed database load, not necessarily raised as a
+`TCF(...)` constructor exception. Neither deferred reference collection
+nor simply constructing a TCF constitutes strict input validation.
+
+The existing `TuflowPath.init_case_insensitive_path()` and `//` helper
+are left unchanged for external callers; control-file parsing uses the new
+explicit policy instead. Cases with multiple case-only candidate files
+fail closed unless an exact spelling identifies one unambiguously.
+
+Native Linux tests verify default strict rejection, extension-only and
+filename-only compatibility, strict directories, mixed-case collisions,
+wildcards and explicit invalid levels. CI must independently verify the
+original strict `-cs0` failure examples and the declared temporary corrected
+fixture campaign; neither may conceal a missing source.
+
 ## Native Linux strict archive classification (current evidence)
 
 [Workflow 40214006051](https://github.com/phantom-branch/PyTuflow/actions/runs/40214006051)
