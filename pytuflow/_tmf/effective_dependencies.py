@@ -122,10 +122,19 @@ class EffectiveDependencyManifest:
         # Context normalises regex-matched replacement keys with upper().
         # lower()/casefold() alone miss e.g. final sigma or dotless i.
         tokens = tuple(str(key).upper() for key in ctx.event_variables)
-        if not tokens:
-            return True
+        # Two independently expanded values can assemble a *new* variable
+        # token. E.g. L="<", R=">" and "<<L>><~s1~><<R>>" expose
+        # <<~s1~>> on the next translation pass. That new flag was not in
+        # the compiled closure, so a compact key could alias different runs.
+        # Check the closure at every intermediate variable-only pass, even
+        # when there are no event variables. Unknown/malformed tokens must
+        # use the existing complete-key evaluator.
+        proven = frozenset(self.variables)
         for text in self.expressions:
             for _ in range(len(self.variables) + 3):
+                refs = _references(text)
+                if refs is None or any(ref not in proven for ref in refs):
+                    return False
                 if any(token in text.upper() for token in tokens):
                     return False
                 expanded = replace_exact_names("<<.+?>>", ctx.var_map, text)
