@@ -18,11 +18,12 @@ class TuflowValueExpander:
     """
 
     def __init__(self, variables: dict[str, str] | typing.Callable[[str], str], database: Path | None,
-                 deferred: bool = False):
+                 deferred: bool = False, case_sensitivity: int = 0):
         self.value = None
         self.variables = variables
         self.database = database
         self.deferred = deferred
+        self.case_sensitivity = case_sensitivity
         self._expanded_value = None
 
     def expand(self, value: str) -> str:
@@ -75,10 +76,13 @@ class TuflowValueExpander:
                 if cmd.should_add_mif_extension(p.strip(), cnt, i):
                     p = f'{p.strip()}.mif'
                 if cf == Path():
-                    yield str(TuflowPath(p.strip()) if self.deferred else TuflowPath.init_case_insensitive_path(p.strip()))
+                    yield str(TuflowPath(p.strip()) if self.deferred else
+                              TuflowPath.init_case_policy_path(p.strip(), case_sensitivity=self.case_sensitivity))
                 else:
                     base = TuflowPath(cf).parent
-                    yield str(base / p.strip() if self.deferred else base // p.strip())
+                    yield str(base / p.strip() if self.deferred else
+                              base / TuflowPath.init_case_policy_path(
+                                  p.strip(), base, self.case_sensitivity))
 
     def _expand_line_gpkg(self, part: str) -> typing.Generator[str, None, None]:
         from .. import gis
@@ -99,7 +103,8 @@ class TuflowValueExpander:
         db, lyr = self._split_lyr(part)
         if cf != Path():
             base = TuflowPath(cf).parent
-            db = base / db if self.deferred else base // db
+            db = base / db if self.deferred else base / TuflowPath.init_case_policy_path(
+                db, base, self.case_sensitivity)
         return f'{db} >> {lyr}'
 
     def _split_lyr(self, part: str) -> tuple[str, str]:
