@@ -46,6 +46,12 @@ jobs:
         run: |
           python -m pip check
           python -m compileall -q pytuflow/_tmf tests
+      - name: Ruff and scoped Pyright for inactive-fragment changes
+        if: matrix.python == '3.14'
+        run: |
+          python -m pip install ruff pyright
+          python -m ruff check pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py tests/test_fragment_filename_attribution.py
+          python -m pyright pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py
       - name: Prove combined append, reuse, producer and diagnostic invariants
         run: >
           python -m pytest -q
