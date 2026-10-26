@@ -39,6 +39,14 @@ def _variable_name(token: str) -> str:
     return name.strip("~") if name.startswith(("~S", "~E")) else name
 
 
+def _has_partial_delimiter(value: str) -> bool:
+    """Detect bracket pieces outside already-complete <<variable>> tokens."""
+    if "<" not in value and ">" not in value:
+        return False
+    remainder = _TOKEN.sub("", value)
+    return "<" in remainder or ">" in remainder
+
+
 @dataclass(frozen=True, slots=True)
 class CompiledExpression:
     """Literal/token operations; complex TEF replacement uses Context semantics."""
@@ -97,12 +105,10 @@ class CompiledExpression:
         # transitive-variable walk. Include the full run variable map in the
         # expression-cache key rather than sharing a value across scenario
         # flags that were absent from the original expression.
-        partial_delimiter = any(
-            isinstance(value, str)
-            and ("<" in _TOKEN.sub("", value) or ">" in _TOKEN.sub("", value))
+        if events or any(
+            isinstance(value, str) and _has_partial_delimiter(value)
             for value in found.values()
-        )
-        if events or partial_delimiter:
+        ):
             # TEF substitutions and partial variable delimiters can reveal
             # additional variables absent from the original expression.
             return tuple(
