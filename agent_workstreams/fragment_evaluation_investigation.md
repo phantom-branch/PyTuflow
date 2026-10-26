@@ -106,3 +106,82 @@ The JSON is designed to omit these, but manually inspect it before uploading.
 
 Release/merge: withheld pending exact-head CI, Codex review, corrected historical
 review-thread resolution, native provenance and any accepted measured change.
+
+## New SMB workload result — 26 October 2026
+
+The supplied command list did not contain the stated 480 simulations. A
+read-only parse found 456 active `START` commands, zero duplicate contexts and
+one root TCF. The expected 480-way parameter product has 24 combinations absent
+from the supplied list. This investigation used the 456 commands actually
+present, in their exact order; it did not invent the absent contexts or execute
+the command list/TUFLOW. Private paths, flags, source metadata, hashes and the
+complete manifest remain in local evidence only.
+
+Environment: Python 3.14.5; PyTUFLOW started at
+`fd25c858975f1559206354d562319d27039055b7`; ryan-tools PR #161 was validated at
+`a710f24ffb1698e949937f56a0212b6ae599e54e`.
+
+| Metric | Result |
+| --- | ---: |
+| Simulation items | 456 present (480 expected; 24 absent from supplied list) |
+| Distinct root TCFs | 1 |
+| Fragment evaluations | 5,016 |
+| Fragment reuses | 62,954 |
+| Cache hit rate | 92.620% |
+| Evaluations per run | 11.000 |
+| Lookups per run | 149.057 |
+| New local signature misses | 1,830 |
+| Descendant/database-row-driven misses | 3,186 |
+| Dominant miss types | Database 2,280; Folder 1,368; Control file 914 |
+| Key-generation cost, representative 24 | 0.0187 s self; 1.7019 s inclusive |
+| Join/rebinding overhead, representative 24 | `_join` 0.0056 s self; `dataclasses.replace` 0.0018 s self / 0.0132 s inclusive |
+| Baseline execution time | 16.101, 16.221, 16.298, 16.421 s; median 16.259 s |
+| Candidate execution time | 38.089 s for rejected structural experiment; remaining trials stopped |
+| Full provenance parity | Passed, complete ordinary versus fragment records for all 456 |
+| Test/consumer status | 95 PyTUFLOW tests and 119 ryan-tools #161 tests passed on Python 3.14 |
+
+The cache stabilised strongly after the first contexts: 434 of 456 runs reached
+the observed floor of 10 evaluations, the final run also had 10, and only one
+run (the first) had 175. The remaining miss histogram was five runs at 11,
+eight at 20, one at 21, three at 32, and one each at 34, 35, 42 and 58.
+There were no fallback runs, key errors, failed fragments or unsupported inputs
+in this workload.
+
+The 5,016 misses are not primarily a simple cache defect. Three dynamic folder
+inputs account for 1,368 genuinely new signatures. Five database inputs account
+for 2,280 misses, of which 2,273 reuse the command's local signature but differ
+in conservatively keyed database rows. Two control-file parents are forced to
+miss on every run by varying descendants, accounting for 912 of the 914
+control-file misses.
+
+The 24-context cProfile separated self from inclusive time. `_Plan._key` and
+`_Plan.evaluate` had only 0.0187 s and 0.0128 s self time respectively;
+`CompiledExpression.bindings` had 0.0173 s self / 0.0762 s inclusive;
+`_FragmentContext.translate` had 0.0109 s self / 0.1520 s inclusive. Scope
+membership dominated the nested key path at about 2.06 s inclusive, while
+rebinding was small. `_join`'s 2.6047 s inclusive time is chiefly nested child
+evaluation and must not be read as join overhead.
+
+Two safe-looking candidates were tested and rejected:
+
+1. An extra per-run scope-result cache reduced calls only to an already-cached
+   `BatchContext` wrapper and left underlying scope work unchanged.
+2. Separating each control-file command's local fragment from child composition
+   preserved full provenance and reduced evaluations from 5,016 to 4,106, but
+   it destroyed valuable whole-subtree reuse. Lookups rose from 67,970 to
+   79,800, join calls increased, and one clean process regressed from the
+   16.259 s baseline median to 38.089 s. The experiment was removed.
+
+Accordingly, no production optimisation is retained. Reducing the counter alone
+would be actively misleading on this workload. A future structural attempt is
+only worthwhile if it preserves whole-subtree reuse while avoiding repeated
+ancestor signature work; database-row key reduction would require a proof that
+row selection, BC ownership and event-dependent columns remain exact.
+
+Diagnostic reporting was extended to retain anonymous per-context progression
+and focused cProfile records for key, evaluation, translation, scope, join and
+`dataclasses.replace` costs. Public APIs and production collection behaviour are
+unchanged. Ruff could not execute under local application control. Scoped
+Pyright had no new findings; three findings remain in pre-existing diagnostic
+lines. Hosted Windows 3.12/3.14 CI and a fresh Codex review are required on the
+published head.
