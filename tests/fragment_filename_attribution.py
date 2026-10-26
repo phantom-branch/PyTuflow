@@ -290,6 +290,14 @@ class PrivateFragmentAttribution:
                 stats["fragment_lookup_associations"] += 1
                 stats["fragment_hit_associations" if event.hit else "fragment_miss_associations"] += 1
                 stats["direct_associations" if relation == "direct" else "descendant_associations"] += 1
+                # Non-additive, whole-fragment cost associated with every
+                # referenced pattern. It MUST NOT be described as independent
+                # file work or summed across paths to estimate elapsed time.
+                stats["associated_key_ns"] += event.key_ns
+                stats["associated_evaluate_exclusive_ns"] += event.eval_exclusive_ns
+                stats["associated_hit_exclusive_ns" if event.hit else "associated_miss_exclusive_ns"] += (
+                    event.eval_exclusive_ns
+                )
 
         # These count references in completed run outputs, not cache lookups,
         # and do not open or stat any referenced file.
@@ -396,6 +404,8 @@ class PrivateFragmentAttribution:
                 "logical_run_references", "logical_database_source_rows",
                 "fragment_lookup_associations", "fragment_hit_associations",
                 "fragment_miss_associations", "direct_associations", "descendant_associations",
+                "associated_key_ms", "associated_evaluate_exclusive_ms",
+                "associated_hit_exclusive_ms", "associated_miss_exclusive_ms",
             ),
             (
                 {
@@ -411,6 +421,16 @@ class PrivateFragmentAttribution:
                             "descendant_associations",
                         )
                     },
+                    "associated_key_ms": round(values["associated_key_ns"] / 1_000_000, 6),
+                    "associated_evaluate_exclusive_ms": round(
+                        values["associated_evaluate_exclusive_ns"] / 1_000_000, 6
+                    ),
+                    "associated_hit_exclusive_ms": round(
+                        values["associated_hit_exclusive_ns"] / 1_000_000, 6
+                    ),
+                    "associated_miss_exclusive_ms": round(
+                        values["associated_miss_exclusive_ns"] / 1_000_000, 6
+                    ),
                 }
                 for (pattern, layer, kind), values in sorted(files.items())
             ),
