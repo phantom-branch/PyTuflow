@@ -18,17 +18,20 @@
     "scope": {
       "passed": true,
       "runs": 480,
-      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93"
+      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93",
+      "source_sha": "3812ed59af3e7e7e9e1addc8922957ef78621054"
     },
     "manifest": {
       "passed": true,
       "runs": 480,
-      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93"
+      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93",
+      "source_sha": "3812ed59af3e7e7e9e1addc8922957ef78621054"
     },
     "combined": {
       "passed": true,
       "runs": 480,
-      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93"
+      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93",
+      "source_sha": "3812ed59af3e7e7e9e1addc8922957ef78621054"
     }
   },
   "SMB": {
@@ -45,7 +48,8 @@
     "combined": {
       "passed": true,
       "runs": 480,
-      "record_sha256": "318bcf175395c35066a8bc8dd65e7c757f20681d4d7930e52b666b810ecf17a7"
+      "record_sha256": "318bcf175395c35066a8bc8dd65e7c757f20681d4d7930e52b666b810ecf17a7",
+      "source_sha": "3812ed59af3e7e7e9e1addc8922957ef78621054"
     }
   },
   "storage_copy_control_bytes_and_flags_match": true,

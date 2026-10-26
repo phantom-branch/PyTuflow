@@ -90,9 +90,9 @@ include matching and public output formats retain their existing authority.
 - Parsed sources must remain read-only during one synchronous collection. No persistent cache,
   mutable Context sharing, solver, multiprocessing or first-run prioritisation is introduced.
 
-## Validation at final production source `9d70faf`
+## Validation at final production source `3812ed5`
 
-Thirty-eight new scope/include regressions pass. Final local validation passes 546 combined
+Forty-nine new scope/include regressions pass. Final local validation passes 557 combined
 parser/deferred/context tests and 119 actual consumer tests, zero skips. Ruff check/format and
 strict Pyright pass for all three production modules. Custom Context membership/available-scope
 hooks disable compiled predicates; custom translation hooks retain full subtree keys.
@@ -119,22 +119,21 @@ flags, commands, records, CSVs and profiles remain private. No TUFLOW solver was
 
 | Final source comparison | Storage | Parent median s | Candidate median s | Reduction |
 | --- | --- | ---: | ---: | ---: |
-| Preparation independently | SSD | 22.122871 | 6.868239 | 68.95% |
-| Manifests independently | SSD | 18.397234 | 15.822835 | 13.99% |
-| Combined | SSD | 18.423101 | 3.705711 | 79.89% |
-| Combined | Warm SMB | 18.680410 | 4.029117 | 78.43% |
+| Preparation independently | SSD | 18.146228 | 5.577046 | 69.27% |
+| Manifests independently | SSD | 19.122716 | 15.826504 | 17.24% |
+| Combined | SSD | 18.534318 | 3.713377 | 79.96% |
+| Combined | Warm SMB | 18.856490 | 4.170430 | 77.88% |
 
 Each final row is its own balanced ABBA/BAAB block with two samples per condition. Earlier
 source `9acdfa6` has two independent blocks per optimisation and combined mode (24 trials),
-followed by 16 final-source trials after custom-hook guards. Four preparation pilot trials are
+followed by 16 intermediate custom-hook trials at `9d70faf` and 16 corrected-source trials at `3812ed5`. Four preparation pilot trials are
 retained separately. Do not pool source revisions, compare across storage locations or infer
 incremental savings by subtracting medians from different blocks. Background load and CPU/cache
 conditions remain uncontrolled; no formal statistical-significance or cold-storage claim.
 
-All 44 native passes retain 480 contexts, 50 paths, 24 headers and 480 column selections, zero
+All 60 native passes retain 480 contexts, 50 paths, 24 headers and 480 column selections, zero
 issues and zero whole-run fallbacks. Baseline/candidate process CPU falls with elapsed time.
-Combined peak working set decreases from 208.219 to 202.623 MiB on SSD and 207.061 to
-201.748 MiB on SMB. One separate plan-construction observation rises from 1.970 to 5.413 ms;
+Combined peak working set decreases from 208.191 to 202.281 MiB on SSD and 206.910 to 201.793 MiB on SMB. One separate plan-construction observation rises from 1.970 to 5.666 ms;
 that cost is included in native collection. The manifest reduces full subtree keys 24,495 to
 2,880, with 21,615 compact keys and explicit participating-TEF fallbacks. Scope constructions
 fall 5,877,564 to 38,863, expansions 5,511,000 to 18,048 and comparisons 6,164,954 to 4,034.
@@ -142,7 +141,7 @@ fall 5,877,564 to 38,863, expansions 5,511,000 to 18,048 and comparisons 6,164,9
 The invariant TGC uses one effective variable and five distinct predicates rather than signing
 20 expressions/20 scope lists on every lookup. Selected reference paths and parsed-file identity
 remain in its key. TGC/TBC each evaluate once and reuse 479 times; TEF still evaluates 480 times.
-The separate phase diagnostic reports context/dependency CPU 17.390625 to 2.718750 s; event,
+The separate phase diagnostic reports context/dependency CPU 17.390625 to 2.703125 s; event,
 variable, signature and fragment phase details are in the bundle and excluded from native timing.
 
 **Recommendation: retain A and B in this draft.** Both improve independently in repeated matched
@@ -157,10 +156,28 @@ Draft [PR #41](https://github.com/phantom-branch/PyTuflow/pull/41) targets
 checkout and pre-existing local `.gitignore` edit were preserved. No extra PR/worktree,
 virtual environment, model edit, solver, merge, release or production multiprocessing.
 
-At production source `9d70faf`, Windows Python 3.12/3.14 combined contracts and paired consumer,
+At earlier source `9d70faf`, Windows Python 3.12/3.14 combined contracts and paired consumer,
 deferred tests, complete public example parity, integration differential and fast source
 contracts pass. Original-library/wheel CI was still running when this evidence was written.
 The final documentation head runs the combined Windows matrix again. The PR description is the
 live receipt for exact-head CI and the newly requested Codex review; keep this PR draft until
 those gates finish and any findings are resolved. No Windows 3.12 interpreter is installed
 locally; its validation is hosted. Linux execution and cold-storage behaviour remain unmeasured.
+
+
+## Review corrections
+
+The first exact-head Codex review found that selected flag/event-definition alternatives such as
+`A | !B` lost the negative status of the exploded `!B` component. Fixed in `3812ed5` by retaining
+only positive exploded membership alternatives, matching ordinary comparison rules. Both direct
+scope and complete variable/dependency result regressions pass; the P2 thread is addressed and resolved.
+
+A separate reproduced collision involved late Unicode TEF filename substitutions. Token proofs,
+expression binding guards, full keys and filename-selection guards now match Context's uppercase
+replacement-key lookup, including final sigma, dotless i and long s. These fixtures compare complete
+ordinary uncached, ordinary cached and fragment outputs. TEF-dependent inline Read File names also
+receive explicit ordinary fallback. All native parity/timing checks were repeated after these fixes;
+pre-review data remain separately labelled and do not establish correctness of the earlier source.
+
+The final-source local suite passes 557 tests and the paired consumer suite passes 119, zero skips.
+A new review of the final documentation head is requested after publishing these corrected receipts.

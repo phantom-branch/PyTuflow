@@ -1,0 +1,47 @@
+import hashlib,json,pathlib,subprocess,sys,time
+import psutil
+r=pathlib.Path(__file__).parent
+start=time.monotonic()
+while True:
+ busy=[]
+ for proc in psutil.process_iter(['cmdline']):
+  try:
+   if any(pathlib.Path(a).name in ('attribution.py','parity_worker.py') for a in proc.info['cmdline'] or []):busy.append(proc.pid)
+  except (psutil.Error,OSError):pass
+ if not busy:break
+ assert time.monotonic()-start<400,'Diagnostic processes did not finish'
+ time.sleep(3)
+print('Diagnostics finished; native measurement starts',flush=True)
+files={}
+for folder in ('NativeScope_SSD_20261026','NativeScope_20261026'):
+ files.update(json.loads((r.parent/folder/'source-control-hashes.json').read_text()))
+d=json.loads((r/'review-config.json').read_text())
+files[d['runs_json']]=hashlib.sha256(pathlib.Path(d['runs_json']).read_bytes()).hexdigest()
+def guard():assert all(hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()==h for p,h in files.items()),'Input changed'
+guard()
+expected=json.loads((r/'parity-uncached.json').read_text())['record_sha256']
+for variant in ('scope','manifest','combined'):
+ name='reviewed-SSD-parity-'+variant
+ with (r/(name+'.log')).open('w') as log:
+  subprocess.run([sys.executable,str(r/'review_parity_worker.py'),variant,'fragment',name],stdout=log,stderr=subprocess.STDOUT,check=True,timeout=180)
+ result=json.loads((r/(name+'.json')).read_text());assert result['passed'] and result['record_sha256']==expected
+ print('Guarded SSD parity passed: '+variant,flush=True)
+import os
+smb_env=dict(os.environ,PRIVATE_PARITY_CONFIG=str(r/'review-smb-config.json'))
+with (r/'reviewed-SMB-combined.log').open('w') as log:
+ subprocess.run([sys.executable,str(r/'review_parity_worker.py'),'combined','fragment','reviewed-SMB-combined'],env=smb_env,stdout=log,stderr=subprocess.STDOUT,check=True,timeout=180)
+smbr=[]
+for name in ('guarded-SMB-uncached','guarded-SMB-parent','reviewed-SMB-combined'):
+ smbr.append(json.loads((r/(name+'.json')).read_text()))
+assert all(row['passed'] for row in smbr) and len({row['record_sha256'] for row in smbr})==1
+rows=[]
+for variant,storage,order in [('scope','SSD','ABBA'),('manifest','SSD','BAAB'),('combined','SSD','ABBA'),('combined','SMB','BAAB')]:
+ config=r/('review-config.json' if storage=='SSD' else 'review-smb-config.json')
+ for index,revision in enumerate(order,1):
+  guard();name=f'reviewed-{storage}-{variant}-{index}-{revision}'
+  with (r/(name+'.log')).open('w') as log:
+   subprocess.run([sys.executable,str(r/'variant_measure.py'),variant,'--config',str(config),'--revision',revision,'--name',name],stdout=log,stderr=subprocess.STDOUT,check=True,timeout=150)
+  row=json.loads((r/(name+'.json')).read_text());row.update(variant=variant,storage=storage,position=index)
+  rows.append(row);guard();(r/'reviewed-timings.json').write_text(json.dumps(rows,indent=2))
+  print(json.dumps({'variant':variant,'storage':storage,'revision':revision,'wall':row['end_to_end_seconds'],'cpu':row['cpu_seconds'],'passed':row['passed']}),flush=True)
+(r/'reviewed-stability.json').write_text(json.dumps({'passed':True,'files':len(files)},indent=2))

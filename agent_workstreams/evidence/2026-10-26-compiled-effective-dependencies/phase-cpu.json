@@ -41,6 +41,63 @@
       "contexts": 480
     },
     "seconds": {
+      "parse_wall_seconds": 0.7224637000181247,
+      "compilation_wall_seconds": 0.00566570000955835,
+      "event_cpu_seconds": 0.15625,
+      "variable_cpu_seconds": 0.015625,
+      "signature_cpu_seconds": 0.59375,
+      "fragment_exclusive_cpu_seconds": 1.65625,
+      "context_dependency_cpu_seconds": 2.703125,
+      "context_dependency_wall_seconds": 2.7245801000099164
+    },
+    "includes": [
+      {
+        "kind": "TGC",
+        "full_key_expressions": 20,
+        "full_key_scopes": 20,
+        "manifests": [
+          {
+            "variables": 1,
+            "predicates": 5,
+            "expressions": 19
+          }
+        ]
+      },
+      {
+        "kind": "TBC",
+        "full_key_expressions": 8,
+        "full_key_scopes": 8,
+        "manifests": [
+          {
+            "variables": 0,
+            "predicates": 4,
+            "expressions": 7
+          }
+        ]
+      },
+      {
+        "kind": "TEF",
+        "full_key_expressions": 56,
+        "full_key_scopes": 56,
+        "manifests": [
+          {
+            "variables": 0,
+            "predicates": 55,
+            "expressions": 55
+          }
+        ]
+      }
+    ],
+    "note": "Separate diagnostic; process clocks have finite resolution; exclusive values include observation overhead and must not be added to native acceptance timings.",
+    "source_sha": "3812ed59af3e7e7e9e1addc8922957ef78621054"
+  },
+  "pre_review_combined": {
+    "variant": "combined",
+    "instrumented": true,
+    "counts": {
+      "contexts": 480
+    },
+    "seconds": {
       "parse_wall_seconds": 0.7123885000182781,
       "compilation_wall_seconds": 0.005413400009274483,
       "event_cpu_seconds": 0.046875,

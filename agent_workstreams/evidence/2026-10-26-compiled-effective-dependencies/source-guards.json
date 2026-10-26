@@ -6,6 +6,12 @@
     "matches_snapshot": true
   },
   "B": {
+    "sha": "3812ed59af3e7e7e9e1addc8922957ef78621054",
+    "python_files": 464,
+    "source_sha256": "b2ee38ca06260a066f90110d87b7c361b9294b6d1e2b3228582b7ab07bead118",
+    "matches_snapshot": true
+  },
+  "previous_candidate": {
     "sha": "9d70faf74d0bb703f58c4c40e7e3c5ea94db6613",
     "python_files": 464,
     "source_sha256": "1618c31749515897a7da9c34b8b9ac5e8d2143e19ec2ade4ac46726e1882b634",

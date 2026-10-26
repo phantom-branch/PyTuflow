@@ -3,7 +3,7 @@
   "completed_local_date": "2026-10-27",
   "timezone": "Australia/Perth",
   "parent_sha": "36ad04bd7cb045c48f3b77e8794c48a956c90c06",
-  "source_sha": "9d70faf74d0bb703f58c4c40e7e3c5ea94db6613",
+  "source_sha": "3812ed59af3e7e7e9e1addc8922957ef78621054",
   "consumer_sha": "a710f24ffb1698e949937f56a0212b6ae599e54e",
   "consumer_interface_verified_identical_to_PR161_sha": "04999e77d497173294f43e137dedbd0bde60d88a",
   "contexts": 480,
@@ -42,5 +42,20 @@
     "No Linux runtime measurement; path matching retains the existing evaluator policy.",
     "Dynamic inline Read File remains an explicit ordinary fallback, preserving existing parser limitations.",
     "Profiles, phase clocks and preparation counters are separate diagnostics and excluded from native acceptance timing."
+  ],
+  "previous_source_shas": [
+    "9d70faf74d0bb703f58c4c40e7e3c5ea94db6613",
+    "9acdfa61f24196bfad93bf3adf360b0b49024bdc"
+  ],
+  "corrected_orders": {
+    "scope_SSD": "ABBA",
+    "manifest_SSD": "BAAB",
+    "combined_SSD": "ABBA",
+    "combined_SMB": "BAAB"
+  },
+  "review_corrections": [
+    "Discard negative exploded alternatives in flag and event-definition membership.",
+    "Use Context uppercase replacement-key equivalence for Unicode TEF proof, binding and include-selection guards.",
+    "Include TEF-dependent inline Read File names in explicit ordinary fallback."
   ]
 }
