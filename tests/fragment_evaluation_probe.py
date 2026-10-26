@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from time import perf_counter_ns
 from typing import Any
 from unittest.mock import patch
@@ -27,6 +27,9 @@ class _InputRow:
     hits: int = 0
     misses: int = 0
     key_ns: int = 0
+    first_local_misses: int = 0
+    repeated_local_misses: int = 0
+    _local_signatures: set[tuple[Any, ...]] = field(default_factory=set, repr=False)
 
 
 class FragmentEvaluationProbe:
@@ -82,6 +85,19 @@ class FragmentEvaluationProbe:
                 row.hits += 1
             else:
                 row.misses += 1
+                # The first expression/scope pair describes this input
+                # itself; the remaining key components describe descendants
+                # (or loaded database rows). A new *subtree* key with an
+                # already seen local signature identifies descendant-driven
+                # churn. Retain values only in this private probe; never emit
+                # them in the JSON report.
+                values, scopes = key[1]
+                local = (values[0], scopes[0])
+                if local in row._local_signatures:
+                    row.repeated_local_misses += 1
+                else:
+                    row.first_local_misses += 1
+                    row._local_signatures.add(local)
             if self._runs:
                 recent = self._runs[-1]
                 recent["lookups"] += 1
@@ -131,6 +147,8 @@ class FragmentEvaluationProbe:
                 "lookups": row.lookups,
                 "hits": row.hits,
                 "misses": row.misses,
+                "new_local_signature_misses": row.first_local_misses,
+                "repeated_local_signature_misses": row.repeated_local_misses,
                 "key_ns": row.key_ns,
             })
         misses_per_run = [run["misses"] for run in self._runs]
@@ -148,9 +166,18 @@ class FragmentEvaluationProbe:
             "lookups": hits + misses,
             "hits": hits,
             "misses": misses,
+            "misses_with_new_local_signature": sum(row.first_local_misses for row in rows),
+            "misses_with_reused_local_signature": sum(row.repeated_local_misses for row in rows),
+            "local_signature_note": (
+                "Repeated local signatures on a new subtree key indicate varying descendants/database rows; "
+                "this is not proof that the parent evaluation may be removed"
+            ),
             "hit_rate_percent": round(100 * hits / (hits + misses), 3) if hits + misses else 0.0,
             "key_inclusive_ns": self.lookup_ns,
-            "key_time_warning": "Key timings include nested translate/scope calls and instrumentation; not exclusive CPU time",
+            "key_time_warning": (
+                "Key timings include nested translate/scope calls and instrumentation; "
+                "not exclusive CPU time"
+            ),
             "misses_per_context": {
                 "minimum": min(misses_per_run, default=0),
                 "maximum": max(misses_per_run, default=0),
@@ -176,6 +203,8 @@ class FragmentEvaluationProbe:
                     "lookups": row.lookups,
                     "hits": row.hits,
                     "misses": row.misses,
+                    "new_local_signature_misses": row.first_local_misses,
+                    "repeated_local_signature_misses": row.repeated_local_misses,
                     "key_inclusive_ns": row.key_ns,
                 }
                 for row in ordered[:top]
