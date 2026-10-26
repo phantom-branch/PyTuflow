@@ -37,7 +37,12 @@ def test_fragment_probe_counts_match_parser_without_changing_runs(tmp_path: Path
     assert result.runs == ordinary.runs
     assert report["run_count"] == report["contexts_constructed"] == len(flags)
     assert report["misses"] == result.fragment_evaluations
-    assert report["misses_with_new_local_signature"] + report["misses_with_reused_local_signature"] == report["misses"]
+    assert (
+        report["misses_with_new_local_signature"]
+        + report["misses_with_reused_local_signature"]
+        + report["misses_with_identical_uncached_key"]
+        == report["misses"]
+    )
     assert report["hits"] == result.fragment_reuses
     assert report["lookups"] == result.fragment_evaluations + result.fragment_reuses
     assert report["hit_rate_percent"] > 0
@@ -84,6 +89,27 @@ def test_parent_misses_can_be_attributed_to_varying_children(tmp_path: Path) -> 
     assert parent["repeated_local_signature_misses"] >= 1
     child = report["by_input_type"]["GridInput"]
     assert child["new_local_signature_misses"] >= 2
+
+
+def test_full_cache_or_failed_seeding_does_not_mimic_descendant_change(tmp_path: Path) -> None:
+    """The same complete key can miss repeatedly when caching is disabled."""
+    from unittest.mock import patch
+
+    top = tmp_path / "model.tcf"
+    top.write_text("Read Grid Zpts == static.tif\n", encoding="utf-8")
+    model = TCF(top)
+    flags = ["-e1 A", "-e1 A", "-e1 A", "-e1 A"]
+    observer = FragmentEvaluationProbe()
+    with patch.object(fragment, "_LIMIT", 0), observer.observe():
+        result = model.collect_file_dependencies(flags)
+
+    report = observer.snapshot(result)
+    assert result.passed and result.fallback_runs == 0
+    assert report["misses"] == 4
+    assert report["hits"] == 0
+    assert report["misses_with_new_local_signature"] == 1
+    assert report["misses_with_reused_local_signature"] == 0
+    assert report["misses_with_identical_uncached_key"] == 3
 
 
 def test_probe_handles_complete_fallback_without_leaking_source(tmp_path: Path) -> None:
