@@ -464,29 +464,28 @@ class TuflowPath(Path):
                 yield from Path(self).glob(str(pattern_value))
                 return
             file_pattern = Path(pattern_value)
-            if any(ch in str(file_pattern.parent) for ch in '*?['):
-                # Never relax directory-component matching.
-                yield from Path(self).glob(str(pattern_value))
-                return
-            directory = Path(self) / file_pattern.parent
-            if not directory.is_dir():
-                return
+            directory_pattern = str(file_pattern.parent)
+            # Glob directory components with Python's *strict* POSIX matcher,
+            # then apply the selected policy only to the final filename.
+            if any(ch in directory_pattern for ch in '*?['):
+                directories = Path(self).glob(directory_pattern)
+            else:
+                directories = (Path(self) / file_pattern.parent,)
             wildcard = any(ch in file_pattern.name for ch in '*?[')
-            if not wildcard and (directory / file_pattern.name).exists():
-                yield directory / file_pattern.name
-                return
-            try:
-                candidates = tuple(directory.iterdir())
-            except OSError:
-                raise
-            matches = [
-                candidate for candidate in candidates
-                if fnmatch.fnmatchcase(candidate.name.casefold(), file_pattern.name.casefold())
-                and (case_sensitivity != 1 or fnmatch.fnmatchcase(candidate.stem, file_pattern.stem))
-            ]
-            if not wildcard and len(matches) > 1:
-                raise ValueError(f'Ambiguous TUFLOW -cs{case_sensitivity} filename: {file_pattern}')
-            yield from matches
+            for directory in directories:
+                if not directory.is_dir():
+                    continue
+                if not wildcard and (directory / file_pattern.name).exists():
+                    yield directory / file_pattern.name
+                    continue
+                matches = [
+                    candidate for candidate in directory.iterdir()
+                    if fnmatch.fnmatchcase(candidate.name.casefold(), file_pattern.name.casefold())
+                    and (case_sensitivity != 1 or fnmatch.fnmatchcase(candidate.stem, file_pattern.stem))
+                ]
+                if not wildcard and len(matches) > 1:
+                    raise ValueError(f'Ambiguous TUFLOW -cs{case_sensitivity} filename: {file_pattern}')
+                yield from matches
 
         p = TuflowPath(pattern)
         self_db, self_lyrname = self._split_db_and_lyr()
