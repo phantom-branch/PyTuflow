@@ -75,12 +75,15 @@ class TuflowValueExpander:
             else:
                 if cmd.should_add_mif_extension(p.strip(), cnt, i):
                     p = f'{p.strip()}.mif'
+                # -cs1/-cs2 relax the final *filename* only, never the
+                # name of an output/input directory supplied as a folder.
+                is_folder = cmd.is_folder(p.strip(), cnt, i)
                 if cf == Path():
-                    yield str(TuflowPath(p.strip()) if self.deferred else
+                    yield str(TuflowPath(p.strip()) if self.deferred or is_folder else
                               TuflowPath.init_case_policy_path(p.strip(), case_sensitivity=self.case_sensitivity))
                 else:
                     base = TuflowPath(cf).parent
-                    yield str(base / p.strip() if self.deferred else
+                    yield str(base / p.strip() if self.deferred or is_folder else
                               base / TuflowPath.init_case_policy_path(
                                   p.strip(), base, self.case_sensitivity))
 
