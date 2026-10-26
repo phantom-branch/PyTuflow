@@ -34,6 +34,7 @@ class _Source:
     command_text: str
     hits: int = 0
     misses: int = 0
+    inactive_skips: int = 0
     key_ns: int = 0
     eval_exclusive_ns: int = 0
     hit_exclusive_ns: list[int] = field(default_factory=list)
@@ -222,6 +223,11 @@ class PrivateFragmentAttribution:
                             exclusive_ns,
                         )
                     )
+                elif succeeded:
+                    # Early scope selection intentionally returns an immutable
+                    # empty fragment without a key or a cache lookup. This is
+                    # successful work avoided, not a failed evaluation.
+                    source.inactive_skips += 1
                 else:
                     self.failed_calls += 1
 
@@ -236,6 +242,7 @@ class PrivateFragmentAttribution:
         """Safe-to-share counters ONLY; never include private command/file strings."""
         hits = sum(source.hits for source in self._sources.values())
         misses = sum(source.misses for source in self._sources.values())
+        inactive_skips = sum(source.inactive_skips for source in self._sources.values())
         if result.fallback_runs == 0 and self.failed_calls == 0 and (
             hits != result.fragment_reuses or misses != result.fragment_evaluations
         ):
@@ -252,6 +259,7 @@ class PrivateFragmentAttribution:
                 "lookups": source.hits + source.misses,
                 "hits": source.hits,
                 "misses": source.misses,
+                "inactive_skips": source.inactive_skips,
                 "key_ns": source.key_ns,
                 "evaluate_exclusive_ns": source.eval_exclusive_ns,
             })
@@ -267,6 +275,8 @@ class PrivateFragmentAttribution:
             "instrumented_not_production_timing": True,
             "cache_hits": hits,
             "cache_misses": misses,
+            "inactive_scope_skips": inactive_skips,
+            "full_fragment_keys_avoided": inactive_skips,
             "lookup_trace_rows": len(self._lookups),
             "source_input_slots": len(self._sources),
             "cached_fragment_objects_observed": len(self._fragments),
@@ -286,6 +296,7 @@ class PrivateFragmentAttribution:
                     "input_type": source.kind,
                     "hits": source.hits,
                     "misses": source.misses,
+                    "inactive_skips": source.inactive_skips,
                     "key_inclusive_ms": round(source.key_ns / 1_000_000, 6),
                     "evaluate_exclusive_ms": round(source.eval_exclusive_ns / 1_000_000, 6),
                 }
@@ -358,7 +369,7 @@ class PrivateFragmentAttribution:
             "private_input_totals.csv",
             (
                 "input_slot", "input_type", "owner_control_file", "source_line",
-                "command_name", "command_text", "lookups", "hits", "misses",
+                "command_name", "command_text", "lookups", "hits", "misses", "inactive_skips",
                 "distinct_fragment_objects", "key_inclusive_ms",
                 "hit_key_total_ms", "miss_key_total_ms",
                 "median_hit_key_ms", "p95_hit_key_ms",
@@ -378,6 +389,7 @@ class PrivateFragmentAttribution:
                     "lookups": s.hits + s.misses,
                     "hits": s.hits,
                     "misses": s.misses,
+                    "inactive_skips": s.inactive_skips,
                     "distinct_fragment_objects": len(s.fragment_ids),
                     "key_inclusive_ms": round(s.key_ns / 1_000_000, 6),
                     "hit_key_total_ms": round(sum(s.hit_key_ns) / 1_000_000, 6),
