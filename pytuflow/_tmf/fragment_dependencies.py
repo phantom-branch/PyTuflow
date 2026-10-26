@@ -174,6 +174,10 @@ class DependencyFragment:
     activations: tuple[DeferredDatabaseActivation, ...] = ()
 
 
+# No mutable state or provenance is associated with an inactive input.
+_EMPTY_FRAGMENT = DependencyFragment()
+
+
 def _join(fragments: Iterable[DependencyFragment]) -> DependencyFragment:
     commands: list[BatchInputCommand] = []
     refs: list[BatchInputReference] = []
@@ -399,66 +403,69 @@ class _Plan:
         from .inp.cf import ControlFileInput, select_deferred_children
         from .inp.inp_run_state import InputRunState
 
+        # Inactive inputs cannot contribute commands or dependencies. Avoid
+        # translating their RHS or signing descendant inputs and database rows.
+        # Existing per-run scope caching handles flag, event and variable changes.
+        if not ctx.in_context_by_scope(inp.scope):
+            return _EMPTY_FRAGMENT
+
         key = self._key(inp, ctx)
         prior = self.cache.get(key, self.pending.get(key))
         if prior is not None:
             self.reuses += 1
             return prior
         self.evaluations += 1
-        if not ctx.in_context_by_scope(inp.scope):
-            result = DependencyFragment()
-        else:
-            if str(inp.lhs).upper() == "PAUSE":
-                raise ValueError(f"Pause command encountered: {inp.rhs}")
-            # Includes are projected without constructing their mutable child
-            # tree. Leaves use their existing evaluator once per signature.
-            state = (
-                cast(Any, InputRunState)(inp, ctx, None)
-                if type(inp) is ControlFileInput
-                else inp.context(context=ctx, parent=None)
+        if str(inp.lhs).upper() == "PAUSE":
+            raise ValueError(f"Pause command encountered: {inp.rhs}")
+        # Includes are projected without constructing their mutable child
+        # tree. Leaves use their existing evaluator once per signature.
+        state = (
+            cast(Any, InputRunState)(inp, ctx, None)
+            if type(inp) is ControlFileInput
+            else inp.context(context=ctx, parent=None)
+        )
+        refs: tuple[FileReference, ...] = tuple(state.file_references)
+        descriptor = BatchInputCommand(
+            str(state.uuid),
+            0,
+            state._command.parent,
+            state.line_number,
+            str(state.lhs),
+            str(state._command.original_text),
+            len(refs),
+        )
+        records = tuple(
+            BatchInputReference(
+                descriptor.input_uuid, 0, descriptor.owner_control_file, descriptor.line_number, ref
             )
-            refs: tuple[FileReference, ...] = tuple(state.file_references)
-            descriptor = BatchInputCommand(
-                str(state.uuid),
-                0,
-                state._command.parent,
-                state.line_number,
-                str(state.lhs),
-                str(state._command.original_text),
-                len(refs),
-            )
-            records = tuple(
-                BatchInputReference(
-                    descriptor.input_uuid, 0, descriptor.owner_control_file, descriptor.line_number, ref
-                )
-                for ref in refs
-            )
-            activations: list[DeferredDatabaseActivation] = []
-            sources: list[DeferredDatabaseSource] = []
-            for ref in refs:
-                if ref.requires_database_scan:
-                    if (
-                        ref.unresolved_variables
-                        or ref.requires_directory_scan
-                        or ref.database_kind in (None, "unknown")
-                    ):
-                        raise ValueError(f"Cannot establish database activation: {ref.path_pattern}")
-                    activations.append(
-                        DeferredDatabaseActivation(
-                            0,
-                            descriptor.input_uuid,
-                            ref.database_kind,
-                            ref.path_pattern,
-                            ref.origin,
-                            descriptor.owner_control_file,
-                            descriptor.line_number,
-                        )
+            for ref in refs
+        )
+        activations: list[DeferredDatabaseActivation] = []
+        sources: list[DeferredDatabaseSource] = []
+        for ref in refs:
+            if ref.requires_database_scan:
+                if (
+                    ref.unresolved_variables
+                    or ref.requires_directory_scan
+                    or ref.database_kind in (None, "unknown")
+                ):
+                    raise ValueError(f"Cannot establish database activation: {ref.path_pattern}")
+                activations.append(
+                    DeferredDatabaseActivation(
+                        0,
+                        descriptor.input_uuid,
+                        ref.database_kind,
+                        ref.path_pattern,
+                        ref.origin,
+                        descriptor.owner_control_file,
+                        descriptor.line_number,
                     )
-                    sources.extend(cast(Any, TCFRunState)._deferred_sources_for_input(state, ref.database_kind, ref))
-            result = DependencyFragment((descriptor,), records, tuple(sources), tuple(activations))
-            if type(inp) is ControlFileInput:
-                children = select_deferred_children(inp, refs)
-                result = _join((result, *(self.evaluate(sub, ctx) for child in children for sub in child.inputs)))
+                )
+                sources.extend(cast(Any, TCFRunState)._deferred_sources_for_input(state, ref.database_kind, ref))
+        result = DependencyFragment((descriptor,), records, tuple(sources), tuple(activations))
+        if type(inp) is ControlFileInput:
+            children = select_deferred_children(inp, refs)
+            result = _join((result, *(self.evaluate(sub, ctx) for child in children for sub in child.inputs)))
         if len(self.cache) + len(self.pending) < _LIMIT:
             self.pending[key] = result
         return result
