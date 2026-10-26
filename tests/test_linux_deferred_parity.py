@@ -267,3 +267,95 @@ def test_linux_folder_command_is_not_case_relaxed_at_cs2(tmp_path: Path) -> None
     config = TCFConfig(control_file=tmp_path / "model.tcf", init_from_tcf=False, case_sensitivity=2)
     command = Command("Output Folder == outputs", config)
     assert Path(command.value_expanded_path).name == "outputs"
+
+
+@pytest.mark.parametrize(
+    ("level", "include_name", "event_name", "expected"),
+    [
+        (0, "extra.trd", "events.tef", False),
+        (1, "Extra.trd", "Events.tef", True),
+        (1, "extra.trd", "events.tef", False),
+        (2, "extra.trd", "events.tef", True),
+    ],
+)
+def test_preliminary_scans_match_nested_files_under_case_policy(
+    tmp_path: Path, level: int, include_name: str, event_name: str, expected: bool,
+) -> None:
+    """Variables, settings and event definitions must agree with file loading."""
+    (tmp_path / "Extra.TRD").write_text(
+        "Set Variable FROM_INCLUDE == included\n"
+        "GIS Format == SHP\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "Events.TEF").write_text(
+        "Define Event == CASE_EVENT\n"
+        "BC Event Source == _event_ | case.csv\n"
+        "End Define\n",
+        encoding="utf-8",
+    )
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        f"Read File == {include_name}\n"
+        f"Event File == {event_name}\n",
+        encoding="utf-8",
+    )
+    config = TCFConfig(tcf=tcf, case_sensitivity=level)
+    assert ("FROM_INCLUDE" in config.variables) is expected
+    assert ("CASE_EVENT" in config.event_db) is expected
+    # Format directives inside includes must be discovered by the third pass.
+    from pytuflow._tmf.gis import GisFormat
+    assert (config.gis_format == GisFormat.SHP) is expected
+
+
+def test_preliminary_nested_include_uses_containing_directory(tmp_path: Path) -> None:
+    """A second-level include is located relative to the containing TRD."""
+    folder = tmp_path / "sub"
+    folder.mkdir()
+    (folder / "Extra.TRD").write_text(
+        "Read File == nested.trd\n",
+        encoding="utf-8",
+    )
+    (folder / "Nested.TRD").write_text(
+        "Set Variable NESTED == yes\n", encoding="utf-8",
+    )
+    tcf = tmp_path / "main.tcf"
+    tcf.write_text("Read File == sub/extra.trd\n", encoding="utf-8")
+    assert "NESTED" in TCFConfig(tcf=tcf, case_sensitivity=2).variables
+    assert "NESTED" not in TCFConfig(tcf=tcf, case_sensitivity=0).variables
+
+
+@pytest.mark.parametrize(
+    ("level", "database_value", "resolved"),
+    [
+        (0, "data.gpkg", False),
+        (1, "Data.GPKG", True),
+        (1, "data.gpkg", False),
+        (2, "data.gpkg", True),
+    ],
+)
+def test_spatial_database_stores_physical_filename(
+    tmp_path: Path, level: int, database_value: str, resolved: bool,
+) -> None:
+    """Layer-only commands use the actual case-matched GPKG, not the raw alias."""
+    actual = tmp_path / "Data.gpkg"
+    actual.touch()
+    config = TCFConfig(control_file=tmp_path / "model.tcf",
+                       init_from_tcf=False, case_sensitivity=level)
+    config.set_spatial_database(database_value)
+    assert (config.spatial_database == actual) is resolved
+    from pytuflow._tmf.parsers.command import Command
+    cmd = Command("Read GIS Code == code", config)
+    db = TuflowPath(cmd.value_expanded_path).dbpath
+    assert (db == actual) is resolved
+
+
+def test_spatial_database_case_policy_rejects_wrong_directory(tmp_path: Path) -> None:
+    """Explicit -cs2 must not repair directory components."""
+    (tmp_path / "Data").mkdir()
+    actual = tmp_path / "Data" / "Source.gpkg"
+    actual.touch()
+    cfg = TCFConfig(control_file=tmp_path / "model.tcf",
+                    init_from_tcf=False, case_sensitivity=2)
+    cfg.set_spatial_database("data/source.gpkg")
+    assert cfg.spatial_database == tmp_path / "data/source.gpkg"
+    assert not cfg.spatial_database.exists()
