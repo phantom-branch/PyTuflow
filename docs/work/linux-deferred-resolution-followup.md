@@ -37,11 +37,10 @@ selected explicitly when constructing the model, for example:
 
 ```python
 from pytuflow import TCF
-from pytuflow._tmf.settings import TCFConfig
 
 model = TCF("runs/model.tcf")  # Linux strict -cs0; Windows native semantics
-model_cs1 = TCF("runs/model.tcf", config=TCFConfig(case_sensitivity=1))
-model_cs2 = TCF("runs/model.tcf", config=TCFConfig(case_sensitivity=2))
+model_cs1 = TCF("runs/model.tcf", case_sensitivity=1)
+model_cs2 = TCF("runs/model.tcf", case_sensitivity=2)
 ```
 
 Linux `-cs1` allows case-insensitive **extensions only**; `-cs2`
@@ -49,7 +48,11 @@ allows case-insensitive **final filename and extension**, but parent
 directory component spelling always remains strict. Windows continues to use
 its native case-insensitive filesystem matching at all configured levels.
 
-The policy is set at **model construction** (before the build-state is
+The public `TCF(..., case_sensitivity=level)` argument sets the parser policy;
+`TCFConfig` also carries it internally and can be explicitly supplied with
+`tcf` already set. Passing both `case_sensitivity` and `config` is rejected
+rather than silently selecting one. The policy is set at **model construction**
+(before the build-state is
 parsed) to prevent a misleading partial policy override on a later run
 context. Eager discovery and explicit `.files` materialisation use the
 configured mode. Deferred `.file_references` retain the original lexical
