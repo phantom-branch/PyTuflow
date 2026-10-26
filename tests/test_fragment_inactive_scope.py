@@ -55,7 +55,7 @@ def test_fourteen_var_cell_size_declarations_skip_thirteen_keys(tmp_path: Path) 
     top = tmp_path / "model.tcf"
     top.write_text("\n".join((*lines, "")), encoding="utf-8")
     model = TCF(top)
-    flags = ["-s4 32M -e1 A", "-s4 03M -e1 B", "-s4 32M -e1 C"]
+    flags = ["-s1 BASE -s4 32M -e1 A", "-s1 BASE -s4 03M -e1 B", "-s1 BASE -s4 32M -e1 C"]
     _four_path_parity(model, flags)
 
     result = model.collect_file_dependencies(flags)
