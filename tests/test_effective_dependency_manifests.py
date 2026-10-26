@@ -9,7 +9,7 @@ import pytest
 from pytuflow import TCF
 
 
-def assert_parity(model: TCF, flags: list[str]):
+def assert_parity(model: TCF, flags: list[str | dict[str, str]]):
     uncached = model.collect_batch_dependencies(flags, cache_scopes=False)
     cached = model.collect_batch_dependencies(flags)
     fragments = model.collect_file_dependencies(flags)
@@ -299,3 +299,92 @@ def test_custom_translation_hook_retains_full_key(tmp_path: Path) -> None:
         assert plan._key(model.inputs[0], ctx)[1][0] != "manifest"
         assert plan.manifest_fallbacks["custom-context-translation"] == 1
     assert_parity(model, ["-e1 A", "-e1 B"])
+
+
+@pytest.mark.parametrize(
+    "declared,exposed", [("\u03a3", "\u03c2"), ("I", "\u0131"), ("S", "\u017f")]
+)
+def test_unicode_tef_cascade_cannot_reuse_another_selected_file(
+    tmp_path: Path, declared: str, exposed: str
+) -> None:
+    # The first TEF pass exposes a Unicode case variant after its own turn.
+    (tmp_path / "events.tef").write_text(
+        f"Define Event == A\n BC Event Source == _{declared}_ | first\n"
+        f" BC Event Source == _x_ | _{exposed}_\nEnd Define\n"
+        f"Define Event == B\n BC Event Source == _{declared}_ | second\n"
+        f" BC Event Source == _x_ | _{exposed}_\nEnd Define\n",
+        encoding="utf-8",
+    )
+    for name in ("first", "second"):
+        (tmp_path / (name + ".tgc")).write_text(f"Read GIS Code == {name}.shp\n")
+    top = tmp_path / "model.tcf"
+    top.write_text(
+        f"Event File == events.tef\nGeometry Control File == _x_.tgc\nRead GIS Code == _{exposed}_.shp\n",
+        encoding="utf-8",
+    )
+    result = assert_parity(TCF(top), ["-e1 A", "-e1 B", "-e1 A"])
+    assert result.passed
+    assert [run.file_references[-1].path_pattern.name for run in result.runs] == [
+        "first.shp",
+        "second.shp",
+        "first.shp",
+    ]
+    assert [run.file_references[1].path_pattern.name for run in result.runs] == [
+        "first.tgc",
+        "second.tgc",
+        "first.tgc",
+    ]
+
+
+@pytest.mark.parametrize(
+    "declared,exposed", [("\u03a3", "\u03c2"), ("I", "\u0131"), ("S", "\u017f")]
+)
+def test_unicode_event_independence_certificate_is_conservative(
+    declared: str, exposed: str
+) -> None:
+    from pytuflow._tmf.effective_dependencies import EffectiveDependencyManifest
+    from pytuflow._tmf.fragment_dependencies import ExpressionPool, _FragmentContext
+    from pytuflow._tmf.settings import TCFConfig
+
+    manifest = EffectiveDependencyManifest(1, (), (), (f"_{exposed}_.shp",), (), None)
+    ctx = _FragmentContext("", TCFConfig(), ExpressionPool())
+    ctx.event_variables[f"_{declared}_"] = "different"
+    assert not manifest.event_independent(ctx)
+
+
+@pytest.mark.parametrize("kind,slot", [("Scenario", "s1"), ("Event", "e1")])
+def test_negative_alternative_keeps_variable_selection_and_full_records(
+    tmp_path: Path, kind: str, slot: str
+) -> None:
+    top = tmp_path / "model.tcf"
+    top.write_text(
+        "Set Variable Choice == base\n"
+        f"If {kind} == B\n Set Variable Choice == alternative\nEnd If\n"
+        "Read GIS Code == code_<<Choice>>.shp\n"
+    )
+    result = assert_parity(TCF(top), [{slot: "A | !B"}, {slot: "B"}, {slot: "A | !B"}])
+    assert result.passed
+    assert [run.file_references[-1].path_pattern.name for run in result.runs] == [
+        "code_base.shp",
+        "code_alternative.shp",
+        "code_base.shp",
+    ]
+
+
+def test_event_dependent_inline_read_file_uses_explicit_fallback(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "events.tef").write_text(
+        "Define Event == A\n BC Event Source == _file_ | first\nEnd Define\n"
+        "Define Event == B\n BC Event Source == _file_ | second\nEnd Define\n"
+    )
+    for name in ("first", "second"):
+        (tmp_path / (name + ".trd")).write_text(f"Read GIS Code == {name}.shp\n")
+    top = tmp_path / "model.tcf"
+    top.write_text("Event File == events.tef\nRead File == _file_.trd\n")
+    result = assert_parity(TCF(top), ["-e1 A", "-e1 B"])
+    assert result.fallback_runs == 2
+    assert (
+        result.fallback_reason
+        == "Dynamic inline Read File requires the ordinary evaluator"
+    )

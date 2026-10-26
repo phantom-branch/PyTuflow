@@ -84,10 +84,7 @@ class CompiledExpression:
         # they can participate; do not assume tokens have ~ delimiters.
         has_events = bool(ctx.event_variables) and (
             bool(self.variables)
-            or any(
-                str(key).casefold() in self.text.casefold()
-                for key in ctx.event_variables
-            )
+            or any(str(key).upper() in self.text.upper() for key in ctx.event_variables)
         )
         events = (
             tuple((key, str(value)) for key, value in ctx.event_variables.items())
@@ -205,6 +202,7 @@ class _FragmentContext(BatchContext):
                 name.lower()
                 for value in self._create_list(kind)
                 for part in Scope(kind, value).explode()
+                if not part.is_neg()
                 for name in part.names
             )
             self._compiled_flag_names[kind] = names
@@ -217,6 +215,7 @@ class _FragmentContext(BatchContext):
                         name.lower()
                         for key in keys
                         for part in Scope("EVENT DEFINE", key).explode()
+                        if not part.is_neg()
                         for name in part.names
                     ),
                 )
@@ -437,6 +436,13 @@ class _Plan:
         }
         self.command_types = {Command, EventCommand}
         self.roots = tuple(model.inputs)
+        self.event_tokens = (
+            tuple(
+                str(token).upper() for token in model.config.event_db.event_variables()
+            )
+            if model.config.event_db
+            else ()
+        )
         self.assignments = tuple(
             (inp, inp.command().parse_variable())
             for inp in model.find_input(lhs="set variable", recursive=True)
@@ -473,8 +479,9 @@ class _Plan:
         if getattr(inp.context, "__func__", None) is not method:
             raise NotImplementedError("Custom input context hook")
         inline = getattr(inp, "trd_input", None)
-        if inline is not None and any(
-            token in str(inline.rhs) for token in ("<<", "*", "?")
+        if inline is not None and (
+            any(token in str(inline.rhs) for token in ("<<", "*", "?"))
+            or any(token in str(inline.rhs).upper() for token in self.event_tokens)
         ):
             raise NotImplementedError(
                 "Dynamic inline Read File requires the ordinary evaluator"
@@ -619,9 +626,9 @@ class _Plan:
                         # before a later ordinary translation resolves _Y_.
                         # This applies even without any <<variable>> in the
                         # source expression.
-                        folded = value.casefold()
+                        folded = value.upper()
                         needs_bindings = any(
-                            str(token).casefold() in folded
+                            str(token).upper() in folded
                             for token in ctx.event_variables
                         )
                     binding = expression.bindings(ctx) if needs_bindings else ()
@@ -662,7 +669,7 @@ class _Plan:
             else str(cached_translation)
         )
         late = "<<" in translated or any(
-            str(token).lower() in translated.lower() for token in ctx.event_variables
+            str(token).upper() in translated.upper() for token in ctx.event_variables
         )
         selection_key = (id(inp), translated, expression.bindings(ctx) if late else ())
         prior = self.include_selections.get(

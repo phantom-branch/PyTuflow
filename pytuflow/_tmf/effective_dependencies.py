@@ -119,12 +119,14 @@ class EffectiveDependencyManifest:
         per run. Check intermediate passes too: a TEF token may disappear after
         a later variable pass. Arbitrary replacement chains use the full key.
         """
-        tokens = tuple(str(key).lower() for key in ctx.event_variables)
+        # Context normalises regex-matched replacement keys with upper().
+        # lower()/casefold() alone miss e.g. final sigma or dotless i.
+        tokens = tuple(str(key).upper() for key in ctx.event_variables)
         if not tokens:
             return True
         for text in self.expressions:
             for _ in range(len(self.variables) + 3):
-                if any(token in text.lower() for token in tokens):
+                if any(token in text.upper() for token in tokens):
                     return False
                 expanded = replace_exact_names("<<.+?>>", ctx.var_map, text)
                 if type(expanded) is not str:

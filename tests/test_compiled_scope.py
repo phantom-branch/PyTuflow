@@ -101,3 +101,25 @@ def test_custom_context_membership_hook_is_not_bypassed() -> None:
         ctx = _FragmentContext("-s1 A", TCFConfig(), ExpressionPool(), program)
         assert not program.enabled
         assert ctx.in_context_by_scope(scopes)
+
+
+def test_mixed_negative_flag_alternatives_match_original() -> None:
+    for kind, slot in (("SCENARIO", "s1"), ("EVENT", "e1")):
+        for available in ("A | !B", "!A | B", "A | !B | C", "A | !B | !C"):
+            flags = {slot: available}
+            ctx = _FragmentContext(flags, TCFConfig(), ExpressionPool(), ScopeProgram())
+            ordinary = Context(flags)
+            for required in ("A", "B", "C", "!A", "!B", "!C", "A | B", "!A | B"):
+                scopes = ScopeList([Scope(kind, required)])
+                assert ctx.in_context_by_scope(scopes) == ordinary.in_context_by_scope(
+                    scopes
+                )
+
+
+def test_mixed_negative_event_definition_alternatives_match_original() -> None:
+    ctx = _FragmentContext("-e1 rain", TCFConfig(), ExpressionPool(), ScopeProgram())
+    ordinary = Context("-e1 rain")
+    ctx.event_variables["A | !B"] = ordinary.event_variables["A | !B"] = "value"
+    for required in ("A", "B", "!A", "!B"):
+        scopes = ScopeList([Scope("EVENT", required)])
+        assert ctx.in_context_by_scope(scopes) == ordinary.in_context_by_scope(scopes)
