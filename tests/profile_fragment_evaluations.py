@@ -18,7 +18,7 @@ import cProfile
 import json
 import pstats
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 if __package__:
     from .fragment_evaluation_probe import FragmentEvaluationProbe
@@ -53,7 +53,8 @@ def load_run_flags(path: Path) -> list[str | dict[str, str]]:
 def top_functions(profile: cProfile.Profile, *, limit: int = 35) -> list[dict[str, Any]]:
     """Output only module basenames/function names; never private checkout paths."""
     records: list[dict[str, Any]] = []
-    for (filename, line, function), (primitive, calls, self_s, inclusive_s, _) in pstats.Stats(profile).stats.items():
+    stats = cast(Any, pstats.Stats(profile)).stats
+    for (filename, line, function), (primitive, calls, self_s, inclusive_s, _) in stats.items():
         path = filename.replace("\\", "/").lower()
         if "/pytuflow/_tmf/" not in path:
             continue
@@ -70,6 +71,44 @@ def top_functions(profile: cProfile.Profile, *, limit: int = 35) -> list[dict[st
         )
     records.sort(key=lambda row: row["self_seconds"], reverse=True)
     return records[:limit]
+
+
+def focus_functions(profile: cProfile.Profile) -> list[dict[str, Any]]:
+    """Return requested hot-path records even when they miss the top-N list."""
+    selected = {
+        "fragment_dependencies.py": {
+            "_key",
+            "evaluate",
+            "bindings",
+            "translate",
+            "_join",
+        },
+        "batch_dependencies.py": {
+            "in_context_by_scope",
+            "_append_dependency_record",
+        },
+        "context.py": {"in_context_by_scope", "translate"},
+        "dataclasses.py": {"replace"},
+    }
+    records: list[dict[str, Any]] = []
+    stats = cast(Any, pstats.Stats(profile)).stats
+    for (filename, line, function), (primitive, calls, self_s, inclusive_s, _) in stats.items():
+        module = filename.replace("\\", "/").rsplit("/", 1)[-1]
+        if function not in selected.get(module, set()):
+            continue
+        records.append(
+            {
+                "module": module,
+                "line": line,
+                "function": function,
+                "calls": calls,
+                "primitive_calls": primitive,
+                "self_seconds": round(self_s, 6),
+                "inclusive_seconds": round(inclusive_s, 6),
+            }
+        )
+    records.sort(key=lambda row: (row["module"], row["line"], row["function"]))
+    return records
 
 
 def main() -> None:
@@ -114,6 +153,7 @@ def main() -> None:
         report["note"] = "Instrumented diagnostics only; not a native or accepted production benchmark"
         if profiler is not None:
             report["profile_top_self_time"] = top_functions(profiler)
+            report["profile_focus_functions"] = focus_functions(profiler)
             report["profile_warning"] = "Python profiling substantially distorts wall time and may include nested calls"
     except Exception:
         # Never publish an incomplete report as successful diagnostics.

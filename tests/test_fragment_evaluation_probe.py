@@ -11,7 +11,7 @@ from pytuflow import TCF
 from pytuflow._tmf import fragment_dependencies as fragment
 
 from .fragment_evaluation_probe import FragmentEvaluationProbe
-from .profile_fragment_evaluations import load_run_flags
+from .profile_fragment_evaluations import focus_functions, load_run_flags
 
 
 def test_fragment_probe_counts_match_parser_without_changing_runs(tmp_path: Path) -> None:
@@ -41,6 +41,13 @@ def test_fragment_probe_counts_match_parser_without_changing_runs(tmp_path: Path
     assert report["hits"] == result.fragment_reuses
     assert report["lookups"] == result.fragment_evaluations + result.fragment_reuses
     assert report["hit_rate_percent"] > 0
+    assert len(report["run_progression"]) == len(flags)
+    assert [row["context"] for row in report["run_progression"]] == [1, 2, 3, 4]
+    assert sum(row["lookups"] for row in report["run_progression"]) == report["lookups"]
+    assert sum(row["hits"] for row in report["run_progression"]) == report["hits"]
+    assert sum(row["misses"] for row in report["run_progression"]) == report["misses"]
+    assert report["lookups_per_context"]["average"] > 0
+    assert report["misses_per_context"]["average"] > 0
     assert report["joins"]["calls"] >= len(flags)
     assert report["joins"]["commands_rebased"] >= len(flags)
     assert report["top_anonymous_input_slots"]
@@ -127,3 +134,25 @@ def test_help_does_not_load_gis_or_model(tmp_path: Path) -> None:
     assert process.returncode == 0, process.stderr
     assert "--runs-json" in process.stdout
     assert "--cprofile" in process.stdout
+
+
+def test_profile_focus_functions_include_join_key_and_dataclass_replace() -> None:
+    import cProfile
+    from dataclasses import dataclass, replace
+
+    from pytuflow._tmf.fragment_dependencies import DependencyFragment, _join
+
+    @dataclass(frozen=True)
+    class Record:
+        value: int
+
+    profile = cProfile.Profile()
+    profile.enable()
+    _join((DependencyFragment(), DependencyFragment()))
+    replace(Record(1), value=2)
+    profile.disable()
+
+    records = focus_functions(profile)
+    observed = {(row["module"], row["function"]) for row in records}
+    assert ("fragment_dependencies.py", "_join") in observed
+    assert ("dataclasses.py", "replace") in observed

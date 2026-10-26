@@ -152,6 +152,8 @@ class FragmentEvaluationProbe:
                 "key_ns": row.key_ns,
             })
         misses_per_run = [run["misses"] for run in self._runs]
+        lookups_per_run = [run["lookups"] for run in self._runs]
+        hits_per_run = [run["hits"] for run in self._runs]
         ordered = sorted(rows, key=lambda row: (-row.misses, -row.key_ns, row.slot))
         return {
             "schema_version": 1,
@@ -183,7 +185,36 @@ class FragmentEvaluationProbe:
                 "maximum": max(misses_per_run, default=0),
                 "first": misses_per_run[0] if misses_per_run else 0,
                 "last": misses_per_run[-1] if misses_per_run else 0,
+                "average": round(sum(misses_per_run) / len(misses_per_run), 3)
+                if misses_per_run
+                else 0.0,
             },
+            "lookups_per_context": {
+                "minimum": min(lookups_per_run, default=0),
+                "maximum": max(lookups_per_run, default=0),
+                "average": round(sum(lookups_per_run) / len(lookups_per_run), 3)
+                if lookups_per_run
+                else 0.0,
+            },
+            "hits_per_context": {
+                "minimum": min(hits_per_run, default=0),
+                "maximum": max(hits_per_run, default=0),
+                "average": round(sum(hits_per_run) / len(hits_per_run), 3)
+                if hits_per_run
+                else 0.0,
+            },
+            # Context ordinals and aggregate counters are safe to publish and
+            # show exactly where the invocation-local cache stabilises. Flags,
+            # paths, values and source identities remain private.
+            "run_progression": [
+                {
+                    "context": index,
+                    "lookups": run["lookups"],
+                    "hits": run["hits"],
+                    "misses": run["misses"],
+                }
+                for index, run in enumerate(self._runs, start=1)
+            ],
             "joins": {
                 "calls": self.join_calls,
                 "fragments": self.join_fragments,
