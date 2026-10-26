@@ -1,0 +1,126 @@
+[
+  {
+    "variant": "scope",
+    "storage": "SSD",
+    "candidate_sha": "9d70faf74d0bb703f58c4c40e7e3c5ea94db6613",
+    "baseline_sha": "36ad04bd7cb045c48f3b77e8794c48a956c90c06",
+    "A": {
+      "trials": 2,
+      "median_wall_seconds": 22.12287054999615,
+      "range_wall_seconds": [
+        18.856060799997067,
+        25.389680299995234
+      ],
+      "sample_sd_wall_seconds": 4.619966654141364,
+      "median_cpu_seconds": 21.9296875,
+      "median_peak_working_set_MiB": 208.3671875,
+      "median_context_wall_seconds": 21.088110950004193
+    },
+    "B": {
+      "trials": 2,
+      "median_wall_seconds": 6.868238600000041,
+      "range_wall_seconds": [
+        6.433282299985876,
+        7.303194900014205
+      ],
+      "sample_sd_wall_seconds": 0.615121098519652,
+      "median_cpu_seconds": 6.828125,
+      "median_peak_working_set_MiB": 208.037109375,
+      "median_context_wall_seconds": 6.063313099992229
+    },
+    "wall_reduction_percent": 68.9541256209121
+  },
+  {
+    "variant": "manifest",
+    "storage": "SSD",
+    "candidate_sha": "9d70faf74d0bb703f58c4c40e7e3c5ea94db6613",
+    "baseline_sha": "36ad04bd7cb045c48f3b77e8794c48a956c90c06",
+    "A": {
+      "trials": 2,
+      "median_wall_seconds": 18.39723385000252,
+      "range_wall_seconds": [
+        18.362953100004233,
+        18.43151460000081
+      ],
+      "sample_sd_wall_seconds": 0.04848030157590067,
+      "median_cpu_seconds": 18.375,
+      "median_peak_working_set_MiB": 208.06640625,
+      "median_context_wall_seconds": 17.60439100000076
+    },
+    "B": {
+      "trials": 2,
+      "median_wall_seconds": 15.822835100014345,
+      "range_wall_seconds": [
+        15.754552400001558,
+        15.891117800027132
+      ],
+      "sample_sd_wall_seconds": 0.09656632043353723,
+      "median_cpu_seconds": 15.8203125,
+      "median_peak_working_set_MiB": 202.396484375,
+      "median_context_wall_seconds": 15.068040549987927
+    },
+    "wall_reduction_percent": 13.99340124161016
+  },
+  {
+    "variant": "combined",
+    "storage": "SSD",
+    "candidate_sha": "9d70faf74d0bb703f58c4c40e7e3c5ea94db6613",
+    "baseline_sha": "36ad04bd7cb045c48f3b77e8794c48a956c90c06",
+    "A": {
+      "trials": 2,
+      "median_wall_seconds": 18.423101300009876,
+      "range_wall_seconds": [
+        18.387725800013868,
+        18.458476800005883
+      ],
+      "sample_sd_wall_seconds": 0.050028511870083066,
+      "median_cpu_seconds": 18.40625,
+      "median_peak_working_set_MiB": 208.21875,
+      "median_context_wall_seconds": 17.657040500009316
+    },
+    "B": {
+      "trials": 2,
+      "median_wall_seconds": 3.705710599984741,
+      "range_wall_seconds": [
+        3.6745609999925364,
+        3.7368601999769453
+      ],
+      "sample_sd_wall_seconds": 0.0440521867714724,
+      "median_cpu_seconds": 3.6953125,
+      "median_peak_working_set_MiB": 202.623046875,
+      "median_context_wall_seconds": 2.9437418000015896
+    },
+    "wall_reduction_percent": 79.88552231440667
+  },
+  {
+    "variant": "combined",
+    "storage": "SMB",
+    "candidate_sha": "9d70faf74d0bb703f58c4c40e7e3c5ea94db6613",
+    "baseline_sha": "36ad04bd7cb045c48f3b77e8794c48a956c90c06",
+    "A": {
+      "trials": 2,
+      "median_wall_seconds": 18.680409900000086,
+      "range_wall_seconds": [
+        18.665717199997744,
+        18.69510260000243
+      ],
+      "sample_sd_wall_seconds": 0.020778615611191917,
+      "median_cpu_seconds": 18.3125,
+      "median_peak_working_set_MiB": 207.060546875,
+      "median_context_wall_seconds": 17.642114550006227
+    },
+    "B": {
+      "trials": 2,
+      "median_wall_seconds": 4.0291165499947965,
+      "range_wall_seconds": [
+        3.752721199998632,
+        4.305511899990961
+      ],
+      "sample_sd_wall_seconds": 0.39088205254143416,
+      "median_cpu_seconds": 3.625,
+      "median_peak_working_set_MiB": 201.748046875,
+      "median_context_wall_seconds": 2.9194453000091016
+    },
+    "wall_reduction_percent": 78.43132687364222
+  }
+]

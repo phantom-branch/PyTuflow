@@ -1,0 +1,14 @@
+{
+  "A": {
+    "sha": "36ad04bd7cb045c48f3b77e8794c48a956c90c06",
+    "python_files": 462,
+    "source_sha256": "8a9450e1b7061c9089c3ab6459dd97edca3a679409bd2548d55302f9b9c53763",
+    "matches_snapshot": true
+  },
+  "B": {
+    "sha": "9d70faf74d0bb703f58c4c40e7e3c5ea94db6613",
+    "python_files": 464,
+    "source_sha256": "1618c31749515897a7da9c34b8b9ac5e8d2143e19ec2ade4ac46726e1882b634",
+    "matches_snapshot": true
+  }
+}

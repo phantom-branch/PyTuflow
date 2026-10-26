@@ -1,0 +1,53 @@
+{
+  "SSD": {
+    "uncached": {
+      "passed": true,
+      "runs": 480,
+      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93"
+    },
+    "cached": {
+      "passed": true,
+      "runs": 480,
+      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93"
+    },
+    "parent_fragment": {
+      "passed": true,
+      "runs": 480,
+      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93"
+    },
+    "scope": {
+      "passed": true,
+      "runs": 480,
+      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93"
+    },
+    "manifest": {
+      "passed": true,
+      "runs": 480,
+      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93"
+    },
+    "combined": {
+      "passed": true,
+      "runs": 480,
+      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93"
+    }
+  },
+  "SMB": {
+    "uncached": {
+      "passed": true,
+      "runs": 480,
+      "record_sha256": "318bcf175395c35066a8bc8dd65e7c757f20681d4d7930e52b666b810ecf17a7"
+    },
+    "parent_fragment": {
+      "passed": true,
+      "runs": 480,
+      "record_sha256": "318bcf175395c35066a8bc8dd65e7c757f20681d4d7930e52b666b810ecf17a7"
+    },
+    "combined": {
+      "passed": true,
+      "runs": 480,
+      "record_sha256": "318bcf175395c35066a8bc8dd65e7c757f20681d4d7930e52b666b810ecf17a7"
+    }
+  },
+  "storage_copy_control_bytes_and_flags_match": true,
+  "note": "Full recursive dataclass records, all tuple order/UUID/path/layer/database/selector/error fields. Deterministic UUIDs during parity parsing only; restored before evaluation. Fresh SMB cached ordinary mode was not repeated; SSD covers all six modes."
+}

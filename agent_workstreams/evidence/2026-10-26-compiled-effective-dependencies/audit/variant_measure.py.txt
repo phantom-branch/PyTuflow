@@ -1,0 +1,12 @@
+import json,pathlib,runpy,sys
+root=pathlib.Path(__file__).parent
+variant=sys.argv.pop(1)
+config=json.loads(pathlib.Path(sys.argv[sys.argv.index('--config')+1]).read_text())
+revision=sys.argv[sys.argv.index('--revision')+1]
+sys.path[:0]=[config['parser_sources'][revision],config['consumer_source']]
+if revision=='B' and variant in ('scope','manifest'):
+ from pytuflow._tmf.fragment_dependencies import _Plan
+ original_init=_Plan.__init__
+ def configure(self,model):original_init(self,model,use_scopes=variant=='scope',use_manifests=variant=='manifest')
+ _Plan.__init__=configure
+runpy.run_path(str(root/'measure.py'),run_name='__main__')

@@ -1,0 +1,316 @@
+{
+  "parent": {
+    "instrumented": true,
+    "variant": "parent",
+    "contexts": 480,
+    "parsed_inputs": 181,
+    "parsed_files": 5,
+    "parse_seconds": 2.090910900005838,
+    "phase_cpu_seconds": {
+      "compilation": 0.0,
+      "events": 5.78125,
+      "variables": 6.46875,
+      "signatures": 10.09375
+    },
+    "scope_categories": {
+      "events.event.scope_calls": 26400,
+      "variables.other.scope_calls": 1440,
+      "variables.event.scope_calls": 2880,
+      "variables.scenario.scope_calls": 7200,
+      "variables.combined.scope_calls": 960,
+      "evaluation.other.scope_calls": 39862,
+      "evaluation.scenario.scope_calls": 24979,
+      "evaluation.event.scope_calls": 65280,
+      "evaluation.combined.scope_calls": 4800
+    },
+    "scope_operations": {
+      "contains": {
+        "calls": 387002,
+        "self_seconds": 2.7167529000000004,
+        "inclusive_seconds": 41.9809793
+      },
+      "explode": {
+        "calls": 5511000,
+        "self_seconds": 5.0631756,
+        "inclusive_seconds": 31.245716700000003
+      },
+      "__eq__": {
+        "calls": 6164954,
+        "self_seconds": 4.8375974,
+        "inclusive_seconds": 7.627758
+      },
+      "__init__": {
+        "calls": 5877564,
+        "self_seconds": 9.5476326,
+        "inclusive_seconds": 24.186887300000002
+      }
+    },
+    "file_keys": {
+      "other": {
+        "misses": 2012,
+        "full": 23055,
+        "hits": 21043
+      },
+      "TGC": {
+        "misses": 1,
+        "full": 480,
+        "hits": 479
+      },
+      "TBC": {
+        "misses": 1,
+        "full": 480,
+        "hits": 479
+      },
+      "TEF": {
+        "misses": 480,
+        "full": 480
+      }
+    },
+    "fragment_evaluations": 2494,
+    "fragment_reuses": 22001,
+    "full_keys": 24495,
+    "compact_signatures": 0,
+    "manifest_hits": 0,
+    "manifest_misses": 0,
+    "fallbacks": {},
+    "compiled_scope_evaluations": 0,
+    "compiled_scope_fallbacks": 0
+  },
+  "scope": {
+    "instrumented": true,
+    "variant": "scope",
+    "contexts": 480,
+    "parsed_inputs": 181,
+    "parsed_files": 5,
+    "parse_seconds": 2.1625418000039645,
+    "phase_cpu_seconds": {
+      "compilation": 0.015625,
+      "events": 0.34375,
+      "variables": 0.15625,
+      "signatures": 3.203125
+    },
+    "scope_categories": {
+      "events.event.scope_calls": 26400,
+      "variables.other.scope_calls": 1440,
+      "variables.event.scope_calls": 2880,
+      "variables.scenario.scope_calls": 7200,
+      "variables.combined.scope_calls": 960,
+      "evaluation.other.scope_calls": 39862,
+      "evaluation.scenario.scope_calls": 24979,
+      "evaluation.event.scope_calls": 65280,
+      "evaluation.combined.scope_calls": 4800
+    },
+    "scope_operations": {
+      "__init__": {
+        "calls": 40740,
+        "self_seconds": 0.082586,
+        "inclusive_seconds": 0.1975261
+      },
+      "explode": {
+        "calls": 18048,
+        "self_seconds": 0.0215715,
+        "inclusive_seconds": 0.1133832
+      },
+      "__eq__": {
+        "calls": 4034,
+        "self_seconds": 0.004409000000000001,
+        "inclusive_seconds": 0.0065887
+      },
+      "contains": {
+        "calls": 2402,
+        "self_seconds": 0.0021145,
+        "inclusive_seconds": 0.008790000000000001
+      }
+    },
+    "file_keys": {
+      "other": {
+        "misses": 2012,
+        "full": 23055,
+        "hits": 21043
+      },
+      "TGC": {
+        "misses": 1,
+        "full": 480,
+        "hits": 479
+      },
+      "TBC": {
+        "misses": 1,
+        "full": 480,
+        "hits": 479
+      },
+      "TEF": {
+        "misses": 480,
+        "full": 480
+      }
+    },
+    "fragment_evaluations": 2494,
+    "fragment_reuses": 22001,
+    "full_keys": 24495,
+    "compact_signatures": 0,
+    "manifest_hits": 0,
+    "manifest_misses": 0,
+    "fallbacks": {},
+    "compiled_scope_evaluations": 173801,
+    "compiled_scope_fallbacks": 0
+  },
+  "manifest": {
+    "instrumented": true,
+    "variant": "manifest",
+    "contexts": 480,
+    "parsed_inputs": 181,
+    "parsed_files": 5,
+    "parse_seconds": 2.426970699976664,
+    "phase_cpu_seconds": {
+      "compilation": 0.03125,
+      "events": 6.4375,
+      "variables": 6.703125,
+      "signatures": 7.671875
+    },
+    "scope_categories": {
+      "events.event.scope_calls": 26400,
+      "variables.other.scope_calls": 1440,
+      "variables.event.scope_calls": 2880,
+      "variables.scenario.scope_calls": 7200,
+      "variables.combined.scope_calls": 960,
+      "evaluation.other.scope_calls": 17771,
+      "evaluation.scenario.scope_calls": 14895,
+      "evaluation.event.scope_calls": 63840,
+      "evaluation.combined.scope_calls": 4320
+    },
+    "scope_operations": {
+      "contains": {
+        "calls": 361615,
+        "self_seconds": 2.8509231,
+        "inclusive_seconds": 42.836129400000004
+      },
+      "__init__": {
+        "calls": 5590227,
+        "self_seconds": 9.5308182,
+        "inclusive_seconds": 24.365005
+      },
+      "explode": {
+        "calls": 5202057,
+        "self_seconds": 5.094836900000001,
+        "inclusive_seconds": 31.4630648
+      },
+      "__eq__": {
+        "calls": 6096457,
+        "self_seconds": 5.1109011,
+        "inclusive_seconds": 8.163886100000001
+      }
+    },
+    "file_keys": {
+      "other": {
+        "misses": 614,
+        "compact": 20655,
+        "full": 2400,
+        "hits": 22441
+      },
+      "TGC": {
+        "misses": 1,
+        "compact": 480,
+        "hits": 479
+      },
+      "TBC": {
+        "misses": 1,
+        "compact": 480,
+        "hits": 479
+      },
+      "TEF": {
+        "misses": 480,
+        "full": 480
+      }
+    },
+    "fragment_evaluations": 1096,
+    "fragment_reuses": 23399,
+    "full_keys": 2880,
+    "compact_signatures": 21615,
+    "manifest_hits": 21501,
+    "manifest_misses": 114,
+    "fallbacks": {
+      "event-substitution": 2880
+    },
+    "compiled_scope_evaluations": 0,
+    "compiled_scope_fallbacks": 0
+  },
+  "combined": {
+    "instrumented": true,
+    "variant": "combined",
+    "contexts": 480,
+    "parsed_inputs": 181,
+    "parsed_files": 5,
+    "parse_seconds": 2.351665200025309,
+    "phase_cpu_seconds": {
+      "compilation": 0.03125,
+      "events": 0.234375,
+      "variables": 0.3125,
+      "signatures": 2.65625
+    },
+    "scope_categories": {
+      "events.event.scope_calls": 26400,
+      "variables.other.scope_calls": 1440,
+      "variables.event.scope_calls": 2880,
+      "variables.scenario.scope_calls": 7200,
+      "variables.combined.scope_calls": 960,
+      "evaluation.other.scope_calls": 17771,
+      "evaluation.scenario.scope_calls": 14895,
+      "evaluation.event.scope_calls": 63840,
+      "evaluation.combined.scope_calls": 4320
+    },
+    "scope_operations": {
+      "contains": {
+        "calls": 2402,
+        "self_seconds": 0.0024431,
+        "inclusive_seconds": 0.0108161
+      },
+      "explode": {
+        "calls": 18048,
+        "self_seconds": 0.0243109,
+        "inclusive_seconds": 0.1304759
+      },
+      "__eq__": {
+        "calls": 4034,
+        "self_seconds": 0.0054558,
+        "inclusive_seconds": 0.0082637
+      },
+      "__init__": {
+        "calls": 38863,
+        "self_seconds": 0.087049,
+        "inclusive_seconds": 0.20839860000000002
+      }
+    },
+    "file_keys": {
+      "other": {
+        "misses": 614,
+        "compact": 20655,
+        "full": 2400,
+        "hits": 22441
+      },
+      "TGC": {
+        "misses": 1,
+        "compact": 480,
+        "hits": 479
+      },
+      "TBC": {
+        "misses": 1,
+        "compact": 480,
+        "hits": 479
+      },
+      "TEF": {
+        "misses": 480,
+        "full": 480
+      }
+    },
+    "fragment_evaluations": 1096,
+    "fragment_reuses": 23399,
+    "full_keys": 2880,
+    "compact_signatures": 21615,
+    "manifest_hits": 21501,
+    "manifest_misses": 114,
+    "fallbacks": {
+      "event-substitution": 2880
+    },
+    "compiled_scope_evaluations": 139706,
+    "compiled_scope_fallbacks": 0
+  }
+}
