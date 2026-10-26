@@ -195,3 +195,37 @@ def test_tcf_case_level_argument_validation(tmp_path: Path) -> None:
         TCF(tcf, case_sensitivity=3)
     with pytest.raises(ValueError, match="not both"):
         TCF(tcf, config=TCFConfig(tcf=tcf), case_sensitivity=2)
+
+
+def test_linux_default_rejects_wrong_case_nested_control_file(tmp_path: Path) -> None:
+    nested = tmp_path / "Geometry.TGC"
+    nested.write_text("Read GRID Zpts == grid.tif\n", encoding="utf-8")
+    tcf = tmp_path / "main.tcf"
+    tcf.write_text("Geometry Control File == geometry.tgc\n", encoding="utf-8")
+    strict = TCF(tcf)
+    refs = {
+        ref.path_pattern.name
+        for item in strict.context(file_resolution="deferred").find_input()
+        for ref in item.file_references
+    }
+    assert "geometry.tgc" in refs
+    assert "grid.tif" not in refs  # Wrong-cased nested control file was not loaded.
+
+    permissive = TCF(tcf, case_sensitivity=2)
+    corrected = {
+        ref.path_pattern.name
+        for item in permissive.context(file_resolution="deferred").find_input()
+        for ref in item.file_references
+    }
+    assert "grid.tif" in corrected  # Explicit -cs2 resolves filename spelling.
+
+
+def test_linux_literal_case_collision_is_not_silently_accepted(tmp_path: Path) -> None:
+    (tmp_path / "Material.csv").touch()
+    (tmp_path / "material.csv").touch()
+    # Exact reference is unique despite a case-only sibling.
+    exact = list(TuflowPath(tmp_path).glob("Material.csv", case_sensitivity=2))
+    assert exact == [tmp_path / "Material.csv"]
+    # An ambiguous non-exact spelling is not accepted by a broad casefold scan.
+    with pytest.raises(ValueError, match="Ambiguous"):
+        list(TuflowPath(tmp_path).glob("MATERIAL.csv", case_sensitivity=2))
