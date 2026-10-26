@@ -568,11 +568,12 @@ def test_deferred_wildcard_includes_loaded_nested_control_files(tmp_path):
 
 
 def test_deferred_case_insensitive_nested_file(tmp_path):
+    """TUFLOW Linux -cs2 explicitly permits filename case aliases."""
     geom = tmp_path / 'Geom.TGC'
     geom.write_text('Read GIS Code == gis/2d_code.shp\n', encoding='utf-8')
     tcf = tmp_path / 'main.tcf'
     tcf.write_text('Geometry Control File == geom.tgc\n', encoding='utf-8')
-    parsed = TCF(tcf)
+    parsed = TCF(tcf, case_sensitivity=2)
     with patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')):
         run = parsed.context(file_resolution='deferred')
         paths = {ref.path_pattern.name for inp in run.find_input()
