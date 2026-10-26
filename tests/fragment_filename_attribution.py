@@ -245,6 +245,20 @@ class PrivateFragmentAttribution:
             for fragment in self._fragments.values()
             for link in fragment.links
         }
+        by_kind: dict[str, Counter[str]] = defaultdict(Counter)
+        for source in self._sources.values():
+            by_kind[source.kind].update({
+                "input_slots": 1,
+                "lookups": source.hits + source.misses,
+                "hits": source.hits,
+                "misses": source.misses,
+                "key_ns": source.key_ns,
+                "evaluate_exclusive_ns": source.eval_exclusive_ns,
+            })
+        hot_sources = sorted(
+            self._sources.values(),
+            key=lambda row: (-row.key_ns, -row.eval_exclusive_ns, row.slot),
+        )
         return {
             "schema_version": 1,
             "private_file_attribution_available": True,
@@ -258,6 +272,25 @@ class PrivateFragmentAttribution:
             "cached_fragment_objects_observed": len(self._fragments),
             "distinct_resolved_patterns_in_fragment_links": len(names),
             "failed_evaluate_calls": self.failed_calls,
+            "by_input_type": {
+                kind: {
+                    **{k: v for k, v in counters.items() if not k.endswith("_ns")},
+                    "key_inclusive_ms": round(counters["key_ns"] / 1_000_000, 6),
+                    "evaluate_exclusive_ms": round(counters["evaluate_exclusive_ns"] / 1_000_000, 6),
+                }
+                for kind, counters in sorted(by_kind.items())
+            },
+            "top_anonymous_hot_input_slots": [
+                {
+                    "slot": source.slot,
+                    "input_type": source.kind,
+                    "hits": source.hits,
+                    "misses": source.misses,
+                    "key_inclusive_ms": round(source.key_ns / 1_000_000, 6),
+                    "evaluate_exclusive_ms": round(source.eval_exclusive_ns / 1_000_000, 6),
+                }
+                for source in hot_sources[:20]
+            ],
             "source_key_inclusive_ms": round(
                 sum(source.key_ns for source in self._sources.values()) / 1_000_000, 4
             ),
