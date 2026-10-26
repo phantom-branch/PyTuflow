@@ -25,6 +25,7 @@ class TuflowLine:
         self._expander = TuflowValueExpander(
             self.config.variables, self.config.spatial_database,
             deferred=self.config.file_resolution == 'deferred',
+            case_sensitivity=self.config.case_sensitivity,
         )
 
     def __repr__(self):
@@ -95,7 +96,7 @@ class TuflowLine:
             if layer is not None and layer.casefold() == 'all':
                 rel_path = f'{db} >> *'
         try:
-            for file in TuflowPath(parent).glob(rel_path):
+            for file in TuflowPath(parent).glob(rel_path, case_sensitivity=self.config.case_sensitivity):
                 yield file
         except Exception as e:
             # allow exception to propogate, but add additional context
