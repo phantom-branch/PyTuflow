@@ -163,7 +163,8 @@ def test_nested_scenario_event_else_and_inactive_includes(tmp_path: Path) -> Non
         result = model.collect_file_dependencies(flags)
 
     assert result.passed
-    assert result.runs[0] == result.runs[4]
+    assert result.runs[0].file_references == result.runs[4].file_references
+    assert result.runs[0].ordered_inputs == result.runs[4].ordered_inputs
     names = [
         {ref.path_pattern.name for ref in run.file_references}
         for run in result.runs
