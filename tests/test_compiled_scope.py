@@ -90,3 +90,14 @@ def test_unresolved_selected_flags_use_original_variable_identity_semantics() ->
     scopes = ScopeList([Scope("SCENARIO", "EXG", var="<<Selected>>")])
     ctx = _FragmentContext(flags, TCFConfig(), ExpressionPool(), ScopeProgram())
     assert ctx.in_context_by_scope(scopes) == Context(flags).in_context_by_scope(scopes)
+
+
+def test_custom_context_membership_hook_is_not_bypassed() -> None:
+    from unittest.mock import patch
+
+    scopes = ScopeList([Scope("SCENARIO", "absent")])
+    with patch.object(Context, "in_context_by_scope", lambda self, scopes: True):
+        program = ScopeProgram()
+        ctx = _FragmentContext("-s1 A", TCFConfig(), ExpressionPool(), program)
+        assert not program.enabled
+        assert ctx.in_context_by_scope(scopes)

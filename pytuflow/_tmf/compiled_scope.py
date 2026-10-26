@@ -10,6 +10,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, cast
 
+from .context import (
+    _CONTEXT_APPEND_ATTRIBUTES,  # pyright: ignore[reportPrivateUsage]
+    Context,
+)
 from .scope import (
     _SCOPE_APPEND_DEFINITIONS,  # pyright: ignore[reportPrivateUsage]  - original built-in proof table
     ControlScope,
@@ -36,7 +40,19 @@ class ScopePredicate:
         return True
 
 
+def builtin_translation() -> bool:
+    return Context.translate is dict(_CONTEXT_APPEND_ATTRIBUTES)["translate"]
+
+
 def _builtin_definitions() -> bool:
+    # A Context extension may redefine membership or the available scope set.
+    # Compiling the built-in rule would bypass that hook, so retain its evaluator.
+    original = dict(_CONTEXT_APPEND_ATTRIBUTES)
+    if any(
+        Context.__dict__.get(name) is not original[name]
+        for name in ("in_context_by_scope", "available_scopes", "_create_list")
+    ):
+        return False
     return all(
         cls.__mro__ == mro
         and len(cls.__dict__) == len(attributes)

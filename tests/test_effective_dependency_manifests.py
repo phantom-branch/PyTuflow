@@ -279,3 +279,23 @@ def test_changed_parsed_model_gets_fresh_manifests(tmp_path: Path) -> None:
     second = assert_parity(model, ["-e1 A"])
     assert first.runs[0].file_references[-1].path_pattern.name == "first.shp"
     assert second.runs[0].file_references[-1].path_pattern.name == "second.shp"
+
+
+def test_custom_translation_hook_retains_full_key(tmp_path: Path) -> None:
+    from unittest.mock import patch
+
+    from pytuflow._tmf.context import Context
+    from pytuflow._tmf.fragment_dependencies import _FragmentContext, _Plan
+
+    top = tmp_path / "model.tcf"
+    top.write_text("Read GIS Code == code.shp\n")
+    model = TCF(top)
+    original = Context.translate
+    with patch.object(Context, "translate", lambda self, text: original(self, text)):
+        plan = _Plan(model)
+        ctx = _FragmentContext(
+            "-e1 A", model.config, plan.expressions, plan.scope_program
+        )
+        assert plan._key(model.inputs[0], ctx)[1][0] != "manifest"
+        assert plan.manifest_fallbacks["custom-context-translation"] == 1
+    assert_parity(model, ["-e1 A", "-e1 B"])

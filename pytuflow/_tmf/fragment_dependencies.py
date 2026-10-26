@@ -19,7 +19,7 @@ from .batch_dependencies import (
     BatchInputCommand,
     BatchInputReference,
 )
-from .compiled_scope import ScopeProgram
+from .compiled_scope import ScopeProgram, builtin_translation
 from .context import Context
 from .effective_dependencies import EffectiveDependencyManifest
 from .file_reference import (
@@ -399,6 +399,7 @@ class _Plan:
         self.model = model
         self.expressions = ExpressionPool()
         self.scope_program = ScopeProgram()
+        self._builtin_manifest_translation = builtin_translation()
         self.manifests: dict[int, EffectiveDependencyManifest] = {}
         self.file_manifests: dict[int, EffectiveDependencyManifest] = {}
         self.manifest_certificates: dict[tuple[object, ...], bool] = {}
@@ -532,6 +533,8 @@ class _Plan:
         self, manifest: EffectiveDependencyManifest, ctx: Any
     ) -> tuple[object, ...] | None:
         reason = manifest.fallback_reason
+        if not self._builtin_manifest_translation:
+            reason = "custom-context-translation"
         if (
             reason is None
             and manifest.predicates
