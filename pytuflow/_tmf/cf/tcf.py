@@ -81,7 +81,10 @@ class TCF(ControlFileLoadMixin, TuflowControlFileMixin, TCFBuildState):
             # its extension/name but not its parent directory components.
             if fpath is not None:
                 fpath = TuflowPath.init_case_policy_path(fpath, Path.cwd(), case_sensitivity)
-            kwargs['config'] = TCFConfig(tcf=fpath, case_sensitivity=case_sensitivity)
+            # An absent primary TCF should retain the traditional unloaded
+            # model state, not fail prematurely inside TCFConfig.read_tcf().
+            existing_tcf = fpath if fpath is not None and Path(fpath).is_file() else None
+            kwargs['config'] = TCFConfig(tcf=existing_tcf, case_sensitivity=case_sensitivity)
         super(TCF, self).__init__(fpath, **kwargs)
 
     def tgc(self, context: Context = None) -> 'TGC':
