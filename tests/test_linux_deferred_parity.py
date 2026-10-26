@@ -229,3 +229,15 @@ def test_linux_literal_case_collision_is_not_silently_accepted(tmp_path: Path) -
     # An ambiguous non-exact spelling is not accepted by a broad casefold scan.
     with pytest.raises(ValueError, match="Ambiguous"):
         list(TuflowPath(tmp_path).glob("MATERIAL.csv", case_sensitivity=2))
+
+
+def test_linux_directory_wildcard_stays_strict_with_leaf_case_modes(tmp_path: Path) -> None:
+    for dirname in ("Area_A", "area_B"):
+        (tmp_path / dirname).mkdir()
+        (tmp_path / dirname / "Grid_01.TIF").touch()
+    root = TuflowPath(tmp_path)
+    upper = tmp_path / "Area_A" / "Grid_01.TIF"
+    assert list(root.glob("Area_*/grid_*.tif", case_sensitivity=0)) == []
+    assert list(root.glob("Area_*/grid_*.tif", case_sensitivity=1)) == []
+    assert list(root.glob("Area_*/Grid_*.tif", case_sensitivity=1)) == [upper]
+    assert list(root.glob("Area_*/grid_*.tif", case_sensitivity=2)) == [upper]
