@@ -82,6 +82,7 @@ class _ParseContext:
     check_file_prefix_1d: str = ''
     check_file_prefix_2d: str = ''
     file_resolution: str = 'eager'  # Build-state parsing remains eager.
+    case_sensitivity: int = 0  # TUFLOW Linux -cs0 default; Windows uses native insensitive paths.
 
     def set_spatial_database(self, value: 'str | Path | None'):
         """Mirror of :meth:`TCFConfig.set_spatial_database`, operating on *self*."""
@@ -136,9 +137,12 @@ class TCFConfig:
     check_file_prefix_1d: str = field(default='', repr=False)
     check_file_prefix_2d: str = field(default='', repr=False)
     file_resolution: str = field(default='eager', repr=False)
+    case_sensitivity: int = field(default=0, repr=False)
     init_from_tcf: bool = field(default=True, repr=False)
 
     def __post_init__(self):
+        if type(self.case_sensitivity) is not int or self.case_sensitivity not in (0, 1, 2):
+            raise ValueError('case_sensitivity must be 0, 1 or 2 (TUFLOW -cs0/-cs1/-cs2)')
         if not self.wildcards:
             self.wildcards = [r'(<<.{1,}?>>)']
         self.tcf = TuflowPath(self.tcf) if self.tcf else TuflowPath()  # ensure tcf is a TuflowPath object
@@ -182,6 +186,7 @@ class TCFConfig:
             variables=dict(self.variables),
             wildcards=list(self.wildcards),
             model_name=self.model_name,
+            case_sensitivity=self.case_sensitivity,
         )
         ctx = self._run_tcf_passes(ctx)
         self._apply_context(ctx)
