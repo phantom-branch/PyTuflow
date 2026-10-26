@@ -11,6 +11,7 @@ on:
       - "tests/fragment_evaluation_probe.py"
       - "tests/profile_fragment_evaluations.py"
       - "tests/test_fragment_evaluation_probe.py"
+      - "tests/test_fragment_counter_example.py"
       - "tests/test_profile_capture.py"
       - "tests/test_construction_attribution*.py"
       - "tests/test_profile_construction_attribution.py"
@@ -60,6 +61,8 @@ jobs:
           tests/test_construction_attribution_integration.py
           tests/test_profile_construction_attribution.py
           --junitxml=combined-contracts.xml
+      - name: Demonstrate synthetic file references versus fragment lookups
+        run: python -m pytest -q -s tests/test_fragment_counter_example.py
       - name: Store test evidence
         if: always()
         uses: actions/upload-artifact@v4
