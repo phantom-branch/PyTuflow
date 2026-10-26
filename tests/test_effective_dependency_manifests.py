@@ -252,6 +252,23 @@ def test_selected_tgc_does_not_hide_late_child_scenario_dependency(
     ]
 
 
+def test_fragment_expression_pool_handles_assembled_flag_token_without_tef() -> None:
+    """Expression reuse must not alias A/B/A when bindings assemble a new token."""
+    from pytuflow._tmf.context import Context
+    from pytuflow._tmf.fragment_dependencies import ExpressionPool
+
+    pool = ExpressionPool()
+    expression = "generated_<<Left>><~s1~><<Right>>.shp"
+    for scenario, expected in (("A", "generated_A.shp"), ("B", "generated_B.shp"),
+                               ("A", "generated_A.shp")):
+        context = Context(f"-s1 {scenario}")
+        context.load_variables({"Left": "<", "Right": ">"})
+        assert pool.translate(context, expression) == expected
+        assert pool.translate(context, expression) == context.translate(expression)
+    assert pool.evaluations == 2
+    assert pool.reuses == 4
+
+
 def test_known_transitive_flag_dependency_remains_compact(tmp_path: Path) -> None:
     """The fix must not disable proofs for normally declared transitive tokens."""
     from pytuflow._tmf.cf.cf_run_state import prepare_run_context
