@@ -123,15 +123,15 @@ class CompiledExpression:
     def evaluate(self, ctx: Any) -> Any:
         # Only use the token join when no replacement can trigger a subsequent
         # replacement, numeric coercion, or arbitrary TEF substitution.
+        # Even a single angle bracket can combine with another binding
+        # and expose a <<~s1~>> token on Context's second pass.
         if (
             not ctx.event_variables
             and not _has_partial_delimiter(self.text)
             and all(
                 isinstance(ctx.var_map.get(name), str)
-            # Even a single angle bracket can combine with another binding
-            # and expose a <<~s1~>> token on Context's second pass.
-            and "<" not in ctx.var_map[name]
-            and ">" not in ctx.var_map[name]
+                and "<" not in ctx.var_map[name]
+                and ">" not in ctx.var_map[name]
                 for name in self.variables
             )
         ):
