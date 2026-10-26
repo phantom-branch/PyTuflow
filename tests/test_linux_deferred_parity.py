@@ -12,6 +12,7 @@ import pytest
 from pytuflow import TCF
 from pytuflow._tmf import TuflowPath
 from pytuflow._tmf.settings import TCFConfig
+from pytuflow._tmf.parsers.command import Command
 
 pytestmark = pytest.mark.skipif(sys.platform != "linux", reason="Linux filesystem semantics")
 
@@ -258,3 +259,11 @@ def test_linux_primary_tcf_directory_stays_strict(tmp_path: Path) -> None:
     (folder / "Main.tcf").write_text("! example\n", encoding="utf-8")
     assert not TCF(tmp_path / "models" / "Main.tcf", case_sensitivity=2).loaded
     assert TCF(folder / "main.TCF", case_sensitivity=2).loaded
+
+
+def test_linux_folder_command_is_not_case_relaxed_at_cs2(tmp_path: Path) -> None:
+    """Output Folder is a directory value, not a filename to normalise."""
+    (tmp_path / "Outputs").mkdir()
+    config = TCFConfig(control_file=tmp_path / "model.tcf", init_from_tcf=False, case_sensitivity=2)
+    command = Command("Output Folder == outputs", config)
+    assert Path(command.value_expanded_path).name == "outputs"
