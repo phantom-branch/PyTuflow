@@ -1,3 +1,4 @@
+import fnmatch
 import os
 import re
 import sys
@@ -450,6 +451,35 @@ class TuflowPath(Path):
 
     def glob(self, pattern, **kwargs):
         """Override method so can do some stuff with TUFLOW style wildcards/variables and also GPKG databases."""
+        case_sensitivity = kwargs.pop('case_sensitivity', 0)
+        if type(case_sensitivity) is not int or case_sensitivity not in (0, 1, 2):
+            raise ValueError('case_sensitivity must be 0, 1 or 2')
+
+        def iter_matching(pattern_value):
+            # TUFLOW -cs1/-cs2 relax filename spelling only; parent folders
+            # must remain exact on Linux, including for wildcard patterns.
+            if os.name == 'nt' or case_sensitivity == 0:
+                yield from Path(self).glob(str(pattern_value))
+                return
+            file_pattern = Path(pattern_value)
+            if any(ch in str(file_pattern.parent) for ch in '*?['):
+                # Never relax directory-component matching.
+                yield from Path(self).glob(str(pattern_value))
+                return
+            directory = Path(self) / file_pattern.parent
+            if not directory.is_dir():
+                return
+            try:
+                candidates = tuple(directory.iterdir())
+            except OSError:
+                raise
+            for candidate in candidates:
+                if not fnmatch.fnmatchcase(candidate.name.casefold(), file_pattern.name.casefold()):
+                    continue
+                if case_sensitivity == 1 and not fnmatch.fnmatchcase(candidate.stem, file_pattern.stem):
+                    continue
+                yield candidate
+
         p = TuflowPath(pattern)
         self_db, self_lyrname = self._split_db_and_lyr()
         db, lyr = p._split_db_and_lyr()
@@ -467,10 +497,10 @@ class TuflowPath(Path):
                              'multiple layers (e.g. GPKG or NetCDF).')
 
         if lyr is None:
-            yield from Path(self).glob(pattern)
+            yield from iter_matching(pattern)
             return
 
-        iter = [db] if glob_lyrname_only else Path(self).glob(db)
+        iter = [db] if glob_lyrname_only else iter_matching(db)
 
         for p in iter:
             layers = TuflowPath(p)._gpkg_layers() if p.suffix.lower() == '.gpkg' else TuflowPath(p)._nc_layers()
