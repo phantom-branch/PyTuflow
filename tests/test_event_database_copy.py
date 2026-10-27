@@ -58,7 +58,7 @@ def test_constructor_case_aliases_still_merge_in_order():
 
 def test_copy_repairs_stale_lookup_index_without_mutating_source():
     source = EventDatabase({"Rain": {"a": 1}, "Wind": {"b": 2}})
-    source.pop("Wind")
+    dict.pop(source, "Wind")
     dict.__setitem__(source, "Snow", {"c": 3})
     copied = source.copy()
     assert list(copied.items()) == list(ordinary_copy(source).items())

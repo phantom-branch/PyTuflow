@@ -1,125 +1,74 @@
-# Serial call-reduction follow-up
+# Serial CPU follow-up: event-copy experiment and snapshot safety
 
-Status: scoped implementation brief and prompt; no production optimisation implemented in this PR.
+Status: copy experiment complete; production fast path removed; tests/evidence retained.
 Updated: 27 October 2026 (Australia/Perth).
 
-This PR is stacked on [PyTUFLOW #41](https://github.com/phantom-branch/PyTuflow/pull/41),
-branch `perf/compiled-effective-dependencies`. Its creation base and earlier profiled source are
-`404101f82349d52687b739a5cdce26623f277098`. The follow-up branch is
-`perf/serial-call-reduction-followup`.
+This draft [PR #42](https://github.com/phantom-branch/PyTuflow/pull/42) targets
+[PR #41](https://github.com/phantom-branch/PyTuflow/pull/41), branch
+`perf/compiled-effective-dependencies`. The latest parent `0fa632d` was incorporated with
+normal merge `70b8b0763a93010d1b894baaa009c4404a69de3a` before implementation, preserving
+its newer cache-correctness fixes and published child history. The final `pytuflow` tree
+is byte-identical to that parent. No new production optimisation is retained.
 
-[Ready-to-use implementation prompt](prompts/serial_call_reduction_followup.md) |
-[Sanitised call-count evidence](evidence/2026-10-27-serial-call-audit/summary.json) |
-[Parent implementation and correctness handoff](compiled_effective_dependencies.md).
+[Complete experiment, timings and decision](evidence/2026-10-27-event-copy/README.md) |
+[Next bounded investigation prompt](prompts/serial_call_reduction_followup.md) |
+[Original parent implementation](compiled_effective_dependencies.md).
 
-## Current-head measurements now complete
+## What was investigated
 
-[The investigation published on #41](https://github.com/phantom-branch/PyTuflow/blob/0fa632dab996ad40f6c20bcc466cb5d4d0beadf6/agent_workstreams/evidence/2026-10-27-remaining-cpu/README.md)
-measures corrected runtime head `5c32395e30029bdd3d1053d18374234d0120fab4` against #39
-`36ad04b`, using actual consumer PR #161 `04999e7`. This is the current evidence for
-prioritising implementation; the earlier profiles below remain historical at `404101f`.
-Do not pool their counts or timings with the new campaign.
+The first target was configuration/event-database copying: 14,316 snapshots and 605,055
+event insertions remained in the measured 480-context consumer. A guarded bulk-copy
+prototype used exact built-in storage and original class definitions; case aliases,
+subclasses, custom callbacks/mappings and incomplete state retained the insertion loop.
+Snapshots remained independent at the original shallow-copy depth, with variables passed
+by reference as before. No mutable run state was shared.
 
-Eight uninstrumented SSD observations (`ABBA`/`BAAB`, four per revision) give median
-preflight-through-report times of **22.849923 s parent and 4.260864 s current**, an
-**81.35% reduction**. All six modes have complete recursive record equality for 480
-contexts; 141 focused regressions pass, zero skips. The new profile counts are
-190,971,050 versus 32,867,136. No SMB evaluation/benchmark was run in that investigation.
+The final prototype at `dbdc4d8` passes complete recursive public-record equality on the
+480-, 36- and 240-context workloads, each comparing current parent fragments with ordinary
+uncached/cached, full-key reference and combined experimental modes. Selected files,
+paths/layers, UUIDs, commands, activations, sources, selectors and errors are included.
+The diagnostic profile reduces event insertions from 605,055 to 110, while keeping all
+14,316 copies. Guard checks and bulk/index construction replace some removed work.
 
-The original three priorities remain: config/event copying, path conversion, then
-membership representation. The narrow copy probe observes roughly 0.39 s of event-copy
-work, including about 0.28 s after parsing. Only part may be safely removable; no
-incremental improvement has been implemented or accepted. Consider immutable assembly
-only later: join/assembly costs about 0.41 s and consumer reference collection about
-0.37 s in separate observed phases, while command/reference constructors themselves
-cost only about 0.055 s. Do not add overlapping profile budgets or treat them as native
-recoverable time.
+## Native result and removal
 
-Preserve the 2,880 full-key fallbacks: all 480 TEF fragments differ. Certificates already
-have 25,793 hits from 25,935 lookups. Marginal collection at 480 contexts is about
-6.466 ms/context versus 44.653 ms parent; parsing remains about 0.7-0.8 s. The first
-dependency result improves much less than full-batch throughput.
+Compare against **current #41 `0fa632d`**, not #39. Normal Python 3.14.6, one worker,
+SSD only, frozen actual consumer #161 `04999e7`, matching inputs/options and fresh
+processes. Each of two separately reported balanced campaigns has eight observations
+per revision. No profiler or tracing wrappers run in native measurements.
 
-For an implementation in this PR, refresh the child to the latest #41 source first.
-Its incremental baseline is **current #41**, not #39: the existing 81.35% gain cannot
-be counted as a gain from this follow-up. Capture matched one-worker SSD timings for
-each independently removable change. Keep the new evidence on #41 and link it here
-rather than duplicating its raw or aggregate artefacts.
+| Campaign | Current #41 median s | Copy prototype median s | Reduction |
+| --- | ---: | ---: | ---: |
+| Initial | 3.882589 | 3.775467 | +2.76% |
+| Independent confirmation | 3.884677 | 3.935824 | -1.32% |
 
-## Earlier call audit at `404101f`
+The initial apparent gain does not reproduce. Direction changes and substantial drift
+fail the required native retention criterion. Do not combine campaigns, select favourable
+blocks or use call reductions/microbenchmarks as acceptance. All 32 native observations
+pass with 480 contexts, 50 paths, 24 headers, 480 selectors and zero issues/fallbacks.
 
-The measured path uses one Python process, one configured I/O worker and the consumer's
-serial inventory branch. No production multiprocessing explains the improvement. Fresh
-processes are used for independent measurements, not concurrent production evaluation.
+The production fast path was removed in `d340034`; the final runtime tree is the current
+parent's `c5d4402e3886e145b1e49c941e4cdb1b5d7ddff6`. Experimental commits are retained in
+history for provenance, but contribute no net production diff. The final PR retains 16
+snapshot-safety tests and their Windows Python 3.12/3.14 workflow coverage, evidence and
+this handoff. Final local validation passes **588 parser/context/dependency tests and
+119 actual consumer tests, zero skips**. Ruff/new-test formatting and Pyright gates pass;
+the legacy event module has the same two inherited default diagnostics as the parent.
+Hosted exact-head CI and fresh review remain separate delivery states in the PR description.
 
-These counts come from instrumented profiles. They identify work, not accepted incremental
-speed-ups. The historical parent is `36ad04b`; this earlier profiled candidate is `404101f`.
-The same frozen consumer, original 480-context inputs and profiling boundary were used.
+## Recommendation and boundaries
 
-| Earlier full-consumer profile calls, 480 contexts | Historical parent | Candidate `404101f` |
-| --- | ---: | ---: |
-| Total Python/C calls | 190,971,049 | 32,850,552 |
-| Scope constructions | 5,877,564 | 38,863 |
-| Scope expansions | 5,511,000 | 18,048 |
-| Scope comparisons | 6,164,954 | 4,034 |
-| Scope membership operations | 387,002 | 2,402 |
-| Config/event-database copies | 26,530 | 14,316 |
+Stop work on this bulk-copy mechanism. Investigate path conversion/decomposition next,
+starting with reuse within a known operation and a fresh matched current-parent baseline.
+No path optimisation is implemented or accepted here. Leave TEF full-key fallbacks,
+immutable result assembly, production multiprocessing and first-run scheduling unchanged.
 
-## Prioritised opportunities
+The parent's earlier 81.35% gain (22.849923 -> 4.260864 s) belongs to #39 versus corrected
+#41, not to this follow-up. Its [current-head investigation](https://github.com/phantom-branch/PyTuflow/blob/0fa632dab996ad40f6c20bcc466cb5d4d0beadf6/agent_workstreams/evidence/2026-10-27-remaining-cpu/README.md)
+remains the starting attribution. The [earlier call audit](evidence/2026-10-27-serial-call-audit/summary.json)
+is historical at `404101f`; do not pool sources or timing boundaries.
 
-1. **Configuration/event-database copies.** Start here. The 480-context consumer still makes
-   14,316 `from_config()`/`EventDatabase.copy()` calls and 605,055 event-dictionary assignments.
-   After initial parsing, 8,271 copies and 387,035 assignments remain. Investigate faster
-   independent copies of already normalised mappings and redundant copies in proven read-only
-   paths. Preserve the current special handling of `variables`, mutable nested maps, input
-   lists, case-insensitive lookup, event overrides and custom hooks. Sharing mutable Context
-   or configuration instances between runs is not an acceptable shortcut.
-2. **Path conversion and decomposition.** `TuflowPath.__str__()` runs 437,418 times and
-   `_split_db_and_lyr()` 237,774 times. Collection alone accounts for 265,499 conversions and
-   138,264 splits. Investigate reusing parsed components and avoiding repeated conversion
-   within operations. Preserve GeoPackage/NetCDF layer identity, case policy, trailing slashes,
-   relative/absolute paths, mapped-drive/UNC handling, wildcard and substitution semantics.
-3. **Compiled membership overhead.** Collection makes 196,939 membership accesses and
-   165,641 eligibility checks. Reusing merged event membership within the existing
-   representation/invalidation boundary may remove allocations. Keys can become visible
-   progressively during event loading; direct key changes and supported reload methods must
-   remain observable. Do not introduce another cache of already cached decisions.
-
-The remaining 2,880 full-key fallbacks are a correctness boundary to preserve. TEF results
-legitimately differ across contexts; its 480 evaluations on the original workload are not
-proof of inefficient caching. Do not force result reuse or weaken fallback coverage.
-
-## Parsing and collection must be measured separately
-
-| Workload | Contexts | Config copies during parse | During collection | Event assignments during collection |
-| --- | ---: | ---: | ---: | ---: |
-| Original | 480 | 6,045 | 8,271 | 387,035 |
-| Small | 36 | 6,711 | 1,109 | 51,780 |
-| Ensemble | 240 | 6,723 | 2,701 | 134,580 |
-
-All three workloads passed consumer checks and complete public-record parity. The small
-workload includes the BC comment-row fix from #41. Its prior failed state is not a valid
-performance comparator. Parsing dominates that small batch, so reducing config-copy work
-could help both initial loading and larger batches. Do not sum nested cumulative profile
-times or combine full-consumer and parse/collection profiling boundaries.
-
-## Acceptance and handoff
-
-Use the linked prompt to implement each candidate as an independently removable step in this
-same PR when implementation is requested. Retain a change only after complete provenance
-parity, focused regressions, appropriate local/hosted checks and reproducible native benefit.
-If an idea does not improve native timings beyond plausible noise, remove its production
-change while retaining useful diagnostic evidence.
-
-For future measurements, freeze the latest #41 head and this branch's candidate before work.
-Use normal Python 3.14, one worker, separate fresh processes and balanced ABBA/BAAB blocks.
-Use SSD only unless the owner separately requests network benchmarking. Keep profiler runs
-separate, compare the same storage location/options, and report parse,
-collection, total wall/process CPU, memory and compilation/setup costs. Run correctness
-against all retained 480/36/240-context workloads where available, and preserve synthetic
-coverage when private inputs are unavailable. No solver, model edits or production
-multiprocessing is authorised by the optimisation brief.
-
-Raw model names/paths, flags, commands, CSVs, complete records, profiles and source mappings
-stay private. The checked-in JSON contains only aggregate counts and provenance hashes.
-This documentation PR makes no new performance or implementation acceptance claim.
+All raw models, paths, flags, command lists, records, profiles and mappings stay private.
+No model edit, solver, SMB benchmark, extra PR/worktree, venv, PR merge, retarget,
+release or parent-branch change is included. The unrelated local `.gitignore` edit remains
+untouched. See the linked prompt for the next task's correctness and measurement boundaries.
