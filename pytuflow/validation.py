@@ -324,13 +324,15 @@ def _scan_wildcard_patterns(
         for pattern in siblings:
             if problem is not None:
                 failures[pattern] = problem
-            elif matches[pattern]:
-                found[pattern] = tuple(sorted(matches[pattern]))
             elif pattern in uncertain:
+                # A partial strict match cannot certify that -cs1/-cs2 would
+                # not select other candidate files in the same directory.
                 failures[pattern] = (
                     "unsupported",
                     "Linux filename case policy unknown: supply -cs0/-cs1/-cs2",
                 )
+            elif matches[pattern]:
+                found[pattern] = tuple(sorted(matches[pattern]))
             else:
                 failures[pattern] = (
                     "missing", "No input files match wildcard pattern"
@@ -351,13 +353,34 @@ def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
 
 
 def _gpkg_contents(path: Path) -> tuple[tuple[str, ...], str]:
+    """Read metadata without creating SQLite journal/WAL or shared-memory files.
+
+    SQLite mode=ro can still create -wal/-shm files for a WAL-mode database.
+    immutable=1 avoids that write, but would ignore *uncheckpointed* WAL
+    contents, so never use it while either sidecar exists. Report unresolved
+    rather than giving false missing-layer results or copying huge GIS files.
+    This safe snapshot policy is conservative for active WAL databases.
+    """
     try:
-        uri = f"{path.absolute().as_uri()}?mode=ro"
+        for suffix in ("-wal", "-shm"):
+            if path.with_name(path.name + suffix).exists():
+                return (), (
+                    "GeoPackage has active/persistent SQLite WAL sidecars; "
+                    "cannot verify layers without potentially changing model files"
+                )
+        before = path.stat()
+        uri = f"{path.absolute().as_uri()}?mode=ro&immutable=1"
         with closing(sqlite3.connect(uri, uri=True)) as db:
-            db.execute("PRAGMA query_only=ON")
             names = tuple(
                 str(row[0]) for row in db.execute("SELECT table_name FROM gpkg_contents")
             )
+        after = path.stat()
+        if (before.st_size, before.st_mtime_ns) != (
+            after.st_size, after.st_mtime_ns,
+        ):
+            return (), "GeoPackage changed during read-only inspection"
+        if any(path.with_name(path.name + suffix).exists() for suffix in ("-wal", "-shm")):
+            return (), "GeoPackage WAL files appeared during inspection"
         return names, ""
     except (OSError, sqlite3.DatabaseError, ValueError) as exc:
         return (), f"Cannot inspect GeoPackage layers: {exc}"
