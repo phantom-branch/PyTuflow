@@ -426,24 +426,41 @@ def test_changed_parsed_model_gets_fresh_manifests(tmp_path: Path) -> None:
     assert second.runs[0].file_references[-1].path_pattern.name == "second.shp"
 
 
-def test_custom_translation_hook_retains_full_key(tmp_path: Path) -> None:
+def test_custom_translation_hook_requires_ordinary_batch_fallback(tmp_path: Path) -> None:
+    """Custom translation can change literal paths absent from token signatures."""
     from unittest.mock import patch
 
     from pytuflow._tmf.context import Context
-    from pytuflow._tmf.fragment_dependencies import _FragmentContext, _Plan
+    from pytuflow._tmf.fragment_dependencies import _Plan
 
     top = tmp_path / "model.tcf"
-    top.write_text("Read GIS Code == code.shp\n")
+    top.write_text("Read GIS Code == code.shp\n", encoding="utf-8")
     model = TCF(top)
+    flags = ["-s1 A", "-s1 B", "-s1 A"]
     original = Context.translate
-    with patch.object(Context, "translate", lambda self, text: original(self, text)):
-        plan = _Plan(model)
-        ctx = _FragmentContext(
-            "-e1 A", model.config, plan.expressions, plan.scope_program
-        )
-        assert plan._key(model.inputs[0], ctx)[1][0] != "manifest"
-        assert plan.manifest_fallbacks["custom-context-translation"] == 1
-    assert_parity(model, ["-e1 A", "-e1 B"])
+
+    def dynamic_translate(self: Context, item: object) -> object:
+        result = original(self, item)
+        if isinstance(result, str) and "code.shp" in result:
+            scenarios = self._create_list("S")
+            scenario = scenarios[0] if scenarios else "UNKNOWN"
+            return result.replace("code.shp", f"code_{scenario}.shp")
+        return result
+
+    with patch.object(Context, "translate", dynamic_translate):
+        with pytest.raises(NotImplementedError, match="Custom Context.translate"):
+            _Plan(model)
+        ordinary = model.collect_batch_dependencies(flags, cache_scopes=False)
+        fragments = model.collect_file_dependencies(flags)
+        assert fragments.runs == ordinary.runs
+        assert fragments.passed and ordinary.passed
+        assert fragments.fallback_runs == len(flags)
+        assert "Custom Context.translate" in (fragments.fallback_reason or "")
+        assert [run.file_references[-1].path_pattern.name for run in fragments.runs] == [
+            "code_A.shp",
+            "code_B.shp",
+            "code_A.shp",
+        ]
 
 
 @pytest.mark.parametrize(
