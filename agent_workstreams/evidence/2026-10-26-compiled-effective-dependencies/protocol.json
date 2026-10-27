@@ -1,0 +1,61 @@
+{
+  "started_local_date": "2026-10-26",
+  "completed_local_date": "2026-10-27",
+  "timezone": "Australia/Perth",
+  "parent_sha": "36ad04bd7cb045c48f3b77e8794c48a956c90c06",
+  "source_sha": "3812ed59af3e7e7e9e1addc8922957ef78621054",
+  "consumer_sha": "a710f24ffb1698e949937f56a0212b6ae599e54e",
+  "consumer_interface_verified_identical_to_PR161_sha": "04999e77d497173294f43e137dedbd0bde60d88a",
+  "contexts": 480,
+  "parsed_inputs": 181,
+  "parsed_control_files": 5,
+  "additional_parsed_database_sources": 2,
+  "expected_paths": 50,
+  "expected_headers": 24,
+  "expected_column_selections": 480,
+  "normal_interpreter": true,
+  "virtual_environment": false,
+  "worktree": false,
+  "solver_executed": false,
+  "options": {
+    "context_mode": "batch",
+    "inspection_mode": "files",
+    "reuse_fragments": true,
+    "io_workers": 1,
+    "check_bc_headers": true
+  },
+  "guarded_orders": {
+    "scope_SSD": "ABBA",
+    "manifest_SSD": "BAAB",
+    "combined_SSD": "ABBA",
+    "combined_SMB": "BAAB"
+  },
+  "pre_guard_orders": [
+    "ABBA",
+    "BAAB"
+  ],
+  "native_boundary": "Preflight API call through private CSV report completion; startup/import excluded. Fresh processes. CPU is process CPU over the same boundary; memory is process-lifetime peak working set.",
+  "limitations": [
+    "Warm serial workload only; no cache flush, CPU affinity/frequency pinning, cold SMB or production multiprocessing.",
+    "Background load and timing drift remain uncontrolled. No formal statistical significance claim.",
+    "Independent guarded comparisons have two samples per condition; reproducibility also assessed in the separate two-block pre-guard source.",
+    "No Linux runtime measurement; path matching retains the existing evaluator policy.",
+    "Dynamic inline Read File remains an explicit ordinary fallback, preserving existing parser limitations.",
+    "Profiles, phase clocks and preparation counters are separate diagnostics and excluded from native acceptance timing."
+  ],
+  "previous_source_shas": [
+    "9d70faf74d0bb703f58c4c40e7e3c5ea94db6613",
+    "9acdfa61f24196bfad93bf3adf360b0b49024bdc"
+  ],
+  "corrected_orders": {
+    "scope_SSD": "ABBA",
+    "manifest_SSD": "BAAB",
+    "combined_SSD": "ABBA",
+    "combined_SMB": "BAAB"
+  },
+  "review_corrections": [
+    "Discard negative exploded alternatives in flag and event-definition membership.",
+    "Use Context uppercase replacement-key equivalence for Unicode TEF proof, binding and include-selection guards.",
+    "Include TEF-dependent inline Read File names in explicit ordinary fallback."
+  ]
+}

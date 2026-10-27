@@ -1,0 +1,49 @@
+import collections,json,pathlib,sys,time
+from unittest.mock import patch
+r=pathlib.Path(__file__).parent;variant=sys.argv[1];d=json.loads((r/'review-config.json').read_text())
+sys.path[:0]=[d['parser_sources']['A'] if variant=='parent' else d['parser_sources']['B']]
+from pytuflow import TCF
+from pytuflow._tmf import fragment_dependencies as f
+from pytuflow._tmf import context as cm
+from pytuflow._tmf.cf import cf_run_state as cf
+seconds=collections.Counter();plans=[];frames=[]
+original_init=f._Plan.__init__
+def init(self,model):
+ start=time.perf_counter();original_init(self,model);seconds['compilation_wall_seconds']+=time.perf_counter()-start;plans.append(self)
+def timed(name,original):
+ def call(*a,**k):
+  start=time.process_time()
+  try:return original(*a,**k)
+  finally:seconds[name]+=time.process_time()-start
+ return call
+original_key=f._Plan._key
+def key(*a,**k):
+ start=time.process_time()
+ try:return original_key(*a,**k)
+ finally:
+  elapsed=time.process_time()-start;seconds['signature_cpu_seconds']+=elapsed
+  if frames:frames[-1]['key']+=elapsed
+original_eval=f._Plan.evaluate
+def evaluate(*a,**k):
+ frame={'child':0.,'key':0.};frames.append(frame);start=time.process_time()
+ try:return original_eval(*a,**k)
+ finally:
+  elapsed=time.process_time()-start;frames.pop();seconds['fragment_exclusive_cpu_seconds']+=max(0.,elapsed-frame['child']-frame['key'])
+  if frames:frames[-1]['child']+=elapsed
+start=time.perf_counter();model=TCF(pathlib.Path(d['tcf']));seconds['parse_wall_seconds']=time.perf_counter()-start
+with (patch.object(f._Plan,'__init__',init),patch.object(f._Plan,'_key',key),patch.object(f._Plan,'evaluate',evaluate),
+      patch.object(cm.Context,'load_events',timed('event_cpu_seconds',cm.Context.load_events)),
+      patch.object(cf,'prepare_run_context',timed('variable_cpu_seconds',cf.prepare_run_context))):
+ start=time.perf_counter();cpu=time.process_time();result=model.collect_file_dependencies(json.loads(pathlib.Path(d['runs_json']).read_text()));seconds['context_dependency_cpu_seconds']=time.process_time()-cpu;seconds['context_dependency_wall_seconds']=time.perf_counter()-start
+assert result.passed and result.fallback_runs==0
+includes=[]
+plan=plans[0]
+for inp in model.inputs:
+ kind={'geometry control file':'TGC','bc control file':'TBC','event file':'TEF'}.get(str(inp.lhs).lower())
+ if kind:
+  include={'kind':kind,'full_key_expressions':len(plan.expressions_by_input[id(inp)]),'full_key_scopes':len(plan.scopes_by_input[id(inp)])}
+  if hasattr(plan,'file_manifests'):
+   include['manifests']=[{'variables':len(plan.file_manifests[id(child)].variables),'predicates':len(plan.file_manifests[id(child)].predicates),'expressions':len(plan.file_manifests[id(child)].expressions)} for child in plan.children[id(inp)]]
+  includes.append(include)
+out={'variant':variant,'instrumented':True,'counts':{'contexts':len(result.runs)},'seconds':dict(seconds),'includes':includes,'note':'Separate diagnostic; process clocks have finite resolution; exclusive values include observation overhead and must not be added to native acceptance timings.'}
+(r/(variant+'-reviewed-phase-cpu.json')).write_text(json.dumps(out,indent=2));print(json.dumps(out))

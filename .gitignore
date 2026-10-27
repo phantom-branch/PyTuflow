@@ -22,3 +22,4 @@ uv.lock
 tests/fm_lib/integration_tests/outputs_tmp*
 *.mdtest/
 tuflowfv.log
+.validation/

@@ -1617,3 +1617,7 @@ class ControlFileBuildState(BuildState, ControlFile):
         self.inputs.amend(inp, new_inp)
         new_inp.uuid = inp.uuid
         return new_inp
+
+
+# Retain the original constructor for conservative fragment-cache eligibility.
+_CONTROL_FILE_BUILD_CONTEXT = ControlFileBuildState.context

@@ -67,3 +67,7 @@ class FVSed(ControlFileLoadMixin, FVControlFileBuildState, FVSedMixin):
 
 class FVSedRunState(ControlFileRunState, FVSedMixin):
     pass
+
+
+# Retain the original constructor for conservative fragment-cache eligibility.
+_FVSED_CONTEXT = FVSed.context

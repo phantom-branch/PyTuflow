@@ -1,0 +1,40 @@
+import sys,pathlib,json,time,dataclasses,enum,uuid,itertools,hashlib,os
+root=pathlib.Path(__file__).parent
+rev,mode,name=sys.argv[1:]
+config=json.loads(pathlib.Path(os.environ.get('PRIVATE_PARITY_CONFIG',root/'SSD.json')).read_text())
+sys.path.insert(0,config['parser_sources']['A'] if rev == 'A' else config['parser_sources']['B'])
+if mode!='timing':
+ counter=itertools.count(1)
+ original=uuid.uuid4
+ uuid.uuid4=lambda:uuid.UUID(int=next(counter))
+from pytuflow import TCF
+if rev in ('scope', 'manifest'):
+ from pytuflow._tmf.fragment_dependencies import _Plan
+ original_init=_Plan.__init__
+ def init(self,model):original_init(self,model,use_scopes=rev=='scope',use_manifests=rev=='manifest')
+ _Plan.__init__=init
+work=config; flags=json.loads(pathlib.Path(config['runs_json']).read_text())
+t0=time.perf_counter(); model=TCF(pathlib.Path(work['tcf'])); parsed=time.perf_counter()-t0
+if mode!='timing':
+ uuid.uuid4=original
+ for mod in list(sys.modules.values()):
+  if getattr(mod,'__name__','').startswith('pytuflow') and hasattr(mod,'uuid4'):mod.uuid4=original
+start=time.perf_counter()
+result=model.collect_file_dependencies(flags) if mode in ('fragment','timing') else model.collect_batch_dependencies(flags,cache_scopes=mode!='uncached')
+elapsed=time.perf_counter()-start
+out={'revision':rev,'mode':mode,'parse_seconds':parsed,'context_seconds':elapsed,'total_seconds':parsed+elapsed,'runs':len(result.runs),'passed':result.passed}
+def encode(o):
+ if dataclasses.is_dataclass(o):return {f.name:encode(getattr(o,f.name)) for f in dataclasses.fields(o)}
+ if isinstance(o,(tuple,list)):return [encode(x) for x in o]
+ if isinstance(o,dict):return {str(k):encode(v) for k,v in o.items()}
+ if isinstance(o,pathlib.PurePath):return str(o)
+ if isinstance(o,enum.Enum):return encode(o.value)
+ if o is None or isinstance(o,(str,int,float,bool)):return o
+ raise TypeError(type(o))
+if mode!='timing':
+ records=encode(result.runs); data=json.dumps(records,sort_keys=True,ensure_ascii=False).encode()
+ (root/(name+'.records.json')).write_bytes(data);out['record_sha256']=hashlib.sha256(data).hexdigest()
+for field in dataclasses.fields(result):
+ v=getattr(result,field.name)
+ if isinstance(v,(int,float,str,bool)) or v is None:out[field.name]=v
+(root/(name+'.json')).write_text(json.dumps(out,indent=2));print(json.dumps(out))

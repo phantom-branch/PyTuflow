@@ -45,3 +45,7 @@ class TEF(ControlFileLoadMixin, TuflowControlFileMixin, TEFBuildState):
         from .tef_run_state import TEFRunState
         ctx = context if context else Context(run_context, config=self.config)
         return TEFRunState(self, ctx, parent)
+
+
+# Retain the original constructor for conservative fragment-cache eligibility.
+_TEF_CONTEXT = TEF.context

@@ -55,6 +55,10 @@ class BlockControlInput(ControlFileInput, BlockControlInputMixin):
         return BlockControlInputRunState(self, ctx, parent)
 
 
+# Retain the original constructor before an extension can replace the method.
+_BLOCK_CONTROL_INPUT_CONTEXT = BlockControlInput.context
+
+
 class BCBlockControlInput(BlockControlInput):
     """Class for BC block headers in TUFLOW FV."""
     TUFLOW_TYPE = const.INPUT.BC_BLOCK

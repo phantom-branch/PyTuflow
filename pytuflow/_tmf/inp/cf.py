@@ -19,6 +19,54 @@ if typing.TYPE_CHECKING:
 logger = logging.getLogger('pytuflow')
 
 
+def select_deferred_children(build_input: typing.Any, references: typing.Iterable[typing.Any]) -> tuple[typing.Any, ...]:
+    """Select already parsed includes with the ordinary deferred matching rules."""
+    from ..abc.run_state import ResolveError
+
+    children = tuple(build_input.cf)
+    loaded_paths = tuple(getattr(build_input, '_cf_loaded_paths', ()))
+    if len(children) != len(loaded_paths):
+        raise ResolveError(
+            f'Cached nested control-file index incomplete: {build_input.lhs}'
+        )
+    matched = set()
+    for ref in references:
+        if ref.unresolved_variables:
+            raise ResolveError(f'Unresolved child control file: {ref.path_pattern}')
+        pattern = os.path.normpath(str(ref.path_pattern)).casefold()
+        selected = [
+            i for i, original in enumerate(loaded_paths)
+            if fnmatch.fnmatchcase(os.path.normpath(str(original)).casefold(), pattern)
+        ]
+        if not selected:
+            # UNC versus mapped-drive aliases can differ at their
+            # root. Only accept a common *directory and basename*
+            # suffix from the same input's preloaded children;
+            # basename-only matching could select a wrong scenario.
+            pattern_parts = Path(pattern).parts
+            if len(pattern_parts) >= 2:
+                selected = [
+                    i for i, original in enumerate(loaded_paths)
+                    if len(Path(original).parts) >= 2
+                    and all(fnmatch.fnmatchcase(
+                        Path(original).parts[-n].casefold(),
+                        pattern_parts[-n],
+                    ) for n in (1, 2))
+                ]
+        if not selected:
+            raise ResolveError(
+                f'No cached nested control file for {ref.path_pattern}'
+            )
+        if len(selected) > 1 and not any(
+            char in ref.path_pattern.name for char in '*?['
+        ):
+            raise ResolveError(
+                f'Ambiguous cached child for {ref.path_pattern}'
+            )
+        matched.update(selected)
+    return tuple(children[i] for i in sorted(matched))
+
+
 class ControlFileInputRunState(InputRunState):
 
     @property
@@ -51,51 +99,8 @@ class ControlFileInputRunState(InputRunState):
             # loaded in the initial TCF parse. cf.fpath may be canonicalised
             # to a different UNC/mapped-drive spelling, and must not become
             # the only key for matching run-specific references.
-            from ..abc.run_state import ResolveError
-
-            children = tuple(self.bs.cf)
-            loaded_paths = tuple(getattr(self.bs, '_cf_loaded_paths', ()))
-            if len(children) != len(loaded_paths):
-                raise ResolveError(
-                    f'Cached nested control-file index incomplete: {self.bs.lhs}'
-                )
-            matched = set()
-            for ref in self.file_references:
-                if ref.unresolved_variables:
-                    raise ResolveError(f'Unresolved child control file: {ref.path_pattern}')
-                pattern = os.path.normpath(str(ref.path_pattern)).casefold()
-                selected = [
-                    i for i, original in enumerate(loaded_paths)
-                    if fnmatch.fnmatchcase(os.path.normpath(str(original)).casefold(), pattern)
-                ]
-                if not selected:
-                    # UNC versus mapped-drive aliases can differ at their
-                    # root. Only accept a common *directory and basename*
-                    # suffix from the same input's preloaded children;
-                    # basename-only matching could select a wrong scenario.
-                    pattern_parts = Path(pattern).parts
-                    if len(pattern_parts) >= 2:
-                        selected = [
-                            i for i, original in enumerate(loaded_paths)
-                            if len(Path(original).parts) >= 2
-                            and all(fnmatch.fnmatchcase(
-                                Path(original).parts[-n].casefold(),
-                                pattern_parts[-n],
-                            ) for n in (1, 2))
-                        ]
-                if not selected:
-                    raise ResolveError(
-                        f'No cached nested control file for {ref.path_pattern}'
-                    )
-                if len(selected) > 1 and not any(
-                    char in ref.path_pattern.name for char in '*?['
-                ):
-                    raise ResolveError(
-                        f'Ambiguous cached child for {ref.path_pattern}'
-                    )
-                matched.update(selected)
-            for i in sorted(matched):
-                self.cf.append(children[i].context(context=self.ctx, parent=self.parent))
+            for child in select_deferred_children(self.bs, self.file_references):
+                self.cf.append(child.context(context=self.ctx, parent=self.parent))
         else:
             for cf in self.bs.cf:
                 if cf.fpath.resolve() == self.value.resolve():
@@ -146,3 +151,7 @@ class ControlFileInput(FileInput):
         # docstring inherited
         ctx = context if context else Context(run_context, config=self.config)
         return ControlFileInputRunState(self, ctx, parent)
+
+
+# Retain the original constructor before an extension can replace the method.
+_CONTROL_FILE_INPUT_CONTEXT = ControlFileInput.context

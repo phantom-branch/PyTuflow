@@ -360,6 +360,7 @@ class TCFRunState(ControlFileRunState, TuflowControlFileMixin, ModelRunMixin, TC
                 requires_directory_scan=source.requires_directory_scan,
                 requires_raster_metadata_scan=source.requires_raster_metadata_scan,
                 input_uuid=str(inp.uuid),
+                csv_columns=source.csv_columns,
             ))
         return tuple(result)
 

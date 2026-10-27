@@ -1,0 +1,53 @@
+import sys,json,time,hashlib,subprocess,dataclasses,os
+from pathlib import Path
+ROOT=Path(__file__).absolute().parent
+OLD=Path(os.environ['BATCH_EXISTENCE_PRIVATE_WORKLOAD']).absolute()
+def write(p,v):p.write_text(json.dumps(v,indent=2,default=str),encoding='utf-8')
+def digest(v):return hashlib.sha256(json.dumps(v,sort_keys=True,default=str).encode()).hexdigest()
+def guard():
+ for rel,h in json.loads((ROOT/'snapshot-hashes.json').read_text()).items():
+  assert hashlib.sha256((ROOT/rel).read_bytes()).hexdigest()==h,'source drift'
+ records=json.loads((OLD/'input-manifest-before.json').read_text())
+ return digest([(r['path'],Path(r['path']).stat().st_size,Path(r['path']).stat().st_mtime_ns) for r in records])
+if len(sys.argv)>1:
+ rev,kind,label=sys.argv[1:4]
+ sys.dont_write_bytecode=True
+ sys.path[:0]=[str(ROOT/'sources'/rev),str(ROOT/'sources/consumer')]
+ from loguru import logger
+ logger.remove()
+ import pytuflow,ryan_library
+ assert Path(pytuflow.__file__).resolve().is_relative_to((ROOT/'sources'/rev).resolve()) # verify physical import identity
+ assert Path(ryan_library.__file__).resolve().is_relative_to((ROOT/'sources/consumer').resolve())
+ config=json.loads((OLD/'config.json').read_text()); flags=json.loads((OLD/'runs.json').read_text()); assert len(flags)==480
+ before=guard()
+ if kind=='parity':
+  model=pytuflow.TCF(Path(config['tcf']))
+  results=[model.collect_batch_dependencies(flags,cache_scopes=False),model.collect_batch_dependencies(flags),model.collect_file_dependencies(flags)]
+  assert all(r.passed for r in results)
+  assert results[0].runs==results[1].runs==results[2].runs,'complete per-run provenance differs'
+  write(ROOT/(label+'-raw.json'),[dataclasses.asdict(r) for r in results[2].runs])
+  row={'revision':rev,'kind':kind,'runs':len(results[2].runs),'full_run_equality':True,'errors':sum(r.error is not None for r in results[2].runs),'input_metadata_unchanged':guard()==before}
+ else:
+  from ryan_library.orchestrators.tuflow.input_preflight import RunRequest,check_simulation_inputs
+  runs=[RunRequest(i,f) for i,f in enumerate(flags,1)]
+  start=time.perf_counter()
+  report=check_simulation_inputs(Path(config['tcf']),runs,context_mode='batch',inspection_mode='files',reuse_fragments=True,io_workers=4,check_bc_headers=True)
+  report.write_csv(ROOT/(label+'-issues.csv')); elapsed=time.perf_counter()-start
+  projection={'paths':sorted(report.checked_paths),'issues':[dataclasses.asdict(i) for i in report.issues],'csv_headers_checked':report.csv_headers_checked,'csv_column_selections_checked':report.csv_column_selections_checked,'bc_paths':sorted((str(k),str(v)) for k,v in report.bc_activation_paths.items()),'bc_sources':sorted((str(k),sorted((n,str(p)) for n,p in v.items())) for k,v in report.bc_activation_sources.items())}
+  write(ROOT/(label+'-projection.json'),projection)
+  row={'revision':rev,'kind':kind,'seconds':elapsed,'runs':report.run_count,'paths':len(report.checked_paths),'issues':len(report.issues),'passed':report.passed,'projection_hash':digest(projection),'fragment_evaluations':report.dependency_fragment_evaluations,'fragment_reuses':report.dependency_fragment_reuses,'fallback_runs':report.dependency_fallback_runs,'csv_headers_checked':report.csv_headers_checked,'csv_column_selections_checked':report.csv_column_selections_checked,'parse_seconds':report.parse_seconds,'context_seconds':report.context_seconds,'inventory_seconds':report.inventory_seconds,'input_metadata_unchanged':guard()==before,'python':sys.version}
+ write(ROOT/(label+'.json'),row);print(json.dumps(row),flush=True)
+else:
+ started=time.monotonic();rows=[];status='complete'
+ order=[('A','timed'),('B','timed'),('B','timed'),('A','timed')]
+ write(ROOT/'protocol.json',{'source_heads':json.loads((ROOT/'source-heads.json').read_text()),'limit_seconds':600,'order':order,'inspection':'files and BC CSV headers','io_workers':4,'fragments':True,'timing':'API plus CSV write; imports and guards excluded','cache':'uncontrolled; no flush','ci_failure_override':'owner explicitly requests initial benchmark despite failing regression test'})
+ for i,(rev,kind) in enumerate(order,1):
+  label=f'{i}-{rev}-{kind}'
+  with (ROOT/(label+'.log')).open('w') as log:
+   try:r=subprocess.run([sys.executable,str(Path(__file__).absolute()),rev,kind,label],stdout=log,stderr=subprocess.STDOUT,timeout=max(1,600-(time.monotonic()-started)),cwd=ROOT)
+   except subprocess.TimeoutExpired:status='timeout';break
+  if r.returncode:status='worker_failed';break
+  row=json.loads((ROOT/(label+'.json')).read_text());rows.append(row);print(json.dumps(row),flush=True)
+  if not row['passed'] or not row['input_metadata_unchanged'] or row['projection_hash']!=rows[0]['projection_hash']:status='parity_or_guard_failed';break
+ write(ROOT/'summary.json',{'status':status,'wall_seconds':time.monotonic()-started,'rows':rows,'report_projection_parity':len(rows)==4 and len({r['projection_hash'] for r in rows})==1})
+ print(status,flush=True)

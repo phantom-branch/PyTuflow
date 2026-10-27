@@ -1,0 +1,143 @@
+name: Consolidated P6-P10 batch correctness
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/_tmf/**"
+      - "tests/test_input_append_accounting.py"
+      - "tests/test_setting_group_reuse.py"
+      - "tests/test_batch_dependencies.py"
+      - "tests/test_fragment_dependencies.py"
+      - "tests/test_compiled_scope.py"
+      - "tests/test_effective_dependency_manifests.py"
+      - "tests/test_bc_empty_rows.py"
+      - "tests/test_event_database_copy.py"
+      - "tests/test_path_decomposition.py"
+      - "tests/pyright-effective-dependencies.json"
+      - "agent_workstreams/compiled_effective_dependencies.md"
+      - "agent_workstreams/evidence/2026-10-26-compiled-effective-dependencies/**"
+      - "tests/test_fragment_inactive_scope.py"
+      - "tests/fragment_evaluation_probe.py"
+      - "tests/profile_fragment_evaluations.py"
+      - "tests/test_fragment_evaluation_probe.py"
+      - "tests/fragment_filename_attribution.py"
+      - "tests/test_fragment_filename_attribution.py"
+      - "tests/fragment_key_phase_attribution.py"
+      - "tests/test_fragment_key_phase_attribution.py"
+      - "tests/test_fragment_counter_example.py"
+      - "tests/test_profile_capture.py"
+      - "tests/test_construction_attribution*.py"
+      - "tests/test_profile_construction_attribution.py"
+      - ".github/workflows/consolidated-batch-performance.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  combined:
+    name: Windows Python ${{ matrix.python }} P6-P10 combined contracts
+    runs-on: windows-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install declared dependencies
+        run: python -m pip install -e . pytest
+      - name: Verify package and inputs
+        run: |
+          python -m pip check
+          python -m compileall -q pytuflow/_tmf tests
+      - name: Ruff and scoped Pyright for inactive-fragment changes
+        if: matrix.python == '3.14'
+        run: |
+          python -m pip install ruff pyright
+          python -m pyright -p tests/pyright-effective-dependencies.json
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m ruff check tests/fragment_key_phase_attribution.py tests/test_fragment_key_phase_attribution.py tests/test_path_decomposition.py tests/test_event_database_copy.py pytuflow/_tmf/compiled_scope.py pytuflow/_tmf/effective_dependencies.py tests/test_compiled_scope.py tests/test_effective_dependency_manifests.py tests/test_bc_empty_rows.py pytuflow/_tmf/deferred_database.py tests/context_preparation_probe.py tests/fragment_evaluation_probe.py pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py tests/test_fragment_filename_attribution.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pyright pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Prove combined append, reuse, producer and diagnostic invariants
+        run: >
+          python -m pytest -q
+          tests/test_input_append_accounting.py
+          tests/test_setting_group_reuse.py
+          tests/test_group_constructor_guards.py
+          tests/test_batch_dependencies.py
+          tests/test_fragment_dependencies.py
+          tests/test_compiled_scope.py
+          tests/test_effective_dependency_manifests.py
+          tests/test_bc_empty_rows.py
+          tests/test_event_database_copy.py
+          tests/test_path_decomposition.py
+          tests/tmf/test_tuflow_path.py
+          tests/test_fragment_inactive_scope.py
+          tests/test_fragment_evaluation_probe.py
+          tests/test_fragment_filename_attribution.py
+          tests/test_fragment_key_phase_attribution.py
+          tests/test_batch_ordered_inputs.py
+          tests/test_compiled_control_tree.py
+          tests/test_compiled_dependency_plan.py
+          tests/test_profile_capture.py
+          tests/test_construction_attribution.py
+          tests/test_construction_attribution_failures.py
+          tests/test_construction_attribution_integration.py
+          tests/test_profile_construction_attribution.py
+          --junitxml=combined-contracts.xml
+      - name: Demonstrate synthetic file references versus fragment lookups
+        run: python -m pytest -q -s tests/test_fragment_counter_example.py
+      - name: Checkout pinned ryan-tools PR 161 consumer
+        if: matrix.python == '3.14'
+        uses: actions/checkout@v6
+        with:
+          repository: Chain-Frost/ryan-tools
+          ref: a710f24ffb1698e949937f56a0212b6ae599e54e
+          path: ryan-tools
+          submodules: false
+          persist-credentials: false
+      - name: Install and prepare paired preflight consumer
+        if: matrix.python == '3.14'
+        working-directory: ryan-tools
+        shell: pwsh
+        run: |
+          git submodule update --init tests/test_data
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install -e . --no-deps
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install pytest pyshp loguru pandas psutil
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Check parser and PR 161 consumer compatibility
+        if: matrix.python == '3.14'
+        working-directory: ryan-tools
+        env:
+          RYAN_TEST_STREAM_IO_PYTUFLOW: "1"
+          RYAN_TEST_BATCH_PYTUFLOW: "1"
+          RYAN_TEST_DEFERRED_PYTUFLOW: "1"
+        run: >-
+          python -m pytest -q
+          tests/orchestrators/tuflow/test_streaming_io_probe.py
+          tests/orchestrators/tuflow/test_streaming_combined_producer.py
+          tests/orchestrators/tuflow/test_batch_preflight_adapter.py
+          tests/orchestrators/tuflow/test_ordered_batch_adapter.py
+          tests/orchestrators/tuflow/test_batch_file_existence.py
+          tests/orchestrators/tuflow/test_threaded_dependency_inventory.py
+          tests/orchestrators/tuflow/test_input_preflight.py
+          tests/functions/tuflow/test_gis_attribute_dependencies.py
+          tests/functions/tuflow/test_csv_headers.py
+      - name: Store test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-p6-p10-${{ matrix.python }}
+          path: combined-contracts.xml
+          retention-days: 30
+          if-no-files-found: error

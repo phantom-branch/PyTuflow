@@ -224,3 +224,7 @@ and explicit completion barriers would be sufficient.
    interim B0 baseline. The designated SMB agent completes its remaining
    checks in place and carries out B1/B2/B3 at later implementation milestones.
    **There is no planned upload of private SMB model data.**
+
+## File-existence workflow successor
+
+Owner-authorized implementation on 2026-10-25: [immutable dependency fragments](agent_workstreams/file_existence_fragments.md). The later owner-authorized ten-minute bounded comparison is recorded in that handoff; no further measurement is queued.

@@ -410,3 +410,9 @@ class Context:
         return list_
 
 
+# Raw definitions, captured before extensions can replace inherited callbacks.
+# Append accounting checks these without binding methods or invoking properties.
+_CONTEXT_APPEND_ATTRIBUTES = tuple(Context.__dict__.items())
+_CONTEXT_APPEND_MRO = Context.__mro__
+
+

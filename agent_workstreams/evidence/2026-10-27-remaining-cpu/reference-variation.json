@@ -1,0 +1,155 @@
+{
+  "direct": {
+    "union_path_layer_pairs": 26,
+    "invariant_path_layer_pairs": 24,
+    "varying_path_layer_pairs": 2,
+    "distinct_per_run_sets": 2,
+    "per_run_counts": [
+      25
+    ],
+    "controlled_single_slot_comparisons": [
+      {
+        "slot": "-e1",
+        "controlled_pairs": 400,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-e2",
+        "controlled_pairs": 360,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-e3",
+        "controlled_pairs": 432,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-e4",
+        "controlled_pairs": 240,
+        "pairs_with_reference_changes": 240
+      },
+      {
+        "slot": "-s1",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-s2",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-s4",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-s9",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      }
+    ]
+  },
+  "database": {
+    "union_path_layer_pairs": 24,
+    "invariant_path_layer_pairs": 0,
+    "varying_path_layer_pairs": 24,
+    "distinct_per_run_sets": 24,
+    "per_run_counts": [
+      1
+    ],
+    "controlled_single_slot_comparisons": [
+      {
+        "slot": "-e1",
+        "controlled_pairs": 400,
+        "pairs_with_reference_changes": 400
+      },
+      {
+        "slot": "-e2",
+        "controlled_pairs": 360,
+        "pairs_with_reference_changes": 360
+      },
+      {
+        "slot": "-e3",
+        "controlled_pairs": 432,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-e4",
+        "controlled_pairs": 240,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-s1",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-s2",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-s4",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-s9",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      }
+    ]
+  },
+  "combined": {
+    "union_path_layer_pairs": 50,
+    "invariant_path_layer_pairs": 24,
+    "varying_path_layer_pairs": 26,
+    "distinct_per_run_sets": 48,
+    "per_run_counts": [
+      26
+    ],
+    "controlled_single_slot_comparisons": [
+      {
+        "slot": "-e1",
+        "controlled_pairs": 400,
+        "pairs_with_reference_changes": 400
+      },
+      {
+        "slot": "-e2",
+        "controlled_pairs": 360,
+        "pairs_with_reference_changes": 360
+      },
+      {
+        "slot": "-e3",
+        "controlled_pairs": 432,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-e4",
+        "controlled_pairs": 240,
+        "pairs_with_reference_changes": 240
+      },
+      {
+        "slot": "-s1",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-s2",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-s4",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      },
+      {
+        "slot": "-s9",
+        "controlled_pairs": 0,
+        "pairs_with_reference_changes": 0
+      }
+    ]
+  }
+}

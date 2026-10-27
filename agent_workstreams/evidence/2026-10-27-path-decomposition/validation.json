@@ -1,0 +1,34 @@
+{
+  "final_runtime_tree": "c5d4402e3886e145b1e49c941e4cdb1b5d7ddff6",
+  "final_source_equals_parent": true,
+  "retained_new_path_cases": 27,
+  "prototype_new_path_cases_including_cache_resource_test": 28,
+  "prototype_parser_regressions": {
+    "tests": 631,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "final_parser_context_dependency_regressions": {
+    "tests": 630,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "final_actual_consumer_regressions": {
+    "tests": 119,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "ruff_and_format_new_tests": "pass",
+  "pyright_new_tests_and_existing_strict_scope": "pass",
+  "legacy_module_diagnostics": {
+    "ruff_parent": 12,
+    "ruff_prototype": 12,
+    "pyright_parent": 15,
+    "pyright_prototype": 13,
+    "new_rule_messages": 0
+  },
+  "note": "No legacy source edit or suppression retained; prototype corrected two private return-type diagnostics. Final source is unchanged parent."
+}

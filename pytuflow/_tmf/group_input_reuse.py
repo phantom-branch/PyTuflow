@@ -1,8 +1,9 @@
-"""Conservative, invocation-local reuse of proven independent READ input states.
+"""Conservative, invocation-local reuse of proven independent input states.
 
 The ordinary control-file traversal still decides activation, variable ordering,
-failures and database side effects.  Only leaf GIS CODE / GRID ZPTS commands
-with a proven literal result can skip their expensive InputRunState initialiser.
+failures and database side effects. Leaf GIS CODE / GRID ZPTS commands with a
+proven literal result and exact plain literal SettingInput leaves can skip
+their InputRunState initialiser.
 Known scenario conditions and acyclic variable lineage are part of the proof;
 the ordinary evaluator still selects active inputs before asking for reuse. A
 successful entire run must certify a prototype before another run can use it.
@@ -16,6 +17,7 @@ from typing import TYPE_CHECKING
 
 from .compiled_control_tree import (
     group_block_signature, group_command_signature, group_configuration_signature, is_literal_group_path,
+    is_literal_group_setting,
     snapshot_branches,
 )
 from .parsers.block import DefineBlock
@@ -76,7 +78,7 @@ class LiteralInputGroupCache:
             return None
 
         raw = node.raw_value.strip()
-        variables = node.read_dependency.relevant_variables
+        variables = node.read_dependency.relevant_variables if plan.kind == 'read' else ()
         relevant_values = tuple((name, ctx.var_map.get(name)) for name in variables)
         if any(not isinstance(value, str) for _, value in relevant_values):
             self._ineligible('unresolved_variable')
@@ -98,7 +100,8 @@ class LiteralInputGroupCache:
             self._ineligible('event_expression')
             return None
         resolved = ctx.translate(raw)
-        if (not isinstance(resolved, str) or not is_literal_group_path(resolved)
+        is_literal = is_literal_group_setting if plan.kind == 'setting' else is_literal_group_path
+        if (not isinstance(resolved, str) or not is_literal(resolved)
                 or not ctx.is_resolved(resolved)
                 or ctx.translate(resolved) != resolved
                 or (not variables and resolved != raw)):
@@ -130,7 +133,7 @@ class LiteralInputGroupCache:
         # Unrelated event values cannot fragment a proven constant group.
         return (
             id(build_input), node.original_text, node.input_uuid, node.ordinal,
-            plan.command_signature,
+            plan.kind, plan.command_signature,
             plan.configuration_signature, plan.define_blocks, node.branch_conditions,
             resolved, relevant_values, declarations, scenario_signature,
         )
@@ -163,14 +166,16 @@ class LiteralInputGroupCache:
 
     @staticmethod
     def _clone(prototype, build_input, ctx: Context, parent):
-        """Construct independently mutable wrappers without re-evaluating READ."""
+        """Construct independently mutable wrappers without re-evaluating leaves."""
         from .inp.gis import GisInput, GisInputRunState
         from .inp.grid import GridInput
         from .inp.inp_run_state import InputRunState
+        from .inp.setting import SettingInput
 
         if not (
             (type(prototype._rs) is GisInput and type(prototype) is GisInputRunState)
             or (type(prototype._rs) is GridInput and type(prototype) is InputRunState)
+            or (type(prototype._rs) is SettingInput and type(prototype) is InputRunState)
         ):
             return None
         result = copy(prototype)
@@ -206,7 +211,8 @@ class LiteralInputGroupCache:
         state._has_missing_files = False
         state._file_to_original = {}
         state._file_to_scope = {}
-        state._rhs = []
+        if type(state) is not SettingInput:
+            state._rhs = []
         # Preserve ELSE/negation/known flags exactly. Reconstructing Scope from
         # its display string can lose branch metadata; copy names separately.
         from .scope import GlobalScope, ScenarioScope, ScopeList
@@ -223,9 +229,10 @@ class LiteralInputGroupCache:
             independent_scope.__dict__ = scope.__dict__.copy()
             independent_scope.names = list(scope.names)
             state._scope.append(independent_scope)
-        state._prev_val = None
-        state._attr_idx = 0
-        state._attr_idx_found = False
+        if type(state) is not SettingInput:
+            state._prev_val = None
+            state._attr_idx = 0
+            state._attr_idx_found = False
         # Both GIS and GRID descendants may retain mutable lazy-loaded state.
         if hasattr(state, '_cf'):
             state._cf = []
@@ -236,6 +243,8 @@ class LiteralInputGroupCache:
             state.cf = []
             state.multiplier = 1.0
             state.clip_layer = None
+        if type(state) is SettingInput:
+            state.cf = []
         if type(state) is GisInput:
             state._cf = []
             state._cf_loaded = False

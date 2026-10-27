@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-27",
+  "timezone": "Australia/Perth",
+  "parent_PR": 41,
+  "child_PR": 42,
+  "parent": {
+    "sha": "0fa632dab996ad40f6c20bcc466cb5d4d0beadf6",
+    "archive_sha256": "c39c8a67c7698f7484562b7a45ff64e3ad080ac52ef3b7201cd316d082981bc0",
+    "production_tree": "c5d4402e3886e145b1e49c941e4cdb1b5d7ddff6"
+  },
+  "experimental_candidate": {
+    "sha": "dbdc4d82b9dd927e500234099e21f3f0c83b31a8",
+    "archive_sha256": "6d9c4b43d15491c4f475430b487ad7b0eed10ae731dbeaf2be2b62557179ab37",
+    "production_tree": "85e88d9090103aac214eafe38231a21a6b469d41"
+  },
+  "rollback_commit": "d340034",
+  "retained_production_tree": "c5d4402e3886e145b1e49c941e4cdb1b5d7ddff6",
+  "retained_production_change": false,
+  "normal_parent_merge": "70b8b0763a93010d1b894baaa009c4404a69de3a",
+  "consumer_sha": "04999e77d497173294f43e137dedbd0bde60d88a",
+  "consumer_fixture_gitlink": "d2dae3ecf9a7ed306e1340de54a8d12ca9f53f58",
+  "native_workload_contexts": 480,
+  "storage": "SSD only",
+  "normal_python": "3.14.6",
+  "io_workers": 1,
+  "context_mode": "batch",
+  "inspection_mode": "files",
+  "reuse_fragments": true,
+  "check_bc_headers": true,
+  "native_initial_orders": [
+    "ABBA",
+    "BAAB",
+    "ABBA",
+    "BAAB"
+  ],
+  "native_confirmation_orders": [
+    "BAAB",
+    "ABBA",
+    "BAAB",
+    "ABBA"
+  ],
+  "observations_per_revision_per_campaign": 8,
+  "native_timing_boundary": "Preflight API call through normal CSV report completion, including parse/context/projection/inventory/header work. Startup/import/setup excluded and reported separately. Outer launch/exit includes artefact writing/shutdown.",
+  "instrumentation": "No profiler or tracing wrappers in native timing. cProfile runs are separate, default elapsed clock; counts are diagnostic and profiled durations are not native costs.",
+  "input_guard_files": 17,
+  "input_guard_receipt_sha256": "9de21bebdad8642830fb1308bbdc5729b2a191eb69be9be4cd7d7bff4aca8ef1",
+  "partial_attempts": "Two preliminary parity-only attempts stopped before native timing to tighten fallback ordering and custom attribute-mapping guards. Raw receipts retained privately. Accepted experimental receipts all use dbdc4d8. No cross-source pooling.",
+  "limitations": [
+    "Uncontrolled background load, CPU affinity/frequency and warm OS caches; no cold-storage or statistical significance claim.",
+    "Large drift and overlapping timings. Direction reverses between native campaigns; performance retention criterion not met.",
+    "No SMB measurement, solver, model edit, venv, worktree, new PR, parent change, release or PR merge.",
+    "Model/control/database source and command-list guards do not hash every GIS/raster/time-series payload."
+  ]
+}
