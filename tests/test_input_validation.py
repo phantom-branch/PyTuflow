@@ -473,6 +473,66 @@ def test_unknown_linux_case_probe_io_error_isolated_per_run(
     assert report.findings[1].path == healthy
 
 
+@pytest.mark.parametrize("use_symlink", [False, True])
+def test_gpkg_active_rollback_journal_is_rejected_without_writes(
+    tmp_path: Path, use_symlink: bool,
+) -> None:
+    """Immutable SQLite must never accept pages from an unfinished rollback."""
+    target = tmp_path / "main.gpkg"
+    editor = sqlite3.connect(target)
+    try:
+        editor.execute("CREATE TABLE gpkg_contents (table_name TEXT)")
+        editor.executemany(
+            "INSERT INTO gpkg_contents VALUES (?)",
+            [(f"saved_{index}",) for index in range(3000)],
+        )
+        editor.commit()
+        assert editor.execute("PRAGMA journal_mode=DELETE").fetchone() == (
+            "delete",
+        )
+        editor.execute("PRAGMA cache_size=5")
+        editor.execute("PRAGMA cache_spill=ON")
+        editor.execute("BEGIN IMMEDIATE")
+        editor.execute(
+            "UPDATE gpkg_contents SET table_name = 'unsaved_' || table_name"
+        )
+        journal = tmp_path / "main.gpkg-journal"
+        assert journal.stat().st_size > 0
+
+        reference = target
+        if use_symlink:
+            reference = tmp_path / "linked.gpkg"
+            try:
+                reference.symlink_to(target)
+            except (OSError, NotImplementedError) as exc:
+                pytest.skip(f"Filesystem symlinks unavailable: {exc}")
+
+        before = {file.name: file.read_bytes() for file in tmp_path.iterdir()}
+        report = validate_dependencies(
+            _project(
+                _run(0, (_ref(reference, layer="saved_1"), _ref(reference))),
+                _run(1, (_ref(reference, layer="unsaved_saved_1"),)),
+            )
+        )
+        after = {file.name: file.read_bytes() for file in tmp_path.iterdir()}
+
+        assert not report.passed
+        assert report.files_examined == 1
+        assert report.geopackages_examined == 0
+        assert len(report.findings) == 3
+        assert all(item.status == "unresolved" for item in report.findings)
+        assert all(item.kind == "file" for item in report.findings)
+        assert all(item.path == reference for item in report.findings)
+        assert all(
+            "non-empty SQLite -journal rollback file" in item.detail
+            for item in report.findings
+        )
+        assert after == before
+    finally:
+        editor.rollback()
+        editor.close()
+
+
 def test_invalid_geopackage_reports_unresolved_layer(tmp_path: Path) -> None:
     gpkg = tmp_path / "not_sqlite.gpkg"
     gpkg.write_bytes(b"invalid database")
