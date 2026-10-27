@@ -4,6 +4,9 @@ Measures only calls *inside* _Plan._key. The phases are nested:
 FragmentContext.translate includes ExpressionPool.translate and possibly
 Context.translate/CompiledExpression.bindings; BatchContext scope processing
 includes ScopeList.contains. Inclusive phase timings MUST NOT be added.
+Context.translate is deliberately NOT monkeypatched: doing so would make
+PyTUFLOW's custom-hook guard disable compiled manifests during measurement.
+Only the surrounding observable calls are timed.
 
 No production parser functionality or cache-key equality is changed. The
 measurement wrappers impose significant overhead and are not valid for
@@ -26,7 +29,6 @@ from unittest.mock import patch
 _PHASES = (
     "fragment_translate",
     "pool_translate",
-    "context_translate",
     "bindings",
     "expression_evaluate",
     "scope_decision",
@@ -96,7 +98,6 @@ class PrivateKeyPhaseAttribution:
 
         from pytuflow._tmf import fragment_dependencies as fragment
         from pytuflow._tmf.batch_dependencies import BatchContext
-        from pytuflow._tmf.context import Context
         from pytuflow._tmf.scope import ScopeList
 
         original_key = fragment._Plan._key
@@ -126,7 +127,6 @@ class PrivateKeyPhaseAttribution:
                 fragment.ExpressionPool, "translate",
                 self._timed(fragment.ExpressionPool.translate, "pool_translate"),
             ),
-            patch.object(Context, "translate", self._timed(Context.translate, "context_translate")),
             patch.object(
                 fragment.CompiledExpression, "bindings",
                 self._timed(fragment.CompiledExpression.bindings, "bindings"),
