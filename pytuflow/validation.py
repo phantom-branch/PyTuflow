@@ -14,7 +14,7 @@ import os
 import sqlite3
 import stat
 from collections import defaultdict
-from collections.abc import Collection, Iterable, Iterator
+from collections.abc import Collection, Iterator
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from dataclasses import dataclass
@@ -257,6 +257,7 @@ def _scan_wildcard_patterns(
     for parent, siblings in grouped.items():
         matches: dict[Path, list[Path]] = {pattern: [] for pattern in siblings}
         scans += 1
+        problem: tuple[ValidationStatus, str] | None = None
         try:
             with os.scandir(parent) as iterator:
                 for index, entry in enumerate(iterator):
@@ -274,8 +275,6 @@ def _scan_wildcard_patterns(
             )
         except (OSError, ValueError) as exc:
             problem = ("unresolved", f"Cannot inspect wildcard directory: {exc}")
-        else:
-            problem = None  # type: ignore[assignment]
         for pattern in siblings:
             if problem is not None:
                 failures[pattern] = problem
@@ -442,6 +441,19 @@ def validate_dependencies(
             item.database_kind,
             item.path if path != item.path else None,
             item.csv_columns if kind == "csv_header" else None,
+        )
+
+    # Explicitly disabled inspection is never treated as validation success.
+    # In particular, do not scandir wildcard directories when file checks
+    # were disabled by the caller.
+    if not policy.check_files:
+        return ValidationReport(
+            tuple(failures) + tuple(
+                finding(item, "unsupported", "file", item.path,
+                        "Physical input-file inspection was disabled")
+                for item in requirements
+            ),
+            len(projection.runs), 0, 0, 0, 0,
         )
 
     globs = {
