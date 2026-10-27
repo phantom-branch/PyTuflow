@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Literal, Protocol
 
 if TYPE_CHECKING:
     from ._tmf.batch_dependencies import BatchDependencyRun
+    from ._tmf.file_reference import FileReference
 
 ValidationStatus = Literal["present", "missing", "unresolved", "unsupported"]
 ValidationKind = Literal["file", "wildcard", "layer", "csv_header", "context"]
