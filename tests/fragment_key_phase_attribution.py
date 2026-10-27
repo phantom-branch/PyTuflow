@@ -4,9 +4,10 @@ Measures only calls *inside* _Plan._key. The phases are nested:
 FragmentContext.translate includes ExpressionPool.translate and possibly
 Context.translate/CompiledExpression.bindings; BatchContext scope processing
 includes ScopeList.contains. Inclusive phase timings MUST NOT be added.
-Context.translate is deliberately NOT monkeypatched: doing so would make
-PyTUFLOW's custom-hook guard disable compiled manifests during measurement.
-Only the surrounding observable calls are timed.
+Context.translate and ScopeList.contains are deliberately NOT monkeypatched:
+their identities are part of the production manifest/compiled-scope safety
+guards. Wrapping them would silently switch off the optimisations under
+measurement. Only the surrounding observable calls are timed.
 
 No production parser functionality or cache-key equality is changed. The
 measurement wrappers impose significant overhead and are not valid for
@@ -32,7 +33,6 @@ _PHASES = (
     "bindings",
     "expression_evaluate",
     "scope_decision",
-    "scope_contains",
 )
 
 
@@ -98,7 +98,6 @@ class PrivateKeyPhaseAttribution:
 
         from pytuflow._tmf import fragment_dependencies as fragment
         from pytuflow._tmf.batch_dependencies import BatchContext
-        from pytuflow._tmf.scope import ScopeList
 
         original_key = fragment._Plan._key
 
@@ -139,10 +138,6 @@ class PrivateKeyPhaseAttribution:
                 BatchContext, "in_context_by_scope",
                 self._timed(BatchContext.in_context_by_scope, "scope_decision"),
             ),
-            patch.object(
-                ScopeList, "contains",
-                self._timed(ScopeList.contains, "scope_contains"),
-            ),
         ):
             yield
 
@@ -171,7 +166,6 @@ class PrivateKeyPhaseAttribution:
                 "translation_inclusive_ms": round(row.phase_ns["fragment_translate"] / 1_000_000, 6),
                 "scope_inclusive_ms": round(row.phase_ns["scope_decision"] / 1_000_000, 6),
                 "bindings_inclusive_ms": round(row.phase_ns["bindings"] / 1_000_000, 6),
-                "scope_contains_inclusive_ms": round(row.phase_ns["scope_contains"] / 1_000_000, 6),
             }
 
         return {
@@ -180,6 +174,10 @@ class PrivateKeyPhaseAttribution:
             "key_calls": count,
             "key_errors": self.key_errors,
             "instrumentation_overhead_included": True,
+            "unmeasured_identity_guarded_helpers": [
+                "Context.translate",
+                "ScopeList.contains",
+            ],
             "phase_warning": (
                 "Phase timings are inclusive/nested and overlap; never sum "
                 "child timings or equate them to uninstrumented production cost."
