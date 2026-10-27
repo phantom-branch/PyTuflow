@@ -493,7 +493,7 @@ def validate_dependencies(
             and path.suffix.casefold() == ".csv"
         ):
             csv_requests[path].update(item.csv_columns)
-    files = set(path for _, path in concrete)
+    files = {path for _, path in concrete}
 
     def inspect(path: Path) -> tuple[Path, _Inspection]:
         status, detail = _stat_source(path)
