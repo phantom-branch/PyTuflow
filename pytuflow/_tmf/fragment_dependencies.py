@@ -422,6 +422,15 @@ class _Plan:
 
         if not _original_control_file_context(model):
             raise NotImplementedError("Custom model control file context hook")
+        # An overridden Context.translate can change even a literal filename.
+        # The compiled expression pool and subtree cache assume the original
+        # translation semantics. A full-key fallback alone is insufficient:
+        # an untracked hook result could alias across distinct run contexts.
+        # Refuse fragment compilation and use the authoritative batch path.
+        if not builtin_translation():
+            raise NotImplementedError(
+                "Custom Context.translate requires ordinary batch evaluation"
+            )
         self.model = model
         self.expressions = ExpressionPool()
         self.scope_program = ScopeProgram()
