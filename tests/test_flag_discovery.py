@@ -9,13 +9,13 @@ from unittest.mock import patch
 import pytest
 
 from pytuflow import TCF
+from pytuflow._tmf.event import EventDatabase
+from pytuflow._tmf.scope import Scope
 from pytuflow.flag_discovery import (
     EventDefinition,
     _read_slots,
     discover_model_flags,
 )
-from pytuflow._tmf.event import EventDatabase
-from pytuflow._tmf.scope import Scope
 
 
 def _fake_input(
