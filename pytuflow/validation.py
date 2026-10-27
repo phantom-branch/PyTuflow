@@ -353,16 +353,29 @@ def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
 
 
 def _gpkg_contents(path: Path) -> tuple[tuple[str, ...], str]:
-    """Inspect only the checkpointed main GeoPackage, without auxiliary writes.
+    """Require a saved main GeoPackage; never create or read journal sidecars.
 
-    A normal read-only SQLite connection can still create -wal/-shm sidecars.
-    immutable=1 makes no locking/journal changes and intentionally ignores
-    edits held in an existing WAL. A layer written only into the WAL is *not*
-    considered present in this on-disk main-file snapshot. The caller must not
-    represent that snapshot as including concurrently committed WAL changes.
-    Never checkpoint, delete or modify an editor's WAL/SHM files.
+    SQLite mode=ro may create -wal/-shm files. immutable=1 avoids these
+    writes and reads only the checkpointed main .gpkg. A non-empty WAL means
+    the main file is not certified complete: fail explicitly instead of
+    counting missing WAL-only layers as ordinary absent layers.
     """
+    wal = path.with_name(path.name + "-wal")
+    wal_error = (
+        "GeoPackage has a non-empty SQLite -wal journal; main .gpkg may "
+        "not contain saved changes. Save/close the editing session, "
+        "checkpoint the database externally, and rerun validation"
+    )
+
+    def has_wal_data() -> bool:
+        try:
+            return wal.stat().st_size > 0
+        except FileNotFoundError:
+            return False
+
     try:
+        if has_wal_data():
+            return (), wal_error
         before = path.stat()
         uri = f"{path.absolute().as_uri()}?mode=ro&immutable=1"
         with closing(sqlite3.connect(uri, uri=True)) as db:
@@ -370,6 +383,8 @@ def _gpkg_contents(path: Path) -> tuple[tuple[str, ...], str]:
                 str(row[0]) for row in db.execute("SELECT table_name FROM gpkg_contents")
             )
         after = path.stat()
+        if has_wal_data():
+            return (), wal_error
         if (before.st_size, before.st_mtime_ns) != (
             after.st_size, after.st_mtime_ns
         ):
