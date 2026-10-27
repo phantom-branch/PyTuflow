@@ -349,12 +349,24 @@ _UNSAVED_GPKG_WAL_ERROR = (
 
 
 def _has_unsaved_gpkg_wal(path: Path) -> bool:
-    """Detect journal data without reading or altering either SQLite sidecar."""
-    wal = path.with_name(path.name + "-wal")
-    try:
-        return wal.stat().st_size > 0
-    except FileNotFoundError:
-        return False
+    """Check WAL files beside the alias and its actual source target.
+
+    SQLite may create journals beside the symlink's real GeoPackage target.
+    Checking only the requested alias permits uncheckpointed layer edits to
+    bypass the validator. Neither candidate is opened or modified.
+    """
+    target = path.resolve(strict=True)
+    candidates = {
+        path.with_name(path.name + "-wal"),
+        target.with_name(target.name + "-wal"),
+    }
+    for wal in candidates:
+        try:
+            if wal.stat().st_size > 0:
+                return True
+        except FileNotFoundError:
+            continue
+    return False
 
 
 def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
@@ -386,13 +398,16 @@ def _gpkg_contents(path: Path) -> tuple[tuple[str, ...], str]:
     try:
         if _has_unsaved_gpkg_wal(path):
             return (), _UNSAVED_GPKG_WAL_ERROR
-        before = path.stat()
-        uri = f"{path.absolute().as_uri()}?mode=ro&immutable=1"
+        # Open the actual source to avoid a different path spelling hiding
+        # its journal. The requested alias remains unchanged in findings.
+        target = path.resolve(strict=True)
+        before = target.stat()
+        uri = f"{target.as_uri()}?mode=ro&immutable=1"
         with closing(sqlite3.connect(uri, uri=True)) as db:
             names = tuple(
                 str(row[0]) for row in db.execute("SELECT table_name FROM gpkg_contents")
             )
-        after = path.stat()
+        after = target.stat()
         if _has_unsaved_gpkg_wal(path):
             return (), _UNSAVED_GPKG_WAL_ERROR
         if (before.st_size, before.st_mtime_ns) != (
