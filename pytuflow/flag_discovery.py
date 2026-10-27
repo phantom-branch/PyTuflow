@@ -20,6 +20,7 @@ FlagKind = Literal["scenario", "event"]
 EvidenceOrigin = Literal["conditional_scope", "event_definition", "model_default", "slot_reference"]
 
 _SLOT = re.compile(r"~(?P<kind>[sSeE])(?P<index>[1-9]?)~")
+_UNRESOLVED = re.compile(r"<<[^<>]+>>")
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,7 +75,8 @@ def _read_slots(text: object) -> tuple[tuple[FlagKind, str], ...]:
 
 def _values(text: str) -> tuple[str, ...]:
     """Lexically separate TUFLOW named alternatives, not run combinations."""
-    return tuple(s.strip() for s in re.split(r"[|,]", text) if s.strip())
+    # Match prepare_run_context() Model Scenarios splitting, not just pipes.
+    return tuple(s for s in re.split(r"[\\t\\s|,]+", text.strip()) if s)
 
 
 def _model_input_tree(model: TCF):
@@ -86,10 +88,15 @@ def _model_input_tree(model: TCF):
         if id(control) in visited:
             continue
         visited.add(id(control))
-        inputs = getattr(control, "inputs", ())
-        if inputs is None:
-            continue
-        for inp in inputs:
+        # Read File declarations are retained separately because the parser
+        # flattens their contents into control.inputs. Their own dynamic
+        # filename flags must still be discovered without reopening the TRD.
+        inputs = (
+            tuple(getattr(control, "inputs", ()) or ())
+            + tuple(getattr(control, "_read_file_inputs", ()) or ())
+        )
+        for inp in dict.fromkeys(id(inp) for inp in inputs):
+            inp = next(item for item in inputs if id(item) == inp)
             yield control, inp
             children = [
                 child for child in getattr(inp, "cf", ())
