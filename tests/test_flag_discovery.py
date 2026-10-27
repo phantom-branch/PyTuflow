@@ -170,6 +170,101 @@ def test_event_definitions_from_loaded_tef_are_read_only(tmp_path: Path) -> None
     assert before == tuple((k, dict(v)) for k, v in model.config.event_db.items())
 
 
+def test_unresolved_scenario_names_excluded_while_literals_survive() -> None:
+    model = _fake_model((
+        _fake_input(
+            "Model Scenarios", "EXG DEV | ALT,PROPOSED <<VARIABLE>>",
+        ),
+        _fake_input(
+            "Read GIS Code", "code.shp",
+            scope=(Scope("SCENARIO", "EXG | <<OTHER>>"),),
+        ),
+        _fake_input(
+            "Read GIS Code", "unknown.shp",
+            scope=(Scope("SCENARIO", "<<~s2~>> | DEV"),),
+        ),
+    ))
+    inventory = discover_model_flags(model)  # type: ignore[arg-type]
+    assert inventory.default_scenarios == ("EXG", "DEV", "ALT", "PROPOSED")
+    assert inventory.scenario_names == ("EXG", "DEV", "ALT", "PROPOSED")
+    assert "S2" in inventory.scenario_slots
+    assert not any("<<" in name for name in inventory.scenario_names)
+    assert any("unresolved substitution" in x for x in inventory.limitations)
+
+
+def test_else_scope_variants_retain_negative_scenario_and_event_evidence() -> None:
+    model = _fake_model((
+        _fake_input(
+            "Read GIS Code", "else.shp",
+            scope=(
+                Scope("SCENARIO (ELSE)", "!EXG"),
+                Scope("EVENT (ELSE)", "!Q100"),
+            ),
+        ),
+    ))
+    inventory = discover_model_flags(model)  # type: ignore[arg-type]
+    assert inventory.scenario_names == ("EXG",)
+    assert inventory.event_names == ("Q100",)
+    assert all(
+        x.negated for x in inventory.evidence
+        if x.origin == "conditional_scope"
+    )
+
+
+def test_retained_read_file_declaration_exposes_dynamic_filename_slot() -> None:
+    read_file = _fake_input("Read File", "settings_<<~s2~>>.trd")
+    model = _fake_model(())
+    model._read_file_inputs = [read_file]
+    result = discover_model_flags(model)  # type: ignore[arg-type]
+    assert "S2" in result.scenario_slots
+    assert any("Dynamic included" in x for x in result.limitations)
+    assert any(
+        x.slot == "S2" and x.owner_control_file == Path("model.tcf")
+        for x in result.evidence
+    )
+
+
+def test_loaded_tef_provenance_is_attached_to_event_definition(
+    tmp_path: Path,
+) -> None:
+    tef = tmp_path / "events.tef"
+    tef.write_text(
+        "Define Event == Q100\\n"
+        " BC Event Source == _ARI_ | 100yr\\n"
+        "End Define\\n",
+        encoding="utf-8",
+    )
+    top = tmp_path / "model.tcf"
+    top.write_text("Event File == events.tef\\n", encoding="utf-8")
+    inventory = TCF(top).discover_flags()
+    sourced = [
+        x for x in inventory.evidence
+        if x.origin == "event_definition" and x.value == "Q100"
+    ]
+    assert sourced
+    assert sourced[0].owner_control_file == tef
+    assert sourced[0].line_number is not None
+    assert sourced[0].line_number > 0
+
+
+def test_read_file_tokens_preserved_after_parser_flattens_trd(
+    tmp_path: Path,
+) -> None:
+    for name in ("DEV", "EXG"):
+        (tmp_path / f"nested_{name}.trd").write_text(
+            f"Read GIS Code == {name}.shp\\n", encoding="utf-8"
+        )
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "Read File == nested_<<~s2~>>.trd\\n", encoding="utf-8"
+    )
+    parsed = TCF(tcf)
+    assert parsed._read_file_inputs
+    result = parsed.discover_flags()
+    assert "S2" in result.scenario_slots
+    assert any("Dynamic included" in x for x in result.limitations)
+
+
 def test_discovery_does_not_stat_open_or_mutate_parsed_sources(
     tmp_path: Path,
 ) -> None:
