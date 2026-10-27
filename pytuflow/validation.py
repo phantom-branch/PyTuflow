@@ -754,16 +754,42 @@ def validate_dependencies(
             item.csv_columns if kind == "csv_header" else None,
         )
 
+    # Gather physical results by *declaration identity*, then emit in
+    # original projection/requirement order. Up-front errors must not move a
+    # later simulation ahead of a successful earlier simulation.
+    by_requirement: dict[int, list[ValidationFinding]] = {
+        id(item): [] for item in requirements
+    }
+
+    def add(item: _Requirement, result: ValidationFinding) -> None:
+        by_requirement[id(item)].append(result)
+
+    def ordered_findings() -> tuple[ValidationFinding, ...]:
+        by_run: dict[int, list[ValidationFinding]] = defaultdict(list)
+        for item in requirements:
+            by_run[item.run_index].extend(by_requirement[id(item)])
+        # Incomplete run/activation findings have no attached requirement.
+        # Keep them in their original run, after its available source records.
+        for error in failures:
+            by_run[error.run_index].append(error)
+        return tuple(
+            item
+            for run in projection.runs
+            for item in by_run.get(run.index, ())
+        )
+
     # Explicitly disabled inspection is never treated as validation success.
     # In particular, do not scandir wildcard directories when file checks
     # were disabled by the caller.
     if not policy.check_files:
-        return ValidationReport(
-            tuple(failures) + tuple(
+        for item in requirements:
+            add(
+                item,
                 finding(item, "unsupported", "file", item.path,
-                        "Physical input-file inspection was disabled")
-                for item in requirements
-            ),
+                        "Physical input-file inspection was disabled"),
+            )
+        return ValidationReport(
+            ordered_findings(),
             len(projection.runs), 0, 0, 0, 0,
         )
 
@@ -790,15 +816,15 @@ def validate_dependencies(
     concrete: list[tuple[_Requirement, Path]] = []
     for item in requirements:
         if item.unresolved or "<<" in str(item.path):
-            failures.append(
+            add(item, 
                 finding(item, "unresolved", "file", item.path, "Unresolved TUFLOW variables")
             )
         elif item.path in glob_errors:
             status, detail = glob_errors[item.path]
-            failures.append(finding(item, status, "wildcard", item.path, detail))
+            add(item, finding(item, status, "wildcard", item.path, detail))
         elif item.path in case_errors:
             status, detail = case_errors[item.path]
-            failures.append(finding(item, status, "file", item.path, detail))
+            add(item, finding(item, status, "file", item.path, detail))
         else:
             for path in expansions.get(item.path, (item.path,)):
                 # Each distinct Linux literal was resolved through the one
@@ -810,13 +836,13 @@ def validate_dependencies(
                         try:
                             exists = path.exists()
                         except OSError as exc:
-                            failures.append(finding(
+                            add(item, finding(
                                 item, "unresolved", "file", path,
                                 f"Cannot inspect input source file: {exc}",
                             ))
                             continue
                         if not exists:
-                            failures.append(finding(
+                            add(item, finding(
                                 item, "unsupported", "file", path,
                                 "Linux filename case policy unknown: supply -cs0/-cs1/-cs2",
                             ))
@@ -877,12 +903,11 @@ def validate_dependencies(
             with ThreadPoolExecutor(max_workers=policy.io_workers) as executor:
                 examined = dict(executor.map(inspect, ordered))
 
-    findings = failures[:]
     for item, path in concrete:
         if not policy.check_files:
             continue
         info = examined[path]
-        findings.append(finding(item, info.status, "file", path, info.detail))
+        add(item, finding(item, info.status, "file", path, info.detail))
         if info.status != "present":
             continue
         if (
@@ -890,7 +915,7 @@ def validate_dependencies(
             and path.suffix.casefold() == ".gpkg"
         ):
             if info.layer_error:
-                findings.append(
+                add(item, 
                     finding(item, "unresolved", "layer", path, info.layer_error)
                 )
             else:
@@ -900,7 +925,7 @@ def validate_dependencies(
                 status, detail = _layer_status(
                     selected_layer, info.layers, implicit=item.implicit_gpkg_layer
                 )
-                findings.append(finding(item, status, "layer", path, detail))
+                add(item, finding(item, status, "layer", path, detail))
         if policy.check_bc_csv_headers and (
             item.csv_columns is not None
             or (
@@ -911,7 +936,7 @@ def validate_dependencies(
         ):
             if item.csv_columns is None:
                 if path.suffix.casefold() == ".csv":
-                    findings.append(
+                    add(item, 
                         finding(
                             item, "unsupported", "csv_header", path,
                             "Parser did not provide BC CSV column requirements",
@@ -921,7 +946,7 @@ def validate_dependencies(
             if not item.csv_columns:
                 continue  # FEWS/nonordinary CSV: no ordinary named selectors.
             if path.suffix.casefold() != ".csv":
-                findings.append(
+                add(item, 
                     finding(
                         item, "unsupported", "csv_header", path,
                         "BC column selectors require an ordinary Source CSV",
@@ -932,7 +957,7 @@ def validate_dependencies(
                 for column in item.csv_columns
             ):
                 status, detail = _header_status((), item.csv_columns)
-                findings.append(
+                add(item, 
                     finding(item, status, "csv_header", path, detail)
                 )
             else:
@@ -947,12 +972,12 @@ def validate_dependencies(
                     status, detail = _header_status(
                         header, item.csv_columns
                     )
-                findings.append(
+                add(item, 
                     finding(item, status, "csv_header", path, detail)
                 )
 
     return ValidationReport(
-        tuple(findings),
+        ordered_findings(),
         len(projection.runs),
         len(examined),
         sum(result.gpkg_examined for result in examined.values()),
