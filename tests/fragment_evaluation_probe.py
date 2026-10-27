@@ -97,8 +97,16 @@ class FragmentEvaluationProbe:
                     row._complete_signatures.add(key)
                     # First expression/scope is the local input; remaining
                     # key components describe descendants/database rows.
-                    values, scopes = key[1]
-                    local = (values[0], scopes[0])
+                    if key[1][0] == "manifest":
+                        # Compact keys separate local bindings/predicates from
+                        # selected-file dependency signatures. Preserve selected
+                        # source identity without attributing child changes to it.
+                        selected = key[1][2]
+                        selection = (selected[0], tuple(child[:2] for child in selected[1])) if selected else ()
+                        local = key[1][1], selection
+                    else:
+                        values, scopes = key[1]
+                        local = (values[0], scopes[0])
                     if local in row._local_signatures:
                         row.repeated_local_misses += 1
                     else:
@@ -141,9 +149,9 @@ class FragmentEvaluationProbe:
         rows = list(self._inputs.values())
         misses = sum(row.misses for row in rows)
         hits = sum(row.hits for row in rows)
-        if self.key_errors == 0 and result.fallback_runs == 0:
-            if (misses, hits) != (result.fragment_evaluations, result.fragment_reuses):
-                raise AssertionError("Instrumented key totals differ from parser counters")
+        if (self.key_errors == 0 and result.fallback_runs == 0
+                and (misses, hits) != (result.fragment_evaluations, result.fragment_reuses)):
+            raise AssertionError("Instrumented key totals differ from parser counters")
 
         kinds: dict[str, Counter[str]] = {}
         for row in rows:

@@ -1,0 +1,55 @@
+{
+  "date": "2026-10-27",
+  "timezone": "Australia/Perth",
+  "parser_parent_sha": "36ad04bd7cb045c48f3b77e8794c48a956c90c06",
+  "parser_candidate_sha": "5c32395e30029bdd3d1053d18374234d0120fab4",
+  "consumer_sha": "04999e77d497173294f43e137dedbd0bde60d88a",
+  "source_archives": {
+    "A": {
+      "sha": "36ad04bd7cb045c48f3b77e8794c48a956c90c06",
+      "archive_sha256": "f7341544d1e770082213bddff1e02c332da5f504263e43f63822fb70e5469a7d"
+    },
+    "B": {
+      "sha": "5c32395e30029bdd3d1053d18374234d0120fab4",
+      "archive_sha256": "cb680838fe22c7c2604a07c0823537d3a2fa1bc972b6487fb1c0784a741136d4"
+    },
+    "consumer": {
+      "sha": "04999e77d497173294f43e137dedbd0bde60d88a",
+      "archive_sha256": "68d55a29d71df190c22bd30fba3c4ce6cd8370f7a536bf70552238157e9cbb58"
+    }
+  },
+  "contexts": 480,
+  "storage": "SSD only",
+  "normal_python": true,
+  "virtual_environment": false,
+  "worktree": false,
+  "solver": false,
+  "production_code_changes": false,
+  "options": {
+    "context_mode": "batch",
+    "inspection_mode": "files",
+    "reuse_fragments": true,
+    "io_workers": 1,
+    "check_bc_headers": true
+  },
+  "native_orders": [
+    "ABBA",
+    "BAAB"
+  ],
+  "native_observations_per_revision": 4,
+  "native_boundary": "Preflight API entry through CSV report completion; imports/setup excluded. Fresh independent processes, one worker. Report phases are inclusive as documented in README.",
+  "launch_boundary": "Outer subprocess invocation through exit includes startup/import/setup, result-artifact writes and shutdown. Do not call outer minus inner pure startup.",
+  "guarded_control_table_and_command_list_files": 15,
+  "guard_receipt_sha256": "82cd619b2cc2b5e358c032d68d8e45ff6ee7540b1db4969f5c63150b95d22369",
+  "guard_scope": "Retained parsed model/control/database sources and command list; not a full content hash of all raster/GIS/time-series payloads.",
+  "parity_comparison": "Recursive equality of complete decoded public run records, not only count/hash equality.",
+  "cpu_profile_clock": "cProfile timer=time.thread_time_ns, timeunit=1e-9; Windows thread CPU accounting is quantised, so tiny per-call CPU costs are approximate.",
+  "limits": [
+    "Warm retained workload, no cache flushing or controlled CPU frequency/affinity/background load.",
+    "Four native observations per revision; one observation per scaling prefix and diagnostic, no confidence intervals.",
+    "Profiles and patched diagnostic clocks impose overhead; their absolute costs cannot be subtracted from native timings.",
+    "Phase exclusive clocks exclude only nested observed labels; process clock has finite resolution.",
+    "No SMB benchmark or parity evaluation in this campaign, per owner instruction.",
+    "No solver, cold-storage, Linux, production multiprocessing or first-run scheduling claim."
+  ]
+}

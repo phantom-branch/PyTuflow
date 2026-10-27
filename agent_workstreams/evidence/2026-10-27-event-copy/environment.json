@@ -1,0 +1,13 @@
+{
+  "python": "3.14.6",
+  "normal_interpreter": true,
+  "platform": "Windows-10-10.0.19045-SP0",
+  "dependencies": {
+    "pandas": "3.0.5",
+    "numpy": "2.5.3",
+    "psutil": "7.2.2",
+    "loguru": "0.7.3",
+    "geopandas": "1.1.3",
+    "shapely": "2.1.2"
+  }
+}

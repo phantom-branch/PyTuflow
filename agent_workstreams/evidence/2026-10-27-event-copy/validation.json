@@ -1,0 +1,26 @@
+{
+  "final_runtime_tree": "c5d4402e3886e145b1e49c941e4cdb1b5d7ddff6",
+  "parser_context_dependency_regressions": {
+    "tests": 588,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "actual_consumer_regressions": {
+    "tests": 119,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_snapshot_contract_cases": 16,
+  "ruff_new_tests": "pass",
+  "format_new_tests": "pass",
+  "pyright_new_tests": "pass",
+  "existing_scoped_strict_pyright": "pass",
+  "prototype_event_module_default_pyright": {
+    "baseline_errors": 2,
+    "candidate_errors": 2,
+    "new_diagnostics": 0
+  },
+  "final_production_source_equals_parent": true
+}

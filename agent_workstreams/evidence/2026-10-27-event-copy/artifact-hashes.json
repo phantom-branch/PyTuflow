@@ -1,0 +1,16 @@
+{
+  "algorithm": "SHA-256 of canonical UTF-8 LF text",
+  "files": {
+    "audit/campaign.py.txt": "c1b7f3006b7fb01f7a610887aa227a3c2d9c5ac27734a4e5b4f2a1b3059630ca",
+    "audit/confirm.py.txt": "d14c46b3e5848a7cb124367f3282b9443ca4f95b6835d393356250bb453060ab",
+    "audit/measure.py.txt": "07b4f9125f7f6a98c0187983d33dbb9c67fe75f721e4a4aad7daa8856bdc19b2",
+    "audit/parity.py.txt": "7ab474faf3eb26b0ab6e768e025c7fb7ae341054f81cc9f386e47c3903b32d52",
+    "environment.json": "612530a59fd1c9028ec553c6883ca273f836747391d54e7fb957fa94a16cd7e0",
+    "native.json": "2a35dd5c5b01999c75214f49685aa56ee36b61d06ee6a5520e4de2db5877472a",
+    "operations.json": "a379501c3b7d8a714db83d9fd9093a360a64c31886b809ce7c3654f54b3862c4",
+    "parity.json": "3555a9a5a50103983d66c15897c80b78257a1015b349547207ab5d0673c0a657",
+    "protocol.json": "d2059abf2c4b6ae5d3096362bd7444da04f231eb92634c98c49a264b19b163d9",
+    "README.md": "19457bbd55c6e2b6b24411d0f714c62aacac0398a70d008f5a5b33c9b4bfb33d",
+    "validation.json": "043da27e503a92556a04db5c9f4f7a1f5d4d50896fabb39ce3e96ca08ccfcddf"
+  }
+}

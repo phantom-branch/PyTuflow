@@ -1,0 +1,88 @@
+import pathlib,json,time,sys,collections,functools,hashlib,cProfile,pstats
+from unittest.mock import patch
+r=pathlib.Path(__file__).parent;rev=sys.argv[1];kind=sys.argv[2];d=json.loads((r/'SSD.json').read_text());sys.path[:0]=[d['parser_sources'][rev],d['consumer_source']]
+from pytuflow import TCF
+from pytuflow._tmf import fragment_dependencies as f
+from pytuflow._tmf import context as cm
+from pytuflow._tmf.cf import cf_run_state as cf
+from loguru import logger
+logger.remove()
+flags=json.loads(pathlib.Path(d['runs_json']).read_text());out={'revision':rev,'diagnostic':True};seconds=collections.Counter();counts=collections.Counter();stack=[];plans=[]
+def wrap(label,fn):
+ @functools.wraps(fn)
+ def call(*a,**k):
+  start=time.perf_counter();cpu=time.process_time();frame=[0.,0.];stack.append(frame)
+  try:return fn(*a,**k)
+  finally:
+   wall=time.perf_counter()-start;used=time.process_time()-cpu;stack.pop();seconds[label+'.inclusive_wall']+=wall;seconds[label+'.exclusive_wall']+=max(0.,wall-frame[0]);seconds[label+'.inclusive_cpu']+=used;seconds[label+'.exclusive_cpu']+=max(0.,used-frame[1]);counts[label]+=1
+   if stack:stack[-1][0]+=wall;stack[-1][1]+=used
+ return call
+class CountMap(dict):
+ def __init__(self,values):super().__init__(values);self.lookups=0;self.hits=0
+ def get(self,key,default=None):
+  self.lookups+=1;self.hits+=key in self;return super().get(key,default)
+orig_init=f._Plan.__init__
+def init(self,*a,**kw):
+ result=wrap('plan',orig_init)(self,*a,**kw);plans.append(self)
+ if hasattr(self,'manifest_certificates'):self.manifest_certificates=CountMap(self.manifest_certificates)
+ return result
+if kind=='scale':
+ n=int(sys.argv[3]);flags=flags[:n];t=time.perf_counter();model=TCF(pathlib.Path(d['tcf']));parsed=time.perf_counter()-t;original=f.BatchDependencyRun;first=[]
+ def runrecord(*a,**kw):
+  result=original(*a,**kw)
+  if not first:first.append(time.perf_counter()-t0)
+  return result
+ t0=time.perf_counter()
+ with patch.object(f,'BatchDependencyRun',runrecord):result=model.collect_file_dependencies(flags)
+ total=time.perf_counter()-t0
+ assert result.passed and not result.fallback_runs
+ out.update(contexts=n,parse_seconds=parsed,first_context_seconds=first[0],collection_seconds=total,total_parse_collection_seconds=parsed+total,marginal_seconds=(total-first[0])/(n-1) if n>1 else None)
+ name=f'scale-{rev}-{n}'
+else:
+ from ryan_library.orchestrators.tuflow import input_preflight as ip
+ from ryan_library.functions.tuflow import dependency_index as di
+ from ryan_library.functions.tuflow import csv_headers as ch
+ patches=[patch.object(f._Plan,'__init__',init)]
+ from pytuflow._tmf.event import EventDatabase
+ copy_original=EventDatabase.copy
+ def eventcopy(*a,**kw):return wrap('copy_collection' if plans else 'copy_parse',copy_original)(*a,**kw)
+ patches.append(patch.object(EventDatabase,'copy',eventcopy))
+ for obj,method,label in [(cm.Context,'load_events','events'),(cf,'prepare_run_context','variables'),(f._Plan,'_key','key'),(f._Plan,'evaluate','fragment'),(f,'_join','join'),(f._Plan,'_include_selection','selection'),(ip,'_collect_references','consumer_collection'),(di,'read_csv_header','csv_headers'),(ch.CsvHeader,'problem','csv_selectors')]:
+  if hasattr(obj,method):patches.append(patch.object(obj,method,wrap(label,getattr(obj,method))))
+ patches.append(patch.object(f._FragmentContext,'__init__',wrap('context_construction',f._FragmentContext.__init__)))
+ for clsname in ('BatchInputCommand','BatchInputReference','BatchDependencyRun'):
+  cls=getattr(f,clsname);patches.append(patch.object(cls,'__init__',wrap(clsname,cls.__init__)))
+ predicates={};fallbacks=collections.Counter();fallbackcost=collections.Counter();observations=collections.Counter();event_outputs={};audits=collections.Counter()
+ if rev=='B':
+  from pytuflow._tmf.compiled_scope import ScopePredicate
+  pred=ScopePredicate.evaluate
+  def predicate(self,ctx):
+   value=pred(self,ctx);entry=predicates.setdefault(self.conditions,collections.Counter());entry[value]+=1;return value
+  patches.append(patch.object(ScopePredicate,'evaluate',predicate))
+  full=f._Plan._full_key
+  def fullkey(self,inp,ctx):
+   start=time.perf_counter();value=full(self,inp,ctx);typ=str(inp.lhs).lower();typ=typ if typ in ('geometry control file','bc control file','event file') else 'leaf';fallbackcost[typ]+=time.perf_counter()-start;fallbacks[typ]+=1;return value
+  patches.append(patch.object(f._Plan,'_full_key',fullkey))
+  # Observe distinct TEF values after normal fragment evaluation.
+  original_eval=f._Plan.evaluate
+  def event_eval(self,inp,ctx):
+   result=wrap('fragment',original_eval)(self,inp,ctx)
+   if str(inp.lhs).lower()=='event file':event_outputs[hashlib.sha256(repr(result).encode()).hexdigest()]=True
+   return result
+  patches=[p for p in patches if p.attribute!='evaluate']
+  patches.append(patch.object(ScopePredicate,'evaluate',predicate))
+  patches.append(patch.object(f._Plan,'evaluate',event_eval))
+ enabled=[False]
+ def audit(event,args):
+  if enabled[0] and event in ('open','os.scandir','os.listdir','sqlite3.connect'):audits[event]+=1
+ sys.addaudithook(audit)
+ from contextlib import ExitStack
+ runs=[ip.RunRequest(i,dict(zip((x.lstrip('-') for x in s.split()[::2]),s.split()[1::2]))) for i,s in enumerate(flags)]
+ with ExitStack() as es:
+  for p in patches:es.enter_context(p)
+  enabled[0]=True;start=time.perf_counter();report=ip.check_simulation_inputs(pathlib.Path(d['tcf']),runs,**d['options']);report.write_csv(r/f'phase-{rev}.csv');enabled[0]=False
+ assert report.passed and not report.dependency_fallback_runs
+ plan=plans[0]
+ out.update(seconds=dict(seconds),calls=dict(counts),fallback_by_command=dict(fallbacks),fallback_key_wall=dict(fallbackcost),predicate_shapes=len(predicates),predicates_constant=sum(len(v)==1 for v in predicates.values()),predicate_calls=sum(sum(v.values()) for v in predicates.values()),constant_predicate_calls=sum(sum(v.values()) for v in predicates.values() if len(v)==1),distinct_tef_fragments=len(event_outputs),audit_events=dict(audits),manifest_fallbacks=getattr(plan,'manifest_fallbacks',{}),certificate_entries=len(getattr(plan,'manifest_certificates',{})),certificate_lookups=getattr(getattr(plan,'manifest_certificates',None),'lookups',0),certificate_hits=getattr(getattr(plan,'manifest_certificates',None),'hits',0),native_report_phases={k:getattr(report,k) for k in ('parse_seconds','context_seconds','inventory_seconds')})
+ name=f'phase-{rev}' if kind=='phase' else f'phase-{rev}-{kind}'
+(r/(name+'.json')).write_text(json.dumps(out,indent=2));print(json.dumps(out),flush=True)

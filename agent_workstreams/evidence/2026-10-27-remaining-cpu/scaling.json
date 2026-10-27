@@ -1,0 +1,102 @@
+[
+  {
+    "revision": "A",
+    "diagnostic": true,
+    "contexts": 1,
+    "parse_seconds": 0.7113969000056386,
+    "first_context_seconds": 0.09909890004200861,
+    "collection_seconds": 0.09928450000006706,
+    "total_parse_collection_seconds": 0.8106814000057057,
+    "marginal_seconds": null
+  },
+  {
+    "revision": "B",
+    "diagnostic": true,
+    "contexts": 1,
+    "parse_seconds": 0.6933011000510305,
+    "first_context_seconds": 0.08245500002522022,
+    "collection_seconds": 0.082747999986168,
+    "total_parse_collection_seconds": 0.7760491000371985,
+    "marginal_seconds": null
+  },
+  {
+    "revision": "A",
+    "diagnostic": true,
+    "contexts": 10,
+    "parse_seconds": 0.7336039000074379,
+    "first_context_seconds": 0.10217729996656999,
+    "collection_seconds": 0.44794939999701455,
+    "total_parse_collection_seconds": 1.1815533000044525,
+    "marginal_seconds": 0.03841912222560495
+  },
+  {
+    "revision": "B",
+    "diagnostic": true,
+    "contexts": 10,
+    "parse_seconds": 0.7151667000143789,
+    "first_context_seconds": 0.07877289998577908,
+    "collection_seconds": 0.13501119997818023,
+    "total_parse_collection_seconds": 0.8501778999925591,
+    "marginal_seconds": 0.0062486999991556835
+  },
+  {
+    "revision": "A",
+    "diagnostic": true,
+    "contexts": 40,
+    "parse_seconds": 0.7206831999938004,
+    "first_context_seconds": 0.09798920003231615,
+    "collection_seconds": 1.6308860999997705,
+    "total_parse_collection_seconds": 2.351569299993571,
+    "marginal_seconds": 0.03930504871711422
+  },
+  {
+    "revision": "B",
+    "diagnostic": true,
+    "contexts": 40,
+    "parse_seconds": 0.8127185000339523,
+    "first_context_seconds": 0.08534260001033545,
+    "collection_seconds": 0.3645095999818295,
+    "total_parse_collection_seconds": 1.1772281000157818,
+    "marginal_seconds": 0.007158128204397284
+  },
+  {
+    "revision": "A",
+    "diagnostic": true,
+    "contexts": 160,
+    "parse_seconds": 0.763685199955944,
+    "first_context_seconds": 0.10526829998707399,
+    "collection_seconds": 7.2891316000022925,
+    "total_parse_collection_seconds": 8.052816799958237,
+    "marginal_seconds": 0.04518153018877496
+  },
+  {
+    "revision": "B",
+    "diagnostic": true,
+    "contexts": 160,
+    "parse_seconds": 0.7728705999907106,
+    "first_context_seconds": 0.07869269995717332,
+    "collection_seconds": 1.020149299991317,
+    "total_parse_collection_seconds": 1.7930198999820277,
+    "marginal_seconds": 0.00592111069203864
+  },
+  {
+    "revision": "A",
+    "diagnostic": true,
+    "contexts": 480,
+    "parse_seconds": 0.725740899972152,
+    "first_context_seconds": 0.10057539999252185,
+    "collection_seconds": 21.48951250000391,
+    "total_parse_collection_seconds": 22.215253399976064,
+    "marginal_seconds": 0.04465331336119288
+  },
+  {
+    "revision": "B",
+    "diagnostic": true,
+    "contexts": 480,
+    "parse_seconds": 0.7343657000456005,
+    "first_context_seconds": 0.07746080000652,
+    "collection_seconds": 3.1747138000209816,
+    "total_parse_collection_seconds": 3.909079500066582,
+    "marginal_seconds": 0.006466081419654409
+  }
+]

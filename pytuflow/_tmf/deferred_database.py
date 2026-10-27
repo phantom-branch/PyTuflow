@@ -5,7 +5,9 @@ from __future__ import annotations
 import os
 from dataclasses import replace
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
+import numpy as np
 
 from .file_reference import FileReference, make_file_reference
 from .parsers.command import Command
@@ -210,7 +212,7 @@ def database_source_references(
     # primary file. There is no Source filename column to expand.
     if kind == 'cross_section' and database.driver.name() == 'dat_cross_section':
         return ()
-    frame = database.df
+    frame = cast("DataFrame", database.df)
     columns = list(frame.columns)
     if kind == 'soils':
         _validate_soil_rows(frame, context)
@@ -229,6 +231,15 @@ def database_source_references(
         if not columns:
             raise DeferredDatabaseResolutionError('Materials database has no value column')
         column = columns[0]
+
+    if kind == 'bc':
+        # A CSV separator or comma-prefixed ! comment can survive loading as
+        # an entirely missing row. It is not a boundary declaration. Retain
+        # named rows and every row carrying data for the existing validation.
+        empty = np.asarray(frame.index.isna(), dtype=bool) & np.asarray(
+            frame.isna().all(axis=1), dtype=bool,
+        )
+        frame = frame.loc[~empty]
 
     refs: list[FileReference] = []
     for key, record in frame.iterrows():

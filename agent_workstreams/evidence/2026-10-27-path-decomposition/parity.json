@@ -1,0 +1,137 @@
+[
+  {
+    "workload": "W0",
+    "revision": "A",
+    "mode": "fragment",
+    "runs": 480,
+    "passed": true,
+    "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W0",
+    "revision": "B",
+    "mode": "uncached",
+    "runs": 480,
+    "passed": true,
+    "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W0",
+    "revision": "B",
+    "mode": "cached",
+    "runs": 480,
+    "passed": true,
+    "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W0",
+    "revision": "full",
+    "mode": "fragment",
+    "runs": 480,
+    "passed": true,
+    "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W0",
+    "revision": "B",
+    "mode": "fragment",
+    "runs": 480,
+    "passed": true,
+    "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W1",
+    "revision": "A",
+    "mode": "fragment",
+    "runs": 36,
+    "passed": true,
+    "record_sha256": "d86c71ee7dba8df13e7326728df78e2cccf81588be5ed7a605a8c41675f16c82",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W1",
+    "revision": "B",
+    "mode": "uncached",
+    "runs": 36,
+    "passed": true,
+    "record_sha256": "d86c71ee7dba8df13e7326728df78e2cccf81588be5ed7a605a8c41675f16c82",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W1",
+    "revision": "B",
+    "mode": "cached",
+    "runs": 36,
+    "passed": true,
+    "record_sha256": "d86c71ee7dba8df13e7326728df78e2cccf81588be5ed7a605a8c41675f16c82",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W1",
+    "revision": "full",
+    "mode": "fragment",
+    "runs": 36,
+    "passed": true,
+    "record_sha256": "d86c71ee7dba8df13e7326728df78e2cccf81588be5ed7a605a8c41675f16c82",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W1",
+    "revision": "B",
+    "mode": "fragment",
+    "runs": 36,
+    "passed": true,
+    "record_sha256": "d86c71ee7dba8df13e7326728df78e2cccf81588be5ed7a605a8c41675f16c82",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W2",
+    "revision": "A",
+    "mode": "fragment",
+    "runs": 240,
+    "passed": true,
+    "record_sha256": "e4fe94dab6b2746987bb7121c47c13f7d5f16aafef5868f87f69f75d8d744c0a",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W2",
+    "revision": "B",
+    "mode": "uncached",
+    "runs": 240,
+    "passed": true,
+    "record_sha256": "e4fe94dab6b2746987bb7121c47c13f7d5f16aafef5868f87f69f75d8d744c0a",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W2",
+    "revision": "B",
+    "mode": "cached",
+    "runs": 240,
+    "passed": true,
+    "record_sha256": "e4fe94dab6b2746987bb7121c47c13f7d5f16aafef5868f87f69f75d8d744c0a",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W2",
+    "revision": "full",
+    "mode": "fragment",
+    "runs": 240,
+    "passed": true,
+    "record_sha256": "e4fe94dab6b2746987bb7121c47c13f7d5f16aafef5868f87f69f75d8d744c0a",
+    "complete_recursive_equality": true
+  },
+  {
+    "workload": "W2",
+    "revision": "B",
+    "mode": "fragment",
+    "runs": 240,
+    "passed": true,
+    "record_sha256": "e4fe94dab6b2746987bb7121c47c13f7d5f16aafef5868f87f69f75d8d744c0a",
+    "complete_recursive_equality": true
+  }
+]
