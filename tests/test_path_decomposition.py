@@ -71,7 +71,9 @@ def test_every_request_renders_current_path_before_reuse(
     assert paths._split_database_path.cache_info().hits == 1
 
 
-def test_spelling_and_trailing_separator_changes_remain_visible(monkeypatch: pytest.MonkeyPatch):
+def test_spelling_and_trailing_separator_changes_remain_visible(
+    monkeypatch: pytest.MonkeyPatch,
+):
     first = paths.TuflowPath("Design_EXG_03.TGC")
     second = paths.TuflowPath("design_exg_03.tgc")
     assert first._split_db_and_lyr()[0] == "Design_EXG_03.TGC"
