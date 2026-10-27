@@ -657,6 +657,96 @@ def test_symlink_retarget_during_gpkg_read_is_not_accepted(
     ]
 
 
+@pytest.mark.parametrize("explicit_layer", [False, True])
+def test_globbed_gpkg_implicit_default_layer_is_each_concrete_stem(
+    tmp_path: Path, explicit_layer: bool,
+) -> None:
+    """Implicit terrain_*.gpkg checks concrete stems, not a layer wildcard."""
+    from contextlib import closing
+
+    from pytuflow._tmf.file_reference import make_file_reference
+    from pytuflow._tmf.parsers.command import Command
+    from pytuflow._tmf.settings import TCFConfig
+
+    for name in ("terrain_A.gpkg", "terrain_B.gpkg"):
+        with closing(sqlite3.connect(tmp_path / name)) as db:
+            db.execute("CREATE TABLE gpkg_contents (table_name TEXT)")
+            # terrain_A.gpkg intentionally contains only terrain_B:
+            # explicit ">> terrain_*" may match; implicit must not.
+            db.execute("INSERT INTO gpkg_contents VALUES ('terrain_B')")
+            db.commit()
+
+    config = TCFConfig(
+        control_file=tmp_path / "model.tcf",
+        init_from_tcf=False,
+        file_resolution="deferred",
+    )
+    value = "terrain_*.gpkg"
+    if explicit_layer:
+        value += " >> terrain_*"
+    command = Command(
+        f"Read GIS Code == {value}", config,
+        parent=tmp_path / "model.tcf",
+    )
+    ref = make_file_reference(next(command.parts()))
+    assert ref.path_pattern.name == "terrain_*.gpkg"
+    assert ref.layer_pattern == "terrain_*"
+
+    report = validate_dependencies(
+        _project(_run(0, (ref,))),
+        options=ValidationOptions(case_sensitivity=0),
+    )
+    assert report.files_examined == 2
+    assert report.geopackages_examined == 2
+    selected = [f for f in report.findings if f.kind == "layer"]
+    assert [f.path.name for f in selected] == [
+        "terrain_A.gpkg", "terrain_B.gpkg",
+    ]
+    assert [f.layer for f in selected] == (
+        ["terrain_*", "terrain_*"] if explicit_layer
+        else ["terrain_A", "terrain_B"]
+    )
+    assert [f.status for f in selected] == (
+        ["present", "present"] if explicit_layer
+        else ["missing", "present"]
+    )
+    assert report.passed is explicit_layer
+
+
+def test_single_implicit_gpkg_layer_uses_exact_filename_stem(
+    tmp_path: Path,
+) -> None:
+    from contextlib import closing
+
+    from pytuflow._tmf.file_reference import make_file_reference
+    from pytuflow._tmf.parsers.command import Command
+    from pytuflow._tmf.settings import TCFConfig
+
+    gpkg = tmp_path / "single.gpkg"
+    with closing(sqlite3.connect(gpkg)) as db:
+        db.execute("CREATE TABLE gpkg_contents (table_name TEXT)")
+        db.execute("INSERT INTO gpkg_contents VALUES ('other_layer')")
+        db.commit()
+
+    config = TCFConfig(
+        control_file=tmp_path / "model.tcf",
+        init_from_tcf=False,
+        file_resolution="deferred",
+    )
+    ref = make_file_reference(next(
+        Command("Read GIS Code == single.gpkg", config,
+                parent=tmp_path / "model.tcf").parts()
+    ))
+    report = validate_dependencies(
+        _project(_run(0, (ref,))),
+        options=ValidationOptions(case_sensitivity=0),
+    )
+    assert not report.passed
+    assert [(f.layer, f.status) for f in report.findings if f.kind == "layer"] == [
+        ("single", "missing"),
+    ]
+
+
 def test_invalid_geopackage_reports_unresolved_layer(tmp_path: Path) -> None:
     gpkg = tmp_path / "not_sqlite.gpkg"
     gpkg.write_bytes(b"invalid database")
