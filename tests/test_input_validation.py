@@ -303,6 +303,7 @@ def test_gpkg_uncheckpointed_wal_changes_fail_without_writes(
                     (
                         _ref(gpkg, layer="checkpointed_layer"),
                         _ref(gpkg, layer="wal_only_edit"),
+                        _ref(gpkg),  # No layer selector: still an invalid GPKG
                     ),
                 )
             )
@@ -311,20 +312,20 @@ def test_gpkg_uncheckpointed_wal_changes_fail_without_writes(
 
         assert after == before
         assert not report.passed
-        assert report.geopackages_examined == 1
-        layer_findings = [
-            finding for finding in report.findings if finding.kind == "layer"
-        ]
-        assert [finding.status for finding in layer_findings] == [
-            "unresolved", "unresolved",
-        ]
-        assert {finding.layer for finding in layer_findings} == {
-            "checkpointed_layer", "wal_only_edit",
-        }
+        assert report.files_examined == 1
+        # WAL checks happen before connecting to SQLite, including when no
+        # layer was requested. A rejected GPKG must never be counted as an
+        # inspected valid GeoPackage.
+        assert report.geopackages_examined == 0
+        assert len(report.findings) == 3
+        assert all(
+            finding.status == "unresolved" and finding.kind == "file"
+            for finding in report.findings
+        )
         assert all(
             "non-empty SQLite -wal journal" in finding.detail
             and "Save/close" in finding.detail
-            for finding in layer_findings
+            for finding in report.findings
         )
     finally:
         editor.close()
