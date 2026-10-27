@@ -1,4 +1,5 @@
 """Focused tests for syntax-only TUFLOW input references."""
+import os
 from dataclasses import FrozenInstanceError
 from pathlib import Path
 from unittest.mock import patch
@@ -568,11 +569,12 @@ def test_deferred_wildcard_includes_loaded_nested_control_files(tmp_path):
 
 
 def test_deferred_case_insensitive_nested_file(tmp_path):
+    """TUFLOW Linux -cs2 explicitly permits filename case aliases."""
     geom = tmp_path / 'Geom.TGC'
     geom.write_text('Read GIS Code == gis/2d_code.shp\n', encoding='utf-8')
     tcf = tmp_path / 'main.tcf'
     tcf.write_text('Geometry Control File == geom.tgc\n', encoding='utf-8')
-    parsed = TCF(tcf)
+    parsed = TCF(tcf, case_sensitivity=2)
     with patch.object(TuflowPath, 'glob', side_effect=AssertionError('glob')):
         run = parsed.context(file_resolution='deferred')
         paths = {ref.path_pattern.name for inp in run.find_input()
@@ -806,3 +808,17 @@ def test_deferred_material_and_soil_variables_are_context_expanded(tmp_path):
     assert len(sources) == 1
     assert sources[0].database_kind == 'materials'
     assert sources[0].path_pattern == tmp_path / 'roughness.csv'
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Native Windows filesystems are case insensitive")
+@pytest.mark.parametrize("case_sensitivity", [None, 0, 1, 2])
+def test_windows_default_and_case_options_preserve_native_input_lookup(tmp_path, case_sensitivity):
+    """No change to existing Windows eager materialisation or public defaults."""
+    actual = tmp_path / "Materials.csv"
+    actual.write_text("Material, Manning\n1,0.04\n", encoding="utf-8")
+    tcf = tmp_path / "windows_case.tcf"
+    tcf.write_text("Read Materials File == materials.CSV\n", encoding="utf-8")
+    model = TCF(tcf) if case_sensitivity is None else TCF(tcf, case_sensitivity=case_sensitivity)
+    material = model.find_input(lhs="Read Materials File")[0]
+    assert not material.has_missing_files
+    assert material.files

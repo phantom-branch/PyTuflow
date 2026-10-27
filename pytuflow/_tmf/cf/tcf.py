@@ -63,7 +63,29 @@ class TCF(ControlFileLoadMixin, TuflowControlFileMixin, TCFBuildState):
     """
     TUFLOW_TYPE = const.CONTROLFILE.TCF
 
-    def __init__(self, fpath: PathLike | None = None, **kwargs):
+    def __init__(self, fpath: PathLike | None = None, *,
+                 case_sensitivity: int | None = None, **kwargs):
+        """Load a model with TUFLOW-compatible case matching.
+
+        Linux defaults to -cs0. Supply 1 or 2 for the -cs1/-cs2 filename
+        compatibility modes; Windows retains native filesystem semantics.
+        This policy applies during initial model loading, not retrospectively
+        to a run context built from an already loaded model.
+        """
+        if case_sensitivity is not None:
+            if kwargs.get('config') is not None:
+                raise ValueError('Pass case_sensitivity or config, not both')
+            from ..settings import TCFConfig
+            from ..tfpathlib import TuflowPath
+            from pathlib import Path
+            # The primary TCF is a filename too; TUFLOW -cs1/-cs2 can match
+            # its extension/name but not its parent directory components.
+            if fpath is not None:
+                fpath = TuflowPath.init_case_policy_path(fpath, Path.cwd(), case_sensitivity)
+            # An absent primary TCF should retain the traditional unloaded
+            # model state, not fail prematurely inside TCFConfig.read_tcf().
+            existing_tcf = fpath if fpath is not None and Path(fpath).is_file() else None
+            kwargs['config'] = TCFConfig(tcf=existing_tcf, case_sensitivity=case_sensitivity)
         super(TCF, self).__init__(fpath, **kwargs)
 
     def tgc(self, context: Context = None) -> 'TGC':
