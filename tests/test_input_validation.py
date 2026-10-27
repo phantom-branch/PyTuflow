@@ -808,6 +808,86 @@ def test_single_implicit_gpkg_layer_uses_exact_filename_stem(
     ]
 
 
+@pytest.mark.skipif(os.name == "nt", reason="Linux final filename case policy")
+@pytest.mark.parametrize(
+    ("case_sensitivity", "requested"),
+    [(1, "grid_A.tif"), (2, "grid_a.tif")],
+)
+def test_case_resolution_of_literal_filenames_is_bounded_and_shared(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    case_sensitivity: int,
+    requested: str,
+) -> None:
+    """Repeat contexts may not rescan an unbounded network directory."""
+    source = tmp_path / "Grid_A.TIF"
+    if case_sensitivity == 1:
+        source = tmp_path / "grid_A.TIF"
+    source.write_bytes(b"grid")
+    for index in range(4):
+        (tmp_path / f"other_{index}.tif").write_bytes(b"unrelated")
+
+    flag = tmp_path / requested
+    projection = _project(*(
+        _run(index, (_ref(flag),)) for index in range(4)
+    ))
+    original_scandir = os.scandir
+    calls: list[Path] = []
+
+    def counted(folder: os.PathLike[str] | str):
+        calls.append(Path(folder))
+        return original_scandir(folder)
+
+    monkeypatch.setattr(os, "scandir", counted)
+    report = validate_dependencies(
+        projection,
+        options=ValidationOptions(
+            case_sensitivity=case_sensitivity,
+            maximum_directory_entries=50,
+        ),
+    )
+    assert report.passed
+    assert report.directories_scanned == 1
+    assert calls == [tmp_path]
+    assert report.files_examined == 1
+    assert len(report.findings) == 4
+    assert all(item.path == source for item in report.findings)
+
+    calls.clear()
+    bounded = validate_dependencies(
+        projection,
+        options=ValidationOptions(
+            case_sensitivity=case_sensitivity,
+            maximum_directory_entries=1,
+        ),
+    )
+    assert not bounded.passed
+    assert bounded.directories_scanned == 1
+    assert calls == [tmp_path]
+    assert bounded.files_examined == 0
+    assert len(bounded.findings) == 4
+    assert all(item.status == "unresolved" for item in bounded.findings)
+    assert all(
+        "bounded scan limit" in item.detail for item in bounded.findings
+    )
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Case-distinct filenames on Linux")
+def test_case_relaxed_literal_ambiguous_filenames_fail_closed(tmp_path: Path) -> None:
+    (tmp_path / "Grade_A.TIF").write_bytes(b"one")
+    (tmp_path / "GRADE_A.TIF").write_bytes(b"two")
+    wanted = tmp_path / "grade_a.tif"
+    report = validate_dependencies(
+        _project(_run(0, (_ref(wanted),))),
+        options=ValidationOptions(case_sensitivity=2),
+    )
+    assert not report.passed
+    assert report.directories_scanned == 1
+    assert report.files_examined == 0
+    assert report.findings[0].status == "unresolved"
+    assert "Ambiguous TUFLOW -cs2 filename" in report.findings[0].detail
+
+
 def test_invalid_geopackage_reports_unresolved_layer(tmp_path: Path) -> None:
     gpkg = tmp_path / "not_sqlite.gpkg"
     gpkg.write_bytes(b"invalid database")
