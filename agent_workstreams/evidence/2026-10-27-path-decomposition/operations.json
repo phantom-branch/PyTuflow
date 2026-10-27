@@ -1,0 +1,155 @@
+{
+  "instrumented": true,
+  "profile_clock": "default elapsed; durations include profiler overhead, not native CPU estimates",
+  "profiles": [
+    {
+      "revision": "A",
+      "total_profile_calls": 32867112,
+      "selected_functions": [
+        {
+          "module": "file.py",
+          "line": 455,
+          "function": "__str__",
+          "calls": 437418,
+          "primitive_calls": 437418,
+          "self_seconds": 0.1653695,
+          "inclusive_seconds": 0.7607158,
+          "application": true
+        },
+        {
+          "module": "file.py",
+          "line": 89,
+          "function": "_split_db_and_lyr",
+          "calls": 237774,
+          "primitive_calls": 237774,
+          "self_seconds": 0.15950430000000002,
+          "inclusive_seconds": 0.7226873,
+          "application": true
+        },
+        {
+          "module": "file.py",
+          "line": 190,
+          "function": "dbpath",
+          "calls": 171051,
+          "primitive_calls": 171051,
+          "self_seconds": 0.1152563,
+          "inclusive_seconds": 0.7776563000000001,
+          "application": true
+        },
+        {
+          "module": "file.py",
+          "line": 182,
+          "function": "suffix",
+          "calls": 105811,
+          "primitive_calls": 105811,
+          "self_seconds": 0.0459269,
+          "inclusive_seconds": 1.1377639000000002,
+          "application": true
+        },
+        {
+          "module": "file.py",
+          "line": 186,
+          "function": "name",
+          "calls": 105837,
+          "primitive_calls": 105837,
+          "self_seconds": 0.0435477,
+          "inclusive_seconds": 0.903197,
+          "application": true
+        },
+        {
+          "module": "file.py",
+          "line": 196,
+          "function": "lyrname",
+          "calls": 64195,
+          "primitive_calls": 64195,
+          "self_seconds": 0.0416146,
+          "inclusive_seconds": 0.8897364000000001,
+          "application": true
+        }
+      ]
+    },
+    {
+      "revision": "B",
+      "total_profile_calls": 32390852,
+      "selected_functions": [
+        {
+          "module": "file.py",
+          "line": 469,
+          "function": "__str__",
+          "calls": 437418,
+          "primitive_calls": 437418,
+          "self_seconds": 0.1767639,
+          "inclusive_seconds": 0.7802332000000001,
+          "application": true
+        },
+        {
+          "module": "file.py",
+          "line": 114,
+          "function": "_split_db_and_lyr",
+          "calls": 237774,
+          "primitive_calls": 237774,
+          "self_seconds": 0.1351039,
+          "inclusive_seconds": 0.6613275000000001,
+          "application": true
+        },
+        {
+          "module": "file.py",
+          "line": 204,
+          "function": "dbpath",
+          "calls": 171051,
+          "primitive_calls": 171051,
+          "self_seconds": 0.11421940000000001,
+          "inclusive_seconds": 0.7450263,
+          "application": true
+        },
+        {
+          "module": "file.py",
+          "line": 196,
+          "function": "suffix",
+          "calls": 105811,
+          "primitive_calls": 105811,
+          "self_seconds": 0.0459487,
+          "inclusive_seconds": 1.1330145,
+          "application": true
+        },
+        {
+          "module": "file.py",
+          "line": 200,
+          "function": "name",
+          "calls": 105837,
+          "primitive_calls": 105837,
+          "self_seconds": 0.043989900000000005,
+          "inclusive_seconds": 0.8950084,
+          "application": true
+        },
+        {
+          "module": "file.py",
+          "line": 210,
+          "function": "lyrname",
+          "calls": 64195,
+          "primitive_calls": 64195,
+          "self_seconds": 0.0409742,
+          "inclusive_seconds": 0.8495105000000001,
+          "application": true
+        },
+        {
+          "module": "file.py",
+          "line": 18,
+          "function": "_split_database_path",
+          "calls": 350,
+          "primitive_calls": 350,
+          "self_seconds": 0.0003725,
+          "inclusive_seconds": 0.0005197,
+          "application": true
+        }
+      ]
+    }
+  ],
+  "prototype_process_lifetime_cache_info": {
+    "hits": 237435,
+    "misses": 351,
+    "maxsize": 512,
+    "currsize": 351
+  },
+  "counter_boundaries": "Cache info includes 12 requests before profiling. Profiled split requests are 237774; helper computations 350 inside the profile. Whole-process cache has 351 misses."
+}

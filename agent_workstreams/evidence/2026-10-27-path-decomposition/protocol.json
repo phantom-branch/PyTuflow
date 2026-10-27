@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-27",
+  "timezone": "Australia/Perth",
+  "parent_PR": 41,
+  "child_PR": 42,
+  "parent": {
+    "sha": "0fa632dab996ad40f6c20bcc466cb5d4d0beadf6",
+    "archive_sha256": "c39c8a67c7698f7484562b7a45ff64e3ad080ac52ef3b7201cd316d082981bc0",
+    "production_tree": "c5d4402e3886e145b1e49c941e4cdb1b5d7ddff6"
+  },
+  "prototype": {
+    "sha": "74f35440effa8fc9e15e95415929fdcdc9a40a81",
+    "archive_sha256": "9b20b87c88f9dd9bbe1855167fdd15cf3fb23775114664a78e42baa000453fce",
+    "production_tree": "f335eff7a036f7efdf0bd0fc2b24e4499888126b"
+  },
+  "rollback_commit": "1e50dff1369c73b38f86e7bb155b1a7d65aeb85d",
+  "retained_runtime_tree": "c5d4402e3886e145b1e49c941e4cdb1b5d7ddff6",
+  "production_change_retained": false,
+  "consumer_sha": "04999e77d497173294f43e137dedbd0bde60d88a",
+  "native_contexts": 480,
+  "storage": "SSD only",
+  "options": {
+    "context_mode": "batch",
+    "inspection_mode": "files",
+    "reuse_fragments": true,
+    "io_workers": 1,
+    "check_bc_headers": true
+  },
+  "initial_orders": [
+    "ABBA",
+    "BAAB",
+    "ABBA",
+    "BAAB"
+  ],
+  "confirmation_orders": [
+    "BAAB",
+    "ABBA",
+    "BAAB",
+    "ABBA"
+  ],
+  "observations_per_condition_per_campaign": 8,
+  "native_boundary": "Preflight API entry through normal CSV report completion, including parse/context/dependency/inventory/header work. Setup/imports excluded and separate. Outer process includes launch/artefact writes/shutdown.",
+  "instrumentation": "No profiler or tracing wrappers during native timing. Separate cProfile observations use default elapsed clock. Cache info is process-lifetime since module import; profiled operation counts use the API/report boundary.",
+  "cache_design": "At most 512 literal string/immutable regex keys and immutable component tuples. Every path request obtains current str(self); non-default regex and non-exact strings use uncached callbacks. No file selection/results, Path instances, models, bindings, existence or parsed-source data cached.",
+  "input_guard_files": 17,
+  "input_guard_receipt_sha256": "9de21bebdad8642830fb1308bbdc5729b2a191eb69be9be4cd7d7bff4aca8ef1",
+  "limits": [
+    "Warm retained workload; no CPU affinity/frequency control or cache flushing. Background load/drift and overlaps remain.",
+    "No confidence interval or general speed-up/regression claim. No pooling between campaigns or source revisions.",
+    "Model/control/database sources and command lists guarded; not complete payload hashes for all GIS/raster/time series.",
+    "No solver, model edit, SMB benchmark, extra PR/worktree/venv, merge/release/retarget or parent change."
+  ]
+}

@@ -3,19 +3,10 @@
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import cast
 
 import pytest
 
 from pytuflow._tmf.tfpathlib import file as paths
-
-
-@dataclass
-class LiteralPath:
-    text: str
-
-    def __str__(self) -> str:
-        return self.text
 
 
 @pytest.mark.parametrize(
@@ -45,15 +36,17 @@ class LiteralPath:
         ("Case.gpkg >> Σ", ("Case.gpkg", "Σ")),
     ],
 )
-def test_lexical_forms(text: str, expected: tuple[str, str | None]):
-    assert (
-        paths.TuflowPath._split_db_and_lyr(cast(paths.TuflowPath, LiteralPath(text)))
-        == expected
-    )
-    assert (
-        paths.TuflowPath._split_db_and_lyr(cast(paths.TuflowPath, LiteralPath(text)))
-        == expected
-    )
+def test_lexical_forms(
+    text: str, expected: tuple[str, str | None], monkeypatch: pytest.MonkeyPatch
+):
+    path = paths.TuflowPath("initial.tgc")
+
+    def render(self) -> str:
+        return text
+
+    monkeypatch.setattr(type(path), "__str__", render)
+    assert path._split_db_and_lyr() == expected
+    assert path._split_db_and_lyr() == expected
 
 
 def test_every_request_renders_current_path_before_reuse(

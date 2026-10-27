@@ -1,103 +1,90 @@
-# Next investigation prompt: path conversion and decomposition
+# Future serial CPU investigation guardrails
 
-The configuration/event-copy experiment is complete. Its production fast path was removed
-because an initial apparent native gain did not reproduce. This prompt records the next
-bounded investigation; no path optimisation has been implemented or accepted yet.
+The two requested bounded experiments are complete. Neither production fast path remains
+in PR #42. This is a closeout and future-work boundary, not an instruction to repeat the
+same campaigns or implement another optimisation without a new task.
 
-## Repository, stack and evidence
+## Current stack and retained scope
 
-Continue on `perf/serial-call-reduction-followup` and existing draft
-[PR #42](https://github.com/phantom-branch/PyTuflow/pull/42), targeting
-`perf/compiled-effective-dependencies` ([parent #41](https://github.com/phantom-branch/PyTuflow/pull/41)).
-Do not create another PR, worktree or virtual environment, or target master.
+Existing [PR #42](https://github.com/phantom-branch/PyTuflow/pull/42), branch
+`perf/serial-call-reduction-followup`, targets [#41](https://github.com/phantom-branch/PyTuflow/pull/41)
+branch `perf/compiled-effective-dependencies`. Parent `0fa632d` was incorporated normally at
+`70b8b07`. The final parser tree is the unchanged parent tree. Retained changes comprise
+16 snapshot-safety and 27 path-semantics cases, existing Windows 3.12/3.14 workflow coverage,
+sanitised experiment records and the indexed handoff. Do not merge, release or retarget.
 
 Read [the current handoff](../serial_call_reduction_followup.md),
-[the rejected copy experiment](../evidence/2026-10-27-event-copy/README.md),
-[the parent handoff](../compiled_effective_dependencies.md), applicable repository guidance,
-and [the parent's CPU investigation](https://github.com/phantom-branch/PyTuflow/blob/0fa632dab996ad40f6c20bcc466cb5d4d0beadf6/agent_workstreams/evidence/2026-10-27-remaining-cpu/README.md).
+[the path results](../evidence/2026-10-27-path-decomposition/README.md),
+[the copy results](../evidence/2026-10-27-event-copy/README.md) and
+[the parent handoff](../compiled_effective_dependencies.md) before proposing new work.
 
-Parent `0fa632d` was already merged normally into this child at `70b8b07`, bringing in the
-newer correctness fixes that were absent at creation base `404101f`. Final copy-investigation
-runtime source is exactly the parent tree. Fetch/check the live parent before new work;
-incorporate newer parent commits with a normal branch merge, preserving published history
-and unrelated changes. Do not modify the parent, force-push, merge a PR, release or retarget.
-If its stack has changed, report that before choosing another base.
+## What has already been tested
 
-## Objective and scope
+- Guarded event-database bulk copying: initial median reduction 2.76%; confirmation
+  reduction -1.32%. It removed almost all event insertions, but native benefit did not
+  reproduce. Prototype `dbdc4d8`; rollback `d340034`.
+- Bounded literal database/layer splitting: initial median reduction -0.15%; confirmation
+  -0.89%. The profile reduced actual parsing bodies to 350 while retaining all 237,774
+  entry requests and 437,418 string conversions. A 99.85% whole-process hit rate did not
+  deliver native improvement. Prototype `74f3544`; rollback `1e50dff`.
 
-Investigate one small path conversion/decomposition improvement, measure it independently,
-and retain it only after complete correctness and reproducible incremental native benefit.
-Start with repeated conversions/splitting within a known operation before adding a cache.
-Recorded counts are 437,418 TuflowPath string conversions and 237,774 database/layer splits
-for the original 480-context consumer. These are hypotheses, not recoverable native time.
+Each experiment uses two separate balanced 16-observation campaigns against current #41,
+not #39. Each also has five-mode complete recursive record equality on the separate retained
+480-, 36- and 240-context workloads. No cross-source/campaign/model pooling or favourable
+sample selection. Raw records, models, paths, flags, mappings and profiles stay private.
 
-Do not revive the rejected bulk-copy mechanism merely because event insertions fell from
-605,055 to 110. Native medians were 3.882589 -> 3.775467 s initially but 3.884677 ->
-3.935824 s on confirmation. Its fast-path guards/construction replace some removed work,
-and an observed roughly 0.39-second copy budget is not wholly removable. Retain its 16
-snapshot-safety tests. Leave TEF full-key fallbacks and immutable result assembly unchanged;
-all 480 TEF fragments differ and certificates already have 25,793/25,935 cache hits.
+The historical 81.35% #39-to-#41 gain belongs to #41. It is not evidence of an incremental
+follow-up gain. Do not repeat either rejected mechanism based on fewer calls, high cache
+hits, profiler timing or the earlier approximately 0.39-second copy budget. New work needs
+a different justified mechanism and a material measured budget.
 
-Inspect TuflowPath construction, __str__, _split_db_and_lyr, dbpath/lyrname/suffix access
-and repeated use during dependency projection and consumer collection. Prefer a small,
-reviewable change; do not bundle unrelated membership, copying or assembly work.
+## If further performance work is requested
 
-Preserve:
+1. Check live parent/child/consumer metadata and source hashes. Preserve newer commits,
+   unrelated state and published history. Incorporate newer parent commits with a normal
+   branch merge only within the authorised child. No parent changes, force-push, extra PR,
+   worktree, virtual environment, PR merge, release or unauthorised retargeting.
+2. Define one independently removable change and its exclusive measured budget. Inspect
+   relevant ordinary paths and extension hooks first. Current conversion/splitting counts
+   alone do not establish recoverable runtime. Prefer avoiding repeated work within an
+   operation before adding more caching; preserve callback and mutation semantics.
+3. Use current corrected #41 as A, plus exactly that candidate as B. Freeze normal Python
+   3.14, actual consumer and dependency versions, input/location/flag order and identical
+   batch/file inspection/fragment/header options. Use SSD only, one process and one I/O
+   worker. Independent sources may use Git archives outside the repo; no solver/model edits.
+4. Add meaningful positive/negative regressions. Compare all public run-record fields:
+   UUIDs, command ordering/positions/raw metadata, selected source-file identities/paths,
+   layers/references, activation ownership, database sources/selectors and errors. Require
+   recursive equality across ordinary uncached/cached, full-key reference and optimised
+   evaluation. Hashes/counts are receipts, not the equality proof.
+5. Preserve scenario/event/Set Variable ordering and transitive/late substitutions,
+   fragmented and surplus literal delimiters, Unicode replacement rules, nested/multiple/
+   wildcard includes, unresolved/missing/ambiguous/unparsed sources and reparsed snapshots.
+   Different selected files must not share cached commands merely because values coincide.
+6. Preserve Windows/POSIX case policy, relative/drive/UNC/trailing-separator and database/
+   layer/NetCDF forms. Observe current rendering and authoritative custom hooks. Prove what
+   is immutable, bounded and independent of source state; fall back when uncertain. No
+   lexical shortcut may suppress file-selection errors or turn into filesystem/GIS I/O.
+7. Retain independent mutation at existing copy depth, intentional variables-reference
+   semantics, failed-run cache isolation, ordinary negative/Else scope handling, progressive
+   event-key visibility and BC empty-row validation. Do not alter TEF full-key fallbacks,
+   immutable assembly, membership decisions or public APIs merely to make an optimisation
+   easier. Those areas and production multiprocessing require separate scope.
+8. Bound the native campaign beforehand. Use fresh processes, balanced ABBA/BAAB blocks and
+   at least four observations per condition. No profiler, tracing wrappers or diagnostic
+   CSV generation in native acceptance. Report complete samples, medians/ranges/drift,
+   process CPU, memory, setup and phase boundaries; inclusive times are not additive.
+   Keep attribution separate. Stop on parity/integrity failures. Remove a production
+   change if a claimed gain does not reproduce; do not keep measuring until it looks good.
+9. Run appropriate Ruff/format/Pyright and parser/context/deferred checks plus actual
+   consumer compatibility. Current local evidence is 630 and 119 passing tests, zero
+   skips. Run applicable Windows 3.12/3.14 hosted matrices on the exact final head;
+   distinguish local/earlier-head evidence and inherited diagnostics from new failures.
+10. Update this same PR/title/body and indexed handoff around the retained scope, publish
+    only sanitised source-specific receipts, obtain fresh exact-head review and resolve
+    findings. Leave CI/review/access gates explicit. Deliver either a measured retained
+    improvement or a documented negative result with its production experiment removed.
 
-- Exact replacement order and unresolved/malformed token handling, including late/transitive
-  scenario/event aliases, cascades, fragmented delimiters and surplus literal brackets.
-- Relative/absolute paths, trailing separators, drive/UNC forms, Unicode and existing
-  Windows/POSIX case policies; no new filesystem or GIS probes for lexical operations.
-- GeoPackage >> and |layername= forms, NetCDF syntax, wildcard/multiple include selection,
-  extensionless/layerless references and custom methods/hooks. Prove eligibility or fall back.
-- Selected parsed source identity and resolved path in fragment equivalence, even when file
-  contents/effective values coincide; nested includes, missing/ambiguous/unparsed selections
-  and source changes must not reuse another file's output.
-- Ordinary scope/negative membership and assignment ordering; event-key visibility,
-  invalidation, custom Context translation, failed-run cache isolation and BC row validation.
-- All public dataclasses, UUIDs, command order/positions, raw metadata, file/layer references,
-  activation ownership, database selectors and errors. No mutable cross-run state sharing.
-
-If caching is proposed, state exactly what is immutable, how mutation/source changes are
-observed, how memory is bounded and why custom callbacks remain authoritative. A lower call
-count, an invariant filename or a high cache-hit rate is not an equivalence proof.
-
-## Correctness and native acceptance
-
-1. Freeze exact latest parent, candidate and actual consumer sources and private workload
-   identities/options. Use immutable Git archives outside the repo when needed. Preserve
-   newer commits and unrelated local work; do not change installed dependency/source pins.
-2. Use current corrected #41 as A and A plus the single path change as B. The historical
-   #39-to-#41 81.35% gain is not a follow-up gain. Capture fresh matched baseline/candidate
-   observations; do not pool sources, storage or timing boundaries.
-3. Add meaningful positive/negative regressions for the change, then compare complete public
-   records across ordinary uncached/cached, full-key reference and optimised modes. Compare
-   actual records, not only counts/hashes. Retain all parent regressions, including Unicode
-   TEF cases, dynamic filename/source identity, custom hooks and failed-run behaviour.
-4. Check the separate retained 480-, 36- and 240-context private workloads when available;
-   keep their status distinct. The previous copy experiment compared five modes on each.
-   Do not edit inputs, invoke the solver or publish raw paths/flags/models/records/profiles.
-5. Use normal Python 3.14, one process/one I/O worker, batch context, file inspection,
-   fragments and BC CSV header/column checking. SSD only; do not rerun SMB unless requested.
-   Native measurements use fresh processes in balanced ABBA/BAAB blocks, at least four
-   observations per condition. No profiler, tracing wrappers or detailed diagnostic CSVs in
-   acceptance timing; keep attribution separate. Include parse, collection, full API/report
-   wall/process CPU, memory and setup costs, with inclusive/exclusive boundaries explained.
-6. Bound the campaign before running. Report every sample, order, ranges/drift and independent
-   block results, including slowdowns. Stop on integrity/parity failures. If an apparent
-   gain fails confirmation, remove its production change; do not keep measuring until a
-   favourable median appears. Retain useful tests and sanitised diagnostic evidence.
-7. Run appropriate Ruff/format/Pyright gates, scoped parser/context/deferred regressions and
-   actual PR #161 consumer compatibility. Keep inherited diagnostics separate. Run the
-   applicable Windows 3.12/3.14 hosted matrix on the final head and distinguish it from local
-   evidence and earlier-head CI. Previous final local counts are 588 and 119, zero skips.
-8. Update this same draft PR/title/body and handoff around the final retained scope, with
-   sanitised evidence, exact source IDs, limitations and a clear retention recommendation.
-   Obtain a fresh exact-head review and resolve findings; leave remaining CI/review/access
-   gates explicit. No PR merge, release, parent change or unauthorised retargeting.
-
-No production multiprocessing, first-run scheduling, public API changes solely for speed,
-new TEF equivalence assumptions or immutable output-assembly rewrite is part of this task.
-Deliver an independently measured retained improvement, or a documented negative result
-with its production experiment removed. Do not substitute profiler/call reductions for
-native acceptance.
+Current recommendation: keep #41 stable, retain the behavioural tests and evidence in #42,
+and stop these two mechanisms. No additional production optimisation is authorised by this
+closeout itself.

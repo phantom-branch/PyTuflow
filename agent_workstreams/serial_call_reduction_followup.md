@@ -1,74 +1,79 @@
-# Serial CPU follow-up: event-copy experiment and snapshot safety
+# Serial CPU follow-up: snapshot and path semantics
 
-Status: copy experiment complete; production fast path removed; tests/evidence retained.
+Status: copy and path experiments complete; neither production fast path retained.
 Updated: 27 October 2026 (Australia/Perth).
 
-This draft [PR #42](https://github.com/phantom-branch/PyTuflow/pull/42) targets
+Existing [PR #42](https://github.com/phantom-branch/PyTuflow/pull/42) targets
 [PR #41](https://github.com/phantom-branch/PyTuflow/pull/41), branch
-`perf/compiled-effective-dependencies`. The latest parent `0fa632d` was incorporated with
-normal merge `70b8b0763a93010d1b894baaa009c4404a69de3a` before implementation, preserving
-its newer cache-correctness fixes and published child history. The final `pytuflow` tree
-is byte-identical to that parent. No new production optimisation is retained.
+`perf/compiled-effective-dependencies`. Parent `0fa632d` was incorporated with normal merge
+`70b8b07` before implementation, retaining the newer correctness fixes and published history.
+The final parser tree is byte-identical to the parent: `c5d4402e3886e145b1e49c941e4cdb1b5d7ddff6`.
+#41 has not been changed by either experiment.
 
-[Complete experiment, timings and decision](evidence/2026-10-27-event-copy/README.md) |
-[Next bounded investigation prompt](prompts/serial_call_reduction_followup.md) |
-[Original parent implementation](compiled_effective_dependencies.md).
+[Path experiment and source-specific evidence](evidence/2026-10-27-path-decomposition/README.md) |
+[Earlier copy experiment](evidence/2026-10-27-event-copy/README.md) |
+[Future-work guardrails](prompts/serial_call_reduction_followup.md) |
+[Parent implementation](compiled_effective_dependencies.md).
 
-## What was investigated
+## Latest result: path decomposition
 
-The first target was configuration/event-database copying: 14,316 snapshots and 605,055
-event insertions remained in the measured 480-context consumer. A guarded bulk-copy
-prototype used exact built-in storage and original class definitions; case aliases,
-subclasses, custom callbacks/mappings and incomplete state retained the insertion loop.
-Snapshots remained independent at the original shallow-copy depth, with variables passed
-by reference as before. No mutable run state was shared.
+The profile showed 437,418 current-path string conversions and 237,774 database/layer split
+requests, mostly from dbpath and lyrname. A small independently removable prototype tested
+bounded reuse of the pure literal text split. It still obtained str(self) on every request,
+retained only immutable string/component tuples, and used uncached fallback for changed regex
+policies or custom string/split callbacks. It cached no Path/model/file result or selection;
+fragment source identity and actual relative/path/variable resolution stayed authoritative.
 
-The final prototype at `dbdc4d8` passes complete recursive public-record equality on the
-480-, 36- and 240-context workloads, each comparing current parent fragments with ordinary
-uncached/cached, full-key reference and combined experimental modes. Selected files,
-paths/layers, UUIDs, commands, activations, sources, selectors and errors are included.
-The diagnostic profile reduces event insertions from 605,055 to 110, while keeping all
-14,316 copies. Guard checks and bulk/index construction replace some removed work.
+Prototype `74f3544` passes 15 complete recursive public-record comparisons across the separate
+480-, 36- and 240-context workloads: current-parent fragments and experimental ordinary
+uncached/cached, full-key reference and combined modes. UUIDs, selected source paths/layers,
+commands, references, activations, database selectors and errors remain equal.
 
-## Native result and removal
+Against current #41 `0fa632d`, using the same SSD 480-context workload, normal Python 3.14.6,
+one worker and actual consumer #161 `04999e7`, two balanced clean campaigns give:
 
-Compare against **current #41 `0fa632d`**, not #39. Normal Python 3.14.6, one worker,
-SSD only, frozen actual consumer #161 `04999e7`, matching inputs/options and fresh
-processes. Each of two separately reported balanced campaigns has eight observations
-per revision. No profiler or tracing wrappers run in native measurements.
-
-| Campaign | Current #41 median s | Copy prototype median s | Reduction |
+| Campaign | Current #41 median s | Path prototype median s | Reduction |
 | --- | ---: | ---: | ---: |
-| Initial | 3.882589 | 3.775467 | +2.76% |
-| Independent confirmation | 3.884677 | 3.935824 | -1.32% |
+| Initial, eight observations per revision | 3.922109 | 3.928140 | -0.15% |
+| Confirmation, eight observations per revision | 3.907233 | 3.942116 | -0.89% |
 
-The initial apparent gain does not reproduce. Direction changes and substantial drift
-fail the required native retention criterion. Do not combine campaigns, select favourable
-blocks or use call reductions/microbenchmarks as acceptance. All 32 native observations
-pass with 480 contexts, 50 paths, 24 headers, 480 selectors and zero issues/fallbacks.
+There is no reproducible incremental native gain. All 32 observations are retained, with
+ranges/drift and inclusive phase, process CPU, memory and setup metrics in the evidence.
+Every native pass has 480 contexts, 50 paths, 24 headers, 480 selectors and zero issues or
+whole-run fallbacks. No profiler or tracing wrappers run during native timing.
 
-The production fast path was removed in `d340034`; the final runtime tree is the current
-parent's `c5d4402e3886e145b1e49c941e4cdb1b5d7ddff6`. Experimental commits are retained in
-history for provenance, but contribute no net production diff. The final PR retains 16
-snapshot-safety tests and their Windows Python 3.12/3.14 workflow coverage, evidence and
-this handoff. Final local validation passes **588 parser/context/dependency tests and
-119 actual consumer tests, zero skips**. Ruff/new-test formatting and Pyright gates pass;
-the legacy event module has the same two inherited default diagnostics as the parent.
-Hosted exact-head CI and fresh review remain separate delivery states in the PR description.
+The separate profile executes the parsing helper only 350 times inside the API/report
+boundary, but all 237,774 split-entry requests and 437,418 string conversions remain. The
+whole-process cache has 237,435 hits and 351 misses, including setup. Near-total avoidance
+of repeated parsing does not establish recoverable end-to-end time: dispatch, hashing,
+cache maintenance and current rendering remain. Neither profile durations nor the historical
+81.35% #39-to-#41 gain are counted as an incremental result.
 
-## Recommendation and boundaries
+The cache was removed in `1e50dff`. Retained work is 27 useful path-semantics cases and their
+Windows 3.12/3.14 CI coverage, alongside the earlier 16 snapshot-safety cases and evidence.
+Final local validation passes **630 parser/context/dependency tests and 119 actual consumer
+tests, zero skips**. Ruff/format/Pyright on the new tests and scoped strict Pyright pass.
+No production cleanup or suppression remains. Exact-head hosted checks and fresh review
+are separate delivery states recorded in the PR description.
 
-Stop work on this bulk-copy mechanism. Investigate path conversion/decomposition next,
-starting with reuse within a known operation and a fresh matched current-parent baseline.
-No path optimisation is implemented or accepted here. Leave TEF full-key fallbacks,
-immutable result assembly, production multiprocessing and first-run scheduling unchanged.
+## Earlier result: configuration/event copying
 
-The parent's earlier 81.35% gain (22.849923 -> 4.260864 s) belongs to #39 versus corrected
-#41, not to this follow-up. Its [current-head investigation](https://github.com/phantom-branch/PyTuflow/blob/0fa632dab996ad40f6c20bcc466cb5d4d0beadf6/agent_workstreams/evidence/2026-10-27-remaining-cpu/README.md)
-remains the starting attribution. The [earlier call audit](evidence/2026-10-27-serial-call-audit/summary.json)
-is historical at `404101f`; do not pool sources or timing boundaries.
+The guarded bulk-copy prototype at `dbdc4d8` reduced event insertions from 605,055 to 110
+while preserving 14,316 independent snapshots. Its initial median improved 2.76%, but an
+independent confirmation was 1.32% slower. The production path was removed in `d340034`;
+16 mutation/extension/case-order/error-contract regressions remain. Do not revive that
+mechanism based on call counts or its non-recoverable roughly 0.39-second observed budget.
 
-All raw models, paths, flags, command lists, records, profiles and mappings stay private.
-No model edit, solver, SMB benchmark, extra PR/worktree, venv, PR merge, retarget,
-release or parent-branch change is included. The unrelated local `.gitignore` edit remains
-untouched. See the linked prompt for the next task's correctness and measurement boundaries.
+## Recommendation
+
+Retain #41. Stop these two bounded micro-optimisation experiments: neither has earned native
+retention. Further performance work needs a new measured budget/mechanism and separately
+requested scope. Leave TEF full-key fallbacks, immutable assembly, membership decisions and
+production multiprocessing unchanged. No new performance improvement is claimed in #42.
+
+The parent's [corrected-head investigation](https://github.com/phantom-branch/PyTuflow/blob/0fa632dab996ad40f6c20bcc466cb5d4d0beadf6/agent_workstreams/evidence/2026-10-27-remaining-cpu/README.md)
+remains historical attribution; the [first call audit](evidence/2026-10-27-serial-call-audit/summary.json)
+is tied to `404101f`. Do not pool sources or timing boundaries. Private models, paths, flags,
+commands, records and profiles stay outside the repo. No solver, model edit, SMB benchmark,
+extra PR/worktree, venv, PR merge, release, retarget or parent change was performed.
+The unrelated local `.gitignore` edit remains untouched.
