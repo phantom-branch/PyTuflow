@@ -715,6 +715,14 @@ def validate_dependencies(
                         "BC column selectors require an ordinary Source CSV",
                     )
                 )
+            elif len(item.csv_columns) != 2 or any(
+                not column.strip() or "<<" in column
+                for column in item.csv_columns
+            ):
+                status, detail = _header_status((), item.csv_columns)
+                findings.append(
+                    finding(item, status, "csv_header", path, detail)
+                )
             else:
                 header, header_error = _select_csv_header(
                     info.csv_records, item.csv_columns,
