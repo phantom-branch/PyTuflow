@@ -1,0 +1,10 @@
+{
+  "revision": "B",
+  "kind": "parity",
+  "runs": 480,
+  "full_run_equality": true,
+  "errors": 0,
+  "input_metadata_unchanged": true,
+  "parser_sha": "5fb4185c0650248943a17ec7b83316ed79392152",
+  "timing_order": "performed after initial timings and before post-fix timings under owner instruction"
+}

@@ -1,0 +1,20 @@
+{
+  "tests": 141,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "scope": "effective manifests, compiled scopes, fragments and deferred database parity",
+  "production_source": "5c32395e30029bdd3d1053d18374234d0120fab4",
+  "runtime_ci": "No workflows launched for the local investigation; live PR checks are separate.",
+  "measured_runtime_ci": {
+    "sha": "5c32395e30029bdd3d1053d18374234d0120fab4",
+    "terminal_success_workflow_runs": [
+      40392611978,
+      40392611768,
+      40392611719,
+      40392611935,
+      40392611866,
+      40392611745
+    ]
+  }
+}

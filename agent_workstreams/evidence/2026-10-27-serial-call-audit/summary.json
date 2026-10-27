@@ -1,0 +1,505 @@
+{
+  "schema_version": 1,
+  "measurement_date": "2026-10-27",
+  "timezone": "Australia/Perth",
+  "repository": "phantom-branch/PyTuflow",
+  "source_pr": 41,
+  "profiled_source_sha": "404101f82349d52687b739a5cdce26623f277098",
+  "historical_parent_sha": "36ad04bd7cb045c48f3b77e8794c48a956c90c06",
+  "consumer_sha": "a710f24ffb1698e949937f56a0212b6ae599e54e",
+  "measurement_kind": "Instrumented Python/C call counts; not native acceptance timings",
+  "execution": {
+    "python_processes_per_check": 1,
+    "io_workers": 1,
+    "inventory": "direct serial branch",
+    "production_multiprocessing": false
+  },
+  "original_480_comparison": {
+    "baseline_total_calls": 190971049,
+    "current_total_calls": 32850552,
+    "counts": [
+      {
+        "module": "scope.py",
+        "function": "__init__",
+        "before": 5877564,
+        "now": 38863
+      },
+      {
+        "module": "scope.py",
+        "function": "explode",
+        "before": 5511000,
+        "now": 18048
+      },
+      {
+        "module": "scope.py",
+        "function": "__eq__",
+        "before": 6164954,
+        "now": 4034
+      },
+      {
+        "module": "scope.py",
+        "function": "contains",
+        "before": 387002,
+        "now": 2402
+      },
+      {
+        "module": "settings.py",
+        "function": "from_config",
+        "before": 26530,
+        "now": 14316
+      },
+      {
+        "module": "event.py",
+        "function": "copy",
+        "before": 26530,
+        "now": 14316
+      },
+      {
+        "module": "event.py",
+        "function": "__setitem__",
+        "before": 1070355,
+        "now": 605055
+      },
+      {
+        "module": "fragment_dependencies.py",
+        "function": "_compiled_membership",
+        "before": 0,
+        "now": 196939
+      },
+      {
+        "module": "fragment_dependencies.py",
+        "function": "_compiled_scope_eligible",
+        "before": 0,
+        "now": 165641
+      }
+    ]
+  },
+  "workloads": [
+    {
+      "label": "original",
+      "contexts": 480,
+      "total_consumer_profile_calls": 32850552,
+      "full_record_parity": true,
+      "record_sha256": "68ceba1fb5e865c8d3894165c8e99eb2d73096dfda9609dc2307f5959a8d8d93",
+      "phases": {
+        "parse": {
+          "total_calls": 5802657,
+          "selected_calls": [
+            {
+              "module": "settings.py",
+              "function": "from_config",
+              "calls": 6045
+            },
+            {
+              "module": "event.py",
+              "function": "copy",
+              "calls": 6045
+            },
+            {
+              "module": "event.py",
+              "function": "__setitem__",
+              "calls": 218020
+            },
+            {
+              "module": "file.py",
+              "function": "__new__",
+              "calls": 47827
+            },
+            {
+              "module": "scope.py",
+              "function": "__init__",
+              "calls": 1168
+            },
+            {
+              "module": "scope.py",
+              "function": "contains",
+              "calls": 894
+            },
+            {
+              "module": "file.py",
+              "function": "_split_db_and_lyr",
+              "calls": 64950
+            },
+            {
+              "module": "scope.py",
+              "function": "__eq__",
+              "calls": 2305
+            },
+            {
+              "module": "file.py",
+              "function": "__str__",
+              "calls": 120079
+            }
+          ]
+        },
+        "collect": {
+          "total_calls": 23640461,
+          "selected_calls": [
+            {
+              "module": "settings.py",
+              "function": "from_config",
+              "calls": 8271
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_compiled_scope_eligible",
+              "calls": 165641
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "bindings",
+              "calls": 31199
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_compiled_membership",
+              "calls": 196939
+            },
+            {
+              "module": "event.py",
+              "function": "copy",
+              "calls": 8271
+            },
+            {
+              "module": "event.py",
+              "function": "__setitem__",
+              "calls": 387035
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_full_key",
+              "calls": 2880
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_key",
+              "calls": 24495
+            },
+            {
+              "module": "file.py",
+              "function": "__new__",
+              "calls": 110248
+            },
+            {
+              "module": "scope.py",
+              "function": "__init__",
+              "calls": 37695
+            },
+            {
+              "module": "scope.py",
+              "function": "contains",
+              "calls": 1508
+            },
+            {
+              "module": "file.py",
+              "function": "_split_db_and_lyr",
+              "calls": 138264
+            },
+            {
+              "module": "scope.py",
+              "function": "explode",
+              "calls": 18048
+            },
+            {
+              "module": "scope.py",
+              "function": "__eq__",
+              "calls": 1729
+            },
+            {
+              "module": "file.py",
+              "function": "__str__",
+              "calls": 265499
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "small",
+      "contexts": 36,
+      "total_consumer_profile_calls": 8825622,
+      "full_record_parity": true,
+      "record_sha256": "d86c71ee7dba8df13e7326728df78e2cccf81588be5ed7a605a8c41675f16c82",
+      "phases": {
+        "parse": {
+          "total_calls": 6284154,
+          "selected_calls": [
+            {
+              "module": "file.py",
+              "function": "__str__",
+              "calls": 128065
+            },
+            {
+              "module": "settings.py",
+              "function": "from_config",
+              "calls": 6711
+            },
+            {
+              "module": "event.py",
+              "function": "copy",
+              "calls": 6711
+            },
+            {
+              "module": "event.py",
+              "function": "__setitem__",
+              "calls": 258521
+            },
+            {
+              "module": "file.py",
+              "function": "__new__",
+              "calls": 50373
+            },
+            {
+              "module": "scope.py",
+              "function": "contains",
+              "calls": 1232
+            },
+            {
+              "module": "scope.py",
+              "function": "__init__",
+              "calls": 1478
+            },
+            {
+              "module": "scope.py",
+              "function": "__eq__",
+              "calls": 5300
+            },
+            {
+              "module": "file.py",
+              "function": "_split_db_and_lyr",
+              "calls": 69200
+            }
+          ]
+        },
+        "collect": {
+          "total_calls": 2328675,
+          "selected_calls": [
+            {
+              "module": "file.py",
+              "function": "__str__",
+              "calls": 27414
+            },
+            {
+              "module": "settings.py",
+              "function": "from_config",
+              "calls": 1109
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_compiled_membership",
+              "calls": 20453
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "bindings",
+              "calls": 3219
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_full_key",
+              "calls": 132
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_compiled_scope_eligible",
+              "calls": 14809
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_key",
+              "calls": 1893
+            },
+            {
+              "module": "event.py",
+              "function": "copy",
+              "calls": 1109
+            },
+            {
+              "module": "event.py",
+              "function": "__setitem__",
+              "calls": 51780
+            },
+            {
+              "module": "file.py",
+              "function": "__new__",
+              "calls": 11598
+            },
+            {
+              "module": "scope.py",
+              "function": "contains",
+              "calls": 144
+            },
+            {
+              "module": "scope.py",
+              "function": "__init__",
+              "calls": 3301
+            },
+            {
+              "module": "scope.py",
+              "function": "explode",
+              "calls": 1548
+            },
+            {
+              "module": "scope.py",
+              "function": "__eq__",
+              "calls": 372
+            },
+            {
+              "module": "file.py",
+              "function": "_split_db_and_lyr",
+              "calls": 14392
+            }
+          ]
+        }
+      }
+    },
+    {
+      "label": "ensemble",
+      "contexts": 240,
+      "total_consumer_profile_calls": 19140204,
+      "full_record_parity": true,
+      "record_sha256": "e4fe94dab6b2746987bb7121c47c13f7d5f16aafef5868f87f69f75d8d744c0a",
+      "phases": {
+        "parse": {
+          "total_calls": 6304009,
+          "selected_calls": [
+            {
+              "module": "settings.py",
+              "function": "from_config",
+              "calls": 6723
+            },
+            {
+              "module": "event.py",
+              "function": "copy",
+              "calls": 6723
+            },
+            {
+              "module": "event.py",
+              "function": "__setitem__",
+              "calls": 259061
+            },
+            {
+              "module": "file.py",
+              "function": "_split_db_and_lyr",
+              "calls": 69380
+            },
+            {
+              "module": "file.py",
+              "function": "__new__",
+              "calls": 50526
+            },
+            {
+              "module": "scope.py",
+              "function": "__init__",
+              "calls": 1479
+            },
+            {
+              "module": "scope.py",
+              "function": "contains",
+              "calls": 1231
+            },
+            {
+              "module": "scope.py",
+              "function": "__eq__",
+              "calls": 5293
+            },
+            {
+              "module": "file.py",
+              "function": "__str__",
+              "calls": 128410
+            }
+          ]
+        },
+        "collect": {
+          "total_calls": 11391093,
+          "selected_calls": [
+            {
+              "module": "settings.py",
+              "function": "from_config",
+              "calls": 2701
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_compiled_membership",
+              "calls": 150340
+            },
+            {
+              "module": "event.py",
+              "function": "copy",
+              "calls": 2701
+            },
+            {
+              "module": "event.py",
+              "function": "__setitem__",
+              "calls": 134580
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_compiled_scope_eligible",
+              "calls": 102902
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "bindings",
+              "calls": 20657
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_full_key",
+              "calls": 1200
+            },
+            {
+              "module": "file.py",
+              "function": "_split_db_and_lyr",
+              "calls": 42182
+            },
+            {
+              "module": "scope.py",
+              "function": "explode",
+              "calls": 12096
+            },
+            {
+              "module": "file.py",
+              "function": "__new__",
+              "calls": 33753
+            },
+            {
+              "module": "scope.py",
+              "function": "__init__",
+              "calls": 24720
+            },
+            {
+              "module": "scope.py",
+              "function": "contains",
+              "calls": 464
+            },
+            {
+              "module": "scope.py",
+              "function": "__eq__",
+              "calls": 597
+            },
+            {
+              "module": "fragment_dependencies.py",
+              "function": "_key",
+              "calls": 12744
+            },
+            {
+              "module": "file.py",
+              "function": "__str__",
+              "calls": 80826
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "remaining_480_consumer_calls": {
+    "config_and_event_database_copies": 14316,
+    "event_database_assignments": 605055,
+    "path_string_conversions": 437418,
+    "database_layer_splits": 237774,
+    "compiled_membership_accesses": 196939,
+    "scope_eligibility_checks": 165641,
+    "full_key_fallbacks": 2880
+  }
+}

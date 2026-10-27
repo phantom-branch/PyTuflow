@@ -15,7 +15,9 @@ _READS = ('Read GIS Code == code.shp', 'Read Grid Zpts == terrain.tif')
 
 def _model(tmp_path: Path, read: str, shape: str = 'mixed') -> TCF:
     if shape == 'mixed':
-        text = f'Set Code == 0\n{read}\n'
+        # Literal settings now reuse independently. Keep this companion
+        # dynamic so the test isolates the original READ constructor guard.
+        text = f'Viscosity == <<E1>>\n{read}\n'
     elif shape == 'scenario':
         text = f'If Scenario == DEV\n{read}\nEnd If\n'
     else:

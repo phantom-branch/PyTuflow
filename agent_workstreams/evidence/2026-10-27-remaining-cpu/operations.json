@@ -1,0 +1,421 @@
+{
+  "operations": [
+    {
+      "operation": "All Python/C profile calls",
+      "parent": 190971050,
+      "candidate": 32867136,
+      "avoided": 158103914,
+      "remaining": 32867136,
+      "note": "Full consumer including model parsing; diagnostic only."
+    },
+    {
+      "operation": "Scope constructions",
+      "parent": 5877564,
+      "candidate": 38863,
+      "avoided": 5838701,
+      "remaining": 38863,
+      "note": ""
+    },
+    {
+      "operation": "Scope expansions",
+      "parent": 5511000,
+      "candidate": 18048,
+      "avoided": 5492952,
+      "remaining": 18048,
+      "note": ""
+    },
+    {
+      "operation": "Scope equality",
+      "parent": 6164954,
+      "candidate": 4034,
+      "avoided": 6160920,
+      "remaining": 4034,
+      "note": ""
+    },
+    {
+      "operation": "Scope membership",
+      "parent": 387002,
+      "candidate": 2402,
+      "avoided": 384600,
+      "remaining": 2402,
+      "note": ""
+    },
+    {
+      "operation": "Compiled program dispatches",
+      "parent": 0,
+      "candidate": 139706,
+      "avoided": -139706,
+      "remaining": 139706,
+      "note": "New/replacement work has negative avoided count where applicable."
+    },
+    {
+      "operation": "Full dependency keys",
+      "parent": 24495,
+      "candidate": 2880,
+      "avoided": 21615,
+      "remaining": 2880,
+      "note": "New/replacement work has negative avoided count where applicable."
+    },
+    {
+      "operation": "Compact signatures",
+      "parent": 0,
+      "candidate": 21615,
+      "avoided": -21615,
+      "remaining": 21615,
+      "note": "New/replacement work has negative avoided count where applicable."
+    },
+    {
+      "operation": "Compact cache hits",
+      "parent": 0,
+      "candidate": 21501,
+      "avoided": -21501,
+      "remaining": 21501,
+      "note": "New/replacement work has negative avoided count where applicable."
+    },
+    {
+      "operation": "Compact cache misses",
+      "parent": 0,
+      "candidate": 114,
+      "avoided": -114,
+      "remaining": 114,
+      "note": "New/replacement work has negative avoided count where applicable."
+    },
+    {
+      "operation": "Fragment evaluations",
+      "parent": 2494,
+      "candidate": 1096,
+      "avoided": 1398,
+      "remaining": 1096,
+      "note": "New/replacement work has negative avoided count where applicable."
+    },
+    {
+      "operation": "Fragment reuses",
+      "parent": 22001,
+      "candidate": 23399,
+      "avoided": -1398,
+      "remaining": 23399,
+      "note": "New/replacement work has negative avoided count where applicable."
+    },
+    {
+      "operation": "All compiled predicate evaluations",
+      "parent": 0,
+      "candidate": 166121,
+      "avoided": -166121,
+      "remaining": 166121,
+      "note": "Includes direct manifest predicates as well as program dispatches."
+    },
+    {
+      "operation": "Certificate evaluations",
+      "parent": 0,
+      "candidate": 142,
+      "avoided": -142,
+      "remaining": 142,
+      "note": ""
+    },
+    {
+      "operation": "Certificate cache hits",
+      "parent": 0,
+      "candidate": 25793,
+      "avoided": -25793,
+      "remaining": 25793,
+      "note": ""
+    },
+    {
+      "operation": "Expression evaluations",
+      "parent": 34299,
+      "candidate": 27961,
+      "avoided": 6338,
+      "remaining": 27961,
+      "note": ""
+    },
+    {
+      "operation": "Expression pool hits",
+      "parent": 34636,
+      "candidate": 3238,
+      "avoided": 31398,
+      "remaining": 3238,
+      "note": ""
+    },
+    {
+      "operation": "Transitive expression bindings",
+      "parent": 70375,
+      "candidate": 31199,
+      "avoided": 39176,
+      "remaining": 31199,
+      "note": ""
+    },
+    {
+      "operation": "Effective manifest bindings",
+      "parent": 0,
+      "candidate": 25935,
+      "avoided": -25935,
+      "remaining": 25935,
+      "note": ""
+    },
+    {
+      "operation": "Dataclass replace calls",
+      "parent": 46588,
+      "candidate": 46588,
+      "avoided": 0,
+      "remaining": 46588,
+      "note": ""
+    },
+    {
+      "operation": "InputRunState constructions",
+      "parent": 2494,
+      "candidate": 617,
+      "avoided": 1877,
+      "remaining": 617,
+      "note": ""
+    },
+    {
+      "operation": "Config copies",
+      "parent": 26530,
+      "candidate": 14316,
+      "avoided": 12214,
+      "remaining": 14316,
+      "note": ""
+    },
+    {
+      "operation": "Event assignments",
+      "parent": 1070355,
+      "candidate": 605055,
+      "avoided": 465300,
+      "remaining": 605055,
+      "note": ""
+    },
+    {
+      "operation": "TuflowPath string conversions",
+      "parent": 846417,
+      "candidate": 437418,
+      "avoided": 408999,
+      "remaining": 437418,
+      "note": ""
+    },
+    {
+      "operation": "Database/layer splits",
+      "parent": 451109,
+      "candidate": 237774,
+      "avoided": 213335,
+      "remaining": 237774,
+      "note": ""
+    },
+    {
+      "operation": "Audit event: open",
+      "parent": 66,
+      "candidate": 66,
+      "avoided": 0,
+      "remaining": 66,
+      "note": "API events, including lazy imports and report writing; not physical disk operations."
+    },
+    {
+      "operation": "Audit event: sqlite3.connect",
+      "parent": 34,
+      "candidate": 34,
+      "avoided": 0,
+      "remaining": 34,
+      "note": "API events, including lazy imports and report writing; not physical disk operations."
+    },
+    {
+      "operation": "Audit event: os.scandir",
+      "parent": 1,
+      "candidate": 1,
+      "avoided": 0,
+      "remaining": 1,
+      "note": "API events, including lazy imports and report writing; not physical disk operations."
+    },
+    {
+      "operation": "Audit event: os.listdir",
+      "parent": 1,
+      "candidate": 1,
+      "avoided": 0,
+      "remaining": 1,
+      "note": "API events, including lazy imports and report writing; not physical disk operations."
+    },
+    {
+      "operation": "Profiled nt.stat calls",
+      "parent": 119,
+      "candidate": 125,
+      "avoided": -6,
+      "remaining": 125,
+      "note": "Host API calls, not physical disk I/O."
+    }
+  ],
+  "parent_attribution": {
+    "instrumented": true,
+    "variant": "parent",
+    "contexts": 480,
+    "parsed_inputs": 181,
+    "parsed_files": 5,
+    "parse_seconds": 1.9883615999715403,
+    "phase_cpu_seconds": {
+      "compilation": 0.015625,
+      "events": 5.859375,
+      "variables": 6.046875,
+      "signatures": 9.46875
+    },
+    "scope_categories": {
+      "events.event.scope_calls": 26400,
+      "variables.other.scope_calls": 1440,
+      "variables.event.scope_calls": 2880,
+      "variables.scenario.scope_calls": 7200,
+      "variables.combined.scope_calls": 960,
+      "evaluation.other.scope_calls": 39862,
+      "evaluation.scenario.scope_calls": 24979,
+      "evaluation.event.scope_calls": 65280,
+      "evaluation.combined.scope_calls": 4800
+    },
+    "scope_operations": {
+      "contains": {
+        "calls": 387002,
+        "self_seconds": 2.5970169000000003,
+        "inclusive_seconds": 40.1841858
+      },
+      "explode": {
+        "calls": 5511000,
+        "self_seconds": 4.8520681,
+        "inclusive_seconds": 29.866129500000003
+      },
+      "__init__": {
+        "calls": 5877564,
+        "self_seconds": 9.1362249,
+        "inclusive_seconds": 23.0944176
+      },
+      "__eq__": {
+        "calls": 6164954,
+        "self_seconds": 4.67108,
+        "inclusive_seconds": 7.361049
+      }
+    },
+    "file_keys": {
+      "other": {
+        "misses": 2012,
+        "full": 23055,
+        "hits": 21043
+      },
+      "TGC": {
+        "misses": 1,
+        "full": 480,
+        "hits": 479
+      },
+      "TBC": {
+        "misses": 1,
+        "full": 480,
+        "hits": 479
+      },
+      "TEF": {
+        "misses": 480,
+        "full": 480
+      }
+    },
+    "fragment_evaluations": 2494,
+    "fragment_reuses": 22001,
+    "full_keys": 24495,
+    "compact_signatures": 0,
+    "manifest_hits": 0,
+    "manifest_misses": 0,
+    "fallbacks": {},
+    "compiled_scope_evaluations": 0,
+    "compiled_scope_fallbacks": 0
+  },
+  "candidate_attribution": {
+    "instrumented": true,
+    "variant": "combined",
+    "contexts": 480,
+    "parsed_inputs": 181,
+    "parsed_files": 5,
+    "parse_seconds": 1.9600331999827176,
+    "phase_cpu_seconds": {
+      "compilation": 0.015625,
+      "events": 0.265625,
+      "variables": 0.25,
+      "signatures": 2.234375
+    },
+    "scope_categories": {
+      "events.event.scope_calls": 26400,
+      "variables.other.scope_calls": 1440,
+      "variables.event.scope_calls": 2880,
+      "variables.scenario.scope_calls": 7200,
+      "variables.combined.scope_calls": 960,
+      "evaluation.other.scope_calls": 17771,
+      "evaluation.scenario.scope_calls": 14895,
+      "evaluation.event.scope_calls": 63840,
+      "evaluation.combined.scope_calls": 4320
+    },
+    "scope_operations": {
+      "contains": {
+        "calls": 2402,
+        "self_seconds": 0.0018365,
+        "inclusive_seconds": 0.0082695
+      },
+      "explode": {
+        "calls": 18048,
+        "self_seconds": 0.0213809,
+        "inclusive_seconds": 0.1135395
+      },
+      "__eq__": {
+        "calls": 4034,
+        "self_seconds": 0.004131,
+        "inclusive_seconds": 0.006333900000000001
+      },
+      "__init__": {
+        "calls": 38863,
+        "self_seconds": 0.07416640000000001,
+        "inclusive_seconds": 0.1798709
+      }
+    },
+    "file_keys": {
+      "other": {
+        "misses": 614,
+        "compact": 20655,
+        "full": 2400,
+        "hits": 22441
+      },
+      "TGC": {
+        "misses": 1,
+        "compact": 480,
+        "hits": 479
+      },
+      "TBC": {
+        "misses": 1,
+        "compact": 480,
+        "hits": 479
+      },
+      "TEF": {
+        "misses": 480,
+        "full": 480
+      }
+    },
+    "fragment_evaluations": 1096,
+    "fragment_reuses": 23399,
+    "full_keys": 2880,
+    "compact_signatures": 21615,
+    "manifest_hits": 21501,
+    "manifest_misses": 114,
+    "fallbacks": {
+      "event-substitution": 2880
+    },
+    "compiled_scope_evaluations": 139706,
+    "compiled_scope_fallbacks": 0
+  },
+  "candidate_predicates": {
+    "predicate_shapes": 104,
+    "predicates_constant": 76,
+    "predicate_calls": 166121,
+    "constant_predicate_calls": 124361
+  },
+  "fallbacks": {
+    "whole_run": 0,
+    "manifest_reasons": {
+      "event-substitution": 2880
+    },
+    "full_key_counts_by_source": {
+      "event file": 480,
+      "leaf": 2400
+    },
+    "full_key_inclusive_observed_wall_by_source": {
+      "event file": 0.5841586996684782,
+      "leaf": 0.04891819931799546
+    }
+  }
+}

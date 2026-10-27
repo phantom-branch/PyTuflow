@@ -1,0 +1,16 @@
+import pathlib,subprocess,sys,json,time,hashlib
+r=pathlib.Path(__file__).parent;guards=json.loads((r/'input-guards.json').read_text())
+def guard():assert all(hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()==h for p,h in guards.items())
+def run(script,args,name):
+ guard()
+ with (r/(name+'.log')).open('w') as log:subprocess.run([sys.executable,str(r/script),*args],stdout=log,stderr=subprocess.STDOUT,check=True,timeout=600)
+ guard();print('Completed diagnostic: '+name,flush=True)
+assert (r/'campaign-complete.json').exists(),'Native campaign must finish first'
+for rev in ('A','B'):
+ run('attribution.py',['parent' if rev=='A' else 'combined'],'attribution-'+rev)
+ run('diagnose.py',[rev,'phase'],'phase-'+rev)
+ run('measure.py',['--config',str(r/'SSD.json'),'--revision',rev,'--name','profile-'+rev,'--profile'],'profile-'+rev)
+run('measure.py',['--config',str(r/'SSD.json'),'--revision','B','--name','cpu-profile-B','--profile','--cpu-profile'],'cpu-profile-B')
+for n in (1,10,40,160,480):
+ for rev in ('A','B'):run('diagnose.py',[rev,'scale',str(n)],f'scale-{rev}-{n}')
+(r/'diagnostics-complete.json').write_text(json.dumps({'passed':True},indent=2))

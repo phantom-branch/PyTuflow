@@ -8,25 +8,29 @@ immutable dependency projections are shared within this invocation only.
 
 from __future__ import annotations
 
-from collections.abc import Sized
+from collections.abc import Callable, Sized
 from copy import copy
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
+from types import MethodType
 from typing import TYPE_CHECKING
 
 from .compiled_control_tree import CompiledControlTree
 from .compiled_dependency_plan import CompiledVariablePlan
 from .group_input_reuse import LiteralInputGroupCache
-from .context import Context
-from .scope import GlobalScope, ScenarioScope
+from .context import Context, _CONTEXT_APPEND_ATTRIBUTES, _CONTEXT_APPEND_MRO
+from .event import EventDatabase, _EVENT_DATABASE_APPEND_ATTRIBUTES, _EVENT_DATABASE_APPEND_MRO
+from .scope import (
+    GlobalScope, ScenarioScope, ScopeList, _SCOPE_APPEND_DEFINITIONS,
+    _SCOPE_APPEND_INSTANCE_ATTRIBUTES, _SCOPE_LIST_APPEND_ATTRIBUTES,
+)
 from .tfpathlib import TuflowPath
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from .file_reference import DeferredDatabaseActivation, DeferredDatabaseSource, FileReference
-    from .scope import ScopeList
     from .cf.tcf import TCF
 
 
@@ -322,8 +326,13 @@ class BatchContext(Context):
             and '<<' not in command_text
             and '>>' not in command_text
             and '~' not in command_text
-            and (not plan.direct_variables
-                 or self.translate(command_text) == command_text)
+            # A TEF replacement can expose another event token even when
+            # there are no <<variables>> in the original READ. The command
+            # constructor performs a further translation; copying a cached
+            # prototype before that translation would retain the previous
+            # event's expanded path. Require a stable second pass for *all*
+            # templates, not only those with direct variables.
+            and self.translate(command_text) == command_text
         )
         if eligible:
             # The same parsed input provides a frozen configuration snapshot
@@ -427,6 +436,182 @@ class BatchContext(Context):
         self.translation_misses += 1
         self._batch_translations[key] = translated
         return translated
+
+
+# Retain the entire raw callback surface, including the inherited methods
+# invoked through super(). New/replaced class descriptors are unsupported too.
+_BATCH_CONTEXT_APPEND_ATTRIBUTES = tuple(BatchContext.__dict__.items())
+_BATCH_CONTEXT_APPEND_MRO = BatchContext.__mro__
+_APPEND_CONTEXT_INSTANCE_ATTRIBUTES = tuple({
+    **dict(_CONTEXT_APPEND_ATTRIBUTES),
+    **dict(_BATCH_CONTEXT_APPEND_ATTRIBUTES),
+}.items())
+
+
+def _raw_class_attribute(cls: type, name: str):
+    """Return an unbound class attribute without executing any descriptor."""
+    for owner in type.__getattribute__(cls, '__mro__'):
+        namespace = type.__getattribute__(owner, '__dict__')
+        if name in namespace:
+            return namespace[name]
+    return None
+
+
+def _original_instance_callbacks(instance, namespace: dict, originals) -> bool:
+    # An assigned dict subclass can override even membership/index lookup.
+    # Custom keys can also execute equality hooks during a plain lookup.
+    # Inspect only ordinary storage so proving dispatch cannot run callbacks.
+    if type(namespace) is not dict or any(type(key) is not str for key in namespace):
+        return False
+    for name, original in originals:
+        if name not in namespace:
+            continue
+        replacement = namespace[name]
+        if (type(replacement) is not MethodType
+                or replacement.__func__ is not original
+                or replacement.__self__ is not instance):
+            return False
+    return True
+
+
+def _batch_append_context_is_trusted(context) -> bool:
+    """Prove context dispatch is built in before retaining UUID positions.
+
+    Scope selection, translation, command/reference creation and resolution
+    all dispatch through this context. A custom callback anywhere in that
+    chain can edit previous parent inputs. Inspect raw dictionaries only;
+    proving a property or a constructor must never execute it an extra time.
+    """
+    if type(context) is not BatchContext:
+        return False
+    for cls, mro, originals in (
+        (Context, _CONTEXT_APPEND_MRO, _CONTEXT_APPEND_ATTRIBUTES),
+        (BatchContext, _BATCH_CONTEXT_APPEND_MRO, _BATCH_CONTEXT_APPEND_ATTRIBUTES),
+        *_SCOPE_APPEND_DEFINITIONS,
+    ):
+        namespace = type.__getattribute__(cls, '__dict__')
+        if (type.__getattribute__(cls, '__mro__') != mro
+                or len(namespace) != len(originals)
+                or any(name not in namespace or namespace[name] is not original
+                       for name, original in originals)):
+            return False
+    namespace = object.__getattribute__(context, '__dict__')
+    if not _original_instance_callbacks(context, namespace, _APPEND_CONTEXT_INSTANCE_ATTRIBUTES):
+        return False
+    # Do not retrieve context.event_db: an extension could make it a property.
+    # The unchanged class surface above proves this raw instance slot is used.
+    event_db = namespace.get('event_db')
+    if (type(event_db) is not EventDatabase
+            or type.__getattribute__(EventDatabase, '__mro__') != _EVENT_DATABASE_APPEND_MRO
+            or any(_raw_class_attribute(EventDatabase, name) is not original
+                   for name, original in _EVENT_DATABASE_APPEND_ATTRIBUTES)):
+        return False
+    event_namespace = object.__getattribute__(event_db, '__dict__')
+    return _original_instance_callbacks(event_db, event_namespace, _EVENT_DATABASE_APPEND_ATTRIBUTES)
+
+
+def _batch_append_scope_is_trusted(scopes) -> bool:
+    """Inspect scope data after the context proof checked raw class definitions.
+
+    Public setters preserve ScopeList/Scope subclasses and their callbacks.
+    Do not invoke membership, iteration overrides, getters or comparisons to
+    decide whether those objects are safe for the private append recorder.
+    """
+    if scopes is None:
+        return True
+    if type(scopes) is not ScopeList:
+        return False
+    namespace = object.__getattribute__(scopes, '__dict__')
+    if not _original_instance_callbacks(scopes, namespace, _SCOPE_LIST_APPEND_ATTRIBUTES):
+        return False
+    for scope in list.__iter__(scopes):
+        originals = next((attributes for cls, attributes in _SCOPE_APPEND_INSTANCE_ATTRIBUTES
+                          if type(scope) is cls), None)
+        if originals is None:
+            return False
+        namespace = object.__getattribute__(scope, '__dict__')
+        if not _original_instance_callbacks(scope, namespace, originals):
+            return False
+        names = namespace.get('names')
+        if (type(names) is not list
+                or any(type(name) is not str for name in names)
+                or type(namespace.get('type')) is not str
+                or (namespace.get('var') is not None and type(namespace['var']) is not str)
+                or any(type(namespace.get(flag)) is not bool
+                       for flag in ('known', '_neg', '_else'))):
+            return False
+    return True
+
+
+def _batch_append_input_scope_is_trusted(inp, known_input_types) -> bool:
+    """Prove the normal scope getter will read the inspected raw instance slot."""
+    from .abc.bld_state import BuildState, _BUILD_STATE_SCOPE, _BUILD_STATE_DICTIONARY
+    from .inp.inp_build_state import _INPUT_BUILD_SCOPE
+
+    cls = type(inp)
+    if not any(cls is known_type for known_type in known_input_types):
+        return False
+    if (_raw_class_attribute(cls, 'scope') is not _INPUT_BUILD_SCOPE
+            or type.__getattribute__(BuildState, '__dict__').get('scope') is not _BUILD_STATE_SCOPE
+            or _raw_class_attribute(cls, '__getattribute__') is not object.__getattribute__
+            or _raw_class_attribute(cls, '__getattr__') is not None
+            or _raw_class_attribute(cls, '__dict__') is not _BUILD_STATE_DICTIONARY
+            or _raw_class_attribute(cls, '_scope') is not None):
+        return False
+    namespace = object.__getattribute__(inp, '__dict__')
+    return (type(namespace) is dict and all(type(key) is str for key in namespace)
+            and '_scope' in namespace
+            and _batch_append_scope_is_trusted(namespace['_scope']))
+
+
+def _plain_scope_value(value) -> bool:
+    return type(value) is str or (
+        type(value) is list and all(type(item) is str for item in value)
+    )
+
+
+def _batch_append_scope_sources_are_trusted(namespace: dict, known_input_types) -> bool:
+    """Check stable scope-producing data once before a fresh recorder exists.
+
+    Context flags and variable/event maps build available scopes. Public event
+    entries also participate in resolution through nested items(). Compiled
+    READs may also inspect other declarations' scopes while constructing an
+    input. Validate those sources once, without evaluating any scope, under
+    the batch's existing stable-source contract.
+    """
+    for prefix in ('S', 'E'):
+        for slot in (prefix, *(f'{prefix}{i}' for i in range(1, 10))):
+            if slot in namespace and not _plain_scope_value(namespace[slot]):
+                return False
+    for attribute in ('var_map', 'event_variables'):
+        values = namespace.get(attribute)
+        if (type(values) is not dict
+                or any(type(key) is not str or not _plain_scope_value(value)
+                       for key, value in values.items())):
+            return False
+    # Canonical event_variables() calls each public event entry's items().
+    # Bypass virtual access while proving those nested mappings and values.
+    for name, values in dict.items(namespace['event_db']):
+        if (type(name) is not str or type(values) is not dict
+                or any(type(key) is not str or not _plain_scope_value(value)
+                       for key, value in values.items())):
+            return False
+    if not _batch_append_scope_is_trusted(namespace.get('_batch_scopes')):
+        return False
+    assignments = namespace.get('_batch_variable_assignments')
+    if assignments is None:
+        return True
+    if type(assignments) is not tuple:
+        return False
+    for assignment in assignments:
+        if type(assignment) is not tuple or len(assignment) != 2:
+            return False
+        inp, declaration = assignment
+        if (type(declaration) is not tuple or len(declaration) != 2
+                or any(type(value) is not str for value in declaration)
+                or not _batch_append_input_scope_is_trusted(inp, known_input_types)):
+            return False
+    return True
 
 
 @dataclass(frozen=True, slots=True)
@@ -537,16 +722,29 @@ def collect_batch_dependencies(
     *,
     cache_scopes: bool = True,
     compile_tree: bool = True,
+    on_run: Callable[[BatchDependencyRun], None] | None = None,
 ) -> BatchDependencyResult:
     """Collect **syntactic** dependencies without inspecting physical inputs.
 
     The caller must still bulk materialise wildcard paths, GIS attributes,
     database/table links and raster metadata, and check every unique input.
     Unsupported or malformed contexts are returned as explicit per-run errors;
-    their partial references must never be accepted. With compile_tree=False,
+    their partial references must never be accepted. The optional on_run
+    callback receives each COMPLETE immutable per-run projection in order,
+    after the run is recorded and before the next run starts. It is intended
+    for bounded, read-only consumers; callback exceptions propagate and abort
+    the batch rather than being disguised as parser errors. The callback must
+    not modify parsed model inputs or shared batch state. With compile_tree=False,
     the original per-batch caches remain on, isolating the graph's contribution.
     """
     started = perf_counter()
+    # Cross-context prototypes can reuse a literal source filename under the
+    # original translation semantics. A custom Context.translate hook may
+    # change that filename with run flags absent from its compiled variables.
+    # Do not certify or share projections when translation is overridden.
+    # Keep ordinary per-run Context evaluation as the authoritative fallback.
+    if cache_scopes and Context.translate is not dict(_CONTEXT_APPEND_ATTRIBUTES)["translate"]:
+        cache_scopes = False
     # Do not consume or look ahead in generators: callers can stream flags
     # after examining an earlier projection. Only use an advertised length.
     requested_count = len(run_flags) if isinstance(run_flags, Sized) else None
@@ -644,13 +842,16 @@ def collect_batch_dependencies(
             # projection within this one read-only batch. Keep their individual
             # run indices; never merge results for merely similar flag sets.
             previous = seen_flags[flag_text]
-            results.append(BatchDependencyRun(
+            projected = BatchDependencyRun(
                 index, flag_text, previous.file_references, previous.database_sources,
                 previous.database_activations, previous.error,
                 previous.input_references,
                 previous.ordered_inputs,
-            ))
+            )
+            results.append(projected)
             contexts_reused += 1
+            if on_run is not None:
+                on_run(projected)
             continue
 
         ctx = None
@@ -661,6 +862,7 @@ def collect_batch_dependencies(
         input_refs = ()
         ordered_inputs = ()
         error = None
+        reused_projection: BatchDependencyRun | None = None
         try:
             # Even an invalid flag combination is one failed run, not an
             # uncaught exception that aborts the remaining batch.
@@ -705,65 +907,72 @@ def collect_batch_dependencies(
                     seen_flags[flag_text] = projected
                 invariant_projection_reuses += 1
                 input_runstates_elided += len(projected.ordered_inputs)
-                continue
-            context_started = perf_counter()
-            try:
-                run = model.context(context=ctx, file_resolution='deferred')
-            finally:
-                # Failed runs can have performed substantial construction.
-                context_construction_seconds += perf_counter() - context_started
-            references_started = perf_counter()
-            # Retain input UUID + command order for downstream active-database
-            # selection; merely flattening paths would lose provenance.
-            # Traverse active commands once for ordered ownership. In
-            # particular, commands without FileReference must not disappear:
-            # consumers need the original ordinals for database activation.
-            active_inputs = tuple(run.find_input())
-            # Count attempts on both successful and failed contexts below.
-            ordered_inputs = tuple(
-                BatchInputCommand(
-                    input_uuid=str(inp.uuid),
-                    command_index=sequence,
-                    owner_control_file=inp._command.parent,
-                    line_number=inp.line_number,
-                    command_name=str(inp.lhs),
-                    command_text=str(inp._command.original_text),
-                    reference_count=len(inp.file_references),
+                reused_projection = projected
+            else:
+                context_started = perf_counter()
+                try:
+                    run = model.context(context=ctx, file_resolution='deferred')
+                finally:
+                    # Failed runs can have performed substantial construction.
+                    context_construction_seconds += perf_counter() - context_started
+                references_started = perf_counter()
+                # Retain input UUID + command order for downstream active-database
+                # selection; merely flattening paths would lose provenance.
+                # Traverse active commands once for ordered ownership. In
+                # particular, commands without FileReference must not disappear:
+                # consumers need the original ordinals for database activation.
+                active_inputs = tuple(run.find_input())
+                # Count attempts on both successful and failed contexts below.
+                ordered_inputs = tuple(
+                    BatchInputCommand(
+                        input_uuid=str(inp.uuid),
+                        command_index=sequence,
+                        owner_control_file=inp._command.parent,
+                        line_number=inp.line_number,
+                        command_name=str(inp.lhs),
+                        command_text=str(inp._command.original_text),
+                        reference_count=len(inp.file_references),
+                    )
+                    for sequence, inp in enumerate(active_inputs)
                 )
-                for sequence, inp in enumerate(active_inputs)
-            )
-            input_refs = tuple(
-                BatchInputReference(
-                    input_uuid=descriptor.input_uuid,
-                    command_index=descriptor.command_index,
-                    owner_control_file=descriptor.owner_control_file,
-                    line_number=descriptor.line_number,
-                    reference=ref,
+                input_refs = tuple(
+                    BatchInputReference(
+                        input_uuid=descriptor.input_uuid,
+                        command_index=descriptor.command_index,
+                        owner_control_file=descriptor.owner_control_file,
+                        line_number=descriptor.line_number,
+                        reference=ref,
+                    )
+                    for descriptor, inp in zip(ordered_inputs, active_inputs, strict=True)
+                    for ref in inp.file_references
                 )
-                for descriptor, inp in zip(ordered_inputs, active_inputs, strict=True)
-                for ref in inp.file_references
-            )
-            refs = tuple(item.reference for item in input_refs)
-            reference_collection_seconds += perf_counter() - references_started
-            database_started = perf_counter()
-            activations = run.deferred_database_activations()
-            # Keep rows attached to the exact declaration UUID. The consumer
-            # selects the database active at each boundary/GIS command; simply
-            # unioning BC rows would produce false secondary dependencies.
-            sources = tuple(
-                source
-                for activation in activations
-                for source in run.deferred_database_sources_for_activation(activation.input_uuid)
-            )
-            database_projection_seconds += perf_counter() - database_started
-            # Do not let a failed/partial projection seed a reusable group.
-            if isinstance(ctx, BatchContext):
-                ctx.commit_input_groups()
+                refs = tuple(item.reference for item in input_refs)
+                reference_collection_seconds += perf_counter() - references_started
+                database_started = perf_counter()
+                activations = run.deferred_database_activations()
+                # Keep rows attached to the exact declaration UUID. The consumer
+                # selects the database active at each boundary/GIS command; simply
+                # unioning BC rows would produce false secondary dependencies.
+                sources = tuple(
+                    source
+                    for activation in activations
+                    for source in run.deferred_database_sources_for_activation(activation.input_uuid)
+                )
+                database_projection_seconds += perf_counter() - database_started
+                # Do not let a failed/partial projection seed a reusable group.
+                if isinstance(ctx, BatchContext):
+                    ctx.commit_input_groups()
         except Exception as exc:
             # Fail closed. Never return the partial references accumulated
             # before an unknown database or malformed control-file failure.
             refs = sources = activations = input_refs = ordered_inputs = ()
             error = f'{type(exc).__name__}: {exc}'
+        # Reuse callbacks must execute outside the parser exception handler:
+        # consumer errors are not parser failures or extra projected runs.
+        if reused_projection is not None:
+            if on_run is not None:
+                on_run(reused_projection)
+            continue
         projected = BatchDependencyRun(
             index, flag_text, refs, sources, activations, error, input_refs,
             ordered_inputs,
@@ -806,6 +1015,8 @@ def collect_batch_dependencies(
             variable_template_clones += ctx.variable_template_clones
             graph_node_lookups += ctx.graph_node_lookups
             graph_node_fallbacks += ctx.graph_node_fallbacks
+        if on_run is not None:
+            on_run(projected)
 
     if not results:
         raise ValueError('At least one simulation context is required')

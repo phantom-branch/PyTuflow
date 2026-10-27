@@ -1,0 +1,23 @@
+import pathlib,json,subprocess,sys,os,hashlib,time
+r=pathlib.Path(__file__).parent;files=json.loads((r/'input-guards.json').read_text())
+def guard():assert all(hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()==h for p,h in files.items()),'Input changed'
+def run(script,args,name,env=None):
+ guard();t=time.perf_counter()
+ with (r/(name+'.log')).open('w') as log:subprocess.run([sys.executable,str(r/script),*args],stdout=log,stderr=subprocess.STDOUT,check=True,timeout=300,env=env)
+ guard();return time.perf_counter()-t
+parity=[]
+for tag in ('W0','W1','W2'):
+ expected=None;d=json.loads((r/(tag+'.json')).read_text())
+ for rev,mode in [('A','fragment'),('B','uncached'),('B','cached'),('full','fragment'),('B','fragment')]:
+  name=f'parity-{tag}-{rev}-{mode}';run('parity.py',[rev,mode,name],name,dict(os.environ,PRIVATE_PARITY_CONFIG=str(r/(tag+'.json'))))
+  records=json.loads((r/(name+'.records.json')).read_text());receipt=json.loads((r/(name+'.json')).read_text());assert receipt['passed'] and receipt['runs']==d['expected_runs']
+  if expected is None:expected=records
+  else:assert records==expected,'Complete record mismatch: '+name
+  parity.append(dict(receipt,workload=tag,complete_recursive_equality=True));(r/'parity-results.json').write_text(json.dumps(parity,indent=2));print('Complete-record parity passed: '+name,flush=True)
+rows=[]
+for block,order in enumerate(('ABBA','BAAB','ABBA','BAAB'),1):
+ for position,rev in enumerate(order,1):
+  name=f'native-{block}-{position}-{rev}';outer=run('measure.py',['--config',str(r/'W0.json'),'--revision',rev,'--name',name],name)
+  row=json.loads((r/(name+'.json')).read_text());row.update(block=block,position=position,outer_process_seconds=outer)
+  rows.append(row);(r/'native-results.json').write_text(json.dumps(rows,indent=2));print(json.dumps({k:row[k] for k in ('block','position','revision','end_to_end_seconds','cpu_seconds','passed')}),flush=True)
+(r/'complete.json').write_text(json.dumps({'passed':True,'parity_cases':len(parity),'native_trials':len(rows),'guarded_files':len(files)},indent=2))

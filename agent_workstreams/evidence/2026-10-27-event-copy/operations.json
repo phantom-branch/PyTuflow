@@ -1,0 +1,118 @@
+{
+  "instrumented": true,
+  "clock": "default cProfile elapsed; do not compare absolute profile seconds to native CPU/wall",
+  "profiles": [
+    {
+      "revision": "A",
+      "total_profile_calls": 32867112,
+      "selected_functions": [
+        {
+          "module": "event.py",
+          "line": 14,
+          "function": "__setitem__",
+          "calls": 605055,
+          "primitive_calls": 605055,
+          "self_seconds": 0.2780959,
+          "inclusive_seconds": 0.8553518000000001,
+          "application": true
+        },
+        {
+          "module": "event.py",
+          "line": 35,
+          "function": "copy",
+          "calls": 14316,
+          "primitive_calls": 14316,
+          "self_seconds": 0.2550795,
+          "inclusive_seconds": 1.2616635,
+          "application": true
+        },
+        {
+          "module": "settings.py",
+          "line": 433,
+          "function": "from_config",
+          "calls": 14316,
+          "primitive_calls": 14316,
+          "self_seconds": 0.15631140000000002,
+          "inclusive_seconds": 2.5261206,
+          "application": true
+        }
+      ]
+    },
+    {
+      "revision": "B",
+      "total_profile_calls": 31154585,
+      "selected_functions": [
+        {
+          "module": "event.py",
+          "line": 35,
+          "function": "copy",
+          "calls": 14316,
+          "primitive_calls": 14316,
+          "self_seconds": 0.2319881,
+          "inclusive_seconds": 0.865936,
+          "application": true
+        },
+        {
+          "module": "settings.py",
+          "line": 433,
+          "function": "from_config",
+          "calls": 14316,
+          "primitive_calls": 14316,
+          "self_seconds": 0.19724940000000002,
+          "inclusive_seconds": 2.4271616000000003,
+          "application": true
+        },
+        {
+          "module": "event.py",
+          "line": 112,
+          "function": "<genexpr>",
+          "calls": 615944,
+          "primitive_calls": 615944,
+          "self_seconds": 0.1502931,
+          "inclusive_seconds": 0.1502931,
+          "application": true
+        },
+        {
+          "module": "event.py",
+          "line": 94,
+          "function": "_builtin_copy_source",
+          "calls": 14316,
+          "primitive_calls": 14316,
+          "self_seconds": 0.0975183,
+          "inclusive_seconds": 0.4353284,
+          "application": true
+        },
+        {
+          "module": "event.py",
+          "line": 102,
+          "function": "<genexpr>",
+          "calls": 274975,
+          "primitive_calls": 274975,
+          "self_seconds": 0.0791067,
+          "inclusive_seconds": 0.11580430000000001,
+          "application": true
+        },
+        {
+          "module": "event.py",
+          "line": 99,
+          "function": "<genexpr>",
+          "calls": 32997,
+          "primitive_calls": 32997,
+          "self_seconds": 0.056684000000000005,
+          "inclusive_seconds": 0.17843550000000002,
+          "application": true
+        },
+        {
+          "module": "event.py",
+          "line": 14,
+          "function": "__setitem__",
+          "calls": 110,
+          "primitive_calls": 110,
+          "self_seconds": 8.630000000000001e-05,
+          "inclusive_seconds": 0.0002423,
+          "application": true
+        }
+      ]
+    }
+  ]
+}

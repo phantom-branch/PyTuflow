@@ -29,6 +29,8 @@ class FileReference:
     database_kind: str | None = None
     requires_table_link_scan: bool = False
     requires_raster_metadata_scan: bool = False
+    # Resolved time/value names for ordinary BC CSVs; empty means unsupported.
+    csv_columns: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -70,6 +72,8 @@ class DeferredDatabaseSource:
     requires_layer_scan: bool = False
     requires_directory_scan: bool = False
     requires_raster_metadata_scan: bool = False
+    # Resolved time/value names for ordinary BC CSVs; empty means unsupported.
+    csv_columns: tuple[str, ...] | None = None
     input_uuid: str = ''
 
 
