@@ -551,7 +551,16 @@ def validate_dependencies(
             else:
                 status, detail = _layer_status(item.layer, info.layers)
                 findings.append(finding(item, status, "layer", path, detail))
-        if policy.check_bc_csv_headers and item.csv_columns is not None:
+        if policy.check_bc_csv_headers and item.database_kind == "bc":
+            if item.csv_columns is None:
+                if path.suffix.casefold() == ".csv":
+                    findings.append(
+                        finding(
+                            item, "unsupported", "csv_header", path,
+                            "Parser did not provide BC CSV column requirements",
+                        )
+                    )
+                continue
             if not item.csv_columns:
                 continue  # FEWS/nonordinary CSV: no ordinary named selectors.
             if path.suffix.casefold() != ".csv":
