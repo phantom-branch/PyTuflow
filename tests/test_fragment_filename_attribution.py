@@ -180,3 +180,69 @@ def test_cli_writes_private_csvs_but_keeps_json_anonymous(tmp_path: Path) -> Non
     assert (output / "private_fragment_files.csv").exists()
     assert (output / "private_input_totals.csv").exists()
     assert (output / "private_lookup_trace.csv").exists()
+
+
+@pytest.mark.parametrize(
+    ("samples_ns", "fraction", "expected_ms"),
+    [
+        ([], 0.95, 0.0),
+        ([1_000_000], 0.95, 1.0),
+        ([1_000_000, 100_000_000], 0.95, 100.0),
+        ([1_000_000, 100_000_000], 0.50, 1.0),
+        ([9_000_000, 1_000_000, 4_000_000], 0.95, 9.0),
+        ([9_000_000, 1_000_000, 4_000_000], 0.50, 4.0),
+    ],
+)
+def test_private_key_percentile_uses_nearest_rank(
+    samples_ns: list[int], fraction: float, expected_ms: float
+) -> None:
+    from .fragment_filename_attribution import _percentile
+
+    assert _percentile(samples_ns, fraction) == expected_ms
+
+
+@pytest.mark.parametrize("alias", ["dotdot", "symlink"])
+def test_private_diagnostic_cli_rejects_checkout_path_alias(
+    tmp_path: Path, alias: str
+) -> None:
+    """No private report may be written inside the checkout via path aliases."""
+    root = Path(__file__).resolve().parents[1]
+    leaf = f"private-diagnostic-exclusion-{tmp_path.name}"
+    target = root / leaf
+    assert not target.exists()
+
+    flags = tmp_path / "flags.json"
+    flags.write_text(json.dumps(["-e1 A"]), encoding="utf-8")
+    if alias == "dotdot":
+        # Lexically outside the root; resolves inside it. The intermediary
+        # need not exist for pathlib's non-strict resolution.
+        output = root.parent / "nonexistent-path-component" / ".." / root.name / leaf
+    else:
+        shortcut = tmp_path / "checkout-symlink"
+        try:
+            shortcut.symlink_to(root, target_is_directory=True)
+        except (OSError, NotImplementedError) as error:
+            pytest.skip(f"Symlinks unavailable on this host: {error}")
+        output = shortcut / leaf
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "tests.profile_fragment_evaluations",
+            "--tcf",
+            str(tmp_path / "intentionally_missing.tcf"),
+            "--runs-json",
+            str(flags),
+            "--output",
+            str(output),
+            "--private-file-attribution",
+        ],
+        cwd=root,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert completed.returncode != 0
+    assert "The report must be outside the source checkout" in completed.stderr
+    assert not target.exists()
