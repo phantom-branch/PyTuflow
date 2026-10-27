@@ -109,6 +109,7 @@ class _Requirement:
     database_kind: str | None
     csv_columns: tuple[str, ...] | None
     unresolved: tuple[str, ...] = ()
+    secondary_source: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -225,6 +226,7 @@ def _requirements(projection: DependencyProjection) -> tuple[
                     source.owner_control_file,
                     source.database_kind,
                     source.csv_columns,
+                    secondary_source=True,
                 )
             )
     return requirements, errors
@@ -551,7 +553,14 @@ def validate_dependencies(
             else:
                 status, detail = _layer_status(item.layer, info.layers)
                 findings.append(finding(item, status, "layer", path, detail))
-        if policy.check_bc_csv_headers and item.database_kind == "bc":
+        if policy.check_bc_csv_headers and (
+            item.csv_columns is not None
+            or (
+                item.secondary_source
+                and item.database_kind == "bc"
+                and path.suffix.casefold() == ".csv"
+            )
+        ):
             if item.csv_columns is None:
                 if path.suffix.casefold() == ".csv":
                     findings.append(
