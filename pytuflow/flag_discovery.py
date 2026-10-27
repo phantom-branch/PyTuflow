@@ -134,6 +134,15 @@ def discover_model_flags(model: TCF) -> FlagDiscovery:
             value = value.strip()
             if not value:
                 return
+            if "<<" in value or _UNRESOLVED.search(value):
+                # References are syntax, never literal selectable names.
+                slots(value, owner, line)
+                limitations.setdefault(
+                    "unresolved-names",
+                    "Some named scenario/event alternatives contain "
+                    "unresolved substitution tokens",
+                )
+                return
             (scenario_names if kind == "scenario" else event_names).setdefault(
                 value.casefold(), value
             )
@@ -157,18 +166,35 @@ def discover_model_flags(model: TCF) -> FlagDiscovery:
 
     database = getattr(getattr(model, "config", None), "event_db", None)
     if database is not None:
+        # EventInput records already parsed from a TEF preserve source lines.
+        # A programmatically supplied EventDatabase may have none; in that
+        # case retain the definition without manufacturing provenance.
+        event_sources: dict[str, tuple[Path | None, int | None]] = {}
+        for inp in (getattr(database, "inputs", ()) or ()):
+            name = str(getattr(inp, "event_name", "") or "").strip()
+            if not name:
+                continue
+            raw_owner = getattr(getattr(inp, "_command", None), "parent", None)
+            owner = Path(raw_owner) if raw_owner else None
+            number = getattr(inp, "line_number", None)
+            number = number if isinstance(number, int) and number > 0 else None
+            event_sources.setdefault(name.casefold(), (owner, number))
         for name, values in database.items():
             event = str(name).strip()
             if not event:
+                continue
+            owner, line = event_sources.get(event.casefold(), (None, None))
+            if "<<" in event or _UNRESOLVED.search(event):
+                record("event", "event_definition", value=event, owner=owner, line=line)
                 continue
             variables = (
                 tuple(str(variable) for variable in values)
                 if isinstance(values, dict) else ()
             )
             defined.append(EventDefinition(event, variables))
-            record("event", "event_definition", value=event)
+            record("event", "event_definition", value=event, owner=owner, line=line)
             for variable in variables:
-                slots(variable, None, None)
+                slots(variable, owner, line)
 
     for control, inp in _model_input_tree(model):
         origin = getattr(getattr(inp, "_command", None), "parent", None)
@@ -183,24 +209,32 @@ def discover_model_flags(model: TCF) -> FlagDiscovery:
         # -s1/-s2 slot. They are not a schedule of runs.
         if lhs == "model scenarios":
             for option in _values(rhs):
-                defaults.setdefault(option.casefold(), option)
+                if "<<" not in option and not _UNRESOLVED.search(option):
+                    defaults.setdefault(option.casefold(), option)
                 record("scenario", "model_default", value=option, owner=owner, line=line)
 
         slots(rhs, owner, line)
         for scope in getattr(inp, "scope", ()) or ():
             kind_name = str(getattr(scope, "type", "")).strip().casefold()
-            if kind_name not in {"scenario", "event"}:
+            base_kind = kind_name.removesuffix(" (else)")
+            if base_kind not in {"scenario", "event"}:
                 continue
-            kind: FlagKind = "scenario" if kind_name == "scenario" else "event"
+            kind: FlagKind = "scenario" if base_kind == "scenario" else "event"
             for option in getattr(scope, "names", ()) or ():
-                # The parser's negative marker is retained on the Scope;
-                # negative names still demonstrate a dependency on that name.
-                if getattr(scope, "known", False) and option:
-                    record(
-                        kind, "conditional_scope", value=str(option),
-                        owner=owner, line=line,
-                        negated=bool(getattr(scope, "_neg", False)),
-                    )
+                # Even a partially unresolved scope can contain a usable
+                # literal alternative separated by a pipe. Do not treat the
+                # unresolved portion itself as a runnable scenario/event name.
+                for alternative in str(option).split("|"):
+                    if alternative.strip():
+                        record(
+                            kind, "conditional_scope", value=alternative,
+                            owner=owner, line=line,
+                            negated=(
+                                bool(getattr(scope, "_neg", False))
+                                or bool(getattr(scope, "_else", False))
+                                or kind_name.endswith(" (else)")
+                            ),
+                        )
             variable = getattr(scope, "var", None)
             if variable:
                 slots(variable, owner, line)
