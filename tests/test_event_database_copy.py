@@ -191,3 +191,18 @@ def test_non_mapping_values_and_existing_alias_errors_are_preserved():
         ordinary_copy(broken)
     with pytest.raises(AttributeError):
         broken.copy()
+
+
+def test_missing_inputs_retains_value_callback_before_existing_error():
+    calls = []
+
+    class Value(dict):
+        def copy(self):
+            calls.append("copy")
+            return super().copy()
+
+    source = EventDatabase({"Rain": Value(a=1)})
+    del source.inputs
+    with pytest.raises(AttributeError):
+        source.copy()
+    assert calls == ["copy"]
