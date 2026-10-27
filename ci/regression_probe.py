@@ -131,6 +131,17 @@ class Recorder:
         self.cache = cache
         self.patches = pytest.MonkeyPatch()
 
+        # Pytest 9.2 rejects session-scoped fixtures declared as bound instance
+        # methods under the inherited warnings-as-errors policy. Register an
+        # unbound fixture callable on this plugin instance instead. This keeps
+        # the same session-time setup and finalizer, without changing any
+        # upstream/fork/candidate test assertions or dependency versions.
+        @pytest.fixture(scope="session", autouse=True)
+        def isolated_project_cache():
+            yield from self._isolated_project_cache()
+
+        self.isolated_project_cache = isolated_project_cache
+
     def pytest_collection_modifyitems(self, items):
         for item in items:
             item.user_properties.append(("nodeid", item.nodeid))
@@ -168,8 +179,7 @@ class Recorder:
             record.update(outcome="xpass", reason=str(event.wasxfail))
         record["phases"][event.when] = phase
 
-    @pytest.fixture(scope="session", autouse=True)
-    def isolated_project_cache(self):
+    def _isolated_project_cache(self):
         from pytuflow.project.config import settings
         from pytuflow.project.template import manager
 
