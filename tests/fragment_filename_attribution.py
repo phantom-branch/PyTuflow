@@ -17,6 +17,7 @@ from collections import Counter, defaultdict
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
+from math import ceil
 from pathlib import Path
 from statistics import median
 from time import perf_counter_ns
@@ -84,7 +85,9 @@ def _percentile(values: list[int], fraction: float) -> float:
     if not values:
         return 0.0
     ordered = sorted(values)
-    return round(ordered[max(0, int((len(ordered) - 1) * fraction))] / 1_000_000, 6)
+    # Nearest-rank percentile: for n=2, p95 selects the second sample.
+    index = max(0, min(len(ordered) - 1, ceil(len(ordered) * fraction) - 1))
+    return round(ordered[index] / 1_000_000, 6)
 
 
 class PrivateFragmentAttribution:
