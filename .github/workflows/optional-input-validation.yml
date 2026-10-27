@@ -1,0 +1,51 @@
+name: Optional TUFLOW input validation
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/validation.py"
+      - "tests/test_input_validation.py"
+      - ".github/workflows/optional-input-validation.yml"
+      - "agent_workstreams/input_validation_ownership_and_migration.md"
+      - "agent_workstreams/prompts/tuflow_input_validation_implementation.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validator:
+    name: Windows Python ${{ matrix.python-version }} input validation
+    runs-on: windows-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and test tools
+        run: python -m pip install -e . pytest ruff
+      - name: Check syntax and dependencies
+        run: |
+          python -m pip check
+          python -m compileall -q pytuflow/validation.py tests/test_input_validation.py
+      - name: Lint new implementation and tests
+        run: python -m ruff check pytuflow/validation.py tests/test_input_validation.py
+      - name: Verify optional source-validation and syntactic projection contracts
+        run: >
+          python -m pytest -q
+          tests/test_input_validation.py
+          tests/test_deferred_file_references.py
+          --junitxml=validation-${{ matrix.python-version }}.xml
+      - name: Retain test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: input-validation-${{ matrix.python-version }}
+          path: validation-${{ matrix.python-version }}.xml
+          retention-days: 30
+          if-no-files-found: warn
