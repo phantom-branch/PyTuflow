@@ -816,7 +816,7 @@ def validate_dependencies(
     concrete: list[tuple[_Requirement, Path]] = []
     for item in requirements:
         if item.unresolved or "<<" in str(item.path):
-            add(item, 
+            add(item,
                 finding(item, "unresolved", "file", item.path, "Unresolved TUFLOW variables")
             )
         elif item.path in glob_errors:
@@ -915,7 +915,7 @@ def validate_dependencies(
             and path.suffix.casefold() == ".gpkg"
         ):
             if info.layer_error:
-                add(item, 
+                add(item,
                     finding(item, "unresolved", "layer", path, info.layer_error)
                 )
             else:
@@ -936,7 +936,7 @@ def validate_dependencies(
         ):
             if item.csv_columns is None:
                 if path.suffix.casefold() == ".csv":
-                    add(item, 
+                    add(item,
                         finding(
                             item, "unsupported", "csv_header", path,
                             "Parser did not provide BC CSV column requirements",
@@ -946,7 +946,7 @@ def validate_dependencies(
             if not item.csv_columns:
                 continue  # FEWS/nonordinary CSV: no ordinary named selectors.
             if path.suffix.casefold() != ".csv":
-                add(item, 
+                add(item,
                     finding(
                         item, "unsupported", "csv_header", path,
                         "BC column selectors require an ordinary Source CSV",
@@ -957,7 +957,7 @@ def validate_dependencies(
                 for column in item.csv_columns
             ):
                 status, detail = _header_status((), item.csv_columns)
-                add(item, 
+                add(item,
                     finding(item, status, "csv_header", path, detail)
                 )
             else:
@@ -972,7 +972,7 @@ def validate_dependencies(
                     status, detail = _header_status(
                         header, item.csv_columns
                     )
-                add(item, 
+                add(item,
                     finding(item, status, "csv_header", path, detail)
                 )
 
