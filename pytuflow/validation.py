@@ -619,14 +619,27 @@ def validate_dependencies(
                     path == item.path and not _has_wildcards(str(path))
                     and os.name != "nt"
                 ):
-                    if policy.case_sensitivity is None and not path.exists():
-                        failures.append(
-                            finding(
-                                item, "unsupported", "file", path,
-                                "Linux filename case policy unknown: supply -cs0/-cs1/-cs2",
+                    if policy.case_sensitivity is None:
+                        # Python 3.12 can raise PermissionError from exists().
+                        # One unreadable input must not abort other run checks.
+                        try:
+                            exists = path.exists()
+                        except OSError as exc:
+                            failures.append(
+                                finding(
+                                    item, "unresolved", "file", path,
+                                    f"Cannot inspect input source file: {exc}",
+                                )
                             )
-                        )
-                        continue
+                            continue
+                        if not exists:
+                            failures.append(
+                                finding(
+                                    item, "unsupported", "file", path,
+                                    "Linux filename case policy unknown: supply -cs0/-cs1/-cs2",
+                                )
+                            )
+                            continue
                     if policy.case_sensitivity in (1, 2):
                         from ._tmf.tfpathlib import TuflowPath
 
