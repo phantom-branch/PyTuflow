@@ -260,12 +260,13 @@ def _filename_matches(
     if case_sensitivity in (0, None):
         return fnmatch.fnmatchcase(candidate, pattern)
     if case_sensitivity == 1:
+        # Match the original TuflowPath.glob() implementation: the full
+        # filename is case-insensitive, but the filename stem is exact.
+        # Comparing suffixes separately wrongly rejects patterns such as
+        # "rain_*" that also match "rain_A.CSV".
         return (
-            fnmatch.fnmatchcase(Path(candidate).stem, Path(pattern).stem)
-            and fnmatch.fnmatchcase(
-                Path(candidate).suffix.casefold(),
-                Path(pattern).suffix.casefold(),
-            )
+            fnmatch.fnmatchcase(candidate.casefold(), pattern.casefold())
+            and fnmatch.fnmatchcase(Path(candidate).stem, Path(pattern).stem)
         )
     return fnmatch.fnmatchcase(candidate.casefold(), pattern.casefold())
 
