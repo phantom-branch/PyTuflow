@@ -406,7 +406,7 @@ def test_shared_bc_csv_header_selection_is_independent_per_run(
     """One run selecting a preamble must not invalidate a valid Source header."""
     source = tmp_path / "shared.csv"
     source.write_text(
-        "Event ID: E100\\nTime,Flow\\n0,1\\n", encoding="utf-8"
+        "Event ID: E100\nTime,Flow\n0,1\n", encoding="utf-8"
     )
     valid = _bc_source(source, columns=("Time", "Flow"))
     invalid = _bc_source(source, columns=("Event ID: E100", "Time"))
