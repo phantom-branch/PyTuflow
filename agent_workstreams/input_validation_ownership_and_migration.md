@@ -66,6 +66,7 @@ Each finding should preserve the originating run ordinal, input UUID/command pro
 - Check exact layer requirements, `>> all`, wildcard layer names and implicit layer selection against the parser's already resolved `FileReference.layer_pattern`; do not infer the layer solely from a filename.
 - Respect error separation: missing file vs present GeoPackage with missing layer vs invalid/unreadable database.
 - Do not read GIS features/geometry by default, mutate metadata or require a full QGIS runtime for ordinary GPKG metadata checks.
+- **Strict saved-main-file policy:** validate the checkpointed main `.gpkg` only, using SQLite's `mode=ro&immutable=1`. A **non-empty `-wal` sidecar is an explicit validation failure** for all requested layers in that GeoPackage: the main file cannot be certified as complete. Tell the user to save/close the editor so changes are checkpointed and rerun validation. Do not read pending WAL content as accepted input, or create, checkpoint, mutate, delete or rename existing `-wal`/`-shm` files. Preserved read-only inspection must leave the directory and existing sidecars unchanged.
 
 ### Ordinary BC Source CSV column headers
 
