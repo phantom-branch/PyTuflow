@@ -144,6 +144,27 @@ def test_file_and_directory_status_and_ordered_provenance(tmp_path: Path) -> Non
     ]
 
 
+@pytest.mark.parametrize(
+    ("candidate", "pattern", "case_sensitivity", "matched"),
+    [
+        ("Grid_A.TIF", "grid_*.tif", 0, False),
+        ("Grid_A.TIF", "grid_*.tif", 1, False),
+        ("grid_A.TIF", "grid_*.tif", 1, True),
+        ("Grid_A.TIF", "grid_*.tif", 2, True),
+        ("Grid_A.TIF", "grid_*.tif", None, False),
+    ],
+)
+def test_tuflow_linux_filename_glob_case_modes(
+    candidate: str, pattern: str, case_sensitivity: int | None,
+    matched: bool,
+) -> None:
+    from pytuflow.validation import _filename_matches
+
+    assert _filename_matches(
+        candidate, pattern, case_sensitivity, windows=False,
+    ) is matched
+
+
 def test_unique_wildcards_are_grouped_and_expanded_for_every_run(
     tmp_path: Path,
 ) -> None:
