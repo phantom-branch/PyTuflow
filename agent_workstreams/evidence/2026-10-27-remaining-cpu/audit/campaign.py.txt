@@ -1,0 +1,28 @@
+import pathlib,subprocess,json,hashlib,time,os,sys
+r=pathlib.Path(__file__).parent
+files=json.loads((r/'input-guards.json').read_text())
+def guard():
+ assert all(hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()==h for p,h in files.items()),'Input changed'
+def run(script,argv,name,env=None):
+ guard();start=time.perf_counter()
+ with (r/(name+'.log')).open('w') as log:subprocess.run([sys.executable,str(r/script),*argv],stdout=log,stderr=subprocess.STDOUT,check=True,timeout=300,env=env)
+ guard();return time.perf_counter()-start
+parity=[]
+for storage in ('SSD',):
+ reference=None
+ for rev,mode in [('B','uncached'),('B','cached'),('A','fragment'),('scope','fragment'),('manifest','fragment'),('B','fragment')]:
+  name=f'parity-{storage}-{rev}-{mode}'
+  if not (r/(name+'.json')).exists():run('parity.py',[rev,mode,name],name,dict(os.environ,PRIVATE_PARITY_CONFIG=str(r/(storage+'.json'))))
+  records=json.loads((r/(name+'.records.json')).read_text());receipt=json.loads((r/(name+'.json')).read_text());assert receipt['passed'] and receipt['runs']==480
+  if reference is None:reference=records
+  else:assert records==reference,'Complete record mismatch: '+name
+  parity.append(dict(receipt,storage=storage,full_records_equal=True));(r/'parity-results.json').write_text(json.dumps(parity,indent=2))
+  print('Complete recursive parity passed: '+name,flush=True)
+rows=[]
+for storage in ('SSD',):
+ for block,order in enumerate(('ABBA','BAAB'),1):
+  for position,rev in enumerate(order,1):
+   name=f'native-{storage}-{block}-{position}-{rev}';outer=run('measure.py',['--config',str(r/(storage+'.json')),'--revision',rev,'--name',name],name)
+   row=json.loads((r/(name+'.json')).read_text());row.update(storage=storage,block=block,position=position,outer_process_seconds=outer)
+   rows.append(row);(r/'native-results.json').write_text(json.dumps(rows,indent=2));print(json.dumps({k:row[k] for k in ('storage','block','position','revision','end_to_end_seconds','cpu_seconds','passed')}),flush=True)
+(r/'campaign-complete.json').write_text(json.dumps({'passed':True,'parity_modes':len(parity),'native_trials':len(rows),'guarded_files':len(files)},indent=2))

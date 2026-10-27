@@ -1,0 +1,26 @@
+{
+  "ordered_inputs": {
+    "emitted_records": 31680,
+    "distinct_record_values": 99,
+    "source_uuids": 89,
+    "uuids_with_single_record_value": 87
+  },
+  "input_references": {
+    "emitted_records": 12000,
+    "distinct_record_values": 26,
+    "source_uuids": 24,
+    "uuids_with_single_record_value": 22
+  },
+  "database_activations": {
+    "emitted_records": 960,
+    "distinct_record_values": 3,
+    "source_uuids": 3,
+    "uuids_with_single_record_value": 3
+  },
+  "database_sources": {
+    "emitted_records": 480,
+    "distinct_record_values": 480,
+    "source_uuids": 2,
+    "uuids_with_single_record_value": 0
+  }
+}

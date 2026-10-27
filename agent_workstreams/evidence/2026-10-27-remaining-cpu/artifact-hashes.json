@@ -1,0 +1,23 @@
+{
+  "algorithm": "SHA-256 of canonical UTF-8 LF text",
+  "files": {
+    "assembly.json": "406bebdabeb0b0e0dba925200d4dceac267c0767921bddabc254a6bb84a2501e",
+    "audit/attribution.py.txt": "99a6fce5f6f0f781e365b28149cd0bf8381c9fa0823c57df5776d07a91683ffd",
+    "audit/campaign.py.txt": "a1c3aba4b2705a0e0a043fa42e96ba89823eaf3b6b0d1ba08363787b07be19e1",
+    "audit/diagnose.py.txt": "a129142324481107fa7a422dbfa24aff7401bd96be68f70291eb1b5cfae48c63",
+    "audit/diagnostic_campaign.py.txt": "51c3e21aa23a88356e6db48c9f29e10cd5e8704b3b8f9a382d897127738eebad",
+    "audit/measure.py.txt": "07b4f9125f7f6a98c0187983d33dbb9c67fe75f721e4a4aad7daa8856bdc19b2",
+    "audit/parity.py.txt": "3224913da369b5975ab1b56289148a6351ed54123d03f79407eb9a99844ad366",
+    "environment.json": "1719f80fd9d4339951092d5cecc7b8ee554cea1284210925399aa760b3c2def2",
+    "native.json": "295474f400ed558f527052142a21758821d9ce99fdd9ee8f29bbd16f8f991e3d",
+    "operations.json": "97f9c4303b9fb6055612c96f85240ca7d92f7aaa14b3e5bdb7045cb192262163",
+    "parity.json": "716d3d219fe4acfc88479bab0c3dc391dbb017f82f770c2acd9b9a601293a73b",
+    "phases.json": "e78a0b88f6684c9003c8ab635a77cad777f30ef2e6b2f2a766e586ec6b2ff428",
+    "profile-top30.json": "e001a18a118560f1953b5339970c7bf874ccefffc77504ece023905671de4d1f",
+    "protocol.json": "5f91fd32e02319fce8c811bcebf124aa051efcdd0bcc088609728274a3efbdc0",
+    "README.md": "aec21348646c78fec78b8a12737faf0da47bcc20a0181bca7610a435141f2c46",
+    "reference-variation.json": "2606ef0ae5882fefdeaddfc5a69c1d9dfcc8cb08c1073a292fbb4d0d3897f44d",
+    "scaling.json": "0305d8bc2749f02a04b856683bf67c2e75d4ae4b6768a92820aaf11c3ba1ada3",
+    "validation.json": "1cae4b564f9b310c24bc0ea29e9bbbf26748244a30abe3c68b6dd478cb9b2a95"
+  }
+}
