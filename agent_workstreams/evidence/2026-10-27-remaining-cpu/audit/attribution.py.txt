@@ -1,0 +1,65 @@
+"""Private-config, aggregate-only compiled dependency attribution."""
+import cProfile,collections,contextlib,dataclasses,json,pathlib,pstats,sys,time
+from unittest.mock import patch
+r=pathlib.Path(__file__).parent
+variant=sys.argv[1]
+d=json.loads((r/'SSD.json').read_text())
+sys.path[:0]=[d['parser_sources']['A'] if variant=='parent' else d['parser_sources']['B'],d['consumer_source']]
+from pytuflow import TCF
+from pytuflow._tmf import fragment_dependencies as f
+from pytuflow._tmf import context as cm
+from pytuflow._tmf.cf import cf_run_state as cf
+from loguru import logger
+logger.remove()
+plans=[];counts=collections.Counter();seconds=collections.Counter();file_counts=collections.defaultdict(collections.Counter)
+phase=['evaluation']
+orig_init=f._Plan.__init__
+def init(self,model):
+ start=time.process_time()
+ if variant=='parent':orig_init(self,model)
+ else:orig_init(self,model,use_scopes=variant!='manifest',use_manifests=variant!='scope')
+ seconds['compilation']+=time.process_time()-start;plans.append(self)
+def timed(label,original):
+ def call(*a,**k):
+  previous=phase[0];phase[0]=label;start=time.process_time()
+  try:return original(*a,**k)
+  finally:seconds[label]+=time.process_time()-start;phase[0]=previous
+ return call
+orig_scope=f._FragmentContext.in_context_by_scope
+def scope(self,scopes):
+ kinds={str(s.type).split(' (')[0] for s in scopes or ()}
+ category=('variable' if 'VARIABLE' in kinds else 'combined' if 'SCENARIO' in kinds and kinds & {'EVENT','EVENT DEFINE'} else 'scenario' if 'SCENARIO' in kinds else 'event' if kinds & {'EVENT','EVENT DEFINE'} else 'other')
+ counts[f'{phase[0]}.{category}.scope_calls']+=1
+ return orig_scope(self,scopes)
+orig_key=f._Plan._key
+def key(self,inp,ctx):
+ kind={'geometry control file':'TGC','bc control file':'TBC','event file':'TEF'}.get(str(inp.lhs).lower(),'other')
+ start=time.process_time();value=orig_key(self,inp,ctx);seconds['signatures']+=time.process_time()-start
+ hit=value in self.cache or value in self.pending
+ file_counts[kind]['hits' if hit else 'misses']+=1
+ file_counts[kind]['compact' if value[1][0]=='manifest' else 'full']+=1
+ return value
+profile=cProfile.Profile();profile.enable()
+start=time.perf_counter();model=TCF(pathlib.Path(d['tcf']));parse=time.perf_counter()-start
+with (patch.object(f._Plan,'__init__',init),patch.object(f._Plan,'_key',key),
+      patch.object(f._FragmentContext,'in_context_by_scope',scope),
+      patch.object(cm.Context,'load_events',timed('events',cm.Context.load_events)),
+      patch.object(cf,'prepare_run_context',timed('variables',cf.prepare_run_context))):
+ result=model.collect_file_dependencies(json.loads(pathlib.Path(d['runs_json']).read_text()))
+profile.disable();assert result.passed and result.fallback_runs==0
+profile.dump_stats(str(r/(variant+'-reviewed-attribution.prof')))
+alloc={}
+for (filename,line,function),(pc,calls,own,inclusive,_) in pstats.Stats(profile).stats.items():
+ if filename.replace('\\','/').endswith('/scope.py') and function in ('__init__','explode','__eq__','contains'):
+  alloc[function]={'calls':calls,'self_seconds':own,'inclusive_seconds':inclusive}
+plan=plans[0]
+out={'instrumented':True,'variant':variant,'contexts':len(result.runs),'parsed_inputs':len(tuple(model.find_input(recursive=True))),
+ 'parsed_files':len({str(inp.command().parent) for inp in model.find_input(recursive=True)}),
+ 'parse_seconds':parse,'phase_cpu_seconds':dict(seconds),'scope_categories':dict(counts),'scope_operations':alloc,
+ 'file_keys':dict(file_counts),'fragment_evaluations':result.fragment_evaluations,'fragment_reuses':result.fragment_reuses,
+ 'full_keys':getattr(plan,'full_keys',sum(x['full'] for x in file_counts.values())),
+ 'compact_signatures':getattr(plan,'compact_signatures',0),'manifest_hits':getattr(plan,'manifest_hits',0),
+ 'manifest_misses':getattr(plan,'manifest_misses',0),'fallbacks':getattr(plan,'manifest_fallbacks',{}),
+ 'compiled_scope_evaluations':getattr(getattr(plan,'scope_program',None),'evaluations',0),
+ 'compiled_scope_fallbacks':getattr(getattr(plan,'scope_program',None),'fallbacks',0)}
+(r/(variant+'-reviewed-attribution.json')).write_text(json.dumps(out,indent=2));print(json.dumps(out),flush=True)

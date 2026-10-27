@@ -1,0 +1,800 @@
+{
+  "clock": "thread CPU; quantised accounting and profiler overhead; not native cost estimates",
+  "profile_total_self_cpu_seconds": 21.296875,
+  "top30_production_by_self_cpu": [
+    {
+      "module": "event.py",
+      "line": 14,
+      "function": "__setitem__",
+      "calls": 605055,
+      "primitive_calls": 605055,
+      "self_seconds": 0.640625,
+      "inclusive_seconds": 1.5625,
+      "application": true,
+      "average_self_cpu_microseconds": 1.0587880440621102
+    },
+    {
+      "module": "case_insensitive_dict.py",
+      "line": 17,
+      "function": "__setitem__",
+      "calls": 605072,
+      "primitive_calls": 605072,
+      "self_seconds": 0.48437500000000006,
+      "inclusive_seconds": 0.578125,
+      "application": true,
+      "average_self_cpu_microseconds": 0.8005245656715234
+    },
+    {
+      "module": "file.py",
+      "line": 455,
+      "function": "__str__",
+      "calls": 437418,
+      "primitive_calls": 437418,
+      "self_seconds": 0.421875,
+      "inclusive_seconds": 1.53125,
+      "application": true,
+      "average_self_cpu_microseconds": 0.9644664828607877
+    },
+    {
+      "module": "event.py",
+      "line": 35,
+      "function": "copy",
+      "calls": 14316,
+      "primitive_calls": 14316,
+      "self_seconds": 0.40625,
+      "inclusive_seconds": 2.359375,
+      "application": true,
+      "average_self_cpu_microseconds": 28.377340039117072
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 221,
+      "function": "_compiled_membership",
+      "calls": 196939,
+      "primitive_calls": 196939,
+      "self_seconds": 0.359375,
+      "inclusive_seconds": 0.9687500000000001,
+      "application": true,
+      "average_self_cpu_microseconds": 1.824803619394838
+    },
+    {
+      "module": "file.py",
+      "line": 34,
+      "function": "__new__",
+      "calls": 164315,
+      "primitive_calls": 164315,
+      "self_seconds": 0.34375,
+      "inclusive_seconds": 0.890625,
+      "application": true,
+      "average_self_cpu_microseconds": 2.0920183793323797
+    },
+    {
+      "module": "file.py",
+      "line": 89,
+      "function": "_split_db_and_lyr",
+      "calls": 237774,
+      "primitive_calls": 237774,
+      "self_seconds": 0.328125,
+      "inclusive_seconds": 1.4375,
+      "application": true,
+      "average_self_cpu_microseconds": 1.3799868782961973
+    },
+    {
+      "module": "settings.py",
+      "line": 433,
+      "function": "from_config",
+      "calls": 14316,
+      "primitive_calls": 14316,
+      "self_seconds": 0.296875,
+      "inclusive_seconds": 4.671875,
+      "application": true,
+      "average_self_cpu_microseconds": 20.737286951662476
+    },
+    {
+      "module": "patterns.py",
+      "line": 184,
+      "function": "replace_exact_names",
+      "calls": 168083,
+      "primitive_calls": 168083,
+      "self_seconds": 0.265625,
+      "inclusive_seconds": 0.9062500000000001,
+      "application": true,
+      "average_self_cpu_microseconds": 1.5803204369269945
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 217,
+      "function": "<genexpr>",
+      "calls": 780445,
+      "primitive_calls": 780445,
+      "self_seconds": 0.265625,
+      "inclusive_seconds": 0.265625,
+      "application": true,
+      "average_self_cpu_microseconds": 0.3403506973585582
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 210,
+      "function": "_compiled_scope_eligible",
+      "calls": 165641,
+      "primitive_calls": 165641,
+      "self_seconds": 0.25,
+      "inclusive_seconds": 0.59375,
+      "application": true,
+      "average_self_cpu_microseconds": 1.5092881593325325
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 119,
+      "function": "<genexpr>",
+      "calls": 439248,
+      "primitive_calls": 439248,
+      "self_seconds": 0.25,
+      "inclusive_seconds": 0.390625,
+      "application": true,
+      "average_self_cpu_microseconds": 0.569154555057735
+    },
+    {
+      "module": "case_insensitive_dict.py",
+      "line": 14,
+      "function": "__contains__",
+      "calls": 605055,
+      "primitive_calls": 605055,
+      "self_seconds": 0.23437500000000003,
+      "inclusive_seconds": 0.34375,
+      "application": true,
+      "average_self_cpu_microseconds": 0.38736147953491834
+    },
+    {
+      "module": "input_preflight.py",
+      "line": 318,
+      "function": "add_file",
+      "calls": 12480,
+      "primitive_calls": 12480,
+      "self_seconds": 0.21875,
+      "inclusive_seconds": 0.6875,
+      "application": true,
+      "average_self_cpu_microseconds": 17.528044871794872
+    },
+    {
+      "module": "context.py",
+      "line": 219,
+      "function": "translate",
+      "calls": 27961,
+      "primitive_calls": 27961,
+      "self_seconds": 0.203125,
+      "inclusive_seconds": 1.265625,
+      "application": true,
+      "average_self_cpu_microseconds": 7.2645828117735425
+    },
+    {
+      "module": "file.py",
+      "line": 190,
+      "function": "dbpath",
+      "calls": 171051,
+      "primitive_calls": 171051,
+      "self_seconds": 0.1875,
+      "inclusive_seconds": 1.46875,
+      "application": true,
+      "average_self_cpu_microseconds": 1.0961643018748792
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 630,
+      "function": "_full_key",
+      "calls": 2880,
+      "primitive_calls": 2880,
+      "self_seconds": 0.1875,
+      "inclusive_seconds": 3.34375,
+      "application": true,
+      "average_self_cpu_microseconds": 65.10416666666667
+    },
+    {
+      "module": "compiled_scope.py",
+      "line": 35,
+      "function": "evaluate",
+      "calls": 166121,
+      "primitive_calls": 166121,
+      "self_seconds": 0.171875,
+      "inclusive_seconds": 1.140625,
+      "application": true,
+      "average_self_cpu_microseconds": 1.0346374028569536
+    },
+    {
+      "module": "scope.py",
+      "line": 183,
+      "function": "__init__",
+      "calls": 38863,
+      "primitive_calls": 38863,
+      "self_seconds": 0.15625,
+      "inclusive_seconds": 0.296875,
+      "application": true,
+      "average_self_cpu_microseconds": 4.020533669557162
+    },
+    {
+      "module": "file.py",
+      "line": 59,
+      "function": "__init__",
+      "calls": 164315,
+      "primitive_calls": 164315,
+      "self_seconds": 0.15625,
+      "inclusive_seconds": 0.375,
+      "application": true,
+      "average_self_cpu_microseconds": 0.9509174451510818
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 775,
+      "function": "evaluate",
+      "calls": 71546,
+      "primitive_calls": 45120,
+      "self_seconds": 0.15625,
+      "inclusive_seconds": 14.343750000000002,
+      "application": true,
+      "average_self_cpu_microseconds": 2.1839096525312387
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 657,
+      "function": "<genexpr>",
+      "calls": 147600,
+      "primitive_calls": 147600,
+      "self_seconds": 0.15625,
+      "inclusive_seconds": 0.171875,
+      "application": true,
+      "average_self_cpu_microseconds": 1.0586043360433603
+    },
+    {
+      "module": "batch_preflight_adapter.py",
+      "line": 115,
+      "function": "__init__",
+      "calls": 480,
+      "primitive_calls": 480,
+      "self_seconds": 0.140625,
+      "inclusive_seconds": 0.859375,
+      "application": true,
+      "average_self_cpu_microseconds": 292.96875
+    },
+    {
+      "module": "command.py",
+      "line": 136,
+      "function": "is_file",
+      "calls": 27569,
+      "primitive_calls": 16519,
+      "self_seconds": 0.140625,
+      "inclusive_seconds": 4.890625,
+      "application": true,
+      "average_self_cpu_microseconds": 5.100837897638652
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 601,
+      "function": "_key",
+      "calls": 24495,
+      "primitive_calls": 24495,
+      "self_seconds": 0.140625,
+      "inclusive_seconds": 3.9062500000000004,
+      "application": true,
+      "average_self_cpu_microseconds": 5.740967544396816
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 71,
+      "function": "bindings",
+      "calls": 31199,
+      "primitive_calls": 31199,
+      "self_seconds": 0.125,
+      "inclusive_seconds": 0.84375,
+      "application": true,
+      "average_self_cpu_microseconds": 4.006538671111254
+    },
+    {
+      "module": "compiled_scope.py",
+      "line": 130,
+      "function": "evaluate",
+      "calls": 139706,
+      "primitive_calls": 139706,
+      "self_seconds": 0.125,
+      "inclusive_seconds": 1.8281250000000002,
+      "application": true,
+      "average_self_cpu_microseconds": 0.8947360886432938
+    },
+    {
+      "module": "file.py",
+      "line": 182,
+      "function": "suffix",
+      "calls": 105811,
+      "primitive_calls": 105811,
+      "self_seconds": 0.109375,
+      "inclusive_seconds": 2.34375,
+      "application": true,
+      "average_self_cpu_microseconds": 1.033682698396197
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 259,
+      "function": "translate",
+      "calls": 40552,
+      "primitive_calls": 40552,
+      "self_seconds": 0.109375,
+      "inclusive_seconds": 2.484375,
+      "application": true,
+      "average_self_cpu_microseconds": 2.6971542710593805
+    },
+    {
+      "module": "command.py",
+      "line": 284,
+      "function": "is_valid",
+      "calls": 434600,
+      "primitive_calls": 434600,
+      "self_seconds": 0.109375,
+      "inclusive_seconds": 0.109375,
+      "application": true,
+      "average_self_cpu_microseconds": 0.2516682006442706
+    }
+  ],
+  "selected_functions_cpu": [
+    {
+      "module": "event.py",
+      "line": 14,
+      "function": "__setitem__",
+      "calls": 605055,
+      "primitive_calls": 605055,
+      "self_seconds": 0.640625,
+      "inclusive_seconds": 1.5625,
+      "application": true
+    },
+    {
+      "module": "case_insensitive_dict.py",
+      "line": 17,
+      "function": "__setitem__",
+      "calls": 605072,
+      "primitive_calls": 605072,
+      "self_seconds": 0.48437500000000006,
+      "inclusive_seconds": 0.578125,
+      "application": true
+    },
+    {
+      "module": "file.py",
+      "line": 455,
+      "function": "__str__",
+      "calls": 437418,
+      "primitive_calls": 437418,
+      "self_seconds": 0.421875,
+      "inclusive_seconds": 1.53125,
+      "application": true
+    },
+    {
+      "module": "event.py",
+      "line": 35,
+      "function": "copy",
+      "calls": 14316,
+      "primitive_calls": 14316,
+      "self_seconds": 0.40625,
+      "inclusive_seconds": 2.359375,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 221,
+      "function": "_compiled_membership",
+      "calls": 196939,
+      "primitive_calls": 196939,
+      "self_seconds": 0.359375,
+      "inclusive_seconds": 0.9687500000000001,
+      "application": true
+    },
+    {
+      "module": "file.py",
+      "line": 89,
+      "function": "_split_db_and_lyr",
+      "calls": 237774,
+      "primitive_calls": 237774,
+      "self_seconds": 0.328125,
+      "inclusive_seconds": 1.4375,
+      "application": true
+    },
+    {
+      "module": "settings.py",
+      "line": 433,
+      "function": "from_config",
+      "calls": 14316,
+      "primitive_calls": 14316,
+      "self_seconds": 0.296875,
+      "inclusive_seconds": 4.671875,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 210,
+      "function": "_compiled_scope_eligible",
+      "calls": 165641,
+      "primitive_calls": 165641,
+      "self_seconds": 0.25,
+      "inclusive_seconds": 0.59375,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 630,
+      "function": "_full_key",
+      "calls": 2880,
+      "primitive_calls": 2880,
+      "self_seconds": 0.1875,
+      "inclusive_seconds": 3.34375,
+      "application": true
+    },
+    {
+      "module": "compiled_scope.py",
+      "line": 35,
+      "function": "evaluate",
+      "calls": 166121,
+      "primitive_calls": 166121,
+      "self_seconds": 0.171875,
+      "inclusive_seconds": 1.140625,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 775,
+      "function": "evaluate",
+      "calls": 71546,
+      "primitive_calls": 45120,
+      "self_seconds": 0.15625,
+      "inclusive_seconds": 14.343750000000002,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 601,
+      "function": "_key",
+      "calls": 24495,
+      "primitive_calls": 24495,
+      "self_seconds": 0.140625,
+      "inclusive_seconds": 3.9062500000000004,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 71,
+      "function": "bindings",
+      "calls": 31199,
+      "primitive_calls": 31199,
+      "self_seconds": 0.125,
+      "inclusive_seconds": 0.84375,
+      "application": true
+    },
+    {
+      "module": "compiled_scope.py",
+      "line": 130,
+      "function": "evaluate",
+      "calls": 139706,
+      "primitive_calls": 139706,
+      "self_seconds": 0.125,
+      "inclusive_seconds": 1.8281250000000002,
+      "application": true
+    },
+    {
+      "module": "append_dict.py",
+      "line": 4,
+      "function": "__setitem__",
+      "calls": 111650,
+      "primitive_calls": 111650,
+      "self_seconds": 0.09375,
+      "inclusive_seconds": 0.125,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 123,
+      "function": "evaluate",
+      "calls": 27961,
+      "primitive_calls": 27961,
+      "self_seconds": 0.0625,
+      "inclusive_seconds": 1.328125,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 566,
+      "function": "_manifest_signature",
+      "calls": 25935,
+      "primitive_calls": 25935,
+      "self_seconds": 0.046875,
+      "inclusive_seconds": 0.328125,
+      "application": true
+    },
+    {
+      "module": "effective_dependencies.py",
+      "line": 102,
+      "function": "bindings",
+      "calls": 25935,
+      "primitive_calls": 25935,
+      "self_seconds": 0.046875,
+      "inclusive_seconds": 0.09375,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 675,
+      "function": "_include_selection",
+      "calls": 1922,
+      "primitive_calls": 1922,
+      "self_seconds": 0.03125,
+      "inclusive_seconds": 0.078125,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 292,
+      "function": "_join",
+      "calls": 962,
+      "primitive_calls": 480,
+      "self_seconds": 0.015625,
+      "inclusive_seconds": 14.843750000000002,
+      "application": true
+    },
+    {
+      "module": "effective_dependencies.py",
+      "line": 115,
+      "function": "event_independent",
+      "calls": 142,
+      "primitive_calls": 142,
+      "self_seconds": 0.0,
+      "inclusive_seconds": 0.0,
+      "application": true
+    },
+    {
+      "module": "input.py",
+      "line": 48,
+      "function": "__str__",
+      "calls": 2379,
+      "primitive_calls": 2379,
+      "self_seconds": 0.0,
+      "inclusive_seconds": 0.046875,
+      "application": true
+    },
+    {
+      "module": "batch_preflight_adapter.py",
+      "line": 71,
+      "function": "__str__",
+      "calls": 24960,
+      "primitive_calls": 24960,
+      "self_seconds": 0.0,
+      "inclusive_seconds": 0.0,
+      "application": true
+    }
+  ],
+  "selected_functions_default_profile": [
+    {
+      "module": "case_insensitive_dict.py",
+      "line": 17,
+      "function": "__setitem__",
+      "calls": 605072,
+      "primitive_calls": 605072,
+      "self_seconds": 0.3310572,
+      "inclusive_seconds": 0.38662610000000003,
+      "application": true
+    },
+    {
+      "module": "event.py",
+      "line": 14,
+      "function": "__setitem__",
+      "calls": 605055,
+      "primitive_calls": 605055,
+      "self_seconds": 0.2965241,
+      "inclusive_seconds": 0.9168691000000001,
+      "application": true
+    },
+    {
+      "module": "event.py",
+      "line": 35,
+      "function": "copy",
+      "calls": 14316,
+      "primitive_calls": 14316,
+      "self_seconds": 0.26957580000000003,
+      "inclusive_seconds": 1.3414441000000001,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 221,
+      "function": "_compiled_membership",
+      "calls": 196939,
+      "primitive_calls": 196939,
+      "self_seconds": 0.2292246,
+      "inclusive_seconds": 0.6073417,
+      "application": true
+    },
+    {
+      "module": "file.py",
+      "line": 455,
+      "function": "__str__",
+      "calls": 437418,
+      "primitive_calls": 437418,
+      "self_seconds": 0.2025412,
+      "inclusive_seconds": 0.9202607,
+      "application": true
+    },
+    {
+      "module": "file.py",
+      "line": 89,
+      "function": "_split_db_and_lyr",
+      "calls": 237774,
+      "primitive_calls": 237774,
+      "self_seconds": 0.1874194,
+      "inclusive_seconds": 0.8553608,
+      "application": true
+    },
+    {
+      "module": "settings.py",
+      "line": 433,
+      "function": "from_config",
+      "calls": 14316,
+      "primitive_calls": 14316,
+      "self_seconds": 0.16727650000000002,
+      "inclusive_seconds": 2.7281862,
+      "application": true
+    },
+    {
+      "module": "compiled_scope.py",
+      "line": 35,
+      "function": "evaluate",
+      "calls": 166121,
+      "primitive_calls": 166121,
+      "self_seconds": 0.15261650000000002,
+      "inclusive_seconds": 0.7599582,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 210,
+      "function": "_compiled_scope_eligible",
+      "calls": 165641,
+      "primitive_calls": 165641,
+      "self_seconds": 0.1360101,
+      "inclusive_seconds": 0.2455411,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 71,
+      "function": "bindings",
+      "calls": 31199,
+      "primitive_calls": 31199,
+      "self_seconds": 0.1158874,
+      "inclusive_seconds": 0.4632445,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 775,
+      "function": "evaluate",
+      "calls": 71546,
+      "primitive_calls": 45120,
+      "self_seconds": 0.11388910000000001,
+      "inclusive_seconds": 8.6539933,
+      "application": true
+    },
+    {
+      "module": "compiled_scope.py",
+      "line": 130,
+      "function": "evaluate",
+      "calls": 139706,
+      "primitive_calls": 139706,
+      "self_seconds": 0.10098860000000001,
+      "inclusive_seconds": 1.1169918,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 292,
+      "function": "_join",
+      "calls": 962,
+      "primitive_calls": 480,
+      "self_seconds": 0.098793,
+      "inclusive_seconds": 9.086557,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 630,
+      "function": "_full_key",
+      "calls": 2880,
+      "primitive_calls": 2880,
+      "self_seconds": 0.0913989,
+      "inclusive_seconds": 1.7823907,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 566,
+      "function": "_manifest_signature",
+      "calls": 25935,
+      "primitive_calls": 25935,
+      "self_seconds": 0.049874,
+      "inclusive_seconds": 0.2072381,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 601,
+      "function": "_key",
+      "calls": 24495,
+      "primitive_calls": 24495,
+      "self_seconds": 0.0476617,
+      "inclusive_seconds": 2.1077637,
+      "application": true
+    },
+    {
+      "module": "append_dict.py",
+      "line": 4,
+      "function": "__setitem__",
+      "calls": 111650,
+      "primitive_calls": 111650,
+      "self_seconds": 0.042796,
+      "inclusive_seconds": 0.060306000000000005,
+      "application": true
+    },
+    {
+      "module": "effective_dependencies.py",
+      "line": 102,
+      "function": "bindings",
+      "calls": 25935,
+      "primitive_calls": 25935,
+      "self_seconds": 0.021262600000000003,
+      "inclusive_seconds": 0.0275822,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 123,
+      "function": "evaluate",
+      "calls": 27961,
+      "primitive_calls": 27961,
+      "self_seconds": 0.0116959,
+      "inclusive_seconds": 0.7191154000000001,
+      "application": true
+    },
+    {
+      "module": "fragment_dependencies.py",
+      "line": 675,
+      "function": "_include_selection",
+      "calls": 1922,
+      "primitive_calls": 1922,
+      "self_seconds": 0.0099091,
+      "inclusive_seconds": 0.05905270000000001,
+      "application": true
+    },
+    {
+      "module": "input.py",
+      "line": 48,
+      "function": "__str__",
+      "calls": 2379,
+      "primitive_calls": 2379,
+      "self_seconds": 0.0074441,
+      "inclusive_seconds": 0.0419744,
+      "application": true
+    },
+    {
+      "module": "batch_preflight_adapter.py",
+      "line": 71,
+      "function": "__str__",
+      "calls": 24960,
+      "primitive_calls": 24960,
+      "self_seconds": 0.0020075,
+      "inclusive_seconds": 0.0020075,
+      "application": true
+    },
+    {
+      "module": "effective_dependencies.py",
+      "line": 115,
+      "function": "event_independent",
+      "calls": 142,
+      "primitive_calls": 142,
+      "self_seconds": 0.0013685000000000001,
+      "inclusive_seconds": 0.007485200000000001,
+      "application": true
+    }
+  ]
+}

@@ -39,6 +39,14 @@ def _variable_name(token: str) -> str:
     return name.strip("~") if name.startswith(("~S", "~E")) else name
 
 
+def _has_partial_delimiter(value: str) -> bool:
+    """Detect bracket pieces outside already-complete <<variable>> tokens."""
+    if "<" not in value and ">" not in value:
+        return False
+    remainder = _TOKEN.sub("", value)
+    return "<" in remainder or ">" in remainder
+
+
 @dataclass(frozen=True, slots=True)
 class CompiledExpression:
     """Literal/token operations; complex TEF replacement uses Context semantics."""
@@ -91,9 +99,22 @@ class CompiledExpression:
             if has_events
             else ()
         )
-        if events:
-            # Event values may introduce variables absent from the expression.
-            # The complete variable map is conservative for this complex case.
+        # Single angle brackets can join with literals/other substitutions
+        # to *create* a previously untracked <<variable>> token. Unlike
+        # complete tokens, these fragments are not discovered by the normal
+        # transitive-variable walk. Include the full run variable map in the
+        # expression-cache key rather than sharing a value across scenario
+        # flags that were absent from the original expression.
+        if (
+            events
+            or _has_partial_delimiter(self.text)
+            or any(
+                isinstance(value, str) and _has_partial_delimiter(value)
+                for value in found.values()
+            )
+        ):
+            # TEF substitutions and partial variable delimiters can reveal
+            # additional variables absent from the original expression.
             return tuple(
                 sorted((str(k), repr(v)) for k, v in ctx.var_map.items())
             ), events
@@ -102,11 +123,17 @@ class CompiledExpression:
     def evaluate(self, ctx: Any) -> Any:
         # Only use the token join when no replacement can trigger a subsequent
         # replacement, numeric coercion, or arbitrary TEF substitution.
-        if not ctx.event_variables and all(
-            isinstance(ctx.var_map.get(name), str)
-            and "<<" not in ctx.var_map[name]
-            and ">>" not in ctx.var_map[name]
-            for name in self.variables
+        # Even a single angle bracket can combine with another binding
+        # and expose a <<~s1~>> token on Context's second pass.
+        if (
+            not ctx.event_variables
+            and not _has_partial_delimiter(self.text)
+            and all(
+                isinstance(ctx.var_map.get(name), str)
+                and "<" not in ctx.var_map[name]
+                and ">" not in ctx.var_map[name]
+                for name in self.variables
+            )
         ):
             return "".join(
                 str(ctx.var_map[_variable_name(value[2:-2])]) if token else value

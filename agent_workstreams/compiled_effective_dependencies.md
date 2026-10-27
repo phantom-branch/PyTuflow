@@ -1,6 +1,6 @@
 # Compiled effective dependencies and context preparation
 
-Status: implemented and measured; retain both optimisations in draft pending final review and remaining CI.
+Status: implemented and measured; current corrected-head SSD investigation complete. PR/review/CI and merge remain separate states.
 Updated: 27 October 2026 (Australia/Perth).
 
 This draft is stacked on [PyTUFLOW #39](https://github.com/phantom-branch/PyTuflow/pull/39),
@@ -221,3 +221,34 @@ Do not describe failed pre-fix timings as a performance baseline. Historical opt
 measurements above remain tied to their recorded source SHAs. New raw reports, flags, paths
 and source/command-list hashes remain private; only these aggregate conclusions are published.
 The PR description is the live receipt for the follow-up commit's hosted CI and exact-head review.
+
+## Current-head CPU investigation, 27 October 2026
+
+The corrected runtime head `5c32395e30029bdd3d1053d18374234d0120fab4` has now been
+remeasured against #39 `36ad04b` using the actual consumer PR #161 `04999e7`.
+The original 480-context workload was tested on SSD only, as requested. All six modes
+produce recursively equal complete public records, preserving the existing record hash.
+
+Eight clean fresh-process native runs (`ABBA`/`BAAB`, four per revision) give median
+preflight-through-report times of **22.849923 s parent and 4.260864 s current**, an
+**81.35% reduction**. Startup/import/setup is separate; the measured API boundary includes
+parsing, dependency/context preparation, shared file/header inventory and report writing.
+Every run retains 480 contexts, 50 paths, 24 headers and 480 selectors with zero issues or
+whole-run fallbacks. Peak working-set medians are 207.982 and 202.984 MiB. These new receipts
+supersede historical source revisions for current-head native acceptance on this workload.
+
+Separate diagnostics show 190,971,050 -> 32,867,136 Python/C calls. The 2,880 full-key
+fallbacks remain justified proof boundaries; all 480 TEF fragments differ. Certificates
+already have 25,793 hits from 25,935 lookups. The 480-prefix marginal dependency cost is
+44.653 -> 6.466 ms/context; parsing remains about 0.7-0.8 s, so first-result latency
+benefits much less than full-batch throughput. All 141 focused regressions pass, zero skips.
+The six hosted workflows on measured runtime head `5c32395` also passed; documentation
+commits and their hosted status remain separate.
+
+[Full sanitised investigation and ranked recommendations](evidence/2026-10-27-remaining-cpu/README.md)
+include native ranges/drift, CPU top 30, operation and fallback attribution, filename
+variation, record-assembly counts, scaling and reproducible audit source snapshots.
+Recommendation: retain #41; start #42 with independently measured configuration/event
+copy improvements, then consider path conversion and membership representation. No new
+production optimisation is implemented or accepted here. No SMB benchmark, solver, model
+change, new PR, merge or release was performed.
