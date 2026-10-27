@@ -3,38 +3,13 @@ import re
 import sys
 import logging
 from contextlib import contextmanager
-from functools import lru_cache
 from pathlib import Path, PosixPath, WindowsPath
-from typing import cast
 
 from .vector_file_open import OGROpen, PyOGRIOOpen
 from .raster_open_file import RasterIOOpen, GDALRasterOpen
 
 
 SPLIT_DATABASE_REGEX = re.compile(r'>>(?![^<]*>>)')
-_DEFAULT_DATABASE_REGEX = SPLIT_DATABASE_REGEX
-
-
-@lru_cache(maxsize=512)
-def _split_database_path(string: str, pattern: re.Pattern[str]) -> tuple[str, str | None]:
-    """Split literal text only; retain no paths, models or mutable run state."""
-    if '>>' in string and string.count('>>') > string.count('<<'):
-        return cast(tuple[str, str | None], tuple([x.strip() for x in pattern.split(string, maxsplit=1)][:2]))
-    if '|layername=' in string:
-        dbpath, lyrname = [x.strip() for x in string.split('|layername=', 1)]
-        if '|' in lyrname:
-            lyrname = lyrname.split('|', 1)[0].strip()
-        return dbpath, lyrname
-    if string.lower().startswith('netcdf:'):
-        dbpath, lyrname = string.split(':', 1)[-1].rsplit(':', 1)
-        dbpath = dbpath.strip('"').strip()
-        lyrname = lyrname.strip('"').strip()
-        return dbpath, lyrname
-    if '|' in string:
-        dbpath, _ = [x.strip() for x in string.split('|', 1)]
-    else:
-        dbpath = string
-    return dbpath, None
 
 _prefer_gdal = False
 
@@ -111,14 +86,25 @@ class TuflowPath(Path):
     def __floordiv__(self, other):
         return self / self.init_case_insensitive_path(other, self.dbpath)
 
-    def _split_db_and_lyr(self) -> tuple[str, str | None]:
+    def _split_db_and_lyr(self) -> tuple[str, str]:
         string = str(self)
-        pattern = SPLIT_DATABASE_REGEX
-        if type(string) is str and pattern is _DEFAULT_DATABASE_REGEX:
-            return _split_database_path(string, pattern)
-        # Extensions can have stateful string/split callbacks. Preserve each
-        # invocation rather than putting their results in the lexical cache.
-        return _split_database_path.__wrapped__(string, pattern)
+        if '>>' in string and string.count('>>') > string.count('<<'):
+            return tuple([x.strip() for x in SPLIT_DATABASE_REGEX.split(string, maxsplit=1)][:2])
+        if '|layername=' in string:
+            dbpath, lyrname = [x.strip() for x in string.split('|layername=', 1)]
+            if '|' in lyrname:
+                lyrname = lyrname.split('|', 1)[0].strip()
+            return dbpath, lyrname
+        if string.lower().startswith('netcdf:'):
+            dbpath, lyrname = string.split(':', 1)[-1].rsplit(':', 1)
+            dbpath = dbpath.strip('"').strip()
+            lyrname = lyrname.strip('"').strip()
+            return dbpath, lyrname
+        if '|' in string:
+            dbpath, _ = [x.strip() for x in string.split('|', 1)]
+        else:
+            dbpath = string
+        return dbpath, None
 
     def _gpkg_layers(self) -> list[str]:
         layers = []

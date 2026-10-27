@@ -1,22 +1,21 @@
-"""Lexical reuse must preserve live rendering, extension hooks and diagnostics."""
+"""Path syntax, live rendering, extension hooks and diagnostics must stay consistent."""
 
-import gc
 import re
-import weakref
-from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 import pytest
 
 from pytuflow._tmf.tfpathlib import file as paths
 
 
-@pytest.fixture(autouse=True)
-def empty_cache() -> Iterator[None]:
-    paths._split_database_path.cache_clear()
-    yield
-    paths._split_database_path.cache_clear()
+@dataclass
+class LiteralPath:
+    text: str
+
+    def __str__(self) -> str:
+        return self.text
 
 
 @pytest.mark.parametrize(
@@ -47,8 +46,14 @@ def empty_cache() -> Iterator[None]:
     ],
 )
 def test_lexical_forms(text: str, expected: tuple[str, str | None]):
-    assert paths._split_database_path(text, paths.SPLIT_DATABASE_REGEX) == expected
-    assert paths._split_database_path(text, paths.SPLIT_DATABASE_REGEX) == expected
+    assert (
+        paths.TuflowPath._split_db_and_lyr(cast(paths.TuflowPath, LiteralPath(text)))
+        == expected
+    )
+    assert (
+        paths.TuflowPath._split_db_and_lyr(cast(paths.TuflowPath, LiteralPath(text)))
+        == expected
+    )
 
 
 def test_every_request_renders_current_path_before_reuse(
@@ -68,7 +73,6 @@ def test_every_request_renders_current_path_before_reuse(
     assert path._split_db_and_lyr() == ("design_DEV_03.tgc", None)
     assert path._split_db_and_lyr() == ("design_DEV_03.tgc", None)
     assert len(rendered) == 3
-    assert paths._split_database_path.cache_info().hits == 1
 
 
 def test_spelling_and_trailing_separator_changes_remain_visible(
@@ -113,7 +117,6 @@ def test_stateful_unhashable_split_hook_remains_uncached(
     assert path._split_db_and_lyr() == ("source1.gpkg", "layer")
     assert path._split_db_and_lyr() == ("source2.gpkg", "layer")
     assert len(calls) == 2
-    assert paths._split_database_path.cache_info().currsize == 0
 
 
 @pytest.mark.filterwarnings("ignore:__str__ returned non-str:DeprecationWarning")
@@ -133,7 +136,6 @@ def test_string_subclass_callbacks_are_not_cached(monkeypatch: pytest.MonkeyPatc
     assert path._split_db_and_lyr() == ("db.gpkg", "cells")
     assert path._split_db_and_lyr() == ("db.gpkg", "cells")
     assert calls == [">>", "<<", ">>", "<<"]
-    assert paths._split_database_path.cache_info().currsize == 0
 
 
 def test_custom_split_shape_keeps_original_unpacking_error(
@@ -155,20 +157,6 @@ def test_malformed_netcdf_errors_are_not_cached():
     for _ in range(2):
         with pytest.raises(ValueError, match="not enough values to unpack"):
             path._split_db_and_lyr()
-    assert paths._split_database_path.cache_info().currsize == 0
-
-
-def test_bounded_cache_retains_no_path_instances():
-    path = paths.TuflowPath("one.gpkg >> layer")
-    reference = weakref.ref(path)
-    assert path._split_db_and_lyr() == ("one.gpkg", "layer")
-    del path
-    gc.collect()
-    assert reference() is None
-    for index in range(600):
-        paths.TuflowPath(f"source_{index}.gpkg >> layer")._split_db_and_lyr()
-    info = paths._split_database_path.cache_info()
-    assert info.maxsize == info.currsize == 512
 
 
 def test_property_decomposition_performs_no_filesystem_access(
