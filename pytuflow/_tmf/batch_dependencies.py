@@ -738,6 +738,13 @@ def collect_batch_dependencies(
     the original per-batch caches remain on, isolating the graph's contribution.
     """
     started = perf_counter()
+    # Cross-context prototypes can reuse a literal source filename under the
+    # original translation semantics. A custom Context.translate hook may
+    # change that filename with run flags absent from its compiled variables.
+    # Do not certify or share projections when translation is overridden.
+    # Keep ordinary per-run Context evaluation as the authoritative fallback.
+    if cache_scopes and Context.translate is not dict(_CONTEXT_APPEND_ATTRIBUTES)["translate"]:
+        cache_scopes = False
     # Do not consume or look ahead in generators: callers can stream flags
     # after examining an earlier projection. Only use an advertised length.
     requested_count = len(run_flags) if isinstance(run_flags, Sized) else None
