@@ -430,6 +430,49 @@ def test_linux_explicit_case_policy_and_unknown_policy(tmp_path: Path) -> None:
     assert matched.findings[0].path == saved
 
 
+@pytest.mark.skipif(os.name == "nt", reason="Linux unknown-case existence probe")
+@pytest.mark.parametrize(
+    "error",
+    [
+        PermissionError("Cannot traverse input directory"),
+        OSError("Input filesystem temporarily unavailable"),
+    ],
+)
+def test_unknown_linux_case_probe_io_error_isolated_per_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    error: OSError,
+) -> None:
+    """An unreadable literal source must not abort inspection of another run."""
+    denied = tmp_path / "private" / "input.tif"
+    healthy = tmp_path / "available.tif"
+    healthy.write_bytes(b"saved input")
+    original_exists = Path.exists
+
+    def restricted_exists(path: Path, *args: object, **kwargs: object) -> bool:
+        if path == denied:
+            raise error
+        return original_exists(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "exists", restricted_exists)
+    report = validate_dependencies(
+        _project(
+            _run(0, (_ref(denied),)),
+            _run(1, (_ref(healthy),)),
+        ),
+    )
+    assert not report.passed
+    assert report.run_count == 2
+    assert report.files_examined == 1
+    assert [(item.run_index, item.status, item.kind) for item in report.findings] == [
+        (0, "unresolved", "file"),
+        (1, "present", "file"),
+    ]
+    assert str(error) in report.findings[0].detail
+    assert report.findings[0].path == denied
+    assert report.findings[1].path == healthy
+
+
 def test_invalid_geopackage_reports_unresolved_layer(tmp_path: Path) -> None:
     gpkg = tmp_path / "not_sqlite.gpkg"
     gpkg.write_bytes(b"invalid database")
