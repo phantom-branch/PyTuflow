@@ -340,6 +340,22 @@ def _scan_wildcard_patterns(
     return found, failures, scans
 
 
+_UNSAVED_GPKG_WAL_ERROR = (
+    "GeoPackage has a non-empty SQLite -wal journal; main .gpkg may "
+    "not contain saved changes. Save/close the editing session, "
+    "checkpoint the database externally, and rerun validation"
+)
+
+
+def _has_unsaved_gpkg_wal(path: Path) -> bool:
+    """Detect journal data without reading or altering either SQLite sidecar."""
+    wal = path.with_name(path.name + "-wal")
+    try:
+        return wal.stat().st_size > 0
+    except FileNotFoundError:
+        return False
+
+
 def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
     try:
         mode = path.stat().st_mode
@@ -349,6 +365,12 @@ def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
         return "unresolved", f"Cannot inspect input source file: {exc}"
     if not stat.S_ISREG(mode):
         return "missing", "Expected a regular file, not a directory or other type"
+    if path.suffix.casefold() == ".gpkg":
+        try:
+            if _has_unsaved_gpkg_wal(path):
+                return "unresolved", _UNSAVED_GPKG_WAL_ERROR
+        except OSError as exc:
+            return "unresolved", f"Cannot inspect GeoPackage WAL state: {exc}"
     return "present", ""
 
 
@@ -360,22 +382,9 @@ def _gpkg_contents(path: Path) -> tuple[tuple[str, ...], str]:
     the main file is not certified complete: fail explicitly instead of
     counting missing WAL-only layers as ordinary absent layers.
     """
-    wal = path.with_name(path.name + "-wal")
-    wal_error = (
-        "GeoPackage has a non-empty SQLite -wal journal; main .gpkg may "
-        "not contain saved changes. Save/close the editing session, "
-        "checkpoint the database externally, and rerun validation"
-    )
-
-    def has_wal_data() -> bool:
-        try:
-            return wal.stat().st_size > 0
-        except FileNotFoundError:
-            return False
-
     try:
-        if has_wal_data():
-            return (), wal_error
+        if _has_unsaved_gpkg_wal(path):
+            return (), _UNSAVED_GPKG_WAL_ERROR
         before = path.stat()
         uri = f"{path.absolute().as_uri()}?mode=ro&immutable=1"
         with closing(sqlite3.connect(uri, uri=True)) as db:
@@ -383,8 +392,8 @@ def _gpkg_contents(path: Path) -> tuple[tuple[str, ...], str]:
                 str(row[0]) for row in db.execute("SELECT table_name FROM gpkg_contents")
             )
         after = path.stat()
-        if has_wal_data():
-            return (), wal_error
+        if _has_unsaved_gpkg_wal(path):
+            return (), _UNSAVED_GPKG_WAL_ERROR
         if (before.st_size, before.st_mtime_ns) != (
             after.st_size, after.st_mtime_ns
         ):
