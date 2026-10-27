@@ -46,8 +46,16 @@ class ValidationOptions:
     maximum_directory_entries: int = 50_000
     maximum_header_lines: int = 5
     maximum_header_bytes: int = 1_048_576
+    # Linux TUFLOW -cs0/-cs1/-cs2. None means the projection has not
+    # provided a policy: a possible spelling mismatch must fail closed.
+    case_sensitivity: int | None = None
 
     def __post_init__(self) -> None:
+        if self.case_sensitivity is not None and (
+            type(self.case_sensitivity) is not int
+            or self.case_sensitivity not in (0, 1, 2)
+        ):
+            raise ValueError("case_sensitivity must be 0, 1, 2 or None")
         if not 1 <= self.io_workers <= 32:
             raise ValueError("io_workers must be between 1 and 32")
         if min(
@@ -236,8 +244,35 @@ def _has_wildcards(path: str) -> bool:
     return any(char in path for char in "*?[")
 
 
+def _filename_matches(
+    candidate: str, pattern: str, case_sensitivity: int | None, *,
+    windows: bool,
+) -> bool:
+    """Match the final filename using TUFLOW -cs semantics, not folder case.
+
+    -cs0 is strict; -cs1 relaxes extensions only; -cs2 relaxes both filename
+    and extension. Windows always uses its filesystem's insensitive names.
+    """
+    if windows:
+        return fnmatch.fnmatchcase(
+            os.path.normcase(candidate), os.path.normcase(pattern)
+        )
+    if case_sensitivity in (0, None):
+        return fnmatch.fnmatchcase(candidate, pattern)
+    if case_sensitivity == 1:
+        return (
+            fnmatch.fnmatchcase(Path(candidate).stem, Path(pattern).stem)
+            and fnmatch.fnmatchcase(
+                Path(candidate).suffix.casefold(),
+                Path(pattern).suffix.casefold(),
+            )
+        )
+    return fnmatch.fnmatchcase(candidate.casefold(), pattern.casefold())
+
+
 def _scan_wildcard_patterns(
-    patterns: Collection[Path], *, maximum_entries: int
+    patterns: Collection[Path], *, maximum_entries: int,
+    case_sensitivity: int | None,
 ) -> tuple[
     dict[Path, tuple[Path, ...]], dict[Path, tuple[ValidationStatus, str]], int
 ]:
@@ -258,6 +293,7 @@ def _scan_wildcard_patterns(
     scans = 0
     for parent, siblings in grouped.items():
         matches: dict[Path, list[Path]] = {pattern: [] for pattern in siblings}
+        uncertain: set[Path] = set()
         scans += 1
         problem: tuple[ValidationStatus, str] | None = None
         try:
@@ -265,12 +301,20 @@ def _scan_wildcard_patterns(
                 for index, entry in enumerate(iterator):
                     if index >= maximum_entries:
                         raise ValueError("Wildcard directory exceeds bounded scan limit")
-                    candidate = os.path.normcase(entry.name)
                     for pattern in siblings:
-                        if fnmatch.fnmatchcase(
-                            candidate, os.path.normcase(pattern.name)
+                        if _filename_matches(
+                            entry.name, pattern.name, case_sensitivity,
+                            windows=os.name == "nt",
                         ):
                             matches[pattern].append(parent / entry.name)
+                        elif (
+                            os.name != "nt"
+                            and case_sensitivity is None
+                            and _filename_matches(
+                                entry.name, pattern.name, 2, windows=False
+                            )
+                        ):
+                            uncertain.add(pattern)
         except FileNotFoundError:
             problem: tuple[ValidationStatus, str] = (
                 "missing", "Wildcard parent directory does not exist"
@@ -282,6 +326,11 @@ def _scan_wildcard_patterns(
                 failures[pattern] = problem
             elif matches[pattern]:
                 found[pattern] = tuple(sorted(matches[pattern]))
+            elif pattern in uncertain:
+                failures[pattern] = (
+                    "unsupported",
+                    "Linux filename case policy unknown: supply -cs0/-cs1/-cs2",
+                )
             else:
                 failures[pattern] = (
                     "missing", "No input files match wildcard pattern"
@@ -464,7 +513,8 @@ def validate_dependencies(
         and not item.unresolved and "<<" not in str(item.path)
     }
     expansions, glob_errors, scan_count = _scan_wildcard_patterns(
-        globs, maximum_entries=policy.maximum_directory_entries
+        globs, maximum_entries=policy.maximum_directory_entries,
+        case_sensitivity=policy.case_sensitivity,
     )
     concrete: list[tuple[_Requirement, Path]] = []
     for item in requirements:
@@ -477,6 +527,33 @@ def validate_dependencies(
             failures.append(finding(item, status, "wildcard", item.path, detail))
         else:
             for path in expansions.get(item.path, (item.path,)):
+                # Literal Linux filenames may have a deliberately relaxed
+                # final-component spelling. Use the same -cs helper as the
+                # parsed TUFLOW file resolution; never relax directories.
+                if (
+                    path == item.path and not _has_wildcards(str(path))
+                    and os.name != "nt"
+                ):
+                    if policy.case_sensitivity is None and not path.exists():
+                        failures.append(
+                            finding(
+                                item, "unsupported", "file", path,
+                                "Linux filename case policy unknown: supply -cs0/-cs1/-cs2",
+                            )
+                        )
+                        continue
+                    if policy.case_sensitivity in (1, 2):
+                        from ._tmf.tfpathlib import TuflowPath
+
+                        try:
+                            path = TuflowPath.init_case_policy_path(
+                                path, case_sensitivity=policy.case_sensitivity,
+                            ).dbpath
+                        except (ValueError, OSError) as exc:
+                            failures.append(
+                                finding(item, "unresolved", "file", path, str(exc))
+                            )
+                            continue
                 concrete.append((item, path))
 
     gpkg_paths: set[Path] = set()
