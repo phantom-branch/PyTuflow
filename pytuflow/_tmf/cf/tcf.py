@@ -11,6 +11,7 @@ from ..abc.tf_cf_base_mixin import TuflowControlFileMixin
 if typing.TYPE_CHECKING:
     from ..batch_dependencies import BatchDependencyResult, BatchDependencyRun
     from ..fragment_dependencies import FragmentBatchResult
+    from ...flag_discovery import FlagDiscovery
     from .tcf_run_state import TCFRunState
     from .tgc import TGC
     from .tbc import TBC
@@ -87,6 +88,23 @@ class TCF(ControlFileLoadMixin, TuflowControlFileMixin, TCFBuildState):
             existing_tcf = fpath if fpath is not None and Path(fpath).is_file() else None
             kwargs['config'] = TCFConfig(tcf=existing_tcf, case_sensitivity=case_sensitivity)
         super(TCF, self).__init__(fpath, **kwargs)
+
+    def discover_flags(self) -> 'FlagDiscovery':
+        """Discover scenario/event names and referenced -sN/-eN slots.
+
+        This is a read-only inventory of already parsed TUFLOW inputs and
+        event definitions. It does not generate or certify runnable flag
+        combinations, launch simulations, or open further source files.
+
+        Returns
+        -------
+        FlagDiscovery
+            Declared/conditional names, referenced flag positions and
+            source evidence with explicit limitations.
+        """
+        from ...flag_discovery import discover_model_flags
+
+        return discover_model_flags(self)
 
     def tgc(self, context: Context = None) -> 'TGC':
         """Returns the TGC ControlFile instance.
