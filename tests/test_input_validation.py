@@ -400,7 +400,7 @@ def test_symlinked_geopackage_rejects_wal_beside_real_target(
         editor.close()
 
 
-@pytest.mark.skipif(__import__("os").name == "nt", reason="Linux path-case policy")
+@pytest.mark.skipif(os.name == "nt", reason="Linux path-case policy")
 def test_linux_explicit_case_policy_and_unknown_policy(tmp_path: Path) -> None:
     saved = tmp_path / "Grid_A.TIF"
     saved.write_bytes(b"grid")
