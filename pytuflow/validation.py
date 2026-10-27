@@ -503,9 +503,17 @@ def _gpkg_contents(path: Path) -> tuple[tuple[str, ...], str]:
 
 
 def _layer_status(
-    requested: str, existing: tuple[str, ...]
+    requested: str, existing: tuple[str, ...], *, implicit: bool = False
 ) -> tuple[ValidationStatus, str]:
     names = tuple(name.casefold() for name in existing)
+    # A GeoPackage filename *stem* is a literal layer requirement, even if
+    # spelled "all" or containing [bracket] syntax. TUFLOW's >> all and
+    # wildcard rules apply only to explicit layer selectors.
+    if implicit:
+        return (
+            ("present", "") if requested.casefold() in names
+            else ("missing", f"GeoPackage layer does not exist: {requested}")
+        )
     pattern = requested.casefold().strip()
     if pattern == "all":
         matched = bool(names)
@@ -812,7 +820,9 @@ def validate_dependencies(
                 selected_layer = (
                     path.stem if item.implicit_gpkg_layer else item.layer
                 )
-                status, detail = _layer_status(selected_layer, info.layers)
+                status, detail = _layer_status(
+                    selected_layer, info.layers, implicit=item.implicit_gpkg_layer
+                )
                 findings.append(finding(item, status, "layer", path, detail))
         if policy.check_bc_csv_headers and (
             item.csv_columns is not None
