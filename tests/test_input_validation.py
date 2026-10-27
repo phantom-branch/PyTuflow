@@ -414,3 +414,46 @@ def test_no_file_check_with_only_optional_validation_disabled(tmp_path: Path) ->
     )
     assert report.files_examined == 0
     assert report.directories_scanned == 0
+
+
+def test_missing_bc_column_metadata_is_not_reported_as_valid(tmp_path: Path) -> None:
+    source = tmp_path / "ordinary.csv"
+    source.write_text("Time,Flow\n0,1\n", encoding="utf-8")
+    report = validate_dependencies(
+        _project(
+            _run(
+                0,
+                sources=(_bc_source(source, columns=None),),
+                activations=(_bc_activation(source),),
+            )
+        ),
+        options=ValidationOptions(check_bc_csv_headers=True),
+    )
+    assert not report.passed
+    assert report.csv_headers_examined == 0
+    assert [(f.kind, f.status) for f in report.findings] == [
+        ("file", "present"), ("csv_header", "unsupported"),
+    ]
+
+
+def test_disabled_validation_never_scans_wildcard_sources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import os
+
+    def forbidden(*args: object, **kwargs: object) -> None:
+        raise AssertionError("No filesystem inspection is allowed")
+
+    monkeypatch.setattr(os, "scandir", forbidden)
+    monkeypatch.setattr(Path, "stat", forbidden)
+    report = validate_dependencies(
+        _project(_run(0, (_ref(tmp_path / "source_*.shp"),))),
+        options=ValidationOptions(
+            check_files=False,
+            check_gpkg_layers=False,
+            check_bc_csv_headers=False,
+        ),
+    )
+    assert not report.passed
+    assert report.files_examined == report.directories_scanned == 0
+    assert report.findings[0].status == "unsupported"
