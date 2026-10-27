@@ -85,7 +85,7 @@ def test_key_phase_attribution_preserves_compact_manifest_and_scope_counts(
 
     source = tmp_path / "model.tcf"
     source.write_text(
-        "Set Variable Size == 32\\nRead GIS Code == road_<<Size>>.shp\\n",
+        "Set Variable Size == 32\nRead GIS Code == road_<<Size>>.shp\n",
         encoding="utf-8",
     )
     model = TCF(source)
