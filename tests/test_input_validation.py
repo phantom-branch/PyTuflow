@@ -255,10 +255,10 @@ def test_gpkg_exact_wildcard_and_all_layers_use_one_readonly_connection(
     assert all(item.input_uuid.startswith("input-") for item in layers)
 
 
-def test_gpkg_uncheckpointed_wal_changes_are_ignored_without_writes(
+def test_gpkg_uncheckpointed_wal_changes_fail_without_writes(
     tmp_path: Path,
 ) -> None:
-    """Read the main .gpkg snapshot; do not touch an editor's WAL or SHM."""
+    """Fail on WAL-only changes; leave the editor's WAL and SHM untouched."""
     gpkg = tmp_path / "working.gpkg"
     editor = sqlite3.connect(gpkg)
     try:
@@ -289,15 +289,22 @@ def test_gpkg_uncheckpointed_wal_changes_are_ignored_without_writes(
         after = {item.name: item.read_bytes() for item in tmp_path.iterdir()}
 
         assert after == before
+        assert not report.passed
         assert report.geopackages_examined == 1
-        assert [
-            (finding.layer, finding.status)
-            for finding in report.findings
-            if finding.kind == "layer"
-        ] == [
-            ("checkpointed_layer", "present"),
-            ("wal_only_edit", "missing"),
+        layer_findings = [
+            finding for finding in report.findings if finding.kind == "layer"
         ]
+        assert [finding.status for finding in layer_findings] == [
+            "unresolved", "unresolved",
+        ]
+        assert {finding.layer for finding in layer_findings} == {
+            "checkpointed_layer", "wal_only_edit",
+        }
+        assert all(
+            "non-empty SQLite -wal journal" in finding.detail
+            and "Save/close" in finding.detail
+            for finding in layer_findings
+        )
     finally:
         editor.close()
 
