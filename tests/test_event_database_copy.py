@@ -206,3 +206,18 @@ def test_missing_inputs_retains_value_callback_before_existing_error():
     with pytest.raises(AttributeError):
         source.copy()
     assert calls == ["copy"]
+
+
+def test_custom_attribute_mapping_does_not_gain_a_keys_callback():
+    calls = []
+
+    class Attributes(dict):
+        def keys(self):
+            calls.append("keys")
+            return super().keys()
+
+    source = EventDatabase({"Rain": {"a": 1}})
+    source.__dict__ = Attributes(source.__dict__)
+    copied = source.copy()
+    assert calls == []
+    assert copied["rain"] == {"a": 1}

@@ -106,6 +106,7 @@ def _builtin_copy_source(source: EventDatabase) -> bool:
             )
             for cls, mro, attributes in _EVENT_DATABASE_COPY_CLASSES
         )
+        and type(vars(source)) is dict
         and vars(source).keys() == {'_key_lower', 'inputs'}
         and type(source.inputs) is list
         and all(type(key) is str and type(value) is dict for key, value in source.items())
