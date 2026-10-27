@@ -255,6 +255,76 @@ def test_gpkg_exact_wildcard_and_all_layers_use_one_readonly_connection(
     assert all(item.input_uuid.startswith("input-") for item in layers)
 
 
+def test_gpkg_uncheckpointed_wal_changes_are_ignored_without_writes(
+    tmp_path: Path,
+) -> None:
+    """Read the main .gpkg snapshot; do not touch an editor's WAL or SHM."""
+    gpkg = tmp_path / "working.gpkg"
+    editor = sqlite3.connect(gpkg)
+    try:
+        editor.execute("CREATE TABLE gpkg_contents (table_name TEXT)")
+        editor.execute("INSERT INTO gpkg_contents VALUES ('checkpointed_layer')")
+        editor.commit()
+        assert editor.execute("PRAGMA journal_mode=WAL").fetchone() == ("wal",)
+        editor.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        editor.execute("INSERT INTO gpkg_contents VALUES ('wal_only_edit')")
+        editor.commit()
+
+        wal = gpkg.with_name(gpkg.name + "-wal")
+        shm = gpkg.with_name(gpkg.name + "-shm")
+        assert wal.exists() and shm.exists()
+        before = {item.name: item.read_bytes() for item in tmp_path.iterdir()}
+
+        report = validate_dependencies(
+            _project(
+                _run(
+                    0,
+                    (
+                        _ref(gpkg, layer="checkpointed_layer"),
+                        _ref(gpkg, layer="wal_only_edit"),
+                    ),
+                )
+            )
+        )
+        after = {item.name: item.read_bytes() for item in tmp_path.iterdir()}
+
+        assert after == before
+        assert report.geopackages_examined == 1
+        assert [
+            (finding.layer, finding.status)
+            for finding in report.findings
+            if finding.kind == "layer"
+        ] == [
+            ("checkpointed_layer", "present"),
+            ("wal_only_edit", "missing"),
+        ]
+    finally:
+        editor.close()
+
+
+def test_gpkg_wal_journal_mode_without_sidecars_creates_no_files(
+    tmp_path: Path,
+) -> None:
+    gpkg = tmp_path / "saved.gpkg"
+    editor = sqlite3.connect(gpkg)
+    try:
+        editor.execute("CREATE TABLE gpkg_contents (table_name TEXT)")
+        editor.execute("INSERT INTO gpkg_contents VALUES ('saved_layer')")
+        editor.commit()
+        assert editor.execute("PRAGMA journal_mode=WAL").fetchone() == ("wal",)
+    finally:
+        editor.close()
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["saved.gpkg"]
+    before = gpkg.read_bytes()
+    report = validate_dependencies(
+        _project(_run(0, (_ref(gpkg, layer="saved_layer"),)))
+    )
+    assert report.passed
+    assert report.geopackages_examined == 1
+    assert gpkg.read_bytes() == before
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["saved.gpkg"]
+
+
 def test_invalid_geopackage_reports_unresolved_layer(tmp_path: Path) -> None:
     gpkg = tmp_path / "not_sqlite.gpkg"
     gpkg.write_bytes(b"invalid database")
