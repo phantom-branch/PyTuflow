@@ -451,9 +451,14 @@ def test_custom_translation_hook_requires_ordinary_batch_fallback(tmp_path: Path
         with pytest.raises(NotImplementedError, match="Custom Context.translate"):
             _Plan(model)
         ordinary = model.collect_batch_dependencies(flags, cache_scopes=False)
+        cached = model.collect_batch_dependencies(flags)
         fragments = model.collect_file_dependencies(flags)
-        assert fragments.runs == ordinary.runs
-        assert fragments.passed and ordinary.passed
+        assert ordinary.runs == cached.runs == fragments.runs
+        assert ordinary.passed and cached.passed and fragments.passed
+        # No cross-context reuse is safe when a custom translation hook may
+        # alter an otherwise literal filename based on flags.
+        assert cached.contexts_reused == 0
+        assert cached.invariant_projection_reuses == 0
         assert fragments.fallback_runs == len(flags)
         assert "Custom Context.translate" in (fragments.fallback_reason or "")
         assert [run.file_references[-1].path_pattern.name for run in fragments.runs] == [
