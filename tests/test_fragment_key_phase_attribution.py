@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import csv
 import json
-from pathlib import Path
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -125,13 +125,11 @@ def test_key_phase_attribution_preserves_compact_manifest_and_scope_counts(
 def test_phase_patch_restores_methods_on_exception() -> None:
     before = (fragment._Plan._key, fragment._FragmentContext.translate, Context.translate)
     probe = PrivateKeyPhaseAttribution()
-    with pytest.raises(RuntimeError, match="test exception"):
-        with probe.observe():
-            raise RuntimeError("test exception")
+    with pytest.raises(RuntimeError, match="test exception"), probe.observe():
+        raise RuntimeError("test exception")
     assert before == (fragment._Plan._key, fragment._FragmentContext.translate, Context.translate)
-    with pytest.raises(RuntimeError, match="new private key-phase probe"):
-        with probe.observe():
-            pass
+    with pytest.raises(RuntimeError, match="new private key-phase probe"), probe.observe():
+        pass
 
 
 def test_phase_cli_writes_private_source_report(tmp_path: Path) -> None:

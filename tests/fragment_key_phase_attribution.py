@@ -26,7 +26,6 @@ from time import perf_counter_ns
 from typing import Any
 from unittest.mock import patch
 
-
 _PHASES = (
     "fragment_translate",
     "pool_translate",
