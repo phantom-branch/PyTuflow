@@ -346,27 +346,37 @@ _UNSAVED_GPKG_WAL_ERROR = (
     "not contain saved changes. Save/close the editing session, "
     "checkpoint the database externally, and rerun validation"
 )
+_UNSAVED_GPKG_ROLLBACK_ERROR = (
+    "GeoPackage has a non-empty SQLite -journal rollback file; main .gpkg "
+    "may include uncommitted changes. Save or roll back edits, close the "
+    "editing session, and rerun validation"
+)
 
 
-def _has_unsaved_gpkg_wal(path: Path) -> bool:
-    """Check WAL files beside the alias and its actual source target.
+def _unsaved_gpkg_journal_error(path: Path) -> str | None:
+    """Refuse WAL or rollback journals beside an alias or its real target.
 
-    SQLite may create journals beside the symlink's real GeoPackage target.
-    Checking only the requested alias permits uncheckpointed layer edits to
-    bypass the validator. Neither candidate is opened or modified.
+    An active rollback transaction can spill uncommitted pages into the
+    main database. SQLite immutable=1 ignores rollback recovery and locking,
+    so checking WAL files alone is not enough. Inspect sidecar metadata only:
+    never open, checkpoint, remove or modify SQLite auxiliary files.
     """
     target = path.resolve(strict=True)
-    candidates = {
-        path.with_name(path.name + "-wal"),
-        target.with_name(target.name + "-wal"),
-    }
-    for wal in candidates:
-        try:
-            if wal.stat().st_size > 0:
-                return True
-        except FileNotFoundError:
-            continue
-    return False
+    for suffix, error in (
+        ("-wal", _UNSAVED_GPKG_WAL_ERROR),
+        ("-journal", _UNSAVED_GPKG_ROLLBACK_ERROR),
+    ):
+        candidates = {
+            path.with_name(path.name + suffix),
+            target.with_name(target.name + suffix),
+        }
+        for journal in candidates:
+            try:
+                if journal.stat().st_size > 0:
+                    return error
+            except FileNotFoundError:
+                continue
+    return None
 
 
 def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
@@ -380,24 +390,26 @@ def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
         return "missing", "Expected a regular file, not a directory or other type"
     if path.suffix.casefold() == ".gpkg":
         try:
-            if _has_unsaved_gpkg_wal(path):
-                return "unresolved", _UNSAVED_GPKG_WAL_ERROR
+            journal_error = _unsaved_gpkg_journal_error(path)
+            if journal_error is not None:
+                return "unresolved", journal_error
         except (OSError, RuntimeError) as exc:
-            return "unresolved", f"Cannot inspect GeoPackage WAL state: {exc}"
+            return "unresolved", f"Cannot inspect GeoPackage journal state: {exc}"
     return "present", ""
 
 
 def _gpkg_contents(path: Path) -> tuple[tuple[str, ...], str]:
     """Require a saved main GeoPackage; never create or read journal sidecars.
 
-    SQLite mode=ro may create -wal/-shm files. immutable=1 avoids these
-    writes and reads only the checkpointed main .gpkg. A non-empty WAL means
-    the main file is not certified complete: fail explicitly instead of
-    counting missing WAL-only layers as ordinary absent layers.
+    SQLite mode=ro may create sidecars; immutable=1 avoids these writes.
+    Reject non-empty WAL files (uncheckpointed committed changes) and rollback
+    journals (potentially spilled uncommitted main-file pages) before reading
+    with immutable=1. Never accept or alter an editor's active journals.
     """
     try:
-        if _has_unsaved_gpkg_wal(path):
-            return (), _UNSAVED_GPKG_WAL_ERROR
+        journal_error = _unsaved_gpkg_journal_error(path)
+        if journal_error is not None:
+            return (), journal_error
         # Open the actual source to avoid a different path spelling hiding
         # its journal. The requested alias remains unchanged in findings.
         target = path.resolve(strict=True)
@@ -408,8 +420,9 @@ def _gpkg_contents(path: Path) -> tuple[tuple[str, ...], str]:
                 str(row[0]) for row in db.execute("SELECT table_name FROM gpkg_contents")
             )
         after = target.stat()
-        if _has_unsaved_gpkg_wal(path):
-            return (), _UNSAVED_GPKG_WAL_ERROR
+        journal_error = _unsaved_gpkg_journal_error(path)
+        if journal_error is not None:
+            return (), journal_error
         if (before.st_size, before.st_mtime_ns) != (
             after.st_size, after.st_mtime_ns
         ):
