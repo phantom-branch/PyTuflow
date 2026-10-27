@@ -133,8 +133,11 @@ def main() -> None:
     args = parser.parse_args()
 
     flags = load_run_flags(args.runs_json)
-    output = args.output.absolute()
-    root = Path(__file__).absolute().parents[1]
+    # Resolve dot segments and existing symlinked parent directories before
+    # accepting an output destination. Lexical containment can otherwise put
+    # raw PRIVATE model paths and commands inside this source checkout.
+    output = args.output.resolve(strict=False)
+    root = Path(__file__).resolve().parents[1]
     if output.is_relative_to(root):
         raise ValueError("The report must be outside the source checkout")
     if output.exists():
