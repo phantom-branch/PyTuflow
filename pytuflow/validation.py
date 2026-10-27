@@ -367,6 +367,90 @@ def _scan_wildcard_patterns(
     return found, failures, scans
 
 
+def _resolve_literal_case_paths(
+    requested: Collection[Path], *, case_sensitivity: int | None,
+    maximum_entries: int,
+) -> tuple[
+    dict[Path, Path],
+    dict[Path, tuple[ValidationStatus, str]],
+    int,
+]:
+    """Apply -cs1/-cs2 to literal names with one bounded scan per directory.
+
+    Exact spellings win without scans; missing literal spellings share an
+    invocation-local directory inventory. This deliberately does not relax
+    parent directory spelling or stat unrelated files.
+    """
+    if os.name == "nt" or case_sensitivity not in (1, 2):
+        return {}, {}, 0
+
+    resolved: dict[Path, Path] = {}
+    failures: dict[Path, tuple[ValidationStatus, str]] = {}
+    grouped: dict[Path, list[Path]] = defaultdict(list)
+    for path in sorted(requested):
+        try:
+            path.stat()
+        except FileNotFoundError:
+            grouped[path.parent].append(path)
+        except OSError as exc:
+            failures[path] = (
+                "unresolved", f"Cannot inspect literal input source: {exc}"
+            )
+        else:
+            resolved[path] = path
+
+    scanned = 0
+    for parent, siblings in grouped.items():
+        scanned += 1
+        try:
+            names: list[str] = []
+            with os.scandir(parent) as entries:
+                for index, entry in enumerate(entries):
+                    if index >= maximum_entries:
+                        raise ValueError(
+                            "Literal filename case-resolution directory "
+                            "exceeds bounded scan limit"
+                        )
+                    names.append(entry.name)
+        except (FileNotFoundError, NotADirectoryError):
+            # The requested path remains missing; do not invent a match.
+            for path in siblings:
+                resolved[path] = path
+            continue
+        except (OSError, ValueError) as exc:
+            for path in siblings:
+                failures[path] = (
+                    "unresolved",
+                    f"Cannot inspect literal case-resolution directory: {exc}",
+                )
+            continue
+
+        for path in siblings:
+            if case_sensitivity == 1:
+                matching = [
+                    name for name in names
+                    if Path(name).stem == path.stem
+                    and Path(name).suffix.casefold() == path.suffix.casefold()
+                ]
+            else:
+                matching = [
+                    name for name in names if name.casefold() == path.name.casefold()
+                ]
+            if path.name in matching:
+                resolved[path] = path
+            elif len(matching) == 1:
+                resolved[path] = parent / matching[0]
+            elif not matching:
+                resolved[path] = path  # Ordinary _stat_source reports missing.
+            else:
+                failures[path] = (
+                    "unresolved",
+                    f"Ambiguous TUFLOW -cs{case_sensitivity} filename "
+                    f"{path.name} in {parent}",
+                )
+    return resolved, failures, scanned
+
+
 _UNSAVED_GPKG_WAL_ERROR = (
     "GeoPackage has a non-empty SQLite -wal journal; main .gpkg may "
     "not contain saved changes. Save/close the editing session, "
@@ -693,6 +777,17 @@ def validate_dependencies(
         globs, maximum_entries=policy.maximum_directory_entries,
         case_sensitivity=policy.case_sensitivity,
     )
+    case_resolved, case_errors, case_scans = _resolve_literal_case_paths(
+        {
+            item.path for item in requirements
+            if not item.unresolved
+            and "<<" not in str(item.path)
+            and not _has_wildcards(str(item.path))
+        },
+        case_sensitivity=policy.case_sensitivity,
+        maximum_entries=policy.maximum_directory_entries,
+    )
+    scan_count += case_scans
     concrete: list[tuple[_Requirement, Path]] = []
     for item in requirements:
         if item.unresolved or "<<" in str(item.path):
@@ -702,47 +797,30 @@ def validate_dependencies(
         elif item.path in glob_errors:
             status, detail = glob_errors[item.path]
             failures.append(finding(item, status, "wildcard", item.path, detail))
+        elif item.path in case_errors:
+            status, detail = case_errors[item.path]
+            failures.append(finding(item, status, "file", item.path, detail))
         else:
             for path in expansions.get(item.path, (item.path,)):
-                # Literal Linux filenames may have a deliberately relaxed
-                # final-component spelling. Use the same -cs helper as the
-                # parsed TUFLOW file resolution; never relax directories.
-                if (
-                    path == item.path and not _has_wildcards(str(path))
-                    and os.name != "nt"
-                ):
-                    if policy.case_sensitivity is None:
-                        # Python 3.12 can raise PermissionError from exists().
-                        # One unreadable input must not abort other run checks.
+                # Each distinct Linux literal was resolved through the one
+                # bounded shared directory scan above. Never silently enumerate
+                # an unbounded network directory inside an individual run.
+                if path == item.path and not _has_wildcards(str(path)):
+                    path = case_resolved.get(path, path)
+                    if os.name != "nt" and policy.case_sensitivity is None:
                         try:
                             exists = path.exists()
                         except OSError as exc:
-                            failures.append(
-                                finding(
-                                    item, "unresolved", "file", path,
-                                    f"Cannot inspect input source file: {exc}",
-                                )
-                            )
+                            failures.append(finding(
+                                item, "unresolved", "file", path,
+                                f"Cannot inspect input source file: {exc}",
+                            ))
                             continue
                         if not exists:
-                            failures.append(
-                                finding(
-                                    item, "unsupported", "file", path,
-                                    "Linux filename case policy unknown: supply -cs0/-cs1/-cs2",
-                                )
-                            )
-                            continue
-                    if policy.case_sensitivity in (1, 2):
-                        from ._tmf.tfpathlib import TuflowPath
-
-                        try:
-                            path = TuflowPath.init_case_policy_path(
-                                path, case_sensitivity=policy.case_sensitivity,
-                            ).dbpath
-                        except (ValueError, OSError) as exc:
-                            failures.append(
-                                finding(item, "unresolved", "file", path, str(exc))
-                            )
+                            failures.append(finding(
+                                item, "unsupported", "file", path,
+                                "Linux filename case policy unknown: supply -cs0/-cs1/-cs2",
+                            ))
                             continue
                 concrete.append((item, path))
 
