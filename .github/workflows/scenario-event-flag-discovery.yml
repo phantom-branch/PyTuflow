@@ -1,0 +1,55 @@
+name: Scenario and event flag discovery
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/flag_discovery.py"
+      - "pytuflow/_tmf/cf/tcf.py"
+      - "tests/test_flag_discovery.py"
+      - ".github/workflows/scenario-event-flag-discovery.yml"
+      - "agent_workstreams/scenario_event_flag_discovery.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discovery:
+    name: ${{ matrix.os }} Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: windows-latest, python: "3.12"}
+          - {os: windows-latest, python: "3.14"}
+          - {os: ubuntu-latest, python: "3.12"}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install parser and testing tools
+        run: python -m pip install -e . pytest ruff
+      - name: Check package integrity
+        run: |
+          python -m pip check
+          python -m compileall -q pytuflow/flag_discovery.py pytuflow/_tmf/cf/tcf.py tests/test_flag_discovery.py
+      - name: Ruff discovery and tests
+        run: python -m ruff check pytuflow/flag_discovery.py tests/test_flag_discovery.py
+      - name: Read-only scenario/event inventory and existing scope contracts
+        run: >
+          python -m pytest -q
+          tests/test_flag_discovery.py
+          tests/tmf/test_context.py
+          tests/tmf/test_scope.py
+          --junitxml=flag-discovery-${{ matrix.python }}.xml
+      - name: Upload test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flag-discovery-${{ matrix.os }}-${{ matrix.python }}
+          path: flag-discovery-${{ matrix.python }}.xml
+          retention-days: 30
+          if-no-files-found: warn
