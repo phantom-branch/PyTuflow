@@ -382,7 +382,7 @@ def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
         try:
             if _has_unsaved_gpkg_wal(path):
                 return "unresolved", _UNSAVED_GPKG_WAL_ERROR
-        except OSError as exc:
+        except (OSError, RuntimeError) as exc:
             return "unresolved", f"Cannot inspect GeoPackage WAL state: {exc}"
     return "present", ""
 
@@ -415,7 +415,7 @@ def _gpkg_contents(path: Path) -> tuple[tuple[str, ...], str]:
         ):
             return (), "Main GeoPackage changed during read-only inspection"
         return names, ""
-    except (OSError, sqlite3.DatabaseError, ValueError) as exc:
+    except (OSError, sqlite3.DatabaseError, ValueError, RuntimeError) as exc:
         return (), f"Cannot inspect GeoPackage layers: {exc}"
 
 
