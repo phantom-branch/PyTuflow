@@ -457,3 +457,23 @@ def test_disabled_validation_never_scans_wildcard_sources(
     assert not report.passed
     assert report.files_examined == report.directories_scanned == 0
     assert report.findings[0].status == "unsupported"
+
+
+def test_primary_bc_database_is_not_misread_as_ordinary_source_csv(
+    tmp_path: Path,
+) -> None:
+    """The BC Database itself is not a Source time-series CSV."""
+    database = tmp_path / "bc_dbase.csv"
+    database.write_text("Name,Source,Column 1,Column 2\n", encoding="utf-8")
+    from dataclasses import replace
+
+    primary = replace(_ref(database), database_kind="bc")
+    report = validate_dependencies(
+        _project(_run(0, (primary,))),
+        options=ValidationOptions(check_bc_csv_headers=True),
+    )
+    assert report.passed
+    assert report.files_examined == 1
+    assert report.csv_headers_examined == 0
+    assert len(report.findings) == 1
+    assert report.findings[0].kind == "file"
