@@ -118,6 +118,7 @@ class _Requirement:
     csv_columns: tuple[str, ...] | None
     unresolved: tuple[str, ...] = ()
     secondary_source: bool = False
+    implicit_gpkg_layer: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,6 +131,28 @@ class _Inspection:
     csv_error: str = ""
     gpkg_examined: bool = False
     csv_examined: bool = False
+
+
+def _implicit_gpkg_layer(reference: FileReference) -> bool:
+    """True only when the parser inferred the layer from the filename stem.
+
+    The original syntactic value distinguishes a GeoPackage without a
+    `>> layer` selector from an explicit wildcard layer. A globbed filename
+    must bind its *concrete* stem, never reuse the unexpanded stem pattern.
+    """
+    if (
+        reference.layer_pattern is None
+        or reference.path_pattern.suffix.casefold() != ".gpkg"
+    ):
+        return False
+    from ._tmf.tfpathlib import TuflowPath
+
+    _, explicit_layer = TuflowPath(reference.expanded_value)._split_db_and_lyr()
+    return (
+        explicit_layer is None
+        and reference.layer_pattern.casefold()
+        == reference.path_pattern.stem.casefold()
+    )
 
 
 def _requirements(projection: DependencyProjection) -> tuple[
@@ -163,6 +186,7 @@ def _requirements(projection: DependencyProjection) -> tuple[
                         reference.database_kind,
                         getattr(reference, "csv_columns", None),
                         reference.unresolved_variables,
+                        implicit_gpkg_layer=_implicit_gpkg_layer(reference),
                     )
                 )
         else:
@@ -181,6 +205,7 @@ def _requirements(projection: DependencyProjection) -> tuple[
                         reference.database_kind,
                         getattr(reference, "csv_columns", None),
                         reference.unresolved_variables,
+                        implicit_gpkg_layer=_implicit_gpkg_layer(reference),
                     )
                 )
 
@@ -626,7 +651,8 @@ def validate_dependencies(
             kind,
             path,
             detail,
-            item.layer if kind == "layer" else None,
+            (path.stem if item.implicit_gpkg_layer else item.layer)
+            if kind == "layer" else None,
             item.origin,
             item.input_uuid,
             item.command_index,
@@ -782,7 +808,10 @@ def validate_dependencies(
                     finding(item, "unresolved", "layer", path, info.layer_error)
                 )
             else:
-                status, detail = _layer_status(item.layer, info.layers)
+                selected_layer = (
+                    path.stem if item.implicit_gpkg_layer else item.layer
+                )
+                status, detail = _layer_status(selected_layer, info.layers)
                 findings.append(finding(item, status, "layer", path, detail))
         if policy.check_bc_csv_headers and (
             item.csv_columns is not None
