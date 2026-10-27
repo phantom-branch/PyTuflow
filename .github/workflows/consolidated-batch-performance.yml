@@ -22,6 +22,8 @@ on:
       - "tests/test_fragment_evaluation_probe.py"
       - "tests/fragment_filename_attribution.py"
       - "tests/test_fragment_filename_attribution.py"
+      - "tests/fragment_key_phase_attribution.py"
+      - "tests/test_fragment_key_phase_attribution.py"
       - "tests/test_fragment_counter_example.py"
       - "tests/test_profile_capture.py"
       - "tests/test_construction_attribution*.py"
@@ -60,7 +62,7 @@ jobs:
           python -m pip install ruff pyright
           python -m pyright -p tests/pyright-effective-dependencies.json
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          python -m ruff check tests/test_path_decomposition.py tests/test_event_database_copy.py pytuflow/_tmf/compiled_scope.py pytuflow/_tmf/effective_dependencies.py tests/test_compiled_scope.py tests/test_effective_dependency_manifests.py tests/test_bc_empty_rows.py pytuflow/_tmf/deferred_database.py tests/context_preparation_probe.py tests/fragment_evaluation_probe.py pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py tests/test_fragment_filename_attribution.py
+          python -m ruff check tests/fragment_key_phase_attribution.py tests/test_fragment_key_phase_attribution.py tests/test_path_decomposition.py tests/test_event_database_copy.py pytuflow/_tmf/compiled_scope.py pytuflow/_tmf/effective_dependencies.py tests/test_compiled_scope.py tests/test_effective_dependency_manifests.py tests/test_bc_empty_rows.py pytuflow/_tmf/deferred_database.py tests/context_preparation_probe.py tests/fragment_evaluation_probe.py pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py tests/test_fragment_filename_attribution.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m pyright pytuflow/_tmf/fragment_dependencies.py tests/test_fragment_inactive_scope.py tests/fragment_filename_attribution.py
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -81,6 +83,7 @@ jobs:
           tests/test_fragment_inactive_scope.py
           tests/test_fragment_evaluation_probe.py
           tests/test_fragment_filename_attribution.py
+          tests/test_fragment_key_phase_attribution.py
           tests/test_batch_ordered_inputs.py
           tests/test_compiled_control_tree.py
           tests/test_compiled_dependency_plan.py
