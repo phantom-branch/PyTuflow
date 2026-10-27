@@ -76,7 +76,7 @@ def _read_slots(text: object) -> tuple[tuple[FlagKind, str], ...]:
 def _values(text: str) -> tuple[str, ...]:
     """Lexically separate TUFLOW named alternatives, not run combinations."""
     # Match prepare_run_context() Model Scenarios splitting, not just pipes.
-    return tuple(s for s in re.split(r"[\\t\\s|,]+", text.strip()) if s)
+    return tuple(s for s in re.split(r"[\t\s|,]+", text.strip()) if s)
 
 
 def _model_input_tree(model: TCF):
@@ -95,11 +95,14 @@ def _model_input_tree(model: TCF):
             tuple(getattr(control, "inputs", ()) or ())
             + tuple(getattr(control, "_read_file_inputs", ()) or ())
         )
-        for inp in dict.fromkeys(id(inp) for inp in inputs):
-            inp = next(item for item in inputs if id(item) == inp)
+        seen_inputs: set[int] = set()
+        for inp in inputs:
+            if id(inp) in seen_inputs:
+                continue
+            seen_inputs.add(id(inp))
             yield control, inp
             children = [
-                child for child in getattr(inp, "cf", ())
+                child for child in (getattr(inp, "cf", ()) or ())
                 if hasattr(child, "inputs") and hasattr(child, "fpath")
             ]
             pending.extend(reversed(children))
