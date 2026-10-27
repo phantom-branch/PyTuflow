@@ -9,6 +9,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
@@ -27,7 +28,7 @@ def _ref(
     csv_columns: tuple[str, ...] | None = None,
     unresolved: tuple[str, ...] = (),
 ) -> FileReference:
-    return FileReference(
+    reference = FileReference(
         base_directory=path.parent,
         expanded_value=str(path.name),
         path_pattern=path,
@@ -38,8 +39,14 @@ def _ref(
         requires_attribute_scan=False,
         requires_database_scan=False,
         unresolved_variables=unresolved,
-        csv_columns=csv_columns,
     )
+    if csv_columns is None:
+        return reference
+    # Current master predates #39's csv_columns reference field. Preserve
+    # the precise structural surface until the feature branch is refreshed.
+    payload = vars(reference).copy()
+    payload["csv_columns"] = csv_columns
+    return cast(FileReference, SimpleNamespace(**payload))
 
 
 def _run(
@@ -80,16 +87,20 @@ def _bc_source(
     columns: tuple[str, ...] | None,
     input_uuid: str = "bc-declaration",
 ) -> DeferredDatabaseSource:
-    return DeferredDatabaseSource(
+    source = DeferredDatabaseSource(
         database_path=path.parent / "bc_dbase.csv",
         database_kind="bc",
         entry_name="inflow",
         path_pattern=path,
         owning_command="BC Database",
         owner_control_file=path.parent / "model.tbc",
-        csv_columns=columns,
         input_uuid=input_uuid,
     )
+    if columns is None:
+        return source
+    payload = vars(source).copy()
+    payload["csv_columns"] = columns
+    return cast(DeferredDatabaseSource, SimpleNamespace(**payload))
 
 
 def _bc_activation(path: Path, *, input_uuid: str = "bc-declaration") -> DeferredDatabaseActivation:
