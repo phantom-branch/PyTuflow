@@ -125,7 +125,8 @@ def test_file_and_directory_status_and_ordered_provenance(tmp_path: Path) -> Non
         _project(
             _run(0, (_ref(present), _ref(directory), _ref(missing))),
             _run(1, (_ref(present),)),
-        )
+        ),
+        options=ValidationOptions(case_sensitivity=0),
     )
     assert not report.passed
     assert report.run_count == 2
@@ -355,6 +356,77 @@ def test_gpkg_wal_journal_mode_without_sidecars_creates_no_files(
     assert report.geopackages_examined == 1
     assert gpkg.read_bytes() == before
     assert sorted(path.name for path in tmp_path.iterdir()) == ["saved.gpkg"]
+
+
+def test_symlinked_geopackage_rejects_wal_beside_real_target(
+    tmp_path: Path,
+) -> None:
+    """Never accept uncheckpointed WAL edits hidden by a database symlink."""
+    target = tmp_path / "real.gpkg"
+    alias = tmp_path / "alias.gpkg"
+    editor = sqlite3.connect(target)
+    try:
+        editor.execute("CREATE TABLE gpkg_contents (table_name TEXT)")
+        editor.execute("INSERT INTO gpkg_contents VALUES ('saved_layer')")
+        editor.commit()
+        assert editor.execute("PRAGMA journal_mode=WAL").fetchone() == ("wal",)
+        editor.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        editor.execute("INSERT INTO gpkg_contents VALUES ('wal_only_edit')")
+        editor.commit()
+        try:
+            alias.symlink_to(target)
+        except (OSError, NotImplementedError) as exc:
+            pytest.skip(f"Filesystem symlinks unavailable: {exc}")
+
+        assert (tmp_path / "real.gpkg-wal").stat().st_size > 0
+        before = {file.name: file.read_bytes() for file in tmp_path.iterdir()}
+        report = validate_dependencies(
+            _project(_run(0, (_ref(alias), _ref(alias, layer="saved_layer"))))
+        )
+        after = {file.name: file.read_bytes() for file in tmp_path.iterdir()}
+
+        assert not report.passed
+        assert report.geopackages_examined == 0
+        assert report.files_examined == 1
+        assert len(report.findings) == 2
+        assert all(finding.path == alias for finding in report.findings)
+        assert all(
+            finding.status == "unresolved"
+            and "non-empty SQLite -wal journal" in finding.detail
+            for finding in report.findings
+        )
+        assert after == before
+    finally:
+        editor.close()
+
+
+@pytest.mark.skipif(__import__("os").name == "nt", reason="Linux path-case policy")
+def test_linux_explicit_case_policy_and_unknown_policy(tmp_path: Path) -> None:
+    saved = tmp_path / "Grid_A.TIF"
+    saved.write_bytes(b"grid")
+    required = tmp_path / "grid_a.tif"
+    projection = _project(_run(0, (_ref(required),)))
+
+    unknown = validate_dependencies(projection)
+    assert not unknown.passed
+    assert unknown.findings[0].status == "unsupported"
+    strict = validate_dependencies(
+        projection, options=ValidationOptions(case_sensitivity=0)
+    )
+    assert not strict.passed
+    assert strict.findings[0].status == "missing"
+    relaxed = validate_dependencies(
+        projection, options=ValidationOptions(case_sensitivity=2)
+    )
+    assert relaxed.passed
+    assert relaxed.findings[0].path == saved
+
+    wildcard = _project(_run(0, (_ref(tmp_path / "grid_*.tif"),)))
+    matched = validate_dependencies(
+        wildcard, options=ValidationOptions(case_sensitivity=2)
+    )
+    assert matched.passed
+    assert matched.findings[0].path == saved
 
 
 def test_invalid_geopackage_reports_unresolved_layer(tmp_path: Path) -> None:
