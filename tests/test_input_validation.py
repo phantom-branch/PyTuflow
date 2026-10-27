@@ -713,6 +713,67 @@ def test_globbed_gpkg_implicit_default_layer_is_each_concrete_stem(
     assert report.passed is explicit_layer
 
 
+@pytest.mark.parametrize(
+    ("name", "existing", "expected"),
+    [
+        ("all", ("other_layer",), "missing"),
+        ("all", ("all",), "present"),
+        ("gis_[a]", ("gis_a",), "missing"),
+        ("gis_[a]", ("gis_[a]",), "present"),
+    ],
+)
+def test_implicit_gpkg_stems_are_literal_not_all_or_glob(
+    name: str, existing: tuple[str, ...], expected: str,
+) -> None:
+    from pytuflow.validation import _layer_status
+
+    assert _layer_status(name, existing, implicit=True)[0] == expected
+
+
+def test_implicit_all_gpkg_requires_literal_all_layer(
+    tmp_path: Path,
+) -> None:
+    from contextlib import closing
+
+    from pytuflow._tmf.file_reference import make_file_reference
+    from pytuflow._tmf.parsers.command import Command
+    from pytuflow._tmf.settings import TCFConfig
+
+    gpkg = tmp_path / "all.gpkg"
+    with closing(sqlite3.connect(gpkg)) as db:
+        db.execute("CREATE TABLE gpkg_contents (table_name TEXT)")
+        db.execute("INSERT INTO gpkg_contents VALUES ('other_layer')")
+        db.commit()
+
+    config = TCFConfig(
+        control_file=tmp_path / "model.tcf",
+        init_from_tcf=False,
+        file_resolution="deferred",
+    )
+    def ref(value: str) -> FileReference:
+        return make_file_reference(next(
+            Command(f"Read GIS Code == {value}", config,
+                    parent=tmp_path / "model.tcf").parts()
+        ))
+
+    implicit = validate_dependencies(
+        _project(_run(0, (ref("all.gpkg"),))),
+        options=ValidationOptions(case_sensitivity=0),
+    )
+    explicit = validate_dependencies(
+        _project(_run(0, (ref("all.gpkg >> all"),))),
+        options=ValidationOptions(case_sensitivity=0),
+    )
+    assert not implicit.passed
+    assert [(x.layer, x.status) for x in implicit.findings if x.kind == "layer"] == [
+        ("all", "missing")
+    ]
+    assert explicit.passed
+    assert [(x.layer, x.status) for x in explicit.findings if x.kind == "layer"] == [
+        ("all", "present")
+    ]
+
+
 def test_single_implicit_gpkg_layer_uses_exact_filename_stem(
     tmp_path: Path,
 ) -> None:
