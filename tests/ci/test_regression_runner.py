@@ -109,6 +109,21 @@ class RegressionRunnerTests(unittest.TestCase):
         }
         Path(argument("--report")).write_text(json.dumps(record), encoding="utf-8")
 
+    def test_session_project_cache_fixture_is_unbound(self):
+        """Pytest 9.2 may turn deprecated instance-method fixtures into errors."""
+        from ci.regression_probe import Recorder
+
+        plugin = Recorder(
+            {"capabilities": {"osgeo.ogr": False}, "collected": []},
+            self.source,
+            self.root / "templates",
+        )
+        fixture = plugin.isolated_project_cache
+        self.assertIsNone(getattr(fixture, "_instance", None))
+        self.assertFalse(hasattr(Recorder, "isolated_project_cache"))
+        self.assertTrue(callable(fixture))
+        self.assertTrue(hasattr(fixture, "_fixture_function_marker"))
+
     def test_snapshot_uses_commit_and_copies_fixtures_without_mutating_source(self):
         original = self.source / "pytuflow/__init__.py"
         original.write_text("sentinel = 'uncommitted work'\n", encoding="utf-8")
