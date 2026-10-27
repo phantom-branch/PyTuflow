@@ -126,7 +126,7 @@ class _Inspection:
     detail: str = ""
     layers: tuple[str, ...] = ()
     layer_error: str = ""
-    csv_header: tuple[str, ...] = ()
+    csv_records: tuple[tuple[str, ...], ...] = ()
     csv_error: str = ""
     gpkg_examined: bool = False
     csv_examined: bool = False
@@ -395,12 +395,23 @@ def _layer_status(
     return "missing", f"GeoPackage layer does not exist: {requested}"
 
 
-def _csv_header(
-    path: Path, requested: Collection[str], *, lines_limit: int, bytes_limit: int
-) -> tuple[tuple[str, ...], str]:
-    """Read only the first eligible CSV header within strict physical bounds."""
+def _csv_records(
+    path: Path, requested: Collection[tuple[str, ...]], *,
+    lines_limit: int, bytes_limit: int,
+) -> tuple[tuple[tuple[str, ...], ...], str]:
+    """Read one bounded CSV snapshot, keeping each run's selectors independent.
 
-    needed = {column.strip().casefold() for column in requested if column.strip()}
+    Stop after the first candidate header for *each* selector pair. The same
+    physical file is opened once, but no other run's requested columns can
+    change which header a given run selects. Never parse numeric series values.
+    """
+    rows: list[tuple[str, ...]] = []
+    requirements = frozenset(
+        frozenset(name.strip().casefold() for name in pair if name.strip())
+        for pair in requested
+        if len(pair) == 2 and all(name.strip() for name in pair)
+    )
+    selected: set[frozenset[str]] = set()
     try:
         with path.open("rb") as source:
             remaining = bytes_limit
@@ -425,19 +436,37 @@ def _csv_header(
 
             for record in csv.reader(lines(), strict=True):
                 columns = tuple(column.strip() for column in record)
-                if any(columns) and (
-                    not needed or needed.intersection(
-                        column.casefold() for column in columns
-                    )
-                ):
-                    return columns, ""
+                if not any(columns):
+                    record_started = False
+                    continue
+                rows.append(columns)
+                names = {column.casefold() for column in columns}
+                for needed in requirements - selected:
+                    if needed & names:
+                        selected.add(needed)
+                if selected == requirements:
+                    break
                 record_started = False
-        return (), (
-            f"No CSV header containing a required name within first {lines_limit} "
-            "physical lines"
-        )
+        return tuple(rows), ""
     except (OSError, UnicodeError, csv.Error, ValueError) as exc:
-        return (), f"Cannot inspect CSV header: {exc}"
+        # Headers found before a subsequent malformed record still count:
+        # one unrelated, invalid selection must not invalidate a valid run.
+        return tuple(rows), f"Cannot inspect CSV header: {exc}"
+
+
+def _select_csv_header(
+    rows: tuple[tuple[str, ...], ...], required: tuple[str, ...], *,
+    lines_limit: int, read_error: str,
+) -> tuple[tuple[str, ...], str]:
+    """Find each requirement's *own* first matching header record."""
+    requested = {name.strip().casefold() for name in required if name.strip()}
+    for row in rows:
+        if requested.intersection(name.casefold() for name in row):
+            return row, ""
+    return (), read_error or (
+        f"No CSV header containing a required name within first {lines_limit} "
+        "physical lines"
+    )
 
 
 def _header_status(
@@ -573,7 +602,7 @@ def validate_dependencies(
                 concrete.append((item, path))
 
     gpkg_paths: set[Path] = set()
-    csv_requests: dict[Path, set[str]] = defaultdict(set)
+    csv_requests: dict[Path, set[tuple[str, ...]]] = defaultdict(set)
     for item, path in concrete:
         if (
             policy.check_gpkg_layers
@@ -587,7 +616,7 @@ def validate_dependencies(
             and len(item.csv_columns) == 2
             and path.suffix.casefold() == ".csv"
         ):
-            csv_requests[path].update(item.csv_columns)
+            csv_requests[path].add(item.csv_columns)
     files = {path for _, path in concrete}
 
     def inspect(path: Path) -> tuple[Path, _Inspection]:
@@ -596,14 +625,13 @@ def validate_dependencies(
             return path, _Inspection(status, detail)
         layers: tuple[str, ...] = ()
         layer_error = ""
-        csv_columns: tuple[str, ...] = ()
+        csv_records: tuple[tuple[str, ...], ...] = ()
         csv_error = ""
         if path in gpkg_paths:
             layers, layer_error = _gpkg_contents(path)
         if path in csv_requests:
-            csv_columns, csv_error = _csv_header(
-                path,
-                csv_requests[path],
+            csv_records, csv_error = _csv_records(
+                path, csv_requests[path],
                 lines_limit=policy.maximum_header_lines,
                 bytes_limit=policy.maximum_header_bytes,
             )
@@ -612,7 +640,7 @@ def validate_dependencies(
             detail,
             layers,
             layer_error,
-            csv_columns,
+            csv_records,
             csv_error,
             path in gpkg_paths,
             path in csv_requests,
@@ -672,14 +700,18 @@ def validate_dependencies(
                         "BC column selectors require an ordinary Source CSV",
                     )
                 )
-            elif info.csv_error:
-                findings.append(
-                    finding(item, "unresolved", "csv_header", path, info.csv_error)
-                )
             else:
-                status, detail = _header_status(
-                    info.csv_header, item.csv_columns
+                header, header_error = _select_csv_header(
+                    info.csv_records, item.csv_columns,
+                    lines_limit=policy.maximum_header_lines,
+                    read_error=info.csv_error,
                 )
+                if header_error:
+                    status, detail = "unresolved", header_error
+                else:
+                    status, detail = _header_status(
+                        header, item.csv_columns
+                    )
                 findings.append(
                     finding(item, status, "csv_header", path, detail)
                 )
