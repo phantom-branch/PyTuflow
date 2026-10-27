@@ -48,8 +48,12 @@ def test_invariant_setting_and_time_key_phase_breakdown(tmp_path: Path) -> None:
     assert summary["key_calls"] == actual.fragment_evaluations + actual.fragment_reuses
     assert summary["key_errors"] == 0
     assert sum(item["key_calls"] for item in summary["by_input_type"].values()) == summary["key_calls"]
-    assert any(item["fragment_translate"]["calls"] > 0 for item in summary["by_input_type"].values())
-    assert any(item["scope_decision"]["calls"] > 0 for item in summary["by_input_type"].values())
+    # Compiled manifests can bypass translation and scope membership in keys.
+    # The observer must not force those operations to appear by disabling the
+    # compiled path or altering custom-hook detection.
+    assert summary["unmeasured_identity_guarded_helpers"] == [
+        "Context.translate", "ScopeList.contains",
+    ]
     assert summary["top_anonymous_key_slots"]
     assert fragment._Plan._key is original_key
     assert fragment._FragmentContext.translate is original_translate
@@ -70,6 +74,52 @@ def test_invariant_setting_and_time_key_phase_breakdown(tmp_path: Path) -> None:
     assert all(int(row["key_calls"]) >= 1 for row in records)
     for private in ("private_model.tcf", "private_input.shp", "VarCellSize"):
         assert private not in json.dumps(summary)
+
+
+
+def test_key_phase_attribution_preserves_compact_manifest_and_scope_counts(
+    tmp_path: Path,
+) -> None:
+    """Instrumented keys must follow exactly the uninstrumented compiler path."""
+    from unittest.mock import patch
+
+    source = tmp_path / "model.tcf"
+    source.write_text(
+        "Set Variable Size == 32\\nRead GIS Code == road_<<Size>>.shp\\n",
+        encoding="utf-8",
+    )
+    model = TCF(source)
+    flags = ["-s1 EXG -e1 A", "-s1 EXG -e1 B", "-s1 EXG -e1 A"]
+    original_init = fragment._Plan.__init__
+    plans: list[fragment._Plan] = []
+
+    def record_plan(plan: fragment._Plan, *args: object, **kwargs: object) -> None:
+        original_init(plan, *args, **kwargs)
+        plans.append(plan)
+
+    phases = PrivateKeyPhaseAttribution()
+    with patch.object(fragment._Plan, "__init__", record_plan):
+        baseline = model.collect_file_dependencies(flags)
+        with phases.observe():
+            instrumented = model.collect_file_dependencies(flags)
+
+    assert baseline.passed and instrumented.passed
+    assert baseline.runs == instrumented.runs
+    assert baseline.fragment_evaluations == instrumented.fragment_evaluations
+    assert baseline.fragment_reuses == instrumented.fragment_reuses
+    assert len(plans) == 2
+    original_plan, observed_plan = plans
+    assert original_plan.compact_signatures > 0
+    assert original_plan.scope_program.enabled
+    assert observed_plan.scope_program.enabled
+    assert observed_plan.compact_signatures == original_plan.compact_signatures
+    assert observed_plan.full_keys == original_plan.full_keys
+    assert observed_plan.manifest_hits == original_plan.manifest_hits
+    assert observed_plan.manifest_misses == original_plan.manifest_misses
+    assert observed_plan.manifest_fallbacks == original_plan.manifest_fallbacks
+    assert phases.snapshot(instrumented)["key_calls"] == (
+        instrumented.fragment_evaluations + instrumented.fragment_reuses
+    )
 
 
 def test_phase_patch_restores_methods_on_exception() -> None:
