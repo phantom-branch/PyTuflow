@@ -1,0 +1,9 @@
+import pathlib,subprocess,sys,json,hashlib,time
+r=pathlib.Path(__file__).parent;files=json.loads((r/'input-guards.json').read_text());rows=[]
+def guard():assert all(hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()==h for p,h in files.items())
+for block,order in enumerate(('BAAB','ABBA','BAAB','ABBA'),5):
+ for position,rev in enumerate(order,1):
+  guard();name=f'confirm-{block}-{position}-{rev}';start=time.perf_counter()
+  with (r/(name+'.log')).open('w') as log:subprocess.run([sys.executable,str(r/'measure.py'),'--config',str(r/'W0.json'),'--revision',rev,'--name',name],stdout=log,stderr=subprocess.STDOUT,check=True,timeout=150)
+  guard();row=json.loads((r/(name+'.json')).read_text());row.update(block=block,position=position,outer_process_seconds=time.perf_counter()-start);rows.append(row);(r/'confirm-results.json').write_text(json.dumps(rows,indent=2));print(json.dumps({k:row[k] for k in ('block','position','revision','end_to_end_seconds','cpu_seconds','passed')}),flush=True)
+(r/'confirm-complete.json').write_text(json.dumps({'passed':True,'trials':len(rows)},indent=2))
