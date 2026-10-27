@@ -6,6 +6,7 @@ tests never run TUFLOW or depend on a real GIS/QGIS installation.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from pathlib import Path
 from types import SimpleNamespace
