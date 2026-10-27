@@ -445,8 +445,7 @@ def _resolve_literal_case_paths(
             else:
                 failures[path] = (
                     "unresolved",
-                    f"Ambiguous TUFLOW -cs{case_sensitivity} filename "
-                    f"{path.name} in {parent}",
+                    f"Ambiguous TUFLOW -cs{case_sensitivity} filename {path.name} in {parent}",
                 )
     return resolved, failures, scanned
 
