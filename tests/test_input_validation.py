@@ -533,6 +533,130 @@ def test_gpkg_active_rollback_journal_is_rejected_without_writes(
         editor.close()
 
 
+@pytest.mark.parametrize("transaction", ["saved", "wal", "rollback"])
+def test_hardlinked_geopackage_fails_closed_without_touching_sources(
+    tmp_path: Path, transaction: str,
+) -> None:
+    """Hard links can hide a writer's WAL/rollback file under another name."""
+    real = tmp_path / "real.gpkg"
+    alias = tmp_path / "alias.gpkg"
+    editor = sqlite3.connect(real)
+    try:
+        editor.execute("CREATE TABLE gpkg_contents (table_name TEXT)")
+        editor.executemany(
+            "INSERT INTO gpkg_contents VALUES (?)",
+            [(f"saved_{i}",) for i in range(3000)],
+        )
+        editor.commit()
+        try:
+            os.link(real, alias)
+        except (OSError, NotImplementedError) as exc:
+            pytest.skip(f"Filesystem hard links unavailable: {exc}")
+        assert real.stat().st_nlink > 1
+        if transaction == "wal":
+            assert editor.execute("PRAGMA journal_mode=WAL").fetchone() == ("wal",)
+            editor.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            editor.execute("INSERT INTO gpkg_contents VALUES ('wal_only')")
+            editor.commit()
+            assert (tmp_path / "real.gpkg-wal").stat().st_size > 0
+        elif transaction == "rollback":
+            assert editor.execute("PRAGMA journal_mode=DELETE").fetchone() == (
+                "delete",
+            )
+            editor.execute("PRAGMA cache_size=5")
+            editor.execute("PRAGMA cache_spill=ON")
+            editor.execute("BEGIN IMMEDIATE")
+            editor.execute(
+                "UPDATE gpkg_contents SET table_name = 'uncommitted_' || table_name"
+            )
+            assert (tmp_path / "real.gpkg-journal").stat().st_size > 0
+        before = {
+            item.name: item.read_bytes() for item in tmp_path.iterdir()
+        }
+
+        report = validate_dependencies(
+            _project(
+                _run(0, (_ref(alias), _ref(alias, layer="saved_1"))),
+                _run(1, (_ref(alias, layer="wal_only"),)),
+            )
+        )
+        after = {item.name: item.read_bytes() for item in tmp_path.iterdir()}
+
+        assert not report.passed
+        assert report.files_examined == 1
+        assert report.geopackages_examined == 0
+        assert len(report.findings) == 3
+        assert all(finding.kind == "file" for finding in report.findings)
+        assert all(finding.status == "unresolved" for finding in report.findings)
+        assert all(finding.path == alias for finding in report.findings)
+        assert all(
+            "multiple filesystem hard links" in finding.detail
+            for finding in report.findings
+        )
+        assert before == after
+    finally:
+        editor.rollback()
+        editor.close()
+
+
+def test_symlink_retarget_during_gpkg_read_is_not_accepted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A finding for an alias must still refer to the inspected source."""
+    from pytuflow import validation
+
+    first = tmp_path / "first.gpkg"
+    second = tmp_path / "second.gpkg"
+    alias = tmp_path / "current.gpkg"
+    for path, name in ((first, "first_only"), (second, "second_only")):
+        with sqlite3.connect(path) as editor:
+            editor.execute("CREATE TABLE gpkg_contents (table_name TEXT)")
+            editor.execute("INSERT INTO gpkg_contents VALUES (?)", (name,))
+    try:
+        alias.symlink_to(first)
+    except (OSError, NotImplementedError) as exc:
+        pytest.skip(f"Filesystem symlinks unavailable: {exc}")
+
+    original_connect = sqlite3.connect
+    swaps: list[bool] = []
+
+    class RetargetingConnection:
+        def __init__(self, source: sqlite3.Connection) -> None:
+            self.source = source
+
+        def execute(self, sql: str) -> sqlite3.Cursor:
+            return self.source.execute(sql)
+
+        def close(self) -> None:
+            self.source.close()
+            alias.unlink()
+            alias.symlink_to(second)
+            swaps.append(True)
+
+    def intercept_connect(
+        database: str, *, uri: bool,
+    ) -> RetargetingConnection:
+        return RetargetingConnection(original_connect(database, uri=uri))
+
+    monkeypatch.setattr(validation.sqlite3, "connect", intercept_connect)
+    report = validate_dependencies(
+        _project(_run(0, (_ref(alias, layer="first_only"),)))
+    )
+
+    assert swaps == [True]
+    assert alias.resolve(strict=True) == second
+    assert not report.passed
+    assert [(finding.kind, finding.status) for finding in report.findings] == [
+        ("file", "present"),
+        ("layer", "unresolved"),
+    ]
+    assert report.findings[-1].path == alias
+    assert "changed target or identity" in report.findings[-1].detail
+    assert sorted(item.name for item in tmp_path.iterdir()) == [
+        "current.gpkg", "first.gpkg", "second.gpkg",
+    ]
+
+
 def test_invalid_geopackage_reports_unresolved_layer(tmp_path: Path) -> None:
     gpkg = tmp_path / "not_sqlite.gpkg"
     gpkg.write_bytes(b"invalid database")
