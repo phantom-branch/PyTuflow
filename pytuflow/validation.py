@@ -153,7 +153,7 @@ def _requirements(projection: DependencyProjection) -> tuple[
                         link.command_index,
                         link.owner_control_file,
                         reference.database_kind,
-                        reference.csv_columns,
+                        getattr(reference, "csv_columns", None),
                         reference.unresolved_variables,
                     )
                 )
@@ -171,7 +171,7 @@ def _requirements(projection: DependencyProjection) -> tuple[
                         -1,
                         None,
                         reference.database_kind,
-                        reference.csv_columns,
+                        getattr(reference, "csv_columns", None),
                         reference.unresolved_variables,
                     )
                 )
@@ -225,7 +225,7 @@ def _requirements(projection: DependencyProjection) -> tuple[
                     owner.sequence if owner is not None else -1,
                     source.owner_control_file,
                     source.database_kind,
-                    source.csv_columns,
+                    getattr(source, "csv_columns", None),
                     secondary_source=True,
                 )
             )
