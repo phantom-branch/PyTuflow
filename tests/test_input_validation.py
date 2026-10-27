@@ -246,7 +246,7 @@ def test_gpkg_exact_wildcard_and_all_layers_use_one_readonly_connection(
     )
     assert report.files_examined == 1
     assert report.geopackages_examined == len(calls) == 1
-    assert calls[0].endswith("?mode=ro")
+    assert calls[0].endswith("?mode=ro&immutable=1")
     layers = [finding for finding in report.findings if finding.kind == "layer"]
     assert [item.status for item in layers] == [
         "present", "present", "present", "missing",
