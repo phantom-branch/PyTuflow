@@ -399,6 +399,37 @@ def test_csv_headers_detect_missing_duplicate_and_unresolved_selectors(
     assert not report.passed
 
 
+@pytest.mark.parametrize("invalid_first", [False, True])
+def test_shared_bc_csv_header_selection_is_independent_per_run(
+    tmp_path: Path, invalid_first: bool,
+) -> None:
+    """One run selecting a preamble must not invalidate a valid Source header."""
+    source = tmp_path / "shared.csv"
+    source.write_text(
+        "Event ID: E100\\nTime,Flow\\n0,1\\n", encoding="utf-8"
+    )
+    valid = _bc_source(source, columns=("Time", "Flow"))
+    invalid = _bc_source(source, columns=("Event ID: E100", "Time"))
+    first, second = (invalid, valid) if invalid_first else (valid, invalid)
+    report = validate_dependencies(
+        _project(
+            _run(0, sources=(first,), activations=(_bc_activation(source),)),
+            _run(1, sources=(second,), activations=(_bc_activation(source),)),
+        ),
+        options=ValidationOptions(check_bc_csv_headers=True),
+    )
+    assert not report.passed
+    assert report.files_examined == 1
+    assert report.csv_headers_examined == 1
+    findings = [item for item in report.findings if item.kind == "csv_header"]
+    assert len(findings) == 2
+    by_index = {item.run_index: item for item in findings}
+    valid_index = 1 if invalid_first else 0
+    assert by_index[valid_index].status == "present"
+    assert by_index[1 - valid_index].status == "unresolved"
+    assert "Missing BC CSV columns" in by_index[1 - valid_index].detail
+
+
 def test_csv_header_bounds_and_utf8_bom(tmp_path: Path) -> None:
     source = tmp_path / "long_header.csv"
     source.write_text(
