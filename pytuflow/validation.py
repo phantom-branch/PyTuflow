@@ -488,6 +488,21 @@ def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
                 return "unresolved", f"Cannot inspect Shapefile companion {companion}: {exc}"
             if not stat.S_ISREG(counterpart.st_mode):
                 return "missing", f"Shapefile companion is not a regular file: {companion}"
+    if path.suffix.casefold() in {".mif", ".mid"}:
+        # The existing MIDAttributes reader needs both files even for a
+        # simple Read MI Code that does not reference secondary inputs.
+        # Reuse its exact companion resolution, without opening GIS geometry.
+        from ._tmf.gis_attr_driver import mapinfo_companion_path
+
+        try:
+            companion = mapinfo_companion_path(path)
+            companion_info = companion.stat()
+        except FileNotFoundError as exc:
+            return "missing", f"Missing required MapInfo companion: {exc}"
+        except OSError as exc:
+            return "unresolved", f"Cannot inspect MapInfo companion for {path}: {exc}"
+        if not stat.S_ISREG(companion_info.st_mode):
+            return "missing", f"MapInfo companion is not a regular file: {companion}"
     if path.suffix.casefold() == ".gpkg":
         try:
             check_gpkg_safety(path, expected_stat=info)
