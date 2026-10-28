@@ -13,20 +13,20 @@ from dataclasses import dataclass, replace
 from time import perf_counter
 from typing import Any, cast
 
+from .compiled_scope import ScopeProgram, builtin_translation
+from .context import Context
 from .dependency_records import (
     BatchDependencyRun,
     BatchInputCommand,
     BatchInputReference,
 )
-from .fragment_context import FragmentContextBase, raw_class_attribute
-from .compiled_scope import ScopeProgram, builtin_translation
-from .context import Context
 from .effective_dependencies import EffectiveDependencyManifest
 from .file_reference import (
     DeferredDatabaseActivation,
     DeferredDatabaseSource,
     FileReference,
 )
+from .fragment_context import FragmentContextBase, raw_class_attribute
 
 _TOKEN = re.compile(r"<<([^<>]+)>>")
 _LIMIT = 10000
@@ -838,8 +838,8 @@ def collect_file_dependencies(
     callbacks expose mutable parser state. Unsupported source types use the
     ordinary batch evaluator; a failed run publishes no partial fragments.
     """
-    from .deferred_dependency_fallback import collect_fallback_dependencies
     from .cf.cf_run_state import prepare_run_context
+    from .deferred_dependency_fallback import collect_fallback_dependencies
 
     started = perf_counter()
     try:
