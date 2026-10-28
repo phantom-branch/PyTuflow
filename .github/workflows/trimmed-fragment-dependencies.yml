@@ -1,0 +1,68 @@
+name: Trimmed fragment dependency experiment
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/_tmf/dependency_records.py"
+      - "pytuflow/_tmf/fragment_context.py"
+      - "pytuflow/_tmf/deferred_dependency_fallback.py"
+      - "pytuflow/_tmf/fragment_dependencies.py"
+      - "pytuflow/_tmf/batch_dependencies.py"
+      - "tests/test_trimmed_fragment_dependencies.py"
+      - ".github/workflows/trimmed-fragment-dependencies.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fragment:
+    name: ${{ matrix.os }} Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: windows-latest, python: "3.12"}
+          - {os: windows-latest, python: "3.14"}
+          - {os: ubuntu-latest, python: "3.12"}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install package and tests
+        run: python -m pip install -e . pytest ruff
+      - name: Validate package integrity
+        run: |
+          python -m pip check
+          python -m compileall -q pytuflow/_tmf/dependency_records.py pytuflow/_tmf/fragment_context.py pytuflow/_tmf/deferred_dependency_fallback.py pytuflow/_tmf/fragment_dependencies.py tests/test_trimmed_fragment_dependencies.py
+      - name: Lint added modules and regressions
+        run: >-
+          python -m ruff check
+          pytuflow/_tmf/dependency_records.py
+          pytuflow/_tmf/fragment_context.py
+          pytuflow/_tmf/deferred_dependency_fallback.py
+          pytuflow/_tmf/fragment_dependencies.py
+          tests/test_trimmed_fragment_dependencies.py
+      - name: Full fragment, scope, manifest and trim contracts
+        run: >-
+          python -m pytest -q
+          tests/test_trimmed_fragment_dependencies.py
+          tests/test_fragment_dependencies.py
+          tests/test_effective_dependency_manifests.py
+          tests/test_compiled_scope.py
+          tests/test_fragment_inactive_scope.py
+          tests/test_fragment_key_phase_attribution.py
+          tests/tmf/test_context.py
+          tests/tmf/test_scope.py
+          --junitxml=trimmed-fragments-${{ matrix.python }}.xml
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trimmed-fragments-${{ matrix.os }}-${{ matrix.python }}
+          path: trimmed-fragments-${{ matrix.python }}.xml
+          retention-days: 30
+          if-no-files-found: warn
