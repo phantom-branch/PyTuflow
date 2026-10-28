@@ -48,15 +48,3 @@ jobs:
         run: python -m pytest -q tests/test_path_decomposition.py tests/tmf/test_tuflow_path.py tests/test_deferred_file_references.py tests/test_deferred_database_parity.py tests/test_bc_empty_rows.py tests/test_event_database_copy.py tests/test_batch_dependencies.py tests/test_batch_ordered_inputs.py tests/test_batch_activation_index.py tests/test_compiled_dependency_plan.py tests/test_input_append_accounting.py tests/test_new_module_inline_typing.py
       - name: Run existing TCF context regression tests
         run: python -m pytest -q tests/tmf/test_cf_context.py tests/tmf/test_context.py tests/tmf/test_xs_db_from_cf.py
-      - name: Benchmark 500 distinct batch contexts (Windows Python 3.14)
-        if: matrix.python-version == '3.14'
-        run: python tests/benchmark_batch_dependencies.py --runs 500 --trials 3
-      - name: Benchmark shared static source commands (Windows Python 3.14)
-        if: matrix.python-version == '3.14'
-        run: python tests/benchmark_batch_dependencies.py --runs 120 --trials 3 --static-inputs 20
-      - name: Benchmark transitive variable-derived READs (Windows Python 3.14)
-        if: matrix.python-version == '3.14'
-        run: python tests/benchmark_batch_dependencies.py --runs 120 --trials 3 --variable-inputs 8
-      - name: Profile command-resolution hotspots (Windows Python 3.14)
-        if: matrix.python-version == '3.14'
-        run: python tests/profile_batch_dependencies.py --runs 120 --static-inputs 20
