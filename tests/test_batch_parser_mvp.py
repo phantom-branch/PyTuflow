@@ -449,3 +449,96 @@ def test_bc_all_selector_with_no_bc_layers_cannot_pass(tmp_path: Path) -> None:
         issue.run_index == 0 and issue.status != "present"
         for issue in report.issues
     ), report.issues
+
+
+def test_context_expanded_inline_bc_constant_uses_cached_parser(tmp_path: Path) -> None:
+    _bc_gpkg(tmp_path / "bc.gpkg", name="GT01")
+    (tmp_path / "bc.csv").write_text(
+        "Name,Source,Column 1,Column 2\n"
+        "GT01,,,<<BCConstant>>\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "model.tcf").write_text(
+        "Set Variable BCConstant == 2.75\n"
+        "BC Database == bc.csv\n"
+        "Read GIS BC == bc.gpkg >> 2d_bc_lines\n",
+        encoding="utf-8",
+    )
+    result = validate_batch(tmp_path / "model.tcf", ["-s1 Existing", "-s1 Proposed"])
+    assert result.passed, result.issues
+    assert result.validation.files_examined == 2
+    assert result.validation.csv_headers_examined == 0
+    assert all(not run.database_sources for run in result.dependencies.runs)
+
+
+def test_bc_group_name_uses_existing_database_group_semantics(tmp_path: Path) -> None:
+    _bc_gpkg(tmp_path / "bc.gpkg", name="N1|Group")
+    (tmp_path / "bc.csv").write_text(
+        "Name,Source,Column 1,Column 2\n"
+        "Group,group.ts1,Time,Stage\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "group.ts1").write_text(
+        "TS1 group source supplied\n", encoding="utf-8"
+    )
+    (tmp_path / "model.tcf").write_text(
+        "BC Database == bc.csv\n"
+        "Read GIS BC == bc.gpkg >> 2d_bc_lines\n",
+        encoding="utf-8",
+    )
+    result = validate_batch(tmp_path / "model.tcf", ["-s1 Existing"])
+    assert result.passed, result.issues
+    assert result.validation.files_examined == 3
+    assert any(
+        f.kind == "file"
+        and f.status == "present"
+        and f.path is not None
+        and f.path.name == "group.ts1"
+        for f in result.validation.findings
+    )
+
+
+def _mif_with_link(path: Path, filename: str) -> None:
+    """A valid MapInfo MIF/MID pair using the original PyTUFLOW GIS reader."""
+    path.write_text(
+        'Version 300\n'
+        'Charset "WindowsLatin1"\n'
+        'Delimiter ","\n'
+        'CoordSys NonEarth Units "m"\n'
+        'Columns 1\n'
+        '  Source Char(254)\n'
+        'Data\n'
+        'Point 0 0\n',
+        encoding="utf-8",
+    )
+    path.with_suffix(".mid").write_text(
+        f'"{filename}"\n', encoding="utf-8"
+    )
+
+
+def test_existing_mif_mid_reader_discovers_linked_1d_file(tmp_path: Path) -> None:
+    mif = tmp_path / "1d_xs_section.mif"
+    _mif_with_link(mif, "section.csv")
+    (tmp_path / "section.csv").write_text(
+        "x,z\n0,1\n", encoding="utf-8"
+    )
+    (tmp_path / "model.tcf").write_text(
+        "Read GIS Code == 1d_xs_section.mif\n",
+        encoding="utf-8",
+    )
+    ok = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert ok.passed, ok.issues
+    assert ok.gis_sources_added == 1
+    assert any(
+        finding.path and finding.path.name == "section.csv"
+        and finding.status == "present"
+        for finding in ok.validation.findings
+    )
+    (tmp_path / "section.csv").unlink()
+    missing = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert not missing.passed
+    assert any(
+        item.path and item.path.name == "section.csv"
+        and item.status == "missing"
+        for item in missing.issues
+    )
