@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ._tmf.dependency_records import BatchDependencyRun, BatchInputReference
+from ._tmf.gis import tuflow_type_requires_feature_iter
 from ._tmf.file_reference import FileReference
 from .validation import (
     ValidationFinding,
@@ -130,6 +131,27 @@ def extend_gis_dependencies(
                     path.stem if implicit or original.layer_pattern is None
                     else str(original.layer_pattern)
                 )
+                # A wildcard filename/layer is conservatively labelled as
+                # an attribute candidate by FileReference, even when its
+                # concrete result is a plain 2d_code/2d_mat layer. Do not
+                # require GIS feature-table metadata for such input layers.
+                # Explicit wildcard/'all' selectors may contain linked 1D
+                # layers, so the inspector must check their concrete matches.
+                known_file_fields = bool(
+                    tuflow_type_requires_feature_iter(selector)
+                )
+                explicit_wildcard = (
+                    not implicit
+                    and original.layer_pattern is not None
+                    and (any(char in selector for char in "*?[")
+                         or selector.casefold() == "all")
+                )
+                if not (
+                    known_file_fields or is_bc
+                    or original.requires_table_link_scan
+                    or explicit_wildcard
+                ):
+                    continue
                 request = (path, selector, implicit)
                 scan_requests.add(request)
                 needs.append((run, link, path, selector, implicit, is_bc))
