@@ -54,9 +54,6 @@ class BatchContext(Context):
         self._shared_command_templates = None
         self._shared_read_plans = None
         self._batch_variable_plan: CompiledVariablePlan | None = None
-        self._batch_compiled_tree: CompiledControlTree | None = None
-        self._batch_input_group_cache: LiteralInputGroupCache | None = None
-        self._batch_pending_input_groups: list[tuple[tuple[object, ...], object, object]] = []
         self.graph_input_state_reuses = 0
         self._batch_input_states_constructed = 0
         self.input_state_construction_seconds = 0.0
@@ -263,46 +260,18 @@ class BatchContext(Context):
         )
         plan = None
         if eligible_read:
-            # The compiled tree is an immutable snapshot of ALL parsed inputs,
-            # including inactive branches.  Validate source identity/text
-            # before using its precompiled transitive READ dependencies.
-            if self._batch_compiled_tree is not None:
-                node = self._batch_compiled_tree.node_for(build_input)
-                if node is not None and node.original_text == source_command.original_text:
-                    self.graph_node_lookups += 1
-                    if node.role == 'READ':
-                        # The original compiled_read_nodes metric counts
-                        # plans *encountered by active runs*, including
-                        # conservative bypasses.  Precompiling inactive
-                        # branches must not inflate that counter; separate
-                        # compiled_graph_* fields describe the whole tree.
-                        key = id(build_input)
-                        saved = self._shared_read_plans.get(key)
-                        if saved is None or saved[0] is not build_input:
-                            if len(self._shared_read_plans) < 10_000:
-                                self._shared_read_plans[key] = (
-                                    build_input, str(source_command.value_orig),
-                                    node.read_dependency,
-                                )
-                        if node.bypass_reason is None:
-                            plan = node.read_dependency
-                            self.command_plan_hits += 1
-                else:
-                    # In-batch model mutation or unindexed inputs must use
-                    # the original constructor and resolver, never stale data.
-                    self.graph_node_fallbacks += 1
+            # Reuse bounded compiled variable READ plans, but never build a
+            # second general control graph or clone a cached input RunState.
+            raw_expression = str(source_command.value_orig)
+            key = id(build_input)
+            saved = self._shared_read_plans.get(key)
+            if saved is not None and saved[0] is build_input and saved[1] == raw_expression:
+                plan = saved[2]
+                self.command_plan_hits += 1
             else:
-                # Compatibility with standalone BatchContext use (no tree).
-                raw_expression = str(source_command.value_orig)
-                key = id(build_input)
-                saved = self._shared_read_plans.get(key)
-                if saved is not None and saved[0] is build_input and saved[1] == raw_expression:
-                    plan = saved[2]
-                    self.command_plan_hits += 1
-                else:
-                    plan = self._batch_variable_plan.compile_read(raw_expression)
-                    if key in self._shared_read_plans or len(self._shared_read_plans) < 10_000:
-                        self._shared_read_plans[key] = (build_input, raw_expression, plan)
+                plan = self._batch_variable_plan.compile_read(raw_expression)
+                if key in self._shared_read_plans or len(self._shared_read_plans) < 10_000:
+                    self._shared_read_plans[key] = (build_input, raw_expression, plan)
 
         # The existing context resolver remains authoritative. We never
         # reuse an expression with unresolved tokens, special layer syntax,
@@ -398,31 +367,17 @@ class BatchContext(Context):
         return command
 
     def batch_input_state(self, build_input, parent):
-        """Return a fresh state; skip construction only for a certified group."""
-        cache = self._batch_input_group_cache if self._batch_active else None
-        if cache is not None:
-            reused, key = cache.try_reuse(build_input, self, parent)
-            if reused is not None:
-                self.graph_input_state_reuses += 1
-                return reused
-        else:
-            key = None
-        # Count constructor attempts here, including those that raise.
+        """Construct a fresh, independently mutable RunState for this context."""
         self._batch_input_states_constructed += 1
-        construction_started = perf_counter()
+        started = perf_counter()
         try:
-            state = build_input.context(context=self, parent=parent)
+            return build_input.context(context=self, parent=parent)
         finally:
-            self.input_state_construction_seconds += perf_counter() - construction_started
-        if key is not None and cache.prepare_seed(state):
-            self._batch_pending_input_groups.append((key, build_input, state))
-        return state
+            self.input_state_construction_seconds += perf_counter() - started
 
     def commit_input_groups(self) -> None:
-        """Publish templates only after the *entire* run has passed."""
-        if self._batch_input_group_cache is not None:
-            self._batch_input_group_cache.commit(self._batch_pending_input_groups)
-        self._batch_pending_input_groups.clear()
+        """Legacy lifecycle hook: no mutable input-group prototypes remain."""
+        return None
 
     def translate(self, item):
         if not self._batch_active or not isinstance(item, (str, TuflowPath)):
@@ -835,8 +790,6 @@ def collect_batch_dependencies(
                 ctx._shared_command_templates = shared_command_templates
                 ctx._shared_read_plans = shared_read_plans
                 ctx._batch_variable_plan = variable_plan
-                ctx._batch_compiled_tree = compiled_tree
-                ctx._batch_input_group_cache = input_groups
                 ctx._batch_run_index = index
                 ctx._batch_variable_assignments = variable_assignments
             scenario_key = None
