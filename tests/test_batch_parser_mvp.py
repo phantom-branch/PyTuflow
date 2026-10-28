@@ -518,6 +518,50 @@ def _mif_with_link(path: Path, filename: str) -> None:
     )
 
 
+@pytest.mark.parametrize("channel", ["M", "QO"])
+@pytest.mark.parametrize("geometry", ["mixed", "line", "point"])
+def test_mif_network_geometry_does_not_hide_missing_matrix(
+    tmp_path: Path, channel: str, geometry: str,
+) -> None:
+    path = tmp_path / "1d_nwk_test.mif"
+    shapes = {
+        "mixed": "Line 0 0 1 1\nPoint 2 2\n",
+        "line": "Line 0 0 1 1\n",
+        "point": "Point 2 2\n",
+    }
+    path.write_text(
+        'Version 300\nCharset "WindowsLatin1"\nDelimiter ","\n'
+        'CoordSys NonEarth Units "m"\nColumns 11\n'
+        + ''.join(f'  F{i} Char(254)\n' for i in range(11))
+        + 'Data\n' + shapes[geometry], encoding="utf-8",
+    )
+    matrix = "missing.csv" if channel == "M" else "control|missing.csv"
+    row = ["id", channel, "", "", "", "", "", "", "", "", matrix]
+    path.with_suffix(".mid").write_text(
+        (','.join(f'"{value}"' for value in row) + '\n')
+        * (2 if geometry == "mixed" else 1), encoding="utf-8",
+    )
+    (tmp_path / "model.tcf").write_text(
+        "Read GIS Network == 1d_nwk_test.mif\n", encoding="utf-8"
+    )
+    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    if geometry == "mixed":
+        assert not result.passed
+        assert any(
+            item.status == "unresolved" and item.kind == "attribute"
+            and "Mixed network geometry" in item.detail
+            for item in result.issues
+        ), result.issues
+    elif geometry == "line":
+        assert not result.passed
+        assert any(
+            item.status == "missing" and item.path == tmp_path / "missing.csv"
+            for item in result.issues
+        ), result.issues
+    else:
+        assert result.passed, result.issues
+
+
 def test_existing_mif_mid_reader_discovers_linked_1d_file(tmp_path: Path) -> None:
     mif = tmp_path / "1d_xs_section.mif"
     _mif_with_link(mif, "section.csv")

@@ -307,11 +307,16 @@ def _scan_mif_mid(
             geometries = tuple(source.geometry_types())
         if not geometries:
             raise ValueError("Cannot determine network geometry of MIF/MID layer")
-        if all(
+        line_geometries = tuple(
             name.casefold() in ("linestring", "multilinestring")
             for name in geometries
-        ):
+        )
+        if all(line_geometries):
             geometry_type = "LINESTRING"
+        elif any(line_geometries):
+            raise ValueError(
+                "Mixed network geometry requires feature-level inspection"
+            )
         else:
             geometry_type = "OTHER"
     with GISAttributes(TuflowPath(path)) as reader:
