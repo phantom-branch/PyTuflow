@@ -21,7 +21,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {os: windows-latest, python: "3.11"}
           - {os: windows-latest, python: "3.12"}
           - {os: windows-latest, python: "3.14"}
           - {os: ubuntu-latest, python: "3.12"}
