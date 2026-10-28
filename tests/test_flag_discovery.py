@@ -266,6 +266,55 @@ def test_read_file_tokens_preserved_after_parser_flattens_trd(
     assert any("Dynamic included" in x for x in result.limitations)
 
 
+@pytest.mark.parametrize(
+    "command_name",
+    (
+        "Rainfall Control File",
+        "External Stress File",
+        "Quadtree Control File",
+        "ESTRY Control File Auto",
+        "Read Rainfall Control File",
+    ),
+)
+def test_dynamic_include_limitations_follow_parser_classification(
+    command_name: str,
+) -> None:
+    result = discover_model_flags(_fake_model((
+        _fake_input(command_name, "source_<<~s2~>>.trfc"),
+    )))  # type: ignore[arg-type]
+    assert "S2" in result.scenario_slots
+    assert any("Dynamic included" in message for message in result.limitations)
+
+
+def test_discovery_does_not_trigger_lazy_gis_load_after_parse(
+    tmp_path: Path,
+) -> None:
+    from pytuflow._tmf.inp.gis import GisInput
+
+    tcf = tmp_path / "model.tcf"
+    tcf.write_text(
+        "Read GIS Code == missing_<<~s2~>>.shp\n", encoding="utf-8"
+    )
+    model = TCF(tcf)
+    gis_inputs = [inp for inp in model.inputs if isinstance(inp, GisInput)]
+    assert gis_inputs
+    gis = gis_inputs[0]
+    gis._cf_loaded = False
+    gis._files_loaded = False
+    with (
+        patch.object(GisInput, "_load_files", side_effect=AssertionError("GIS file load")),
+        patch.object(
+            GisInput, "_load_database_files",
+            side_effect=AssertionError("GIS database load"),
+        ),
+    ):
+        result = discover_model_flags(model)
+
+    assert "S2" in result.scenario_slots
+    assert gis._cf_loaded is False
+    assert gis._files_loaded is False
+
+
 def test_discovery_does_not_stat_open_or_mutate_parsed_sources(
     tmp_path: Path,
 ) -> None:
