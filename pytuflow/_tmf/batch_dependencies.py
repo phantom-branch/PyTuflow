@@ -1,9 +1,9 @@
 """Opt-in, read-only batch projection of parsed TUFLOW control-file contexts.
 
-The batch path uses a fresh Context for each distinct run. Its compiled tree
-identifies independently reusable inputs and the variables and branches that
-govern them. Private prototypes supply fresh, independently mutable run states;
-immutable dependency projections are shared within this invocation only.
+The legacy batch path remains an independent deferred-Context correctness
+reference for the fast immutable-fragment collector. It retains its
+context-specific scope, variable and command caches, but no longer builds a
+general compiled control graph or clones mutable input-group run states.
 """
 
 from __future__ import annotations
@@ -16,12 +16,10 @@ from time import perf_counter
 from types import MethodType
 from typing import TYPE_CHECKING
 
-from .compiled_control_tree import CompiledControlTree
 from .compiled_dependency_plan import CompiledVariablePlan
 from .context import Context, _CONTEXT_APPEND_ATTRIBUTES, _CONTEXT_APPEND_MRO
 from .dependency_records import BatchDependencyRun, BatchInputCommand, BatchInputReference
 from .event import EventDatabase, _EVENT_DATABASE_APPEND_ATTRIBUTES, _EVENT_DATABASE_APPEND_MRO
-from .group_input_reuse import LiteralInputGroupCache
 from .scope import (
     GlobalScope, ScenarioScope, ScopeList, _SCOPE_APPEND_DEFINITIONS,
     _SCOPE_APPEND_INSTANCE_ATTRIBUTES, _SCOPE_LIST_APPEND_ATTRIBUTES,
@@ -690,8 +688,9 @@ def collect_batch_dependencies(
     after the run is recorded and before the next run starts. It is intended
     for bounded, read-only consumers; callback exceptions propagate and abort
     the batch rather than being disguised as parser errors. The callback must
-    not modify parsed model inputs or shared batch state. With compile_tree=False,
-    the original per-batch caches remain on, isolating the graph's contribution.
+    not modify parsed model inputs or shared batch state. The historical
+    compile_tree flag is retained for call compatibility and has no effect:
+    compiled graphs and group prototypes have been retired.
     """
     started = perf_counter()
     # Cross-context prototypes can reuse a literal source filename under the
@@ -758,8 +757,11 @@ def collect_batch_dependencies(
     # Same-revision P3 differential baseline: opt out of the graph only,
     # retaining all pre-existing per-batch scope/reference/command caches.
     # Uncached mode remains cache_scopes=False, regardless of compile_tree.
-    compiled_tree = (CompiledControlTree.compile(model, variable_plan)
-                     if compile_tree and variable_plan is not None else None)
+    # The trimmed immutable-fragment collector is the production fast path.
+    # The legacy collection API keeps its cached, graph-free implementation
+    # as a correctness oracle. The historical compile_tree flag is accepted
+    # for call compatibility, but cannot re-enable the removed graph.
+    compiled_tree = None
     # Only completely literal, scope-free, variable-free, BC-free leaf READs
     # are certified equivalent across *distinct* flags. Never infer a
     # shortcut from identical FileReference outputs of partial evaluations.
@@ -785,8 +787,7 @@ def collect_batch_dependencies(
         input_group_cache_bypass_reason = 'single-run'
     elif can_reuse_invariant_projection:
         input_group_cache_bypass_reason = 'whole-model-projection'
-    input_groups = (LiteralInputGroupCache(compiled_tree)
-                    if input_group_cache_bypass_reason is None else None)
+    input_groups = None  # Graph prototype reuse was redundant.
     compilation_seconds = perf_counter() - started
 
     for index, flags in enumerate(run_flags):
