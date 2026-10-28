@@ -9,7 +9,7 @@ Existing consumer reference only: Chain-Frost/ryan-tools PR #161 at 04999e77d497
 ## Objective
 
 Validate the minimum viable library product, not a future roadmap:
-- Standalone pytuflow.batch_parser.validate_batch() with no new TCF method.
+- Standalone pytuflow.batch_validation.validate_batch_inputs() with no new TCF method.
 - Real path/layer existence, TUFLOW file-case rules, nested/conditional scenario/Event/Set Variable substitutions, BC CSV headers, primary/secondary database sources and GIS attribute-linked 1D/BC sources.
 - Exact per-run provenance and fail-closed missing/unsupported/corrupt cases.
 - Strong performance with the proven fragment cache and deduplicated physical checks.
@@ -19,13 +19,13 @@ No ryan-tools source changes, package repin, Chain-Frost roadmap/issues, PR C po
 ## Method
 
 1. Freeze actual PR #47 head, dependency versions, Python/OS, reference parser SHA and consumer SHA; use a detached worktree/venv without touching existing agent checkout. Run hosted and local tests:
-   py -3.14 -m pytest -q tests/test_batch_parser_mvp.py tests/test_input_validation.py tests/test_trimmed_fragment_dependencies.py tests/test_fragment_dependencies.py tests/test_effective_dependency_manifests.py tests/test_gpkg_safety.py
-   py -3.14 -m ruff check pytuflow/batch_parser.py pytuflow/validation.py pytuflow/validation_gis.py pytuflow/validation_links.py pytuflow/_tmf/gpkg_safety.py tests/test_batch_parser_mvp.py tests/test_input_validation.py
-2. Use EXACT saved original run arguments on local M480/M36/M240; do not generate Cartesian combinations from PR #44. For each TCF, parse once, pass the same model into validate_batch(model, flags) and record result.dependencies, result.validation and result.issues.
+   py -3.14 -m pytest -q tests/test_batch_validation_mvp.py tests/test_input_validation.py tests/test_trimmed_fragment_dependencies.py tests/test_fragment_dependencies.py tests/test_effective_dependency_manifests.py tests/test_gpkg_safety.py
+   py -3.14 -m ruff check pytuflow/batch_validation.py pytuflow/validation.py pytuflow/validation_gis.py pytuflow/validation_links.py pytuflow/_tmf/gpkg_safety.py tests/test_batch_validation_mvp.py tests/test_input_validation.py
+2. Use EXACT saved original run arguments on local M480/M36/M240; do not generate Cartesian combinations from PR #44. For each TCF, parse once, pass the same model into validate_batch_inputs(model, flags) and record result.dependencies, result.validation and result.issues.
 3. Before timing, recursively compare result.dependencies.runs against the frozen reference PR #46 and cached/uncached same-source controls, including UUIDs, owner lines, ordinal commands, paths/layers/BC source selectors/activations/errors. Cross-process comparisons use deterministic parse UUIDs ONLY outside timing; real timed runs use ordinary UUIDs.
 4. Physical parity: compare every required path and selected GeoPackage layer (explicit/implicit/wildcard/all) with ryan-tools' current full inspection. Check feature-attribute-linked 1d_xs, 1d_nwk M/QO, 1d_pit and GIS BC/SA/RF Name references; verify missing/unused/candidate BC rows and associated curve database files. Exercise the existing PyTUFLOW MIF/MID attribute reader, lowercase and uppercase consistent Shapefile companions, context-expanded inline BC constants, TS1 grouped Name selectors and file/layer alias safety. Record every remaining unsupported schema and difference. A missing required reference is a correctness failure; do not waive it for matching aggregate counts.
 5. Exercise actual absent files, GPKG missing layers, wildcard filenames, symlink/hardlink/WAL/journal conditions, case policy cs0/cs1/cs2 on Linux, missing CSV columns, missing BC database Name/Source IDs, malformed 1d links, and no-GIS-IO until explicit physical validation. Failed runs yield no partial success.
-6. Run balanced fresh-process ABBA/BAAB, >=4 observations per revision per workload, measuring candidate validate_batch total from model parse through completed validation. Separately measure parser-only fragment collection on the same source and original ryan-tools complete preflight as context. Do not compare this NEW physical-check boundary directly with the OLD 3.782-second fragment-only + different-consumer boundary. Capture per-stage timing, files/GPKGs/CSV headers/GIS attribute connections/linked sources, zero issues and per-run counts.
+6. Run balanced fresh-process ABBA/BAAB, >=4 observations per revision per workload, measuring candidate validate_batch_inputs total from model parse through completed validation. Separately measure parser-only fragment collection on the same source and original ryan-tools complete preflight as context. Do not compare this NEW physical-check boundary directly with the OLD 3.782-second fragment-only + different-consumer boundary. Capture per-stage timing, files/GPKGs/CSV headers/GIS attribute connections/linked sources, zero issues and per-run counts.
 7. If package lacks an ordinary BC CSV selector or a dependency source kind is unsupported, report unresolved rather than claiming success. Keep all proprietary file names, input hashes, flags, profiles and raw sources LOCAL. Post only sanitised exact-SHA counts/timings/failures and an acceptance verdict.
 
 ## Deliverable

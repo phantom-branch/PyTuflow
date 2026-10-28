@@ -15,7 +15,7 @@ import os
 import sqlite3
 from contextlib import closing, contextmanager
 from pathlib import Path
-from typing import Iterator
+from collections.abc import Iterator
 
 _UNSAVED_GPKG_WAL_ERROR = (
     "GeoPackage has a non-empty SQLite -wal journal; main .gpkg may "

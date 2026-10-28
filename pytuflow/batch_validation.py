@@ -57,7 +57,7 @@ class BatchValidationResult:
         )
 
 
-def validate_batch(
+def validate_batch_inputs(
     model: TCF | str | PathLike[str],
     run_flags: Iterable[str | dict[str, str]],
     *,
