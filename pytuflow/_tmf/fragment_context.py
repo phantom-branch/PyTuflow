@@ -30,6 +30,10 @@ class FragmentContextBase(Context):
         self._batch_scopes: ScopeList | None = None
         self._batch_scope_decisions: dict[int, tuple[object, bool]] = {}
         self._batch_translations: dict[str, str] = {}
+        self.translation_hits = 0
+        self.translation_misses = 0
+        self.scope_builds = 0
+        self.scope_hits = 0
         super().__init__(run_flags, config=config)
         self._batch_active = True
 
@@ -72,6 +76,9 @@ class FragmentContextBase(Context):
             return super().available_scopes
         if self._batch_scopes is None:
             self._batch_scopes = super().available_scopes
+            self.scope_builds += 1
+        else:
+            self.scope_hits += 1
         return self._batch_scopes
 
     def in_context_by_scope(self, req_scope: ScopeList) -> bool:
