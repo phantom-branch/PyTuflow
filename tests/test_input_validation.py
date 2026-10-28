@@ -270,7 +270,7 @@ def test_parser_error_and_unresolved_variables_do_not_stat_inputs(
 def test_gpkg_exact_wildcard_and_all_layers_use_one_readonly_connection(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from pytuflow import validation
+    from pytuflow._tmf import gpkg_safety
 
     gpkg = tmp_path / "terrain.gpkg"
     with sqlite3.connect(gpkg) as connection:
@@ -287,7 +287,7 @@ def test_gpkg_exact_wildcard_and_all_layers_use_one_readonly_connection(
         calls.append(database)
         return connect(database, *args, **kwargs)
 
-    monkeypatch.setattr(validation.sqlite3, "connect", counted)
+    monkeypatch.setattr(gpkg_safety.sqlite3, "connect", counted)
     report = validate_dependencies(
         _project(
             _run(0, (_ref(gpkg, layer="2d_code_L"), _ref(gpkg, layer="2d_code_*"))),
@@ -627,7 +627,7 @@ def test_symlink_retarget_during_gpkg_read_is_not_accepted(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A finding for an alias must still refer to the inspected source."""
-    from pytuflow import validation
+    from pytuflow._tmf import gpkg_safety
 
     first = tmp_path / "first.gpkg"
     second = tmp_path / "second.gpkg"
@@ -662,7 +662,7 @@ def test_symlink_retarget_during_gpkg_read_is_not_accepted(
     ) -> RetargetingConnection:
         return RetargetingConnection(original_connect(database, uri=uri))
 
-    monkeypatch.setattr(validation.sqlite3, "connect", intercept_connect)
+    monkeypatch.setattr(gpkg_safety.sqlite3, "connect", intercept_connect)
     report = validate_dependencies(
         _project(_run(0, (_ref(alias, layer="first_only"),)))
     )
