@@ -67,7 +67,7 @@ jobs:
       - name: Install current dependencies allowed by package metadata
         if: matrix.dependencies == 'current'
         run: |
-          python -m pip install build hatchling pytest
+          python -m pip install build hatchling pytest==9.2.0
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python -m pip install --no-build-isolation .
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
