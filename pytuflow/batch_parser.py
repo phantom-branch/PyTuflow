@@ -18,7 +18,12 @@ from os import PathLike
 from time import perf_counter
 from typing import TYPE_CHECKING
 
-from .validation import ValidationFinding, ValidationOptions, ValidationReport, validate_dependencies
+from .validation import (
+    ValidationFinding,
+    ValidationOptions,
+    ValidationReport,
+    validate_dependencies,
+)
 
 if TYPE_CHECKING:
     from ._tmf.cf.tcf import TCF
