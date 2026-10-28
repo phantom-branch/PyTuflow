@@ -71,6 +71,47 @@ def _linked_reference(parent: BatchInputReference, path: Path) -> BatchInputRefe
     )
 
 
+def _pending_source_kinds(run: BatchDependencyRun) -> frozenset[str]:
+    """Candidate database rows needing active GIS feature ID selection.
+
+    An unused BC Source row or pit/curve key is not automatically an input
+    file required by a run. Keep its original syntactic record unchanged; only
+    the physical-check projection defers these candidate rows.
+    """
+    commands = tuple(
+        command.command_name.casefold()
+        for command in run.ordered_inputs
+    )
+    kinds: set[str] = set()
+    if any(name.startswith(("read gis bc", "read gis sa", "read gis rf")) for name in commands):
+        kinds.add("bc")
+    # Curve sources are selected by GIS Q/P and pit identifiers, rather than
+    # required unconditionally by declaring a lookup database.
+    if any(name.startswith("read gis") for name in commands):
+        kinds.update(("depth_discharge", "pit_inlet"))
+    return frozenset(kinds)
+
+
+def pending_physical_projection(projection: FragmentBatchResult) -> ExtendedProjection:
+    """Exclude potentially unused BC/curve rows from initial physical checks.
+
+    The linked-feature pass must subsequently certify each selected GIS layer
+    and add back only the database Source rows referenced by its actual IDs.
+    """
+    return ExtendedProjection(
+        tuple(
+            replace(
+                run,
+                database_sources=tuple(
+                    source for source in run.database_sources
+                    if source.database_kind not in _pending_source_kinds(run)
+                ),
+            )
+            for run in projection.runs
+        )
+    )
+
+
 def extend_gis_dependencies(
     projection: FragmentBatchResult,
     checked: ValidationReport,
@@ -82,6 +123,8 @@ def extend_gis_dependencies(
     an implicit lookup during scenario/event evaluation.
     """
     sources: dict[tuple[int, str, int], list[BatchInputReference]] = defaultdict(list)
+    selected_bc: dict[int, set[tuple[str, str]]] = defaultdict(set)
+    selected_curves: dict[int, set[tuple[str, str]]] = defaultdict(set)
     scan_requests: set[tuple[Path, str, bool]] = set()
     needs: list[tuple[BatchDependencyRun, BatchInputReference, Path, str, bool, bool]] = []
     findings: list[ValidationFinding] = []
@@ -178,7 +221,8 @@ def extend_gis_dependencies(
 
     if not needs:
         return GISExpansion(
-            ExtendedProjection(tuple(projection.runs)), (), 0, 0
+            pending_physical_projection(projection),
+            tuple(findings), 0, 0,
         )
 
     inspected, count = inspect_gis_attribute_sources(scan_requests)
@@ -227,14 +271,21 @@ def extend_gis_dependencies(
         ):
             if not identifiers:
                 continue
-            existing = {
-                source.entry_name.casefold()
-                for source in run.database_sources
-                if source.database_kind == kind
-            }
             for identifier in identifiers:
-                if identifier.casefold() not in existing:
-                    issue(f"Unresolved {kind} curve identifier: {identifier}")
+                matching = [
+                    source for source in run.database_sources
+                    if source.database_kind == kind
+                    and source.entry_name.casefold() == identifier.casefold()
+                ]
+                if len(matching) != 1:
+                    issue(
+                        f"Expected one {kind} source for {identifier!r}, "
+                        f"found {len(matching)}"
+                    )
+                else:
+                    selected_curves[run.index].add(
+                        (kind, identifier.casefold())
+                    )
 
         if is_bc and result.bc_identifiers:
             activations = [
@@ -245,13 +296,20 @@ def extend_gis_dependencies(
                 issue("GIS BC/SA/RF layer has no preceding active BC Database")
                 continue
             active = max(activations, key=lambda a: a.sequence)
-            names = {
-                source.entry_name.casefold()
-                for source in run.database_sources
-                if source.database_kind == "bc" and source.input_uuid == active.input_uuid
-            }
             for identifier in result.bc_identifiers:
-                if identifier.casefold() in names:
+                matched = [
+                    source for source in run.database_sources
+                    if source.database_kind == "bc"
+                    and source.input_uuid == active.input_uuid
+                    and source.entry_name.casefold() == identifier.casefold()
+                ]
+                if len(matched) == 1:
+                    selected_bc[run.index].add(
+                        (active.input_uuid, identifier.casefold())
+                    )
+                    continue
+                if len(matched) > 1:
+                    issue(f"Ambiguous active BC Source: {identifier!r}")
                     continue
                 if active.database_path not in inline_cache:
                     try:
@@ -291,6 +349,22 @@ def extend_gis_dependencies(
                 input_references=run.input_references + tuple(links),
                 file_references=run.file_references
                 + tuple(link.reference for link in links),
+                database_sources=tuple(
+                    source for source in run.database_sources
+                    if (
+                        source.database_kind not in _pending_source_kinds(run)
+                        or (
+                            source.database_kind == "bc"
+                            and (source.input_uuid, source.entry_name.casefold())
+                            in selected_bc[run.index]
+                        )
+                        or (
+                            source.database_kind in ("depth_discharge", "pit_inlet")
+                            and (source.database_kind, source.entry_name.casefold())
+                            in selected_curves[run.index]
+                        )
+                    )
+                ),
             )
         )
 
