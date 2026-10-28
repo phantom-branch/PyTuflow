@@ -15,7 +15,7 @@ from unittest.mock import patch
 import pytest
 
 from pytuflow import TCF
-from pytuflow.batch_validation import validate_batch
+from pytuflow.batch_validation import validate_batch_inputs
 from pytuflow.validation import ValidationOptions
 
 
