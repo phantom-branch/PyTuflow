@@ -17,7 +17,7 @@ change extracts the already-supported TS1 group-key rule into a shared helper.
 
 ## Use
 
-    from pytuflow.batch_validation import validate_batch
+    from pytuflow.batch_validation import validate_batch_inputs
 
     checks = validate_batch_inputs(
         r"runs\model.tcf",
