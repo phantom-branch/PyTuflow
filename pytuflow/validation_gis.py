@@ -532,10 +532,20 @@ def inspect_gis_attribute_sources(
                         continue
                     try:
                         for layer in chosen:
+                            if (
+                                _file_field_index(layer) is None
+                                and _bc_name_field_index(layer) is None
+                            ):
+                                # Other TUFLOW GIS layer types carry no known
+                                # file-valued attributes or BC Source names.
+                                # The physical layer itself was checked by
+                                # validate_dependencies().
+                                continue
                             if layer not in cache:
                                 cache[layer] = _scan_layer(
                                     database, layer, available[layer], path
                                 )
+                        chosen = [layer for layer in chosen if layer in cache]
                         sources = tuple(sorted({
                             source for layer in chosen for source in cache[layer][0]
                         }))
