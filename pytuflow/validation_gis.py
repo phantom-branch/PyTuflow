@@ -23,6 +23,7 @@ from ._tmf.gis import network_attribute_file_sources, tuflow_type_requires_featu
 from ._tmf.gis_attr_driver import GISAttributes
 from ._tmf.gpkg_safety import readonly_gpkg
 from ._tmf.tfpathlib import TuflowPath
+from .validation import _shapefile_companions
 
 
 @dataclass(frozen=True, slots=True)
@@ -266,9 +267,7 @@ def _scan_shapefile(
     Keep exact SHP/DBF/SHX stem spelling and consistent extension-case style.
     Do not perform an implicit case-insensitive companion search on Linux.
     """
-    extension_style = str.upper if path.suffix.isupper() else str.lower
-    dbf = path.with_suffix(extension_style(".dbf"))
-    shx = path.with_suffix(extension_style(".shx"))
+    dbf, shx = _shapefile_companions(path)
     if not dbf.is_file() or not shx.is_file():
         raise ValueError("Shapefile requires matching DBF and SHX companions")
     with path.open("rb") as stream:
