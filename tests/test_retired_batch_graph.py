@@ -27,25 +27,14 @@ def test_legacy_graph_free_and_immutable_fragment_results_are_identical(
     tmp_path: Path,
 ) -> None:
     tcf = tmp_path / "model.tcf"
-    tef = tmp_path / "events.tef"
-    tef.write_text(
-        "Define Event == A\n"
-        "BC Event Source == <<BOUND>> | first\n"
-        "End Define\n"
-        "Define Event == B\n"
-        "BC Event Source == <<BOUND>> | second\n"
-        "End Define\n",
-        encoding="utf-8",
-    )
     tcf.write_text(
-        "Event File == events.tef\n"
-        "Set Variable BOUND == bc\n"
+        "Set Variable BASE == terrain\n"
         "If Scenario == DEV\n"
         "Read GIS Code == gis/dev.shp\n"
         "Else\n"
         "Read GIS Code == gis/exg.shp\n"
         "End If\n"
-        "Read Grid Zpts == terrain_<<~e1~>>.tif\n",
+        "Read Grid Zpts == grids/<<BASE>>_~e1~.tif\n",
         encoding="utf-8",
     )
     model = TCF(tcf)
