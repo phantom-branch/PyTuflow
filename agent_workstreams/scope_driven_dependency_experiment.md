@@ -35,7 +35,7 @@ Both run on the same PR #45 parser source and therefore isolate existing batch g
 
 Require all the following before recommending this approach for upstream PR C:
 
-1. Hosted Windows Python 3.11/3.12/3.14 and Linux Python 3.12 parser/scope tests pass.
+1. Hosted Windows Python 3.12/3.14 and Linux Python 3.12 (phantom-branch requires Python >=3.12; test 3.11 separately after porting to Chain-Frost PR C) parser/scope tests pass.
 2. Exact recursive public-record parity for each actual run: flags, UUID/ordinal/owner/line, commands (including reference-free), resolved paths/layers, input references, database activations and secondary source selectors, error semantics and full empty-on-failure behaviour. Disallow silent whole-run fallbacks and missing/extra records.
 3. Explicit variable/TEF regressions including cascaded variables, conditional scopes (IF/ELSE IF/ELSE), nested/dynamic includes, repeated/reordered BC declarations, unresolved cases, Linux case policy and custom extension hooks.
 4. At least four independent **unprofiled fresh-process samples per mode**, balanced ABBA/BAAB, same frozen TCF, flags, data cache state, selected consumer SHA and options. Prefer eight samples per mode if low-variance measurement permits. Record medians and ranges; separate parser setup, dependency generation, real physical checks, CSV header inspection, reporting, process startup and warm/cold storage.
