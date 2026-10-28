@@ -15,14 +15,13 @@ import re
 import sqlite3
 from collections import defaultdict
 from collections.abc import Collection, Iterable, Sequence
-from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
 from dbfread import DBF
 
-from .validation import _gpkg_contents, _gpkg_file_snapshot
+from ._tmf.gpkg_safety import readonly_gpkg
 
 
 @dataclass(frozen=True, slots=True)
@@ -503,15 +502,9 @@ def inspect_gis_attribute_sources(
                 )
             continue
         try:
-            _, before_error = _gpkg_contents(path)
-            if before_error:
-                raise ValueError(before_error)
-            canonical = path.resolve(strict=True)
-            before_alias = path.lstat()
-            before_source = canonical.stat()
-            with closing(sqlite3.connect(
-                f"{canonical.as_uri()}?mode=ro&immutable=1", uri=True
-            )) as database:
+            # Core PyTUFLOW owns the immutable, pinned, journal-safe view.
+            # It checks aliases and rollback/WAL safety both before/after.
+            with readonly_gpkg(path) as database:
                 databases += 1
                 available = {
                     str(name): str(geom)
@@ -582,23 +575,6 @@ def inspect_gis_attribute_sources(
                         results[key] = AttributeInspection(
                             "unresolved", detail=f"Cannot inspect GIS attributes: {exc}"
                         )
-            # The metadata reader's own snapshot is insufficient when
-            # the attribute connection sits between two successful metadata
-            # reads. Preserve identity and size/time across the whole phase.
-            _, after_error = _gpkg_contents(path)
-            unchanged = (
-                path.resolve(strict=True) == canonical
-                and _gpkg_file_snapshot(path.lstat())
-                == _gpkg_file_snapshot(before_alias)
-                and _gpkg_file_snapshot(canonical.stat())
-                == _gpkg_file_snapshot(before_source)
-            )
-            if after_error or not unchanged:
-                for selector, implicit in selectors:
-                    results[(path, selector, implicit)] = AttributeInspection(
-                        "unresolved",
-                        detail=f"GeoPackage changed during GIS attribute inspection: {after_error}",
-                    )
         except (OSError, ValueError, TypeError, sqlite3.DatabaseError) as exc:
             for selector, implicit in selectors:
                 results[(path, selector, implicit)] = AttributeInspection(
