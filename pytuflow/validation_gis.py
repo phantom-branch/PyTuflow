@@ -589,11 +589,11 @@ def inspect_gis_attribute_sources(
                                 for layer in chosen
                             ),
                         )
-                    except (OSError, ValueError, TypeError, sqlite3.DatabaseError) as exc:
+                    except (OSError, ValueError, TypeError, RuntimeError, sqlite3.DatabaseError) as exc:
                         results[key] = AttributeInspection(
                             "unresolved", detail=f"Cannot inspect GIS attributes: {exc}"
                         )
-        except (OSError, ValueError, TypeError, sqlite3.DatabaseError) as exc:
+        except (OSError, ValueError, TypeError, RuntimeError, sqlite3.DatabaseError) as exc:
             for selector, implicit in selectors:
                 results[(path, selector, implicit)] = AttributeInspection(
                     "unresolved", detail=f"Cannot inspect GIS attributes: {exc}"
