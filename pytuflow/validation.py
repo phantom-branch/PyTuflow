@@ -609,6 +609,28 @@ def _layer_status(
     return "missing", f"GeoPackage layer does not exist: {requested}"
 
 
+def _strip_csv_inline_comment(
+    line: str, inside_quotes: bool,
+) -> tuple[str, bool]:
+    """Apply the source reader's ! comment rule without stripping quoted text.
+
+    Preserve physical record boundaries for csv.reader, including headers
+    with comments after quoted columns and multiline quoted fields.
+    """
+    index = 0
+    while index < len(line):
+        char = line[index]
+        if char == '"':
+            if inside_quotes and index + 1 < len(line) and line[index + 1] == '"':
+                index += 2  # Escaped double quote inside a quoted field.
+                continue
+            inside_quotes = not inside_quotes
+        elif char == "!" and not inside_quotes:
+            return line[:index] + ("\n" if line.endswith("\n") else ""), inside_quotes
+        index += 1
+    return line, inside_quotes
+
+
 def _csv_records(
     path: Path, requested: Collection[tuple[str, ...]], *,
     lines_limit: int, bytes_limit: int,
@@ -630,9 +652,10 @@ def _csv_records(
         with path.open("rb") as source:
             remaining = bytes_limit
             record_started = False
+            inside_quotes = False
 
             def lines() -> Iterator[str]:
-                nonlocal remaining, record_started
+                nonlocal remaining, record_started, inside_quotes
                 for number in range(lines_limit):
                     line = source.readline(remaining + 1)
                     if len(line) > remaining:
@@ -641,6 +664,9 @@ def _csv_records(
                         return
                     remaining -= len(line)
                     decoded = line.decode("utf-8-sig" if number == 0 else "utf-8")
+                    decoded, inside_quotes = _strip_csv_inline_comment(
+                        decoded, inside_quotes
+                    )
                     if not record_started and (
                         not decoded.strip() or decoded.lstrip().startswith("!")
                     ):
