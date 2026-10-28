@@ -87,17 +87,18 @@ def extend_gis_dependencies(
 
     # File existence/layer validation has already resolved wildcard filename
     # patterns, so GIS attribute scanning never probes a missing primary file.
-    available = {
-        (finding.run_index, finding.input_uuid, finding.command_index,
-         finding.origin, finding.source_pattern or finding.path): finding.path
-        for finding in checked.findings
-        if finding.kind == "file" and finding.status == "present"
-        and finding.path is not None
-    }
     by_parent: dict[tuple[int, str, int, str, Path], list[Path]] = defaultdict(list)
-    for key, path in available.items():
-        if path is not None:
-            by_parent[key].append(path)
+    for item in checked.findings:
+        if (
+            item.kind == "file"
+            and item.status == "present"
+            and item.path is not None
+        ):
+            key = (
+                item.run_index, item.input_uuid, item.command_index,
+                item.origin, item.source_pattern or item.path,
+            )
+            by_parent[key].append(item.path)
 
     for run in projection.runs:
         commands = {
