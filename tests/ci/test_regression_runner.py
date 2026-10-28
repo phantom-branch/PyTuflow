@@ -105,7 +105,7 @@ class RegressionRunnerTests(unittest.TestCase):
             "tests": {"tests/test_generated.py::test_fixture": {"outcome": outcome}},
             "collection_errors": [], "counts": {outcome: 1},
             "junit": Path(argument("--junit")).name,
-            "environment": {"python": "3.14.5", "platform": "Windows", "packages": {"pytest": "9.0.3"}},
+            "environment": {"python": "3.14.5", "platform": "Windows", "packages": {"pytest": "9.2.0"}},
         }
         Path(argument("--report")).write_text(json.dumps(record), encoding="utf-8")
 
