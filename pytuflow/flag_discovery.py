@@ -13,6 +13,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
+from ._tmf.parsers.command import CONTROL_FILES
+
 if TYPE_CHECKING:
     from ._tmf.cf.tcf import TCF
 
@@ -101,8 +103,13 @@ def _model_input_tree(model: TCF):
                 continue
             seen_inputs.add(id(inp))
             yield control, inp
+            # Inspect stored parsed children only. In particular, GisInput.cf
+            # is a lazy property that reads GIS sources and mutates caches.
+            # Ordinary control-file inputs store their parsed children in the
+            # instance dict, as do synthetic/test build states.
+            retained_children = getattr(inp, "__dict__", {}).get("cf", ()) or ()
             children = [
-                child for child in (getattr(inp, "cf", ()) or ())
+                child for child in retained_children
                 if hasattr(child, "inputs") and hasattr(child, "fpath")
             ]
             pending.extend(reversed(children))
@@ -244,11 +251,13 @@ def discover_model_flags(model: TCF) -> FlagDiscovery:
                     "Some scenario/event scopes depend on unresolved variables",
                 )
 
-        if lhs in {
-            "geometry control file", "bc control file",
-            "estry control file", "event file", "read file",
-            "swmm control file", "ad control file",
-        } and ("<<" in rhs or _read_slots(rhs)):
+        # Derive the set from the parser rather than silently omitting
+        # Rainfall/External Stress/Quadtree and other valid include commands.
+        # Command.is_control_file() also accepts most "Read <type>" forms.
+        include_name = lhs.upper()
+        if include_name.startswith("READ ") and include_name != "READ FILE":
+            include_name = include_name.removeprefix("READ ")
+        if include_name in CONTROL_FILES and ("<<" in rhs or _read_slots(rhs)):
             limitations.setdefault(
                 "conditional-includes",
                 "Dynamic included control files may require particular run flags; "
