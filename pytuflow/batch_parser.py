@@ -24,7 +24,7 @@ from .validation import (
     ValidationReport,
     validate_dependencies,
 )
-from .validation_links import extend_gis_dependencies
+from .validation_links import extend_gis_dependencies, pending_physical_projection
 
 if TYPE_CHECKING:
     from ._tmf.cf.tcf import TCF
@@ -120,11 +120,14 @@ def validate_batch(
     started = perf_counter()
     # First confirm primary physical sources and GeoPackage layers. GIS
     # attribute tables must not be opened for nonexistent or unresolved files.
-    primary_report = validate_dependencies(dependencies, options=options)
+    initial = pending_physical_projection(dependencies)
+    primary_report = validate_dependencies(initial, options=options)
     discovered = extend_gis_dependencies(dependencies, primary_report)
+    # The private checked projection contains only GIS-selected BC/curve rows.
+    # An unchanged syntactic run inventory is still exposed separately.
     report = (
         validate_dependencies(discovered.projection, options=options)
-        if discovered.linked_sources else primary_report
+        if discovered.projection.runs != initial.runs else primary_report
     )
     if discovered.findings:
         by_run: dict[int, list[ValidationFinding]] = {}
