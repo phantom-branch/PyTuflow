@@ -653,3 +653,33 @@ def test_ordinary_read_gis_code_checks_shapefile_companions(tmp_path: Path) -> N
     complete = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
     assert complete.passed, complete.issues
     assert complete.gis_files_scanned == 0
+
+
+
+def test_read_mi_code_requires_mid_even_without_linked_attribute_sources(
+    tmp_path: Path,
+) -> None:
+    """A non-1D MapInfo GIS layer must never pass with an absent .mid."""
+    mif = tmp_path / "2d_code_area.mif"
+    _mif_with_link(mif, "ignored_code_value")
+    (tmp_path / "model.tcf").write_text(
+        "Read MI Code == 2d_code_area.mif\n", encoding="utf-8"
+    )
+
+    mif.with_suffix(".mid").unlink()
+    missing = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert not missing.passed
+    assert any(
+        finding.kind == "file"
+        and finding.status == "missing"
+        and "MID" in finding.detail
+        for finding in missing.issues
+    ), missing.issues
+    assert missing.gis_files_scanned == 0
+
+    mif.with_suffix(".mid").write_text(
+        '"ignored_code_value"\n', encoding="utf-8"
+    )
+    complete = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert complete.passed, complete.issues
+    assert complete.gis_files_scanned == 0
