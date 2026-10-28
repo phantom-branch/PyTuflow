@@ -146,6 +146,26 @@ def extend_gis_dependencies(
                     and (any(char in selector for char in "*?[")
                          or selector.casefold() == "all")
                 )
+                if (
+                    original.requires_table_link_scan
+                    and not known_file_fields
+                ):
+                    findings.append(
+                        ValidationFinding(
+                            run_index=run.index,
+                            flags=run.flags,
+                            status="unresolved",
+                            kind="attribute",
+                            path=path,
+                            detail="Unclassified GIS table-link schema cannot be certified",
+                            layer=selector,
+                            origin=original.origin,
+                            input_uuid=link.input_uuid,
+                            command_index=link.command_index,
+                            owner_control_file=link.owner_control_file,
+                        )
+                    )
+                    continue
                 if not (
                     known_file_fields or is_bc
                     or original.requires_table_link_scan
