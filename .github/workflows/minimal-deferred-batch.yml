@@ -5,6 +5,8 @@ on:
     paths:
       - "pytuflow/batch_parser.py"
       - "pytuflow/validation.py"
+      - "pytuflow/validation_gis.py"
+      - "pytuflow/validation_links.py"
       - "pytuflow/_tmf/**"
       - "tests/test_batch_parser_mvp.py"
       - "tests/test_input_validation.py"
@@ -37,12 +39,14 @@ jobs:
       - name: Validate source and package
         run: |
           python -m pip check
-          python -m compileall -q pytuflow/batch_parser.py pytuflow/validation.py tests/test_batch_parser_mvp.py tests/test_input_validation.py
+          python -m compileall -q pytuflow/batch_parser.py pytuflow/validation.py pytuflow/validation_gis.py pytuflow/validation_links.py tests/test_batch_parser_mvp.py tests/test_input_validation.py
       - name: Lint new MVP and adopted validator
         run: >-
           python -m ruff check
           pytuflow/batch_parser.py
           pytuflow/validation.py
+          pytuflow/validation_gis.py
+          pytuflow/validation_links.py
           tests/test_batch_parser_mvp.py
           tests/test_input_validation.py
       - name: Full physical validation and fragment correctness
