@@ -136,14 +136,13 @@ def readonly_gpkg(path: Path) -> Iterator[sqlite3.Connection]:
     path = Path(path)
     target, alias, source = _pin_gpkg(path)
     uri = f"{target.as_uri()}?mode=ro&immutable=1"
-    with closing(sqlite3.connect(uri, uri=True)) as database:
-        try:
+    try:
+        with closing(sqlite3.connect(uri, uri=True)) as database:
             yield database
-        finally:
-            # The context manager closes SQLite before its outer exit, but
-            # the final metadata check must happen after the connection closes.
-            pass
-    _confirm_gpkg(path, target, alias, source)
+    finally:
+        # Check even when the caller's query fails. No SQLite connection
+        # remains open when the alias and journal state are rechecked.
+        _confirm_gpkg(path, target, alias, source)
 
 
 def read_gpkg_layer_names(path: Path) -> tuple[tuple[str, ...], str]:
