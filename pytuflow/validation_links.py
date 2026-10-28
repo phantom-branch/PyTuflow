@@ -10,13 +10,17 @@ Unsupported providers, schemas and unmatched curve/BC identifiers fail closed.
 
 from __future__ import annotations
 
+import math
 import re
 from collections import defaultdict
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ._tmf.cf.cf_run_state import prepare_run_context
+from ._tmf.context import Context
 from ._tmf.db.bc_dbase import bc_database_entry_name
+from ._tmf.deferred_database import _cached_database_path_key, _expanded
 from ._tmf.dependency_records import BatchDependencyRun, BatchInputReference
 from ._tmf.file_reference import FileReference
 from ._tmf.gis import tuflow_type_requires_feature_iter
@@ -28,10 +32,10 @@ from .validation import (
 from .validation_gis import (
     AttributeInspection,
     inspect_gis_attribute_sources,
-    read_bc_inline_constant_names,
 )
 
 if TYPE_CHECKING:
+    from ._tmf.cf.tcf import TCF
     from ._tmf.fragment_dependencies import FragmentBatchResult
 
 
@@ -113,9 +117,89 @@ def pending_physical_projection(projection: FragmentBatchResult) -> ExtendedProj
     )
 
 
+def _resolved_bc_inline_constant(
+    model: TCF,
+    run: BatchDependencyRun,
+    activation_uuid: str,
+    database_path: Path,
+    database_key: str,
+    *,
+    run_contexts: dict[int, Context],
+    cached_databases: dict[tuple[str, str], object],
+) -> bool:
+    """Classify a selected BC row from PyTUFLOW's cached, expanded database.
+
+    The old second-stage validator re-read the raw CSV and rejected valid
+    Set Variable constants. Reuse the same cached BC dataframe and Context
+    translation that deferred_database.database_source_references uses.
+    No physical database file is reopened or RunState tree constructed.
+    """
+    identity = (activation_uuid, _cached_database_path_key(database_path))
+    database = cached_databases.get(identity)
+    if database is None:
+        matches = []
+        for inp in model.find_input(lhs="bc database", recursive=True):
+            if str(inp.uuid) != activation_uuid:
+                continue
+            for db, original in zip(
+                inp.cf, getattr(inp, "_database_loaded_paths", ())
+            ):
+                if _cached_database_path_key(original) == identity[1]:
+                    matches.append(db)
+        if len(matches) != 1:
+            raise ValueError(
+                f"Expected one cached active BC database, found {len(matches)}"
+            )
+        database = matches[0]
+        cached_databases[identity] = database
+
+    frame = database.df
+    selected = [
+        (key, record) for key, record in frame.iterrows()
+        if str(key).strip().casefold() == database_key
+    ]
+    if len(selected) != 1:
+        return False
+    row_key, record = selected[0]
+    context = run_contexts.get(run.index)
+    if context is None:
+        context = Context(run.flags, config=model.config)
+        prepare_run_context(model, context)
+        run_contexts[run.index] = context
+
+    columns = list(frame.columns)
+    source_column = next(
+        (name for name in columns if str(name).strip().casefold() == "source"),
+        None,
+    )
+    if source_column is None:
+        raise ValueError("Active BC database lacks a Source column")
+    source = _expanded(
+        record[source_column], context, kind="bc", row=row_key
+    )
+    if source:
+        value = source
+    else:
+        value_column = next(
+            (name for name in columns if str(name).strip().casefold()
+             in ("column 2", "value", "column 2 or value")),
+            None,
+        )
+        if value_column is None:
+            raise ValueError("Active BC database lacks Column 2 for constants")
+        value = _expanded(
+            record[value_column], context, kind="bc", row=row_key
+        )
+    try:
+        return math.isfinite(float(value))
+    except (TypeError, ValueError):
+        return False
+
+
 def extend_gis_dependencies(
     projection: FragmentBatchResult,
     checked: ValidationReport,
+    model: TCF,
 ) -> GISExpansion:
     """Add validated primary GIS attribute link candidates to the projection.
 
@@ -251,7 +335,8 @@ def extend_gis_dependencies(
         )
 
     inspected, count = inspect_gis_attribute_sources(scan_requests)
-    inline_cache: dict[Path, frozenset[str] | str] = {}
+    run_contexts: dict[int, Context] = {}
+    cached_databases: dict[tuple[str, str], object] = {}
 
     for run, link, path, selector, implicit, is_bc in needs:
         result: AttributeInspection = inspected[(path, selector, implicit)]
@@ -350,18 +435,19 @@ def extend_gis_dependencies(
                 if len(matched) > 1:
                     issue(f"Ambiguous active BC Source: {identifier!r}")
                     continue
-                if active.database_path not in inline_cache:
-                    try:
-                        inline_cache[active.database_path] = read_bc_inline_constant_names(
-                            active.database_path
-                        )
-                    except (OSError, ValueError, UnicodeError) as exc:
-                        inline_cache[active.database_path] = str(exc)
-                constants = inline_cache[active.database_path]
-                if (
-                    not isinstance(constants, str)
-                    and database_key in constants
-                ):
+                try:
+                    if _resolved_bc_inline_constant(
+                        model,
+                        run,
+                        active.input_uuid,
+                        active.database_path,
+                        database_key,
+                        run_contexts=run_contexts,
+                        cached_databases=cached_databases,
+                    ):
+                        continue
+                except (OSError, ValueError, TypeError, RuntimeError) as exc:
+                    issue(f"Cannot classify active BC constant {identifier!r}: {exc}")
                     continue
                 issue(
                     f"Active BC Database has no resolvable Source or inline "
