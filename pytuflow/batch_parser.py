@@ -24,6 +24,7 @@ from .validation import (
     ValidationReport,
     validate_dependencies,
 )
+from .validation_links import extend_gis_dependencies
 
 if TYPE_CHECKING:
     from ._tmf.cf.tcf import TCF
@@ -39,6 +40,8 @@ class BatchValidationResult:
     parse_seconds: float
     collection_seconds: float
     inspection_seconds: float
+    gis_sources_added: int = 0
+    gis_files_scanned: int = 0
 
     @property
     def passed(self) -> bool:
@@ -69,9 +72,10 @@ def validate_batch(
 
     Defaults are strict: check files and GeoPackage layers, validate ordinary
     BC CSV headers, and use the same filename-case policy as the parsed model.
-    To inspect raster content or GIS feature attributes requires an additional
-    explicit inspection capability; this function does not claim that a
-    successfully present GIS layer certifies all of its feature-linked files.
+    GIS attribute-bearing layers receive a second read-only discovery stage;
+    their linked source files are included in physical validation. Unknown GIS
+    feature schemas fail closed rather than being marked as present. Raster
+    pixel data and raster-content validity are outside this file-existence API.
     """
     from ._tmf.cf.tcf import TCF
 
@@ -106,10 +110,30 @@ def validate_batch(
     collection_seconds = perf_counter() - started
 
     started = perf_counter()
-    report = validate_dependencies(dependencies, options=options)
+    # First confirm primary physical sources and GeoPackage layers. GIS
+    # attribute tables must not be opened for nonexistent or unresolved files.
+    primary_report = validate_dependencies(dependencies, options=options)
+    discovered = extend_gis_dependencies(dependencies, primary_report)
+    report = (
+        validate_dependencies(discovered.projection, options=options)
+        if discovered.linked_sources else primary_report
+    )
+    if discovered.findings:
+        by_run: dict[int, list[ValidationFinding]] = {}
+        for finding in (*report.findings, *discovered.findings):
+            by_run.setdefault(finding.run_index, []).append(finding)
+        report = replace(
+            report,
+            findings=tuple(
+                finding
+                for run in dependencies.runs
+                for finding in by_run.get(run.index, ())
+            ),
+        )
     inspection_seconds = perf_counter() - started
 
     return BatchValidationResult(
         dependencies, report,
         parse_seconds, collection_seconds, inspection_seconds,
+        discovered.linked_sources, discovered.gis_files_scanned,
     )
