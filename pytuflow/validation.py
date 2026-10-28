@@ -11,7 +11,6 @@ from __future__ import annotations
 import csv
 import fnmatch
 import os
-import sqlite3  # noqa: F401 - instrumentation shares SQLite with core safe reader
 import stat
 from collections import defaultdict
 from collections.abc import Collection, Iterator
