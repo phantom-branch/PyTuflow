@@ -8,7 +8,7 @@ on:
       - "pytuflow/validation_gis.py"
       - "pytuflow/validation_links.py"
       - "pytuflow/_tmf/**"
-      - "tests/test_batch_parser_mvp.py"
+      - "tests/test_batch_validation_mvp.py"
       - "tests/test_input_validation.py"
       - "tests/test_gpkg_safety.py"
       - "tests/test_trimmed_fragment_dependencies.py"
@@ -40,7 +40,7 @@ jobs:
       - name: Validate source and package
         run: |
           python -m pip check
-          python -m compileall -q pytuflow/batch_validation.py pytuflow/validation.py pytuflow/validation_gis.py pytuflow/validation_links.py pytuflow/_tmf/gpkg_safety.py tests/test_batch_parser_mvp.py tests/test_input_validation.py tests/test_gpkg_safety.py
+          python -m compileall -q pytuflow/batch_validation.py pytuflow/validation.py pytuflow/validation_gis.py pytuflow/validation_links.py pytuflow/_tmf/gpkg_safety.py tests/test_batch_validation_mvp.py tests/test_input_validation.py tests/test_gpkg_safety.py
       - name: Lint new MVP and adopted validator
         run: >-
           python -m ruff check
@@ -49,13 +49,13 @@ jobs:
           pytuflow/validation_gis.py
           pytuflow/validation_links.py
           pytuflow/_tmf/gpkg_safety.py
-          tests/test_batch_parser_mvp.py
+          tests/test_batch_validation_mvp.py
           tests/test_input_validation.py
           tests/test_gpkg_safety.py
       - name: Full physical validation and fragment correctness
         run: >-
           python -m pytest -q
-          tests/test_batch_parser_mvp.py
+          tests/test_batch_validation_mvp.py
           tests/test_input_validation.py
           tests/test_trimmed_fragment_dependencies.py
           tests/test_fragment_dependencies.py
