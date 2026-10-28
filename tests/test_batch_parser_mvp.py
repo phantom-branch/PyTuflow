@@ -246,3 +246,67 @@ def test_unknown_gis_attribute_schema_fails_closed(tmp_path: Path) -> None:
         item.kind == "attribute" and item.status == "unresolved"
         for item in result.issues
     )
+
+
+def _bc_gpkg(path: Path, *, name: str) -> None:
+    layer = "2d_bc_lines"
+    with sqlite3.connect(path) as con:
+        con.execute("CREATE TABLE gpkg_contents (table_name TEXT PRIMARY KEY)")
+        con.execute("INSERT INTO gpkg_contents VALUES (?)", (layer,))
+        con.execute(
+            "CREATE TABLE gpkg_geometry_columns "
+            "(table_name TEXT, column_name TEXT, geometry_type_name TEXT)"
+        )
+        con.execute(
+            "INSERT INTO gpkg_geometry_columns VALUES (?, 'geom', 'LINESTRING')",
+            (layer,),
+        )
+        con.execute(
+            f'CREATE TABLE "{layer}" '
+            "(fid INTEGER PRIMARY KEY, geom BLOB, "
+            "Type TEXT, Flags TEXT, Name TEXT, f4 TEXT, f5 TEXT, "
+            "f6 TEXT, f7 TEXT, b REAL)"
+        )
+        con.execute(
+            f'INSERT INTO "{layer}" (Type, Flags, Name, b) VALUES (?, ?, ?, ?)',
+            ("QT", "", name, None),
+        )
+
+
+def test_missing_active_bc_identifier_fails_closed(tmp_path: Path) -> None:
+    _bc_gpkg(tmp_path / "bc.gpkg", name="NOT_IN_DATABASE")
+    (tmp_path / "bc.csv").write_text(
+        "Name,Source,Column 1,Column 2\nvalid,inflow.csv,Time,Flow\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "inflow.csv").write_text(
+        "Time,Flow\n0,1\n", encoding="utf-8"
+    )
+    (tmp_path / "model.tcf").write_text(
+        "BC Database == bc.csv\n"
+        "Read GIS BC == bc.gpkg >> 2d_bc_lines\n",
+        encoding="utf-8",
+    )
+    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert not result.passed
+    assert any(
+        finding.kind == "attribute"
+        and "NOT_IN_DATABASE" in finding.detail
+        for finding in result.issues
+    ), result.issues
+
+
+def test_feature_linked_wildcard_geopackages_scan_every_match(tmp_path: Path) -> None:
+    _linked_gpkg(tmp_path / "link_A.gpkg", layer="1d_xs_link", file_name="A.csv")
+    _linked_gpkg(tmp_path / "link_B.gpkg", layer="1d_xs_link", file_name="B.csv")
+    for name in ("A.csv", "B.csv"):
+        (tmp_path / name).write_text("X,Z\n0,1\n", encoding="utf-8")
+    (tmp_path / "model.tcf").write_text(
+        "Read GIS Code == link_*.gpkg >> 1d_xs_link\n",
+        encoding="utf-8",
+    )
+    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert result.passed, result.issues
+    assert result.gis_files_scanned == 2
+    assert result.gis_sources_added == 2
+    assert result.validation.files_examined == 4
