@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from ._tmf.file_reference import FileReference
 
 ValidationStatus = Literal["present", "missing", "unresolved", "unsupported"]
-ValidationKind = Literal["file", "wildcard", "layer", "csv_header", "context"]
+ValidationKind = Literal["file", "wildcard", "layer", "csv_header", "attribute", "context"]
 
 
 class DependencyProjection(Protocol):
