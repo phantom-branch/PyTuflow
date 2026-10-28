@@ -426,138 +426,156 @@ def read_pit_inlet_database(path: Path) -> dict[str, Path]:
         return mapping
 
 
-def inspect_gis_attribute_sources(  # noqa: C901 - deduped per-database inspection and error routing
-    requests: Collection[tuple[Path, str]],
-) -> tuple[dict[tuple[Path, str], AttributeInspection], int]:
-    """Scan distinct GIS files and layer selectors, one read-only open per source.
+def inspect_gis_attribute_sources(
+    requests: Collection[tuple[Path, str, bool]],
+) -> tuple[dict[tuple[Path, str, bool], AttributeInspection], int]:
+    """Read selected GIS attribute records once per distinct physical source.
 
-    A wildcard or 'all' selector is matched against each provider's layers. All
-    matched layers are inspected. Any unknown layer or schema fails closed.
+    Each request holds (concrete file, layer selector, implicit layer).
+    Implicit filename-derived layers always use exact literal matching,
+    including names 'all' and names containing glob characters. Explicit
+    '>> all' and explicit wildcard selectors retain their TUFLOW semantics.
+
+    GeoPackages use the strict read-only main-file/journal acceptance policy
+    of the physical validator. Unsupported formats fail closed.
     """
-    grouped: dict[Path, set[str]] = defaultdict(set)
-    for path, layer in requests:
-        grouped[path].add(layer)
+    grouped: dict[Path, set[tuple[str, bool]]] = defaultdict(set)
+    for path, layer, implicit in requests:
+        grouped[path].add((layer, implicit))
 
-    results: dict[tuple[Path, str], AttributeInspection] = {}
-    connections = 0
+    results: dict[tuple[Path, str, bool], AttributeInspection] = {}
+    databases = 0
+
+    def matches(candidate: str, selector: str, implicit: bool) -> bool:
+        if implicit:
+            return candidate.casefold() == selector.casefold()
+        return (
+            selector.casefold() == "all"
+            or fnmatch.fnmatchcase(candidate.casefold(), selector.casefold())
+        )
+
     for path, selectors in grouped.items():
         if path.suffix.casefold() == ".shp":
-            # One DBF scan per physical Shapefile, regardless of run count
-            # or how many selectors refer to its single logical layer.
-            selected = [
-                selector
-                for selector in selectors
-                if not selector
-                or selector.casefold() == "all"
-                or fnmatch.fnmatchcase(path.stem.casefold(), selector.casefold())
-            ]
-            for selector in selectors - set(selected):
-                results[(path, selector)] = AttributeInspection(
-                    "unresolved", detail=f"Shapefile layer {path.stem!r} does not match selector {selector!r}"
+            selected = {
+                (selector, implicit)
+                for selector, implicit in selectors
+                if matches(path.stem, selector, implicit)
+            }
+            for selector, implicit in selectors - selected:
+                results[(path, selector, implicit)] = AttributeInspection(
+                    "unresolved",
+                    detail=f"Shapefile layer does not match selector {selector!r}",
                 )
             if selected:
                 try:
-                    sources, identifiers, bc_identifiers = _scan_shapefile(path)
-                    connections += 1
-                    for selector in selected:
-                        results[(path, selector)] = AttributeInspection(
+                    sources, identifiers, bc_names = _scan_shapefile(path)
+                    databases += 1
+                    for selector, implicit in selected:
+                        results[(path, selector, implicit)] = AttributeInspection(
                             "present",
                             sources,
                             identifiers,
-                            network_identifiers=identifiers
-                            if re.match(r"^1d_nwk[eb]?_", path.stem, re.IGNORECASE)
-                            else (),
-                            pit_identifiers=identifiers if re.match(r"^1d_pit_", path.stem, re.IGNORECASE) else (),
-                            bc_identifiers=bc_identifiers,
+                            network_identifiers=(
+                                identifiers
+                                if re.match(r"^1d_nwk[eb]?_", path.stem, re.IGNORECASE)
+                                else ()
+                            ),
+                            pit_identifiers=(
+                                identifiers
+                                if re.match(r"^1d_pit_", path.stem, re.IGNORECASE)
+                                else ()
+                            ),
+                            bc_identifiers=bc_names,
                         )
-                except Exception as exc:  # noqa: BLE001 - incomplete attribute scan must fail closed
-                    for selector in selected:
-                        results[(path, selector)] = AttributeInspection(
+                except Exception as exc:  # noqa: BLE001 - reject unknown provider failures
+                    for selector, implicit in selected:
+                        results[(path, selector, implicit)] = AttributeInspection(
                             "unresolved", detail=f"Cannot inspect Shapefile attributes: {exc}"
                         )
             continue
         if path.suffix.casefold() != ".gpkg":
-            for selector in selectors:
-                results[(path, selector)] = AttributeInspection(
-                    "unresolved", detail=f"GIS attribute scan does not support {path.suffix or 'unknown'} sources"
+            for selector, implicit in selectors:
+                results[(path, selector, implicit)] = AttributeInspection(
+                    "unresolved",
+                    detail=f"GIS attribute reading does not support {path.suffix or 'unknown'} sources",
                 )
             continue
         try:
-            _, initial_error = _gpkg_contents(path)
-            if initial_error:
-                raise ValueError(initial_error)
-            with closing(sqlite3.connect(f"{path.resolve(strict=True).as_uri()}?mode=ro&immutable=1", uri=True)) as connection:
-                connections += 1
+            _, before_error = _gpkg_contents(path)
+            if before_error:
+                raise ValueError(before_error)
+            canonical = path.resolve(strict=True)
+            with closing(sqlite3.connect(
+                f"{canonical.as_uri()}?mode=ro&immutable=1", uri=True
+            )) as database:
+                databases += 1
                 available = {
-                    str(name): str(geometry)
-                    for name, geometry in connection.execute(
+                    str(name): str(geom)
+                    for name, geom in database.execute(
                         "SELECT table_name, geometry_type_name FROM gpkg_geometry_columns"
                     )
                 }
                 if not available:
-                    message = "No vector layer metadata in GeoPackage"
-                    raise ValueError(message)
-                scanned: dict[str, tuple[tuple[Path, ...], tuple[str, ...], tuple[str, ...]]] = {}
-                for selector in selectors:
-                    key = (path, selector)
-                    matches = [
-                        name
-                        for name in available
-                        if selector.casefold() == "all" or fnmatch.fnmatchcase(name.casefold(), selector.casefold())
+                    raise ValueError("No vector layer metadata in GeoPackage")
+                cache: dict[str, tuple[tuple[Path, ...], tuple[str, ...], tuple[str, ...]]] = {}
+                for selector, implicit in selectors:
+                    key = (path, selector, implicit)
+                    chosen = [
+                        name for name in available
+                        if matches(name, selector, implicit)
                     ]
-                    if not matches:
+                    if not chosen:
                         results[key] = AttributeInspection(
-                            "unresolved", detail=f"No GIS attribute layers matched {selector!r}"
+                            "unresolved",
+                            detail=f"No GIS attribute layers matched {selector!r}",
                         )
                         continue
                     try:
-                        for name in matches:
-                            if name not in scanned:
-                                scanned[name] = _scan_layer(connection, name, available[name], path)
-                        sources = tuple(sorted({source for name in matches for source in scanned[name][0]}))
-                        identifiers = tuple(sorted({identifier for name in matches for identifier in scanned[name][1]}))
-                        network = tuple(
-                            sorted(
-                                {
-                                    item
-                                    for name in matches
-                                    if re.match(r"^1d_nwk[eb]?_", name, re.IGNORECASE)
-                                    for item in scanned[name][1]
-                                }
-                            )
-                        )
-                        pits = tuple(
-                            sorted(
-                                {
-                                    item
-                                    for name in matches
-                                    if re.match(r"^1d_pit_", name, re.IGNORECASE)
-                                    for item in scanned[name][1]
-                                }
-                            )
-                        )
-                        bc_names = tuple(
-                            sorted({item for name in matches for item in scanned[name][2]}, key=str.casefold)
-                        )
+                        for layer in chosen:
+                            if layer not in cache:
+                                cache[layer] = _scan_layer(
+                                    database, layer, available[layer], path
+                                )
+                        sources = tuple(sorted({
+                            source for layer in chosen for source in cache[layer][0]
+                        }))
+                        network = tuple(sorted({
+                            name for layer in chosen
+                            if re.match(r"^1d_nwk[eb]?_", layer, re.IGNORECASE)
+                            for name in cache[layer][1]
+                        }))
+                        pits = tuple(sorted({
+                            name for layer in chosen
+                            if re.match(r"^1d_pit_", layer, re.IGNORECASE)
+                            for name in cache[layer][1]
+                        }))
+                        bc = tuple(sorted({
+                            name for layer in chosen
+                            for name in cache[layer][2]
+                        }, key=str.casefold))
                         results[key] = AttributeInspection(
-                            "present",
-                            sources,
-                            identifiers,
+                            "present", sources,
+                            tuple(sorted(set(network) | set(pits))),
                             network_identifiers=network,
                             pit_identifiers=pits,
-                            bc_identifiers=bc_names,
+                            bc_identifiers=bc,
                         )
-                    except (sqlite3.DatabaseError, ValueError, OSError) as exc:
-                        results[key] = AttributeInspection("unresolved", detail=f"Cannot inspect GIS attributes: {exc}")
-            _, final_error = _gpkg_contents(path)
-            if final_error:
-                for selector in selectors:
-                    results[(path, selector)] = AttributeInspection(
-                        "unresolved", detail=f"GeoPackage changed during attribute inspection: {final_error}"
+                    except (OSError, ValueError, sqlite3.DatabaseError) as exc:
+                        results[key] = AttributeInspection(
+                            "unresolved", detail=f"Cannot inspect GIS attributes: {exc}"
+                        )
+            # Refuse a result if the journal/symlink/file changed or became
+            # unsafe while feature records were read.
+            _, after_error = _gpkg_contents(path)
+            if after_error or path.resolve(strict=True) != canonical:
+                for selector, implicit in selectors:
+                    results[(path, selector, implicit)] = AttributeInspection(
+                        "unresolved",
+                        detail=f"GeoPackage changed during GIS attribute inspection: {after_error}",
                     )
-        except (sqlite3.DatabaseError, OSError, ValueError) as exc:
-            for selector in selectors:
-                results[(path, selector)] = AttributeInspection(
-                    "unresolved", detail=f"Cannot open GIS attributes: {exc}"
+        except (OSError, ValueError, sqlite3.DatabaseError) as exc:
+            for selector, implicit in selectors:
+                results[(path, selector, implicit)] = AttributeInspection(
+                    "unresolved", detail=f"Cannot inspect GIS attributes: {exc}"
                 )
-    return results, connections
+    return results, databases
