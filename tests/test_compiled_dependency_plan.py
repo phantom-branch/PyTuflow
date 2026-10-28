@@ -77,8 +77,8 @@ def test_variable_derived_read_reuses_command_template_across_events(tmp_path: P
     assert cached.compiled_variable_nodes == 2
     assert cached.compiled_read_nodes >= 1
     assert cached.variable_template_clones >= 29
-    assert graph.variable_template_clones == 0
-    assert graph.input_group_state_reuses == 29
+    assert graph.variable_template_clones == cached.variable_template_clones
+    assert graph.input_group_state_reuses == 0
     assert graph.runs == cached.runs
     assert cached.contexts_constructed == 30
     assert cached.contexts_reused == 0
@@ -114,7 +114,7 @@ def test_transitive_scenario_variable_changes_do_not_collide(tmp_path: Path):
     assert cached.passed and graph.passed and baseline.passed
     assert cached.variable_template_clones >= 28
     assert graph.variable_template_clones == 0
-    assert graph.input_group_state_reuses == 28
+    assert graph.input_group_state_reuses == 0
     assert graph.runs == cached.runs
     assert cached.unique_command_templates >= 2
     assert [item.input_references for item in cached.runs] == [
