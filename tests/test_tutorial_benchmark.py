@@ -117,7 +117,7 @@ def test_failed_context_is_never_partial(tmp_path: Path) -> None:
     assert baseline[0].ordered_inputs == ()
 
 def test_four_mode_same_head_compiler_and_cache_differential(tmp_path: Path) -> None:
-    """No synthetic wall-time speedup assertion; exact identity and graph counters only."""
+    """No synthetic speed claim: exact graph-free batch and fragment parity only."""
     tcf = tmp_path / "modes.tcf"
     tcf.write_text(
         "IF Scenario == DEV\n"
@@ -141,8 +141,8 @@ def test_four_mode_same_head_compiler_and_cache_differential(tmp_path: Path) -> 
     for actual in (uncached, old_cached, compiled):
         assert compare_runs(expected, actual) == {"missing": 0, "extra": 0}
     assert old_stats["counters"]["compiled_graph_nodes"] == 0
-    assert graph_stats["counters"]["compiled_graph_nodes"] > 0
-    assert graph_stats["counters"]["graph_node_lookups"] > 0
+    assert graph_stats["counters"]["compiled_graph_nodes"] == 0
+    assert graph_stats["counters"]["graph_node_lookups"] == 0
 
     report = measure(tcf, flags[:2], requested_runs=8, trials=1)
     assert report["status"] == "passed_syntactic_parity"
