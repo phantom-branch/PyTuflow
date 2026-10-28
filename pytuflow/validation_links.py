@@ -283,6 +283,12 @@ def extend_gis_dependencies(
         if result.status != "present":
             issue(result.detail or "Cannot certify GIS attribute dependencies")
             continue
+        if is_bc and not result.bc_layer_selected:
+            issue(
+                "GIS BC/SA/RF selector contains no recognised BC layer; "
+                "candidate source rows cannot be certified"
+            )
+            continue
 
         key = (run.index, link.input_uuid, link.command_index)
         sources[key].extend(_linked_reference(link, item) for item in result.sources)
