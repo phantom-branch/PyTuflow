@@ -228,17 +228,20 @@ def test_parser_error_and_unresolved_variables_do_not_stat_inputs(
     def forbid(*args: object, **kwargs: object) -> None:
         raise AssertionError("Parser error or unresolved name must not be inspected")
 
-    monkeypatch.setattr(Path, "stat", forbid)
     unresolved = _ref(
         tmp_path / "path_<<~s1~>>.shp", unresolved=("<<~s1~>>",)
     )
-    report = validate_dependencies(
-        _project(
-            _run(0, (unresolved,)),
-            _run(1, (_ref(tmp_path / "partial.shp"),), error="Parser failure"),
+    with monkeypatch.context() as guarded:
+        guarded.setattr(Path, "stat", forbid)
+        report = validate_dependencies(
+            _project(
+                _run(0, (unresolved,)),
+                _run(1, (_ref(tmp_path / "partial.shp"),), error="Parser failure"),
+            )
         )
-    )
-    assert [x.kind for x in report.findings] == ["context", "file"]
+    assert [(x.run_index, x.kind) for x in report.findings] == [
+        (0, "file"), (1, "context"),
+    ]
     assert all(x.status == "unresolved" for x in report.findings)
     assert report.files_examined == 0
 
