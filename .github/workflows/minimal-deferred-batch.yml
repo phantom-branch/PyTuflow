@@ -1,0 +1,67 @@
+name: Minimal deferred batch and physical file validation
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/batch_parser.py"
+      - "pytuflow/validation.py"
+      - "pytuflow/_tmf/**"
+      - "tests/test_batch_parser_mvp.py"
+      - "tests/test_input_validation.py"
+      - "tests/test_trimmed_fragment_dependencies.py"
+      - ".github/workflows/minimal-deferred-batch.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mvp:
+    name: ${{ matrix.os }} Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: windows-latest, python: "3.12"}
+          - {os: windows-latest, python: "3.14"}
+          - {os: ubuntu-latest, python: "3.12"}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install parser and test dependencies
+        run: python -m pip install -e . pytest ruff
+      - name: Validate source and package
+        run: |
+          python -m pip check
+          python -m compileall -q pytuflow/batch_parser.py pytuflow/validation.py tests/test_batch_parser_mvp.py tests/test_input_validation.py
+      - name: Lint new MVP and adopted validator
+        run: >-
+          python -m ruff check
+          pytuflow/batch_parser.py
+          pytuflow/validation.py
+          tests/test_batch_parser_mvp.py
+          tests/test_input_validation.py
+      - name: Full physical validation and fragment correctness
+        run: >-
+          python -m pytest -q
+          tests/test_batch_parser_mvp.py
+          tests/test_input_validation.py
+          tests/test_trimmed_fragment_dependencies.py
+          tests/test_fragment_dependencies.py
+          tests/test_compiled_scope.py
+          tests/test_effective_dependency_manifests.py
+          tests/tmf/test_context.py
+          tests/tmf/test_scope.py
+          --junitxml=mvp-batch-${{ matrix.python }}.xml
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mvp-batch-${{ matrix.os }}-${{ matrix.python }}
+          path: mvp-batch-${{ matrix.python }}.xml
+          retention-days: 30
+          if-no-files-found: warn
