@@ -119,6 +119,8 @@ def _bc_activation(path: Path, *, input_uuid: str = "bc-declaration") -> Deferre
 def test_file_and_directory_status_and_ordered_provenance(tmp_path: Path) -> None:
     present = tmp_path / "exists.shp"
     present.write_bytes(b"data")
+    present.with_suffix(".dbf").write_bytes(b"data")
+    present.with_suffix(".shx").write_bytes(b"data")
     directory = tmp_path / "not-a-file.shp"
     directory.mkdir()
     missing = tmp_path / "missing.tif"
@@ -195,7 +197,10 @@ def test_unique_wildcards_are_grouped_and_expanded_for_every_run(
     tmp_path: Path,
 ) -> None:
     for name in ("rain_A.shp", "rain_B.shp"):
-        (tmp_path / name).write_bytes(b"test")
+        primary = tmp_path / name
+        primary.write_bytes(b"test")
+        primary.with_suffix(".dbf").write_bytes(b"test")
+        primary.with_suffix(".shx").write_bytes(b"test")
     pattern = tmp_path / "rain_*.shp"
     report = validate_dependencies(
         _project(_run(0, (_ref(pattern),)), _run(1, (_ref(pattern),))),
@@ -231,7 +236,10 @@ def test_missing_and_unsupported_wildcard_requirements(
 
 def test_bounded_wildcard_scan_fails_closed(tmp_path: Path) -> None:
     for index in range(3):
-        (tmp_path / f"source_{index}.shp").write_bytes(b"data")
+        primary = tmp_path / f"source_{index}.shp"
+        primary.write_bytes(b"data")
+        primary.with_suffix(".dbf").write_bytes(b"data")
+        primary.with_suffix(".shx").write_bytes(b"data")
     report = validate_dependencies(
         _project(_run(0, (_ref(tmp_path / "source_*.shp"),))),
         options=ValidationOptions(maximum_directory_entries=1),
@@ -1221,3 +1229,35 @@ def test_primary_bc_database_is_not_misread_as_ordinary_source_csv(
     assert report.csv_headers_examined == 0
     assert len(report.findings) == 1
     assert report.findings[0].kind == "file"
+
+
+
+def test_shapefile_companions_are_checked_on_plain_physical_files(
+    tmp_path: Path,
+) -> None:
+    primary = tmp_path / "2d_code_area.shp"
+    primary.write_bytes(b"shapefile header fixture")
+    report = validate_dependencies(
+        _project(_run(0, (_ref(primary),))),
+        options=ValidationOptions(case_sensitivity=0),
+    )
+    assert not report.passed
+    assert report.files_examined == 1
+    assert report.findings[0].kind == "file"
+    assert "2d_code_area.dbf" in report.findings[0].detail
+
+    primary.with_suffix(".dbf").write_bytes(b"dbf")
+    still_missing = validate_dependencies(
+        _project(_run(0, (_ref(primary),))),
+        options=ValidationOptions(case_sensitivity=0),
+    )
+    assert not still_missing.passed
+    assert "2d_code_area.shx" in still_missing.findings[0].detail
+
+    primary.with_suffix(".shx").write_bytes(b"shx")
+    complete = validate_dependencies(
+        _project(_run(0, (_ref(primary),))),
+        options=ValidationOptions(case_sensitivity=0),
+    )
+    assert complete.passed
+    assert complete.files_examined == 1
