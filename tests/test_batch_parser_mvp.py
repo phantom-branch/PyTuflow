@@ -151,3 +151,98 @@ def test_dependency_collection_does_not_provoke_physical_checks(tmp_path: Path) 
     ):
         projected = parsed.collect_file_dependencies(["-s1 EXG", "-s1 DEV"])
     assert projected.passed
+
+
+def _linked_gpkg(path: Path, *, layer: str, file_name: str) -> None:
+    """One real GPKG attribute table with the first TUFLOW file field."""
+    with sqlite3.connect(path) as connection:
+        connection.execute("CREATE TABLE gpkg_contents (table_name TEXT PRIMARY KEY)")
+        connection.execute(
+            "INSERT INTO gpkg_contents (table_name) VALUES (?)", (layer,)
+        )
+        connection.execute(
+            "CREATE TABLE gpkg_geometry_columns "
+            "(table_name TEXT, column_name TEXT, geometry_type_name TEXT)"
+        )
+        connection.execute(
+            "INSERT INTO gpkg_geometry_columns "
+            "(table_name, column_name, geometry_type_name) VALUES (?, ?, ?)",
+            (layer, "geom", "LINESTRING"),
+        )
+        connection.execute(
+            f'CREATE TABLE "{layer}" (fid INTEGER PRIMARY KEY, geom BLOB, Source TEXT)'
+        )
+        connection.execute(
+            f'INSERT INTO "{layer}" (Source) VALUES (?)', (file_name,)
+        )
+
+
+def test_gpkg_feature_linked_csv_must_exist(tmp_path: Path) -> None:
+    gpkg = tmp_path / "links.gpkg"
+    _linked_gpkg(gpkg, layer="1d_xs_link", file_name="xs_data.csv")
+    (tmp_path / "xs_data.csv").write_text("chainage,z\n0,1\n", encoding="utf-8")
+    (tmp_path / "model.tcf").write_text(
+        "Read GIS Code == links.gpkg >> 1d_xs_link\n",
+        encoding="utf-8",
+    )
+    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert result.passed, result.issues
+    assert result.gis_sources_added == 1
+    assert result.gis_files_scanned == 1
+    assert result.validation.files_examined == 2
+    assert any(
+        item.path and item.path.name == "xs_data.csv"
+        and item.kind == "file" and item.status == "present"
+        for item in result.validation.findings
+    )
+
+    (tmp_path / "xs_data.csv").unlink()
+    missing = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert not missing.passed
+    assert any(
+        item.kind == "file" and item.status == "missing"
+        and item.path and item.path.name == "xs_data.csv"
+        for item in missing.issues
+    )
+
+
+def test_attribute_linked_sources_are_checked_for_each_run(tmp_path: Path) -> None:
+    _linked_gpkg(tmp_path / "links.gpkg", layer="1d_xs_link", file_name="data.csv")
+    (tmp_path / "data.csv").write_text("x,z\n0,2\n", encoding="utf-8")
+    (tmp_path / "model.tcf").write_text(
+        "Read GIS Code == links.gpkg >> 1d_xs_link\n",
+        encoding="utf-8",
+    )
+    result = validate_batch(tmp_path / "model.tcf", ["-e1 A", "-e1 B"])
+    assert result.passed, result.issues
+    assert result.gis_files_scanned == 1
+    assert result.gis_sources_added == 2
+    assert result.validation.files_examined == 2
+
+
+def test_unknown_gis_attribute_schema_fails_closed(tmp_path: Path) -> None:
+    gpkg = tmp_path / "invalid.gpkg"
+    with sqlite3.connect(gpkg) as connection:
+        connection.execute("CREATE TABLE gpkg_contents (table_name TEXT PRIMARY KEY)")
+        connection.execute(
+            "INSERT INTO gpkg_contents VALUES ('1d_xs_bad')"
+        )
+        connection.execute(
+            "CREATE TABLE gpkg_geometry_columns "
+            "(table_name TEXT, column_name TEXT, geometry_type_name TEXT)"
+        )
+        connection.execute(
+            "INSERT INTO gpkg_geometry_columns VALUES "
+            "('1d_xs_bad', 'geom', 'LINESTRING')"
+        )
+        connection.execute('CREATE TABLE "1d_xs_bad" (fid INTEGER PRIMARY KEY, geom BLOB)')
+    (tmp_path / "model.tcf").write_text(
+        "Read GIS Code == invalid.gpkg >> 1d_xs_bad\n",
+        encoding="utf-8",
+    )
+    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert not result.passed
+    assert any(
+        item.kind == "attribute" and item.status == "unresolved"
+        for item in result.issues
+    )
