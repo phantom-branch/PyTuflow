@@ -17,8 +17,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from ._tmf.dependency_records import BatchDependencyRun, BatchInputReference
-from ._tmf.gis import tuflow_type_requires_feature_iter
 from ._tmf.file_reference import FileReference
+from ._tmf.gis import tuflow_type_requires_feature_iter
 from .validation import (
     ValidationFinding,
     ValidationReport,
