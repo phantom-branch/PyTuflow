@@ -450,6 +450,19 @@ def _resolve_literal_case_paths(
     return resolved, failures, scanned
 
 
+def _shapefile_companions(path: Path) -> tuple[Path, Path]:
+    """Require matching-stem, matching-case-style DBF and SHX files.
+
+    On Linux no case-insensitive lookup is attempted. The same names are
+    used by the attribute reader, including uppercase SHP/DBF/SHX sets.
+    """
+    suffix_case = str.upper if path.suffix.isupper() else str.lower
+    return (
+        path.with_suffix(suffix_case(".dbf")),
+        path.with_suffix(suffix_case(".shx")),
+    )
+
+
 def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
     try:
         info = path.stat()
@@ -459,6 +472,20 @@ def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
         return "unresolved", f"Cannot inspect input source file: {exc}"
     if not stat.S_ISREG(info.st_mode):
         return "missing", "Expected a regular file, not a directory or other type"
+    if path.suffix.casefold() == ".shp":
+        for companion in _shapefile_companions(path):
+            try:
+                counterpart = companion.stat()
+            except FileNotFoundError:
+                return (
+                    "missing",
+                    f"Missing required Shapefile companion {companion.name}; "
+                    "the SHP, DBF and SHX names must match",
+                )
+            except OSError as exc:
+                return "unresolved", f"Cannot inspect Shapefile companion {companion}: {exc}"
+            if not stat.S_ISREG(counterpart.st_mode):
+                return "missing", f"Shapefile companion is not a regular file: {companion}"
     if path.suffix.casefold() == ".gpkg":
         try:
             check_gpkg_safety(path, expected_stat=info)
