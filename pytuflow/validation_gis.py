@@ -64,7 +64,7 @@ def _bc_name_field_index(layer: str) -> int | None:
     return None
 
 
-def _bc_identifiers_from_rows(  # noqa: C901 - TUFLOW BC kind and HQ source semantics
+def _bc_identifiers_from_rows(
     rows: Iterable[Sequence[object]], layer: str
 ) -> tuple[str, ...]:
     """Return only database-key Name fields from active BC features.
@@ -144,7 +144,7 @@ def _attribute_file_paths(value: str, *, network_m: bool, parent: Path) -> tuple
     return tuple(paths)
 
 
-def _scan_file_reference_rows(  # noqa: C901 - common TUFLOW network/pit rules for all GIS storage formats
+def _scan_file_reference_rows(
     rows: Iterable[Sequence[object]],
     *,
     layer: str,
@@ -178,7 +178,7 @@ def _scan_file_reference_rows(  # noqa: C901 - common TUFLOW network/pit rules f
             continue
         if not isinstance(value, str):
             message = f"Non-text GIS file-reference attribute in {layer}"
-            raise ValueError(message)
+            raise TypeError(message)
         if network:
             if kind in {"Q", "P"}:
                 database_identifiers.add(value.strip())
@@ -272,7 +272,7 @@ def _scan_shapefile(
     return sources, identifiers, ()
 
 
-def _scan_layer(  # noqa: C901 - common GPKG and GIS BC field handling
+def _scan_layer(
     connection: sqlite3.Connection, layer: str, geometry_type: str, path: Path
 ) -> tuple[tuple[Path, ...], tuple[str, ...], tuple[str, ...]]:
     """Read only file-valued attributes; return database identifiers separately.
@@ -315,9 +315,9 @@ def _scan_layer(  # noqa: C901 - common GPKG and GIS BC field handling
             if len(attrs) <= 7:
                 message = f"2d_bc requires Type, Flags, Name and b fields: {layer}"
                 raise ValueError(message)
-            sql = f"SELECT {', '.join(_quote_identifier(str(attrs[i])) for i in (0, 2, 7))} FROM {quoted}"  # noqa: S608
+            sql = f"SELECT {', '.join(_quote_identifier(str(attrs[i])) for i in (0, 2, 7))} FROM {quoted}"
         else:
-            sql = f"SELECT {_quote_identifier(str(attrs[bc_index]))} FROM {quoted}"  # noqa: S608
+            sql = f"SELECT {_quote_identifier(str(attrs[bc_index]))} FROM {quoted}"
         return (), (), _bc_identifiers_from_rows(connection.execute(sql), layer)
     if index is None or len(attrs) <= index or ((network or pit) and len(attrs) <= 2):
         message = f"Required file-reference attribute index {index} absent from {layer}"
@@ -327,12 +327,12 @@ def _scan_layer(  # noqa: C901 - common GPKG and GIS BC field handling
         ignored = _quote_identifier(str(attrs[2]))
         channel_type = _quote_identifier(str(attrs[1]))
         # All identifiers are sourced from PRAGMA metadata and safely quoted.
-        sql = f"SELECT {channel_type}, {ignored}, {field} FROM {quoted}"  # noqa: S608
+        sql = f"SELECT {channel_type}, {ignored}, {field} FROM {quoted}"
     elif pit:
         channel_type = _quote_identifier(str(attrs[1]))
-        sql = f"SELECT {channel_type}, {field} FROM {quoted}"  # noqa: S608
+        sql = f"SELECT {channel_type}, {field} FROM {quoted}"
     else:
-        sql = f"SELECT {field} FROM {quoted}"  # noqa: S608
+        sql = f"SELECT {field} FROM {quoted}"
 
     sources, identifiers = _scan_file_reference_rows(
         connection.execute(sql), layer=layer, geometry_type=geometry_type, parent=path.parent
@@ -340,7 +340,7 @@ def _scan_layer(  # noqa: C901 - common GPKG and GIS BC field handling
     return sources, identifiers, ()
 
 
-def read_bc_inline_constant_names(  # noqa: C901 - fail-closed numeric BC row formats and header parsing
+def read_bc_inline_constant_names(
     path: Path,
 ) -> frozenset[str]:
     """Identify inline numeric BC rows not emitted as secondary file references.
@@ -560,7 +560,7 @@ def inspect_gis_attribute_sources(
                             pit_identifiers=pits,
                             bc_identifiers=bc,
                         )
-                    except (OSError, ValueError, sqlite3.DatabaseError) as exc:
+                    except (OSError, ValueError, TypeError, sqlite3.DatabaseError) as exc:
                         results[key] = AttributeInspection(
                             "unresolved", detail=f"Cannot inspect GIS attributes: {exc}"
                         )
@@ -573,7 +573,7 @@ def inspect_gis_attribute_sources(
                         "unresolved",
                         detail=f"GeoPackage changed during GIS attribute inspection: {after_error}",
                     )
-        except (OSError, ValueError, sqlite3.DatabaseError) as exc:
+        except (OSError, ValueError, TypeError, sqlite3.DatabaseError) as exc:
             for selector, implicit in selectors:
                 results[(path, selector, implicit)] = AttributeInspection(
                     "unresolved", detail=f"Cannot inspect GIS attributes: {exc}"
