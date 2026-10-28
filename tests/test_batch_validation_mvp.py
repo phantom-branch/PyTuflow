@@ -15,7 +15,7 @@ from unittest.mock import patch
 import pytest
 
 from pytuflow import TCF
-from pytuflow.batch_parser import validate_batch
+from pytuflow.batch_validation import validate_batch_inputs
 from pytuflow.validation import ValidationOptions
 
 
@@ -41,7 +41,7 @@ def test_existing_files_and_named_layers_across_conditional_runs(tmp_path: Path)
     )
     model = TCF(tmp_path / "model.tcf")
     flags = ["-s1 DEV -e1 E1", "-s1 EXG -e1 E1"]
-    result = validate_batch(model, flags)
+    result = validate_batch_inputs(model, flags)
     assert result.passed, result.issues
     assert result.validation.run_count == 2
     assert result.validation.geopackages_examined == 2
@@ -55,7 +55,7 @@ def test_nonexistent_layer_is_reported_for_exact_run(tmp_path: Path) -> None:
     (tmp_path / "model.tcf").write_text(
         "Read GIS Code == model.gpkg >> 2d_code\n", encoding="utf-8"
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 DEV"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 DEV"])
     assert not result.passed
     assert any(
         issue.kind == "layer"
@@ -71,7 +71,7 @@ def test_missing_files_do_not_pass_even_with_complete_syntax(tmp_path: Path) -> 
         "Read Grid Zpts == missing_<<~s1~>>.tif\n",
         encoding="utf-8",
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 DEV", "-s1 EXG"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 DEV", "-s1 EXG"])
     assert result.dependencies.passed
     assert not result.passed
     assert {x.run_index for x in result.issues} == {0, 1}
@@ -90,12 +90,12 @@ def test_shared_csv_header_checked_once_and_wrong_columns_fail(tmp_path: Path) -
         encoding="utf-8",
     )
     flags = ["-s1 EXG -e1 A", "-s1 DEV -e1 B"]
-    result = validate_batch(tmp_path / "model.tcf", flags)
+    result = validate_batch_inputs(tmp_path / "model.tcf", flags)
     assert result.passed, result.issues
     assert result.validation.csv_headers_examined == 1
 
     (tmp_path / "inflow.csv").write_text("Time,WrongColumn\n0,10\n", encoding="utf-8")
-    invalid = validate_batch(tmp_path / "model.tcf", flags)
+    invalid = validate_batch_inputs(tmp_path / "model.tcf", flags)
     assert not invalid.passed
     assert {
         item.run_index
@@ -111,7 +111,7 @@ def test_wildcard_layers_and_physical_files_are_all_checked(tmp_path: Path) -> N
         "Read GIS Code == terrain_*.gpkg\n",
         encoding="utf-8",
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 DEV"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 DEV"])
     assert result.passed, result.issues
     assert result.validation.geopackages_examined == 2
     assert {
@@ -125,7 +125,7 @@ def test_fail_closed_context_does_not_inspect_partial_references(tmp_path: Path)
         "If Scenario == BAD\n PAUSE\nEnd If\n",
         encoding="utf-8",
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 BAD", "-s1 GOOD"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 BAD", "-s1 GOOD"])
     assert not result.passed
     assert any(x.kind == "context" and x.run_index == 0 for x in result.issues)
     assert all(
@@ -138,7 +138,7 @@ def test_validation_options_cannot_conflict_with_parsed_case_policy(tmp_path: Pa
     (tmp_path / "model.tcf").write_text("Read Grid Zpts == terrain.tif\n", encoding="utf-8")
     parsed = TCF(tmp_path / "model.tcf", case_sensitivity=0)
     with pytest.raises(ValueError, match="case_sensitivity"):
-        validate_batch(
+        validate_batch_inputs(
             parsed, ["-s1 EXG"],
             options=ValidationOptions(case_sensitivity=2),
         )
@@ -187,7 +187,7 @@ def test_gpkg_feature_linked_csv_must_exist(tmp_path: Path) -> None:
         "Read GIS Code == links.gpkg >> 1d_xs_link\n",
         encoding="utf-8",
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
     assert result.passed, result.issues
     assert result.gis_sources_added == 1
     assert result.gis_files_scanned == 1
@@ -199,7 +199,7 @@ def test_gpkg_feature_linked_csv_must_exist(tmp_path: Path) -> None:
     )
 
     (tmp_path / "xs_data.csv").unlink()
-    missing = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    missing = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
     assert not missing.passed
     assert any(
         item.kind == "file" and item.status == "missing"
@@ -215,7 +215,7 @@ def test_attribute_linked_sources_are_checked_for_each_run(tmp_path: Path) -> No
         "Read GIS Code == links.gpkg >> 1d_xs_link\n",
         encoding="utf-8",
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-e1 A", "-e1 B"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-e1 A", "-e1 B"])
     assert result.passed, result.issues
     assert result.gis_files_scanned == 1
     assert result.gis_sources_added == 2
@@ -242,7 +242,7 @@ def test_unknown_gis_attribute_schema_fails_closed(tmp_path: Path) -> None:
         "Read GIS Code == invalid.gpkg >> 1d_xs_bad\n",
         encoding="utf-8",
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
     assert not result.passed
     assert any(
         item.kind == "attribute" and item.status == "unresolved"
@@ -289,7 +289,7 @@ def test_missing_active_bc_identifier_fails_closed(tmp_path: Path) -> None:
         "Read GIS BC == bc.gpkg >> 2d_bc_lines\n",
         encoding="utf-8",
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
     assert not result.passed
     assert any(
         finding.kind == "attribute"
@@ -307,7 +307,7 @@ def test_feature_linked_wildcard_geopackages_scan_every_match(tmp_path: Path) ->
         "Read GIS Code == link_*.gpkg >> 1d_xs_link\n",
         encoding="utf-8",
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
     assert result.passed, result.issues
     assert result.gis_files_scanned == 2
     assert result.gis_sources_added == 2
@@ -317,13 +317,13 @@ def test_feature_linked_wildcard_geopackages_scan_every_match(tmp_path: Path) ->
 def test_missing_root_control_file_cannot_pass_empty_inventory(tmp_path: Path) -> None:
     missing = tmp_path / "absent.tcf"
     with pytest.raises(FileNotFoundError, match="was not loaded"):
-        validate_batch(missing, ["-s1 DEV"])
+        validate_batch_inputs(missing, ["-s1 DEV"])
     model = TCF(missing)
     assert not model.loaded
     with pytest.raises(FileNotFoundError, match="was not loaded"):
-        validate_batch(model, ["-s1 DEV"])
+        validate_batch_inputs(model, ["-s1 DEV"])
     with pytest.raises(ValueError, match="empty, unnamed"):
-        validate_batch(TCF(), ["-s1 DEV"])
+        validate_batch_inputs(TCF(), ["-s1 DEV"])
 
 
 @pytest.mark.parametrize("database_first", [True, False])
@@ -344,7 +344,7 @@ def test_unused_bc_database_source_does_not_create_missing_file(
         database + gis if database_first else gis + database,
         encoding="utf-8",
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-e1 Q10", "-e1 Q100"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-e1 Q10", "-e1 Q100"])
     assert result.passed, result.issues
     assert result.validation.csv_headers_examined == 1
     assert result.validation.files_examined == 3
@@ -373,7 +373,7 @@ def test_late_conditional_database_binds_nested_bcf(tmp_path: Path) -> None:
         "If Scenario == DEV\n BC Database == dev.csv\n"
         "Else\n BC Database == exg.csv\nEnd If\n", encoding="utf-8"
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 DEV", "-s1 EXG"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 DEV", "-s1 EXG"])
     assert result.passed, result.issues
     assert result.validation.csv_headers_examined == 2
     for index, name in enumerate(("dev", "exg")):
@@ -398,7 +398,7 @@ def test_multiple_late_bc_databases_remain_ambiguous(tmp_path: Path) -> None:
         "Read GIS BC == bc.gpkg >> 2d_bc_lines\n"
         "BC Database == first.csv\nBC Database == second.csv\n", encoding="utf-8"
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
     assert not result.passed
     assert any("no preceding active BC Database" in item.detail for item in result.issues)
     assert result.validation.csv_headers_examined == 0
@@ -423,7 +423,7 @@ def test_multiple_active_bc_database_declarations_select_by_order(tmp_path: Path
         "Read GIS BC == second.gpkg >> 2d_bc_lines\n",
         encoding="utf-8",
     )
-    report = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    report = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
     assert report.passed, report.issues
     assert report.validation.csv_headers_examined == 2
     assert report.validation.files_examined == 6
@@ -442,7 +442,7 @@ def test_bc_all_selector_with_no_bc_layers_cannot_pass(tmp_path: Path) -> None:
         "Read GIS BC == unrelated.gpkg >> all\n",
         encoding="utf-8",
     )
-    report = validate_batch(tmp_path / "model.tcf", ["-s1 DEV"])
+    report = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 DEV"])
     assert not report.passed
     # Parser rejection, a missing selected layer, or an unresolved attribute
     # source are all valid fail-closed outcomes. No unselected BC Source can
@@ -466,7 +466,7 @@ def test_context_expanded_inline_bc_constant_uses_cached_parser(tmp_path: Path) 
         "Read GIS BC == bc.gpkg >> 2d_bc_lines\n",
         encoding="utf-8",
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 Existing", "-s1 Proposed"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 Existing", "-s1 Proposed"])
     assert result.passed, result.issues
     assert result.validation.files_examined == 2
     assert result.validation.csv_headers_examined == 0
@@ -488,7 +488,7 @@ def test_bc_group_name_uses_existing_database_group_semantics(tmp_path: Path) ->
         "Read GIS BC == bc.gpkg >> 2d_bc_lines\n",
         encoding="utf-8",
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 Existing"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 Existing"])
     assert result.passed, result.issues
     assert result.validation.files_examined == 3
     assert any(
@@ -544,7 +544,7 @@ def test_mif_network_geometry_does_not_hide_missing_matrix(
     (tmp_path / "model.tcf").write_text(
         "Read GIS Network == 1d_nwk_test.mif\n", encoding="utf-8"
     )
-    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
     if geometry == "mixed":
         assert not result.passed
         assert any(
@@ -572,7 +572,7 @@ def test_existing_mif_mid_reader_discovers_linked_1d_file(tmp_path: Path) -> Non
         "Read GIS Code == 1d_xs_section.mif\n",
         encoding="utf-8",
     )
-    ok = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    ok = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
     assert ok.passed, ok.issues
     assert ok.gis_sources_added == 1
     assert any(
@@ -581,7 +581,7 @@ def test_existing_mif_mid_reader_discovers_linked_1d_file(tmp_path: Path) -> Non
         for finding in ok.validation.findings
     )
     (tmp_path / "section.csv").unlink()
-    missing = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    missing = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
     assert not missing.passed
     assert any(
         item.path and item.path.name == "section.csv"

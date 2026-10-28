@@ -11,15 +11,15 @@ source files linked from recognised GIS feature attributes and cached databases.
 Preserve the canonical TCF/Context/Set Variable/TEF parser and eager defaults.
 
 The implementation deliberately keeps the orchestration in the new
-`pytuflow/batch_parser.py`. It does not add another method to TCF or change
+`pytuflow/batch_validation.py`. It does not add another method to TCF or change
 existing TCF/Context parser method contracts. The only inherited BC method
 change extracts the already-supported TS1 group-key rule into a shared helper.
 
 ## Use
 
-    from pytuflow.batch_parser import validate_batch
+    from pytuflow.batch_validation import validate_batch_inputs
 
-    checks = validate_batch(
+    checks = validate_batch_inputs(
         r"runs\model.tcf",
         [
             "-s1 Existing -e1 Q10",

@@ -45,9 +45,11 @@ def test_core_reader_rejects_active_rollback_journal(tmp_path: Path) -> None:
         assert path.with_name(path.name + "-journal").stat().st_size > 0
         before = path.read_bytes()
         journal = path.with_name(path.name + "-journal").read_bytes()
-        with pytest.raises(GeoPackageSafetyError, match="journal"):
-            with readonly_gpkg(path) as source:
-                source.execute("SELECT table_name FROM gpkg_contents")
+        with (
+            pytest.raises(GeoPackageSafetyError, match="journal"),
+            readonly_gpkg(path) as source,
+        ):
+            source.execute("SELECT table_name FROM gpkg_contents")
         assert path.read_bytes() == before
         assert path.with_name(path.name + "-journal").read_bytes() == journal
     finally:
