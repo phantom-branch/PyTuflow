@@ -1261,3 +1261,45 @@ def test_shapefile_companions_are_checked_on_plain_physical_files(
     )
     assert complete.passed
     assert complete.files_examined == 1
+
+
+
+@pytest.mark.parametrize(
+    ("primary_suffix", "companion_suffix"),
+    [
+        (".mif", ".mid"),
+        (".mid", ".mif"),
+        (".MIF", ".MID"),
+        (".MID", ".MIF"),
+        # Existing PyTUFLOW MapInfo readers also accept a different
+        # *extension* case while keeping the filename stem unchanged.
+        (".mif", ".MID"),
+    ],
+)
+def test_mapinfo_pairs_are_required_independently_of_gis_attribute_inspection(
+    tmp_path: Path, primary_suffix: str, companion_suffix: str,
+) -> None:
+    primary = tmp_path / f"2d_code_area{primary_suffix}"
+    companion = primary.with_suffix(companion_suffix)
+    primary.write_text("Primary MapInfo input", encoding="utf-8")
+    projection = _project(_run(0, (_ref(primary),)))
+    options = ValidationOptions(case_sensitivity=0)
+
+    missing = validate_dependencies(projection, options=options)
+    assert not missing.passed
+    assert missing.files_examined == 1
+    assert [(f.kind, f.status) for f in missing.findings] == [
+        ("file", "missing"),
+    ]
+    assert companion_suffix.lstrip(".").upper() in missing.findings[0].detail
+
+    companion.mkdir()
+    directory = validate_dependencies(projection, options=options)
+    assert not directory.passed
+    assert "not a regular file" in directory.findings[0].detail
+    companion.rmdir()
+
+    companion.write_text("MapInfo companion", encoding="utf-8")
+    complete = validate_dependencies(projection, options=options)
+    assert complete.passed, complete.findings
+    assert complete.files_examined == 1
