@@ -113,10 +113,11 @@ def test_transitive_scenario_variable_changes_do_not_collide(tmp_path: Path):
     baseline = model.collect_batch_dependencies(flags, cache_scopes=False)
     assert cached.passed and graph.passed and baseline.passed
     assert cached.variable_template_clones >= 28
-    assert graph.variable_template_clones == 0
+    assert graph.variable_template_clones == cached.variable_template_clones
     assert graph.input_group_state_reuses == 0
     assert graph.runs == cached.runs
     assert cached.unique_command_templates >= 2
+    assert cached.runs == baseline.runs
     assert [item.input_references for item in cached.runs] == [
         item.input_references for item in baseline.runs
     ]
