@@ -375,3 +375,24 @@ def test_multiple_active_bc_database_declarations_select_by_order(tmp_path: Path
     assert report.validation.csv_headers_examined == 2
     assert report.validation.files_examined == 6
     assert len(report.dependencies.runs[0].database_activations) == 2
+
+
+def test_bc_all_selector_with_no_bc_layers_cannot_pass(tmp_path: Path) -> None:
+    _gpkg(tmp_path / "unrelated.gpkg", "2d_code_misc")
+    (tmp_path / "bc.csv").write_text(
+        "Name,Source,Column 1,Column 2\n"
+        "flow,not_loaded.csv,Time,Flow\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "model.tcf").write_text(
+        "BC Database == bc.csv\n"
+        "Read GIS BC == unrelated.gpkg >> all\n",
+        encoding="utf-8",
+    )
+    report = validate_batch(tmp_path / "model.tcf", ["-s1 DEV"])
+    assert not report.passed
+    assert any(
+        issue.kind == "attribute"
+        and "no recognised BC layer" in issue.detail
+        for issue in report.issues
+    )
