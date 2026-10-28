@@ -479,8 +479,10 @@ def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
             except FileNotFoundError:
                 return (
                     "missing",
-                    f"Missing required Shapefile companion {companion.name}; "
-                    "the SHP, DBF and SHX names must match",
+                    (
+                        f"Missing required Shapefile companion {companion.name}; "
+                        "the SHP, DBF and SHX names must match"
+                    ),
                 )
             except OSError as exc:
                 return "unresolved", f"Cannot inspect Shapefile companion {companion}: {exc}"
