@@ -146,6 +146,27 @@ def test_file_and_directory_status_and_ordered_provenance(tmp_path: Path) -> Non
     ]
 
 
+def test_projection_failure_does_not_jump_ahead_of_earlier_file(
+    tmp_path: Path,
+) -> None:
+    existing = tmp_path / "existing.tif"
+    existing.write_bytes(b"data")
+    unresolved = tmp_path / "rain_<<UNKNOWN>>.tif"
+    report = validate_dependencies(
+        _project(
+            _run(0, (_ref(existing),)),
+            _run(1, (_ref(existing), _ref(unresolved, unresolved=("UNKNOWN",)))),
+        ),
+        options=ValidationOptions(case_sensitivity=0),
+    )
+    assert [(item.run_index, item.status) for item in report.findings] == [
+        (0, "present"), (1, "present"), (1, "unresolved"),
+    ]
+    assert [item.path for item in report.findings] == [
+        existing, existing, unresolved,
+    ]
+
+
 @pytest.mark.parametrize(
     ("candidate", "pattern", "case_sensitivity", "matched"),
     [
@@ -987,6 +1008,51 @@ def test_shared_bc_csv_header_selection_is_independent_per_run(
     assert by_index[valid_index].status == "present"
     assert by_index[1 - valid_index].status == "unresolved"
     assert "Missing BC CSV columns" in by_index[1 - valid_index].detail
+
+
+@pytest.mark.parametrize(
+    ("header", "columns", "status", "detail"),
+    [
+        (
+            "Time,!ignored,Flow\n", ("Time", "Flow"),
+            "unresolved", "Missing BC CSV columns: Flow",
+        ),
+        (
+            'Time,"Flow!value",!ignored\n', ("Time", "Flow!value"),
+            "present", "",
+        ),
+        (
+            "Time,Flow!trailing comment\n", ("Time", "Flow"),
+            "present", "",
+        ),
+        (
+            'Time,"Flow""!value"\n', ("Time", 'Flow"!value'),
+            "present", "",
+        ),
+    ],
+)
+def test_bc_csv_inline_comments_ignore_only_unquoted_text(
+    tmp_path: Path,
+    header: str,
+    columns: tuple[str, str],
+    status: str,
+    detail: str,
+) -> None:
+    source = tmp_path / "comments.csv"
+    source.write_text(header + "0,1\n", encoding="utf-8")
+    report = validate_dependencies(
+        _project(_run(
+            0,
+            sources=(_bc_source(source, columns=columns),),
+            activations=(_bc_activation(source),),
+        )),
+        options=ValidationOptions(check_bc_csv_headers=True),
+    )
+    result = [item for item in report.findings if item.kind == "csv_header"]
+    assert len(result) == 1
+    assert result[0].status == status
+    assert detail in result[0].detail
+    assert report.passed is (status == "present")
 
 
 def test_csv_header_bounds_and_utf8_bom(tmp_path: Path) -> None:
