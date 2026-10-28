@@ -6,7 +6,9 @@ QGIS solvers/providers are never launched. Physical checks are explicit.
 
 from __future__ import annotations
 
+import os
 import sqlite3
+from collections import OrderedDict
 from pathlib import Path
 from unittest.mock import patch
 
@@ -542,3 +544,35 @@ def test_existing_mif_mid_reader_discovers_linked_1d_file(tmp_path: Path) -> Non
         and item.status == "missing"
         for item in missing.issues
     )
+
+
+def test_shapefile_companions_use_matching_extension_case_not_fuzzy_search(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from pytuflow import validation_gis
+
+    primary = tmp_path / "1d_xs_case.SHP"
+    header = bytearray(100)
+    header[32:36] = (1).to_bytes(4, "little")
+    primary.write_bytes(header)
+    primary.with_suffix(".DBF").write_bytes(b"test")
+    primary.with_suffix(".SHX").write_bytes(b"test")
+
+    class FakeDBF:
+        field_names = ("Source",)
+
+        def __init__(self, filename: str, **kwargs: object) -> None:
+            assert Path(filename).name == "1d_xs_case.DBF"
+
+        def __iter__(self):
+            yield OrderedDict((("Source", "linked.csv"),))
+
+    monkeypatch.setattr(validation_gis, "DBF", FakeDBF)
+    sources, identifiers, names = validation_gis._scan_shapefile(primary)
+    assert not identifiers and not names
+    assert tuple(x.name for x in sources) == ("linked.csv",)
+
+    if os.name != "nt":
+        primary.with_suffix(".SHX").rename(primary.with_suffix(".shx"))
+        with pytest.raises(ValueError, match="matching DBF and SHX"):
+            validation_gis._scan_shapefile(primary)
