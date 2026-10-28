@@ -1,6 +1,6 @@
 # Phantom-branch MVP: standalone deferred batch validation
 
-**Status:** development candidate, draft PR #47. Do not port to Chain-Frost,
+**Status:** development candidate, PR #47 (unmerged). Do not port to Chain-Frost,
 change the Chain-Frost roadmap or migrate ryan-tools until native acceptance.
 
 ## Objective
@@ -12,7 +12,8 @@ Preserve the canonical TCF/Context/Set Variable/TEF parser and eager defaults.
 
 The implementation deliberately keeps the orchestration in the new
 `pytuflow/batch_parser.py`. It does not add another method to TCF or change
-existing parser function implementations.
+existing TCF/Context parser method contracts. The only inherited BC method
+change extracts the already-supported TS1 group-key rule into a shared helper.
 
 ## Use
 
@@ -55,9 +56,12 @@ generate valid run combinations.
    source files. All missing/unsupported/unresolved findings are attributed to
    the original run and command. The report passes only when all are present.
 
-Standard file, wildcard, implicit/explicit GPKG layer, BC CSV and read-only
-journal/alias protections are adopted from the reviewed PR #43. Attribute
-discovery is separated from the normal TCF parse and from physical validation.
+Standard file, wildcard, implicit/explicit GPKG layer and BC CSV checks
+are adopted from the reviewed PR #43. The stable read-only GeoPackage
+connection and journal/alias safety now live in PyTUFLOW core as
+`pytuflow._tmf.gpkg_safety.readonly_gpkg`; both primary metadata checks
+and batch feature scanning share it. Attribute discovery is separated from
+ordinary TCF parsing and is not implicitly invoked by eager methods.
 
 ## Contract and limits
 
@@ -70,17 +74,24 @@ discovery is separated from the normal TCF parse and from physical validation.
 - The MVP validates file and selected GIS-layer *existence*. It is not a
   raster-content validator, TUFLOW solver or guarantee of model hydraulic
   correctness.
-- Direct feature-file link inspection supports GeoPackage and Shapefile
+- Direct GIS feature-file link inspection supports GeoPackage and Shapefile
   metadata using standard library SQLite and the existing `dbfread` package.
-  Unknown GIS feature schemas/formats are reported unresolved when they require
-  file-valued attribute inspection. Do not treat such reports as success.
-- MIF/MID attribute-linked source inspection, source-level GIS table joins
-  beyond tested types, and broader inactive candidate BC file selection are
-  still compatibility gates before unrestricted 'all TUFLOW inputs' claims.
-  The native M480/M36/M240 campaign must quantify these gaps.
-- GeoPackage metadata safety is strict: active WAL/rollback journals, uncertain
-  symlink targets and hard-linked aliases fail closed rather than being read
-  through an unsafe mutable database view.
+  MIF/MID attributes are read through the existing PyTUFLOW
+  `GISAttributes` provider, with no independent MIF/MID syntax parser.
+  Existing PyTUFLOW also provides shared 1D attribute positioning, M/QO
+  classification, BC grouping and context-aware cached constant evaluation.
+  Unknown GIS feature schemas/formats are reported unresolved when they
+  require file-valued attribute inspection.
+- MIF/MID 1D and BC inspection now has synthetic acceptance coverage; non-
+  standard GIS table links, unavailable geometry providers and unexercised
+  mixed-network GIS types remain explicit unresolved boundaries. The native
+  M480/M36/M240 campaign must measure correctness and performance at the
+  exact candidate SHA before unrestricted all-input claims.
+- Core GeoPackage inspection is strictly read-only: active WAL/rollback
+  journals, uncertain symlink targets and hard-linked aliases fail closed.
+  Existing eager GIS APIs are intentionally not altered to silently introduce
+  new read restrictions; this explicit core helper is reusable by those APIs
+  if a separate, compatible migration is authorised.
 - Physical case policy uses `TCF.config.case_sensitivity` (Linux -cs0 default
   with explicit -cs1/-cs2 and native Windows filename handling). An override
   disagreeing with the parsed model is rejected.
@@ -91,7 +102,8 @@ discovery is separated from the normal TCF parse and from physical validation.
 ## Acceptance gates
 
 - Hosted Windows 3.12/3.14 and Ubuntu 3.12 validator+fragment+batch tests;
-  existing original-library regressions are an independent gate.
+  original-library regressions use pytest 9.2.0 in both baseline and current
+  dependencies with corrected regression-harness isolation lifecycle hooks.
 - Public TCF/GPKG + missing file/layer + CSV + linked 1D file and BC identifier
   fixtures; precise fail-closed unresolved cases.
 - Native local agent: record/consumer parity and file/layer/BC-header checks on
