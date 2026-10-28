@@ -6,6 +6,7 @@ on:
       - "pytuflow/_tmf/**"
       - "tests/test_input_append_accounting.py"
       - "tests/test_batch_dependencies.py"
+      - "tests/test_retired_batch_graph.py"
       - "tests/test_fragment_dependencies.py"
       - "tests/test_compiled_scope.py"
       - "tests/test_effective_dependency_manifests.py"
@@ -70,6 +71,7 @@ jobs:
           python -m pytest -q
           tests/test_input_append_accounting.py
           tests/test_batch_dependencies.py
+          tests/test_retired_batch_graph.py
           tests/test_fragment_dependencies.py
           tests/test_compiled_scope.py
           tests/test_effective_dependency_manifests.py
