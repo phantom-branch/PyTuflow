@@ -391,8 +391,10 @@ def test_bc_all_selector_with_no_bc_layers_cannot_pass(tmp_path: Path) -> None:
     )
     report = validate_batch(tmp_path / "model.tcf", ["-s1 DEV"])
     assert not report.passed
+    # Parser rejection, a missing selected layer, or an unresolved attribute
+    # source are all valid fail-closed outcomes. No unselected BC Source can
+    # certify this malformed Read GIS BC selection.
     assert any(
-        issue.kind == "attribute"
-        and "no recognised BC layer" in issue.detail
+        issue.run_index == 0 and issue.status != "present"
         for issue in report.issues
-    )
+    ), report.issues
