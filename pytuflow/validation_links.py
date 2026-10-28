@@ -145,7 +145,14 @@ def extend_gis_dependencies(
     for run, link, path, selector, implicit, is_bc in needs:
         result: AttributeInspection = inspected[(path, selector, implicit)]
 
-        def issue(detail: str) -> None:
+        def issue(
+            detail: str,
+            *,
+            run: BatchDependencyRun = run,
+            link: BatchInputReference = link,
+            path: Path = path,
+            selector: str = selector,
+        ) -> None:
             findings.append(
                 ValidationFinding(
                     run_index=run.index,
