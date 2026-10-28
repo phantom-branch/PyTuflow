@@ -5,8 +5,8 @@ on:
     paths:
       - "pytuflow/_tmf/**"
       - "tests/test_input_append_accounting.py"
-      - "tests/test_setting_group_reuse.py"
       - "tests/test_batch_dependencies.py"
+      - "tests/test_retired_batch_graph.py"
       - "tests/test_fragment_dependencies.py"
       - "tests/test_compiled_scope.py"
       - "tests/test_effective_dependency_manifests.py"
@@ -70,9 +70,8 @@ jobs:
         run: >
           python -m pytest -q
           tests/test_input_append_accounting.py
-          tests/test_setting_group_reuse.py
-          tests/test_group_constructor_guards.py
           tests/test_batch_dependencies.py
+          tests/test_retired_batch_graph.py
           tests/test_fragment_dependencies.py
           tests/test_compiled_scope.py
           tests/test_effective_dependency_manifests.py
@@ -85,7 +84,6 @@ jobs:
           tests/test_fragment_filename_attribution.py
           tests/test_fragment_key_phase_attribution.py
           tests/test_batch_ordered_inputs.py
-          tests/test_compiled_control_tree.py
           tests/test_compiled_dependency_plan.py
           tests/test_profile_capture.py
           tests/test_construction_attribution.py

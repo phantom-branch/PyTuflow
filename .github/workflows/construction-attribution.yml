@@ -32,7 +32,7 @@ jobs:
       - name: Validate accounting and real parser parity
         run: python -m pytest -q tests/test_construction_attribution.py tests/test_profile_construction_attribution.py tests/test_construction_attribution_failures.py tests/test_construction_attribution_integration.py
       - name: Preserve existing batch contracts
-        run: python -m pytest -q tests/test_batch_dependencies.py tests/test_batch_ordered_inputs.py tests/test_compiled_control_tree.py
+        run: python -m pytest -q tests/test_batch_dependencies.py tests/test_batch_ordered_inputs.py
       - name: Check bounded CLI help
         run: python -m tests.profile_construction_attribution --help
       - name: Compile diagnostics
