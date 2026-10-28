@@ -153,5 +153,5 @@ class Refh2bdy(Handler):
                     if a.shape != (self.mddf2013d, self.ncol_ifd):
                         a = np.reshape(a, (self.mddf2013d, self.ncol_ifd))
                     self.ifd = pd.DataFrame(a, columns=self.ifd_header)
-                    self.ifd.set_index('duration', inplace=True)
+                    self.ifd = self.ifd.set_index('duration')
                     self.line_no += self.mddf2013d

@@ -161,7 +161,7 @@ class TimeSeries(TabularOutput):
                 index_name = df1.index.name
                 if not share_idx:
                     col_names = misc.flatten([[index_name, x] for x in df1.columns])
-                    df1.reset_index(inplace=True, drop=False)
+                    df1 = df1.reset_index(drop=False)
                     df1 = df1[col_names]
 
                 df1.columns = [f'{x}/{dtype}/{df1.columns[i + 1]}' if x == index_name else f'{dtype}/{x}' for i, x in

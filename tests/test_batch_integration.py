@@ -1,4 +1,4 @@
-"""P4 compatibility gates for the stacked P1/P2/P3 implementation.
+"""Behavioral parity between the legacy graph-free batch evaluator and deferred contexts.
 
 These are tiny synthetic correctness fixtures, never throughput benchmarks.
 The public tutorial benchmark is a separate, verified-data acceptance gate.
@@ -86,7 +86,7 @@ def test_nested_declarations_match_graph_off_and_uncached(tmp_path: Path) -> Non
 
     assert graph.passed and previous_cached.passed and uncached.passed
     assert _projection(graph) == _projection(previous_cached) == _projection(uncached)
-    assert graph.compiled_graph_nodes > 0
+    assert graph.compiled_graph_nodes == 0
     assert previous_cached.compiled_graph_nodes == 0
     assert graph.compiled_graph_bypassed_reads >= 0
     for run in graph.runs:
@@ -101,7 +101,7 @@ def test_nested_declarations_match_graph_off_and_uncached(tmp_path: Path) -> Non
         assert len(run.database_sources) == 3
 
 
-def test_invariant_literal_runs_can_elide_only_safe_run_states(tmp_path: Path) -> None:
+def test_invariant_literal_runs_keep_exact_independent_states(tmp_path: Path) -> None:
     source = tmp_path / "invariant.tcf"
     source.write_text(
         "Read GIS Code == gis/static_code.shp\n"
@@ -115,12 +115,13 @@ def test_invariant_literal_runs_can_elide_only_safe_run_states(tmp_path: Path) -
     uncached = model.collect_batch_dependencies(flags, cache_scopes=False)
     assert graph.passed and no_graph.passed and uncached.passed
     assert _projection(graph) == _projection(no_graph) == _projection(uncached)
+    # Removed graph prototypes must not be necessary for exact dependencies.
     assert graph.contexts_reused == 0
-    assert graph.invariant_projection_reuses > 0
-    assert graph.input_runstates_elided > 0
-    assert graph.input_runstates_constructed < no_graph.input_runstates_constructed
-    assert no_graph.input_runstates_elided == 0
-    assert graph.compiled_graph_nodes == 2
+    assert graph.compiled_graph_nodes == 0
+    assert graph.invariant_projection_reuses == 0
+    assert graph.input_runstates_elided == 0
+    assert graph.input_group_state_reuses == 0
+    assert graph.input_runstates_constructed == no_graph.input_runstates_constructed
     # Each new invocation independently constructs its own immutable output
     # snapshot. A second call cannot reuse mutable run state from the first.
     second = model.collect_batch_dependencies(("-s1 EXTRA -e1 TP_EXTRA",))
@@ -168,49 +169,7 @@ def test_dynamic_sources_use_original_resolution(tmp_path: Path, source_line: st
     assert graph.input_runstates_elided == 0
 
 
-def test_single_run_keeps_graph_metadata_without_unused_prototypes(tmp_path: Path) -> None:
-    source = tmp_path / 'single.tcf'
-    source.write_text(
-        'Set Variable UNUSED == one\nRead Grid Zpts == terrain.tif\n',
-        encoding='utf-8',
-    )
-    model = TCF(source)
-    with patch(
-        'pytuflow._tmf.batch_dependencies.LiteralInputGroupCache',
-        side_effect=AssertionError('single-run cache cannot be reused'),
-    ):
-        graph = model.collect_batch_dependencies(('-e1 FIRST',))
-    baseline = model.collect_batch_dependencies(('-e1 FIRST',), compile_tree=False)
-    assert graph.passed and _projection(graph) == _projection(baseline)
-    assert graph.compiled_graph_nodes == 2
-    assert graph.compiled_input_group_candidates == 1
-    assert graph.input_group_cache_bypass_reason == 'single-run'
-    assert graph.reusable_input_groups == graph.input_group_state_reuses == 0
-    assert graph.input_group_certification_seconds == 0.0
-
-
-def test_zero_candidate_graph_does_not_prepare_or_probe_group_cache(tmp_path: Path) -> None:
-    source = tmp_path / 'unsupported.tcf'
-    source.write_text('Read GIS BC == gis/2d_bc.shp\n', encoding='utf-8')
-    model = TCF(source)
-    flags = ('-e1 FIRST', '-e1 SECOND')
-    with patch(
-        'pytuflow._tmf.batch_dependencies.LiteralInputGroupCache',
-        side_effect=AssertionError('no eligible input'),
-    ):
-        graph = model.collect_batch_dependencies(flags)
-    baseline = model.collect_batch_dependencies(flags, compile_tree=False)
-    assert graph.passed and _projection(graph) == _projection(baseline)
-    assert graph.compiled_graph_nodes == 1
-    assert graph.compiled_input_group_candidates == 0
-    assert graph.input_group_cache_bypass_reason == 'no-candidates'
-    assert sum(dict(graph.input_group_bypass_reasons).values()) == 1
-    assert graph.input_group_fallbacks == ()
-    assert graph.input_runstates_constructed == 2
-    assert graph.input_runstates_elided == 0
-
-
-def test_group_cache_does_not_consume_streamed_flags_ahead(tmp_path: Path) -> None:
+def test_graph_free_batch_does_not_consume_streamed_flags_ahead(tmp_path: Path) -> None:
     source = tmp_path / 'stream.tcf'
     source.write_text(
         'Set Variable UNUSED == one\nRead Grid Zpts == terrain.tif\n',
@@ -237,22 +196,18 @@ def test_group_cache_does_not_consume_streamed_flags_ahead(tmp_path: Path) -> No
         ('-e1 FIRST', '-e1 SECOND'), compile_tree=False,
     )
     assert graph.passed and _projection(graph) == _projection(baseline)
-    assert graph.input_group_cache_bypass_reason is None
-    assert graph.input_group_state_reuses == 1
-    assert graph.reusable_input_groups == 1
-    assert graph.input_runstates_constructed == 3
+    assert graph.input_group_cache_bypass_reason == 'graph-disabled'
+    assert graph.input_group_state_reuses == 0
+    assert graph.reusable_input_groups == 0
+    assert graph.input_runstates_constructed == baseline.input_runstates_constructed
 
 
-def test_empty_sized_batch_rejects_before_compiling(tmp_path: Path) -> None:
+def test_empty_sized_batch_rejects_before_evaluation(tmp_path: Path) -> None:
     source = tmp_path / 'empty.tcf'
     source.write_text('Read Grid Zpts == terrain.tif\n', encoding='utf-8')
     model = TCF(source)
-    with patch(
-        'pytuflow._tmf.batch_dependencies.CompiledControlTree.compile',
-        side_effect=AssertionError('empty batch must not compile'),
-    ):
-        with pytest.raises(ValueError, match='At least one simulation'):
-            model.collect_batch_dependencies(())
+    with pytest.raises(ValueError, match='At least one simulation'):
+        model.collect_batch_dependencies(())
 
 
 def test_failed_run_work_is_reported_separately_from_successful_projection(tmp_path: Path) -> None:
@@ -271,12 +226,10 @@ def test_failed_run_work_is_reported_separately_from_successful_projection(tmp_p
     baseline = model.collect_batch_dependencies(flags, compile_tree=False)
     assert _projection(graph) == _projection(baseline)
     assert graph.runs[1].error and not graph.runs[1].ordered_inputs
-    assert graph.input_group_state_reuses == graph.input_runstates_elided == 2
-    assert graph.input_runstates_constructed == 4
-    assert graph.failed_run_input_runstates_constructed == 1
-    assert graph.failed_run_input_runstates_elided == 1
-    assert baseline.failed_run_input_runstates_constructed == 2
-    assert baseline.failed_run_input_runstates_elided == 0
+    assert graph.input_group_state_reuses == graph.input_runstates_elided == 0
+    assert graph.input_runstates_constructed == baseline.input_runstates_constructed
+    assert graph.failed_run_input_runstates_constructed == baseline.failed_run_input_runstates_constructed
+    assert graph.failed_run_input_runstates_elided == 0
     assert graph.input_group_key_seconds >= 0.0
     assert graph.input_group_clone_seconds >= 0.0
     assert graph.input_group_certification_seconds >= 0.0

@@ -51,7 +51,7 @@ class ArchBridge(Converter):
         settings = get_fm2estry_settings() if settings is None else settings
         tables = []
         section = unit.xs[['x', 'y']]
-        section.set_index('x', inplace=True)
+        section = section.set_index('x')
         for _, arch in unit.arches.iterrows():
             section_ = section.copy()
             # make sure the start and finish points are in the section
@@ -61,8 +61,8 @@ class ArchBridge(Converter):
             if arch.finish not in section_.index:
                 section_.loc[arch.finish] = 0.  # setting to zero first stops future warning
                 section_.loc[arch.finish] = np.nan
-            section_.sort_index(inplace=True)
-            section_.interpolate(method='index', inplace=True, limit_direction='both')
+            section_ = section_.sort_index()
+            section_ = section_.interpolate(method='index', limit_direction='both')
 
             # section just where arch is
             section_['deck'] = arch['springing level']  # temporarily assume deck level is equal to springing level
@@ -92,8 +92,8 @@ class ArchBridge(Converter):
                 return tables[0]
             tables = [df.set_index('h') for df in tables]
             comb = pd.concat(tables, axis=1)
-            comb.sort_index(inplace=True)
-            comb.interpolate(method='index', inplace=True, limit_direction='both')
+            comb = comb.sort_index()
+            comb = comb.interpolate(method='index', limit_direction='both')
             comb['total_w'] = comb.sum(axis=1)
             return comb[['total_w']].rename(columns={'total_w': 'w'}).reset_index(drop=False)
         else:

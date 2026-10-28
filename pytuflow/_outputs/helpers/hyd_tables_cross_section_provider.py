@@ -107,13 +107,13 @@ class HydTablesCrossSectionProvider:
         if xs_type == 'XZ':
             df_xs = df[df.columns[:4]].dropna()
             df_proc = df[df.columns[5:-1]].dropna(how='all').copy()
-            df_proc.rename(columns={'elevation.1': 'elevation'}, inplace=True)
+            df_proc = df_proc.rename(columns={'elevation.1': 'elevation'})
         else:
             df_xs = pd.DataFrame(columns=['points', 'distance', 'elevation', 'manning n'])
             df_proc = df[df.columns[:-1]].dropna(how='all')
-        df_xs.set_index('distance', inplace=True)
+        df_xs = df_xs.set_index('distance')
         df_xs.columns = df_xs.columns.str.split('(', n=1).str[0]
-        df_proc.set_index('elevation', inplace=True)
+        df_proc = df_proc.set_index('elevation')
         df_proc.columns = df_proc.columns.str.split('(', n=1).str[0]
         db_entry = CrossSectionEntry(xs_id, xs_name, xs_type, df_xs, df_proc)
         self.database[xs_id] = db_entry

@@ -1076,11 +1076,11 @@ def generate_bridge_losses(input_section: typing.Union[pd.DataFrame, np.ndarray]
         if shape == 'COEF':
             if pier_config is not None:
                 df = pd.DataFrame([[v, k] for k, v in pier_coeff_to_config.items()], columns=['config', 'coeff'])
-                df.set_index('config', inplace=True)
+                df = df.set_index('config')
                 if pier_config not in df.index:
                     df.loc[pier_config] = np.nan
-                    df.sort_index(inplace=True)
-                    df.interpolate(method='index', inplace=True, limit_direction='both')
+                    df = df.sort_index()
+                    df = df.interpolate(method='index', limit_direction='both')
                 pier_coeff = df.loc[pier_config, 'coeff']
             else:
                 pier_coeff = 0

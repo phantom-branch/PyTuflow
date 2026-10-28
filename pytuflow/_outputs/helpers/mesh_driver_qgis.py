@@ -207,7 +207,7 @@ class QgisMeshDriver(MeshDriver):
             return pd.DataFrame()
 
         df = pd.DataFrame(data, columns=['time', f'{name}/{stnd_name}'])
-        df.set_index('time', inplace=True)
+        df = df.set_index('time')
         return df
 
     def section(self, linestring: list[Point], data_type: str, time: TimeLike,
@@ -256,7 +256,7 @@ class QgisMeshDriver(MeshDriver):
 
         if valid:
             df = pd.DataFrame(np.array(data_), columns=['offset', data_type])
-            df.set_index('offset', inplace=True)
+            df = df.set_index('offset')
 
         return df
 
@@ -352,7 +352,7 @@ class QgisMeshDriver(MeshDriver):
         df = pd.DataFrame()
         if valid:
             df = pd.DataFrame(data_, columns=[data_type, 'elevation'])
-            df.set_index('elevation', inplace=True)
+            df = df.set_index('elevation')
 
         return df
 

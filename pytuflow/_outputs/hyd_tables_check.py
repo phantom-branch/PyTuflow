@@ -302,7 +302,7 @@ class HydTablesCheck(TabularOutput):
                 df_.columns = dtypes2
                 if df_ is None or df_.empty:
                     continue
-                df_.reset_index(inplace=True)
+                df_ = df_.reset_index()
                 df_.columns = pd.MultiIndex.from_product([[f'{loc}/{proc_type}'], df_.columns])
                 df1 = pd.concat([df1, df_], axis=1) if not df1.empty else df_
 

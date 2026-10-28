@@ -125,7 +125,7 @@ class PierLossBridge(SubHandler):
                 a = np.reshape(a, (self.npts_us, self.ncol_xs))
             self.xs_ups = pd.DataFrame(a, columns=self.xs_headers)
             self.xs_ups[['x', 'y', 'n', 'top_level']] = self.xs_ups[['x', 'y', 'n', 'top_level']].astype('float')
-            self.xs_ups.drop(['dummy'], axis=1, inplace=True)
+            self.xs_ups = self.xs_ups.drop(['dummy'], axis=1)
             self.line_no += self.npts_us
             if np.isnan(self.bed_level):
                 self.bed_level = float(str(self.xs_ups.y.min()))
@@ -137,7 +137,7 @@ class PierLossBridge(SubHandler):
                 a = np.reshape(a, (self.npts_ds, self.ncol_xs))
             self.xs_dns = pd.DataFrame(a, columns=self.xs_headers)
             self.xs_dns[['x', 'y', 'n', 'top_level']] = self.xs_dns[['x', 'y', 'n', 'top_level']].astype('float')
-            self.xs_dns.drop(['dummy'], axis=1, inplace=True)
+            self.xs_dns = self.xs_dns.drop(['dummy'], axis=1)
             self.line_no += self.npts_ds
             bed_level = float(str(self.xs_ups.y.min()))
             if np.isnan(self.bed_level):

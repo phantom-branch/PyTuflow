@@ -69,10 +69,10 @@ class HydTablesChannelProvider:
         if not self._stnd_col_names:
             self._stnd_col_names = [Output._get_standard_data_type_name(x) for x in df.columns]
         df.columns = self._stnd_col_names
-        df.drop(df.columns[df.columns.str.contains('unnamed', regex=False)], axis=1, inplace=True)
+        df = df.drop(df.columns[df.columns.str.contains('unnamed', regex=False)], axis=1)
         if df.message.dtype == np.float64:
             df.message = df.message.astype(str)
             df.message = ''
-        df.set_index('elevation', inplace=True)
+        df = df.set_index('elevation')
         df.columns = df.columns.str.split('(', n=1).str[0]
         self.database[channel_id] = df

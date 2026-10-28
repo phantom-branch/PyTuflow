@@ -13,20 +13,20 @@ from dataclasses import dataclass, replace
 from time import perf_counter
 from typing import Any, cast
 
-from .batch_dependencies import (
-    BatchContext,
+from .compiled_scope import ScopeProgram, builtin_translation
+from .context import Context
+from .dependency_records import (
     BatchDependencyRun,
     BatchInputCommand,
     BatchInputReference,
 )
-from .compiled_scope import ScopeProgram, builtin_translation
-from .context import Context
 from .effective_dependencies import EffectiveDependencyManifest
 from .file_reference import (
     DeferredDatabaseActivation,
     DeferredDatabaseSource,
     FileReference,
 )
+from .fragment_context import FragmentContextBase, raw_class_attribute
 
 _TOKEN = re.compile(r"<<([^<>]+)>>")
 _LIMIT = 10000
@@ -173,7 +173,7 @@ class ExpressionPool:
         return value
 
 
-class _FragmentContext(BatchContext):
+class _FragmentContext(FragmentContextBase):
     event_variables: dict[str, str]
     _batch_variable_assignments: tuple[tuple[Any, tuple[str, str]], ...]
 
@@ -363,9 +363,6 @@ def _original_control_file_context(cf: Any) -> bool:
     and no instance override can be treated as immutable fragments. Inspect
     raw definitions, avoiding execution of untrusted context descriptors.
     """
-    from .batch_dependencies import (
-        _raw_class_attribute,  # pyright: ignore[reportPrivateUsage]
-    )
     from .cf.cf_build_state import (
         _CONTROL_FILE_BUILD_CONTEXT,  # pyright: ignore[reportPrivateUsage]
     )
@@ -394,8 +391,8 @@ def _original_control_file_context(cf: Any) -> bool:
     return (
         type(namespace) is dict
         and "context" not in namespace
-        and _raw_class_attribute(cls, "context") is expected
-        and _raw_class_attribute(cls, "__getattribute__") is object.__getattribute__
+        and raw_class_attribute(cls, "context") is expected
+        and raw_class_attribute(cls, "__getattribute__") is object.__getattribute__
     )
 
 
@@ -841,14 +838,14 @@ def collect_file_dependencies(
     callbacks expose mutable parser state. Unsupported source types use the
     ordinary batch evaluator; a failed run publishes no partial fragments.
     """
-    from .batch_dependencies import collect_batch_dependencies
     from .cf.cf_run_state import prepare_run_context
+    from .deferred_dependency_fallback import collect_fallback_dependencies
 
     started = perf_counter()
     try:
         plan = _Plan(model)
     except Exception as exc:  # noqa: BLE001 - incomplete compilation uses the authoritative evaluator
-        fallback = collect_batch_dependencies(model, run_flags)
+        fallback = collect_fallback_dependencies(model, run_flags)
         return FragmentBatchResult(
             fallback.runs,
             (),

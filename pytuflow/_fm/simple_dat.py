@@ -34,7 +34,7 @@ class FMDAT(DAT):
                 xs.name = xs.id
                 xs.sub_name = xs.sub_type
             self.df = pd.DataFrame(d)
-            self.df.set_index('ID', inplace=True)
+            self.df = self.df.set_index('ID')
         return self.df
 
     def unit(self, id_: str, default: typing.Any = None, return_only_one: bool = False) -> Handler:

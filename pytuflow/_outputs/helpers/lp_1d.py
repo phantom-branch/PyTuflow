@@ -54,7 +54,7 @@ class LP1D:
             df_ = self.chan_info.loc[branch, self._columns]
             df_.index.name = 'channel'
             df_['branch_id'] = [i for _ in range(df_.shape[0])]
-            df_.reset_index(inplace=True)
+            df_ = df_.reset_index()
             df = pd.concat([df, df_], ignore_index=True, axis=0) if not df.empty else df_
         return df
 

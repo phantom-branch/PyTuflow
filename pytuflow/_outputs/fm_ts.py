@@ -685,7 +685,7 @@ class FMTS(INFO):
             d['name'] = d['id']
 
         self._node_info = pd.DataFrame(d)
-        self._node_info.set_index('id', inplace=True)
+        self._node_info = self._node_info.set_index('id')
 
     def _load_channels(self):
         """LoadsFM Channels into channel_info pd.DataFrame."""
@@ -770,7 +770,7 @@ class FMTS(INFO):
                 d['rbds_obvert'].append(np.nan)
 
         self._channel_info = pd.DataFrame(d)
-        self._channel_info.set_index('id', inplace=True)
+        self._channel_info = self._channel_info.set_index('id')
 
     def _init_lp(self, dfconn: pd.DataFrame, branch_limit) -> pd.DataFrame:
         df = self._lp.init_lp(dfconn, branch_limit)

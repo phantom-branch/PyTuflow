@@ -463,7 +463,7 @@ class LP2D(LongProfileBase):
         if df is None or df.empty:
             return pd.DataFrame()
 
-        df.reset_index(inplace=True)
+        df = df.reset_index()
         df['branch_id'] = 0
         df['node_string'] = self.name
         return df[['offset', 'branch_id', 'node_string'] + data_types_copy]
