@@ -22,7 +22,7 @@ from typing import Literal
 
 from dbfread import DBF
 
-from .validation import _gpkg_contents
+from .validation import _gpkg_contents, _gpkg_file_snapshot
 
 
 @dataclass(frozen=True, slots=True)
@@ -505,6 +505,8 @@ def inspect_gis_attribute_sources(
             if before_error:
                 raise ValueError(before_error)
             canonical = path.resolve(strict=True)
+            before_alias = path.lstat()
+            before_source = canonical.stat()
             with closing(sqlite3.connect(
                 f"{canonical.as_uri()}?mode=ro&immutable=1", uri=True
             )) as database:
@@ -574,10 +576,18 @@ def inspect_gis_attribute_sources(
                         results[key] = AttributeInspection(
                             "unresolved", detail=f"Cannot inspect GIS attributes: {exc}"
                         )
-            # Refuse a result if the journal/symlink/file changed or became
-            # unsafe while feature records were read.
+            # The metadata reader's own snapshot is insufficient when
+            # the attribute connection sits between two successful metadata
+            # reads. Preserve identity and size/time across the whole phase.
             _, after_error = _gpkg_contents(path)
-            if after_error or path.resolve(strict=True) != canonical:
+            unchanged = (
+                path.resolve(strict=True) == canonical
+                and _gpkg_file_snapshot(path.lstat())
+                == _gpkg_file_snapshot(before_alias)
+                and _gpkg_file_snapshot(canonical.stat())
+                == _gpkg_file_snapshot(before_source)
+            )
+            if after_error or not unchanged:
                 for selector, implicit in selectors:
                     results[(path, selector, implicit)] = AttributeInspection(
                         "unresolved",
