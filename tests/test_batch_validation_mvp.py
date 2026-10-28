@@ -275,7 +275,10 @@ def _bc_gpkg(path: Path, *, name: str) -> None:
         )
 
 
-def test_missing_active_bc_identifier_fails_closed(tmp_path: Path) -> None:
+@pytest.mark.parametrize("read_command", ["Read GIS BC", "Read MI BC"])
+def test_missing_active_bc_identifier_fails_closed(
+    tmp_path: Path, read_command: str,
+) -> None:
     _bc_gpkg(tmp_path / "bc.gpkg", name="NOT_IN_DATABASE")
     (tmp_path / "bc.csv").write_text(
         "Name,Source,Column 1,Column 2\nvalid,inflow.csv,Time,Flow\n",
@@ -286,7 +289,7 @@ def test_missing_active_bc_identifier_fails_closed(tmp_path: Path) -> None:
     )
     (tmp_path / "model.tcf").write_text(
         "BC Database == bc.csv\n"
-        "Read GIS BC == bc.gpkg >> 2d_bc_lines\n",
+        f"{read_command} == bc.gpkg >> 2d_bc_lines\n",
         encoding="utf-8",
     )
     result = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
@@ -327,8 +330,9 @@ def test_missing_root_control_file_cannot_pass_empty_inventory(tmp_path: Path) -
 
 
 @pytest.mark.parametrize("database_first", [True, False])
+@pytest.mark.parametrize("read_command", ["Read GIS BC", "Read MI BC"])
 def test_unused_bc_database_source_does_not_create_missing_file(
-    tmp_path: Path, database_first: bool,
+    tmp_path: Path, database_first: bool, read_command: str,
 ) -> None:
     _bc_gpkg(tmp_path / "bc.gpkg", name="valid")
     (tmp_path / "bc.csv").write_text(
@@ -339,7 +343,7 @@ def test_unused_bc_database_source_does_not_create_missing_file(
     )
     (tmp_path / "inflow.csv").write_text("Time,Flow\n0,5\n", encoding="utf-8")
     database = "BC Database == bc.csv\n"
-    gis = "Read GIS BC == bc.gpkg >> 2d_bc_lines\n"
+    gis = f"{read_command} == bc.gpkg >> 2d_bc_lines\n"
     (tmp_path / "model.tcf").write_text(
         database + gis if database_first else gis + database,
         encoding="utf-8",
@@ -620,3 +624,32 @@ def test_shapefile_companions_use_matching_extension_case_not_fuzzy_search(
         primary.with_suffix(".SHX").rename(primary.with_suffix(".shx"))
         with pytest.raises(ValueError, match="matching DBF and SHX"):
             validation_gis._scan_shapefile(primary)
+
+
+
+def test_ordinary_read_gis_code_checks_shapefile_companions(tmp_path: Path) -> None:
+    """Shapefile physical checks cannot depend on 1D attribute inspection."""
+    primary = tmp_path / "2d_code_area.shp"
+    primary.write_bytes(b"shapefile fixture")
+    (tmp_path / "model.tcf").write_text(
+        "Read GIS Code == 2d_code_area.shp\n", encoding="utf-8"
+    )
+    incomplete = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert not incomplete.passed
+    assert any(
+        item.status == "missing" and "2d_code_area.dbf" in item.detail
+        for item in incomplete.issues
+    ), incomplete.issues
+
+    primary.with_suffix(".dbf").write_bytes(b"dbf fixture")
+    missing_shx = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert not missing_shx.passed
+    assert any(
+        item.status == "missing" and "2d_code_area.shx" in item.detail
+        for item in missing_shx.issues
+    ), missing_shx.issues
+
+    primary.with_suffix(".shx").write_bytes(b"shx fixture")
+    complete = validate_batch_inputs(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert complete.passed, complete.issues
+    assert complete.gis_files_scanned == 0
