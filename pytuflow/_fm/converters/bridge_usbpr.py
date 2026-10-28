@@ -91,15 +91,15 @@ class USBPRBridge(PierLossBridge):
         # get left and right abutment points
         xmin = self.unit.arches.start.min()
         xmax = self.unit.arches.finish.max()
-        xs.set_index('x', inplace=True)
+        xs = xs.set_index('x')
         if xmin not in xs.index:
             xs.loc[xmin] = 0.  # avoids future warning by appending a row of zeros then changing to nan
             xs.loc[xmin] = np.nan
         if xmax not in xs.index:
             xs.loc[xmax] = 0.  # avoids future warning by appending a row of zeros then changing to nan
             xs.loc[xmax] = np.nan
-        xs.sort_index(inplace=True)
-        xs.interpolate(method='index', inplace=True, limit_direction='both')
+        xs = xs.sort_index()
+        xs = xs.interpolate(method='index', limit_direction='both')
         left_idx = xs.index.get_loc(xmin)
         if isinstance(left_idx, slice):
             left_idx = xs.reset_index().iloc[left_idx].y.idxmax()

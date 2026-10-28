@@ -151,7 +151,7 @@ class FMGuiCSVResult(FMResultDriver):
         for res_type, ind, nrows in self.find_results():
             self.result_types.append(res_type)
             df = pd.read_csv(self.fpath, skiprows=ind, nrows=nrows)
-            df.set_index('Time (hr)', inplace=True)
+            df = df.set_index('Time (hr)')
             if not self.ids:
                 # noinspection PyUnresolvedReferences
                 self.ids = df.columns.tolist()
@@ -222,7 +222,7 @@ class FMPythonCSVResult(FMResultDriver):
         # docstring inherited
         self.df = pd.read_csv(self.fpath, header=[0, 1, 2])
         self.df.columns = self.df.columns.map(lambda x: '::'.join([y for y in x if 'Unnamed' not in y]))
-        self.df.set_index('Time (hr)', inplace=True)
+        self.df = self.df.set_index('Time (hr)')
         for col_name in self.df.columns:
             type_, id_ = col_name.split('::', 1)
             if type_.strip() not in self.result_types:
@@ -263,7 +263,7 @@ class FMZZNResult(FMResultDriver):
             df = pd.DataFrame(self.zzn.get_time_series_data(res_type))
             df.columns = [f'{res_type}::{x}' for x in self.ids]
             df['Time (hr)'] = self.timesteps
-            df.set_index('Time (hr)', inplace=True)
+            df = df.set_index('Time (hr)')
             if self.df is None:
                 self.df = df
             else:

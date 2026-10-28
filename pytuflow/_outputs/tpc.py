@@ -868,7 +868,7 @@ class TPC(INFO, ITimeSeries2D):
             try:
                 df = pd.read_csv(p, index_col=1, na_values='**********', encoding_errors='ignore')
                 df.index.name = 'id'
-                df.drop(df.columns[0], axis=1, inplace=True)
+                df = df.drop(df.columns[0], axis=1)
                 return df
             except Exception as e:
                 logger.warning(f'TPC._load_maximum_from_property(): Error loading maximums {prop}: {e}')

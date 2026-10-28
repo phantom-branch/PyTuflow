@@ -552,7 +552,7 @@ class GPKG1D(GPKGBase, INFO):
                 except (TypeError, ValueError):
                     d[col].append(np.nan)
         df = pd.DataFrame(d)
-        df.set_index('id', inplace=True)
+        df = df.set_index('id')
         return df
 
     def _load_channel_info(self, cur: 'Cursor'):
@@ -631,7 +631,7 @@ class GPKG1D(GPKGBase, INFO):
                 self._node_info = self._sqlite_return_to_df(ret, columns, type_map)
             else:
                 self._node_info = pd.DataFrame([], columns=columns + ['nchannel', 'channels'])
-                self._node_info.set_index('id', inplace=True)
+                self._node_info = self._node_info.set_index('id')
         else:
             cur.execute('SELECT ID as id FROM Geom_P;')
             ret = cur.fetchall()
@@ -641,7 +641,7 @@ class GPKG1D(GPKGBase, INFO):
                 self._node_info['channels'] = ''
             else:
                 self._node_info = pd.DataFrame([], columns=['id', 'nchannel', 'channels'])
-                self._node_info.set_index('id', inplace=True)
+                self._node_info = self._node_info.set_index('id')
 
         if self._node_info.empty:
             return

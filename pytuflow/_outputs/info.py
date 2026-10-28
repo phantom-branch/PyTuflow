@@ -672,10 +672,10 @@ class INFO(TimeSeries):
                     on_bad_lines=lambda x: x[:5] + [tuple(x[5:])],
                     encoding_errors='ignore'
                 )
-                self._node_info.drop('no', axis=1, inplace=True)
-                self._node_info.drop('Node', axis=0, inplace=True)
-                self._node_info.replace({'bed_level': '**********'}, np.nan, inplace=True)
-                self._node_info.replace({'top_level': '**********'}, np.nan, inplace=True)
+                self._node_info = self._node_info.drop('no', axis=1)
+                self._node_info = self._node_info.drop('Node', axis=0)
+                self._node_info = self._node_info.replace({'bed_level': '**********'}, np.nan)
+                self._node_info = self._node_info.replace({'top_level': '**********'}, np.nan)
                 self._node_info['bed_level'] = self._node_info['bed_level'].astype(float)
                 self._node_info['top_level'] = self._node_info['bed_level'].astype(float)
                 self._node_info['nchannel'] = self._node_info['nchannel'].astype(int)
@@ -713,7 +713,7 @@ class INFO(TimeSeries):
                     },
                     encoding_errors='ignore'
                 )
-                self._channel_info.drop('no', axis=1, inplace=True)
+                self._channel_info = self._channel_info.drop('no', axis=1)
                 try:
                     self._channel_info['ispipe'] = self._channel_info['flags'].str.match(r'.*[CR].*', False)
                 except AttributeError:
@@ -760,8 +760,8 @@ class INFO(TimeSeries):
         dtype = str if fpath.stem.endswith('_1d_CF') or fpath.stem.endswith('_1d_NF') else np.float32
         df = pd.read_csv(fpath, na_values='**********', index_col=1, dtype=dtype, encoding_errors='ignore')
         df.index.name = 'Time (h)'
-        df.drop(df.columns[0], axis=1, inplace=True)
-        df.rename(columns={x: self._csv_col_name_corr(x) for x in df.columns}, inplace=True)
+        df = df.drop(df.columns[0], axis=1)
+        df = df.rename(columns={x: self._csv_col_name_corr(x) for x in df.columns})
         if dtype is str:
             df.index = df.index.astype(np.float32)
         return df
