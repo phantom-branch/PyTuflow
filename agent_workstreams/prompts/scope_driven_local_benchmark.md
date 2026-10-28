@@ -26,7 +26,7 @@ From the independent PR #45 checkout:
     py -3.14 -m compileall -q pytuflow/_tmf/scope_driven_dependencies.py tests/test_scope_driven_dependencies.py tests/benchmark_scope_driven_dependencies.py
     py -3.14 -m ruff check pytuflow/_tmf/scope_driven_dependencies.py tests/test_scope_driven_dependencies.py tests/benchmark_scope_driven_dependencies.py
 
-If a test fails, reproduce with unchanged master and PR #45. Fix only focused PR #45 bugs, without changing the accepted fragment baseline; post exact SHA/evidence. Verify hosted Windows 3.11/3.12/3.14 and Ubuntu 3.12 checks. Run additional real QGIS/MDAL tests only if a path touches QGIS functionality.
+If a test fails, reproduce with unchanged master and PR #45. Fix only focused PR #45 bugs, without changing the accepted fragment baseline; post exact SHA/evidence. Verify hosted Windows 3.12/3.14 and Ubuntu 3.12; this phantom fork currently requires Python >=3.12, while curated Chain-Frost C must additionally validate 3.11 checks. Run additional real QGIS/MDAL tests only if a path touches QGIS functionality.
 
 ## 3. Prove complete parity BEFORE performance claims
 
