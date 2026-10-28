@@ -6,7 +6,6 @@ for strict same-revision comparisons and benchmark controls.
 
 from __future__ import annotations
 
-import importlib.abc
 import subprocess
 import sys
 from pathlib import Path
