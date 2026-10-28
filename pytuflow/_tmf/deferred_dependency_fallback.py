@@ -12,12 +12,12 @@ from dataclasses import dataclass
 from time import perf_counter
 from typing import TYPE_CHECKING
 
+from .context import Context
 from .dependency_records import (
     BatchDependencyRun,
     BatchInputCommand,
     BatchInputReference,
 )
-from .context import Context
 
 if TYPE_CHECKING:
     from .cf.tcf import TCF
