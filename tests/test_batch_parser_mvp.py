@@ -322,3 +322,56 @@ def test_missing_root_control_file_cannot_pass_empty_inventory(tmp_path: Path) -
         validate_batch(model, ["-s1 DEV"])
     with pytest.raises(ValueError, match="empty, unnamed"):
         validate_batch(TCF(), ["-s1 DEV"])
+
+
+def test_unused_bc_database_source_does_not_create_missing_file(tmp_path: Path) -> None:
+    _bc_gpkg(tmp_path / "bc.gpkg", name="valid")
+    (tmp_path / "bc.csv").write_text(
+        "Name,Source,Column 1,Column 2\n"
+        "valid,inflow.csv,Time,Flow\n"
+        "unused,not_loaded.csv,Time,Flow\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "inflow.csv").write_text("Time,Flow\n0,5\n", encoding="utf-8")
+    (tmp_path / "model.tcf").write_text(
+        "BC Database == bc.csv\n"
+        "Read GIS BC == bc.gpkg >> 2d_bc_lines\n",
+        encoding="utf-8",
+    )
+    result = validate_batch(tmp_path / "model.tcf", ["-e1 Q10", "-e1 Q100"])
+    assert result.passed, result.issues
+    assert result.validation.csv_headers_examined == 1
+    assert result.validation.files_examined == 3
+    assert not (tmp_path / "not_loaded.csv").exists()
+    # Syntactic data records are unchanged: only the validation-only
+    # projection excludes BC rows not referenced by active GIS features.
+    assert all(
+        any(x.entry_name == "unused" for x in run.database_sources)
+        for run in result.dependencies.runs
+    )
+
+
+def test_multiple_active_bc_database_declarations_select_by_order(tmp_path: Path) -> None:
+    _bc_gpkg(tmp_path / "first.gpkg", name="FIRST")
+    _bc_gpkg(tmp_path / "second.gpkg", name="SECOND")
+    for basename, name in (("first", "FIRST"), ("second", "SECOND")):
+        (tmp_path / f"{basename}.csv").write_text(
+            f"Name,Source,Column 1,Column 2\n{name},{basename}_inflow.csv,Time,Flow\n"
+            f"unused_{basename},missing_{basename}.csv,Time,Flow\n",
+            encoding="utf-8",
+        )
+        (tmp_path / f"{basename}_inflow.csv").write_text(
+            "Time,Flow\n0,2\n", encoding="utf-8"
+        )
+    (tmp_path / "model.tcf").write_text(
+        "BC Database == first.csv\n"
+        "Read GIS BC == first.gpkg >> 2d_bc_lines\n"
+        "BC Database == second.csv\n"
+        "Read GIS BC == second.gpkg >> 2d_bc_lines\n",
+        encoding="utf-8",
+    )
+    report = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert report.passed, report.issues
+    assert report.validation.csv_headers_examined == 2
+    assert report.validation.files_examined == 6
+    assert len(report.dependencies.runs[0].database_activations) == 2
