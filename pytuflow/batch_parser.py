@@ -122,7 +122,7 @@ def validate_batch(
     # attribute tables must not be opened for nonexistent or unresolved files.
     initial = pending_physical_projection(dependencies)
     primary_report = validate_dependencies(initial, options=options)
-    discovered = extend_gis_dependencies(dependencies, primary_report)
+    discovered = extend_gis_dependencies(dependencies, primary_report, tcf)
     # The private checked projection contains only GIS-selected BC/curve rows.
     # An unchanged syntactic run inventory is still exposed separately.
     report = (
