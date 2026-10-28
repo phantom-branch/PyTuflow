@@ -1,0 +1,56 @@
+name: Scope-driven dependency experiment
+
+on:
+  pull_request:
+    paths:
+      - "pytuflow/_tmf/scope_driven_dependencies.py"
+      - "tests/test_scope_driven_dependencies.py"
+      - "tests/benchmark_scope_driven_dependencies.py"
+      - ".github/workflows/scope-driven-dependencies.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  differential:
+    name: ${{ matrix.os }} Python ${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: windows-latest, python: "3.11"}
+          - {os: windows-latest, python: "3.12"}
+          - {os: windows-latest, python: "3.14"}
+          - {os: ubuntu-latest, python: "3.12"}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install optional dependency comparison requirements
+        run: python -m pip install -e . pytest ruff
+      - name: Verify package and syntax
+        run: |
+          python -m pip check
+          python -m compileall -q pytuflow/_tmf/scope_driven_dependencies.py tests/test_scope_driven_dependencies.py tests/benchmark_scope_driven_dependencies.py
+      - name: Check new code
+        run: python -m ruff check pytuflow/_tmf/scope_driven_dependencies.py tests/test_scope_driven_dependencies.py tests/benchmark_scope_driven_dependencies.py
+      - name: Graph-free parity and original scope/fragment regressions
+        run: >-
+          python -m pytest -q
+          tests/test_scope_driven_dependencies.py
+          tests/test_fragment_dependencies.py
+          tests/tmf/test_context.py
+          tests/tmf/test_scope.py
+          --junitxml=scope-driven-${{ matrix.python }}.xml
+      - name: Retain focused test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scope-driven-${{ matrix.os }}-${{ matrix.python }}
+          path: scope-driven-${{ matrix.python }}.xml
+          retention-days: 30
+          if-no-files-found: warn
