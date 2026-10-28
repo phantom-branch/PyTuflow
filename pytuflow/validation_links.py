@@ -76,6 +76,23 @@ def _linked_reference(parent: BatchInputReference, path: Path) -> BatchInputRefe
     )
 
 
+def _gis_read_role(command_name: str) -> str | None:
+    """Classify supported TUFLOW GIS/MapInfo read-command spelling.
+
+    The existing Command.is_read_gis() accepts READ GIS, READ MI, READ MID
+    and READ ROWCOL. The immutable command record contains only its name,
+    not its original Command object, so use its lexical READ form here.
+    """
+    words = command_name.casefold().split()
+    if (
+        len(words) < 2
+        or words[0] != "read"
+        or words[1] not in {"gis", "mi", "mid", "rowcol"}
+    ):
+        return None
+    return "bc" if len(words) > 2 and words[2] in {"bc", "sa", "rf"} else "gis"
+
+
 def _pending_source_kinds(run: BatchDependencyRun) -> frozenset[str]:
     """Candidate database rows needing active GIS feature ID selection.
 
@@ -88,11 +105,11 @@ def _pending_source_kinds(run: BatchDependencyRun) -> frozenset[str]:
         for command in run.ordered_inputs
     )
     kinds: set[str] = set()
-    if any(name.startswith(("read gis bc", "read gis sa", "read gis rf")) for name in commands):
+    if any(_gis_read_role(name) == "bc" for name in commands):
         kinds.add("bc")
     # Curve sources are selected by GIS Q/P and pit identifiers, rather than
     # required unconditionally by declaring a lookup database.
-    if any(name.startswith("read gis") for name in commands):
+    if any(_gis_read_role(name) is not None for name in commands):
         kinds.update(("depth_discharge", "pit_inlet"))
     return frozenset(kinds)
 
@@ -239,8 +256,8 @@ def extend_gis_dependencies(
         for link in run.input_references:
             original = link.reference
             layer_name = str(original.layer_pattern or original.path_pattern.stem)
-            bc_command = commands.get(link.command_index, "").startswith(
-                ("read gis bc", "read gis sa", "read gis rf")
+            bc_command = (
+                _gis_read_role(commands.get(link.command_index, "")) == "bc"
             )
             known_bc_layer = bool(
                 re.match(r"^2d_(bc|sa|rf)_", layer_name, flags=re.IGNORECASE)
