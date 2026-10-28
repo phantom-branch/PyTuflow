@@ -115,6 +115,7 @@ def get_event_commands(control_file: Path, settings: 'TCFConfig | _ParseContext'
     event_start_command = None
     for command in get_commands(control_file, settings):
         command = EventCommand.from_command(command)
+        command.parent = control_file
         if command.is_end_define_event():
             if bc_event_name and bc_event_text:
                 cmd = EventCommand(f'BC Event Source == {bc_event_text} | {bc_event_name}', settings)

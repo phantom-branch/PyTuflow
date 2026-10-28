@@ -82,7 +82,7 @@ def _relative_layers(result: Result) -> dict[tuple[str, str], str]:
 def _assert_matching_identities[Key: str | tuple[str, str], Value](
     kind: str, first: dict[Key, Value], second: dict[Key, Value],
 ) -> None:
-    assert first.keys() == second.keys(), (
+    assert sorted(first) == sorted(second), (
         f'{kind} identities do not match: '
         f'only in result1={sorted(first.keys() - second.keys())}; '
         f'only in result2={sorted(second.keys() - first.keys())}'

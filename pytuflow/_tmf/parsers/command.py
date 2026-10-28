@@ -797,6 +797,7 @@ class EventCommand(Command):
     @staticmethod
     def from_command(command: Command):
         event_cmd = EventCommand(command.original_text, command.config, command.parent)
+        event_cmd.line_number = command.line_number
         event_cmd.define_blocks = command.define_blocks
         for block in command.define_blocks:
             if block.type == 'EVENT DEFINE':

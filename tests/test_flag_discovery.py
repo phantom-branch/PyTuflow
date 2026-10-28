@@ -108,7 +108,8 @@ def test_dynamic_includes_and_unresolved_scope_are_reported_not_guessed() -> Non
     result = discover_model_flags(model)  # type: ignore[arg-type]
     assert result.scenario_slots == ("S1", "S2", "S3")
     assert result.scenario_names == ()
-    assert len(result.limitations) == 2
+    assert len(result.limitations) == 3
+    assert any("unresolved substitution" in warning for warning in result.limitations)
     assert any("unresolved variables" in warning for warning in result.limitations)
     assert any("Dynamic included" in warning for warning in result.limitations)
 
@@ -229,13 +230,13 @@ def test_loaded_tef_provenance_is_attached_to_event_definition(
 ) -> None:
     tef = tmp_path / "events.tef"
     tef.write_text(
-        "Define Event == Q100\\n"
-        " BC Event Source == _ARI_ | 100yr\\n"
-        "End Define\\n",
+        "Define Event == Q100\n"
+        " BC Event Source == _ARI_ | 100yr\n"
+        "End Define\n",
         encoding="utf-8",
     )
     top = tmp_path / "model.tcf"
-    top.write_text("Event File == events.tef\\n", encoding="utf-8")
+    top.write_text("Event File == events.tef\n", encoding="utf-8")
     inventory = TCF(top).discover_flags()
     sourced = [
         x for x in inventory.evidence
@@ -252,11 +253,11 @@ def test_read_file_tokens_preserved_after_parser_flattens_trd(
 ) -> None:
     for name in ("DEV", "EXG"):
         (tmp_path / f"nested_{name}.trd").write_text(
-            f"Read GIS Code == {name}.shp\\n", encoding="utf-8"
+            f"Read GIS Code == {name}.shp\n", encoding="utf-8"
         )
     tcf = tmp_path / "model.tcf"
     tcf.write_text(
-        "Read File == nested_<<~s2~>>.trd\\n", encoding="utf-8"
+        "Read File == nested_<<~s2~>>.trd\n", encoding="utf-8"
     )
     parsed = TCF(tcf)
     assert parsed._read_file_inputs
