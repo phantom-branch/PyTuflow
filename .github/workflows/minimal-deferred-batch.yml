@@ -3,7 +3,7 @@ name: Minimal deferred batch and physical file validation
 on:
   pull_request:
     paths:
-      - "pytuflow/batch_parser.py"
+      - "pytuflow/batch_validation.py"
       - "pytuflow/validation.py"
       - "pytuflow/validation_gis.py"
       - "pytuflow/validation_links.py"
@@ -40,11 +40,11 @@ jobs:
       - name: Validate source and package
         run: |
           python -m pip check
-          python -m compileall -q pytuflow/batch_parser.py pytuflow/validation.py pytuflow/validation_gis.py pytuflow/validation_links.py pytuflow/_tmf/gpkg_safety.py tests/test_batch_parser_mvp.py tests/test_input_validation.py tests/test_gpkg_safety.py
+          python -m compileall -q pytuflow/batch_validation.py pytuflow/validation.py pytuflow/validation_gis.py pytuflow/validation_links.py pytuflow/_tmf/gpkg_safety.py tests/test_batch_parser_mvp.py tests/test_input_validation.py tests/test_gpkg_safety.py
       - name: Lint new MVP and adopted validator
         run: >-
           python -m ruff check
-          pytuflow/batch_parser.py
+          pytuflow/batch_validation.py
           pytuflow/validation.py
           pytuflow/validation_gis.py
           pytuflow/validation_links.py
