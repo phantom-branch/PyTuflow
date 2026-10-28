@@ -154,11 +154,35 @@ def extend_gis_dependencies(
         for link in run.input_references:
             original = link.reference
             layer_name = str(original.layer_pattern or original.path_pattern.stem)
-            is_bc = bool(
-                commands.get(link.command_index, "").startswith(
-                    ("read gis bc", "read gis sa", "read gis rf")
-                ) and re.match(r"^2d_(bc|sa|rf)_", layer_name, flags=re.IGNORECASE)
+            bc_command = commands.get(link.command_index, "").startswith(
+                ("read gis bc", "read gis sa", "read gis rf")
             )
+            known_bc_layer = bool(
+                re.match(r"^2d_(bc|sa|rf)_", layer_name, flags=re.IGNORECASE)
+            )
+            flexible_bc_layer = (
+                original.layer_pattern is not None
+                and (layer_name.casefold() == "all"
+                     or any(char in layer_name for char in "*?["))
+            )
+            if bc_command and not (known_bc_layer or flexible_bc_layer):
+                findings.append(
+                    ValidationFinding(
+                        run_index=run.index,
+                        flags=run.flags,
+                        status="unresolved",
+                        kind="attribute",
+                        path=original.path_pattern,
+                        detail="Unsupported GIS BC/SA/RF layer schema",
+                        layer=layer_name,
+                        origin=original.origin,
+                        input_uuid=link.input_uuid,
+                        command_index=link.command_index,
+                        owner_control_file=link.owner_control_file,
+                    )
+                )
+                continue
+            is_bc = bc_command
             if not original.requires_attribute_scan and not is_bc:
                 continue
             key = (
