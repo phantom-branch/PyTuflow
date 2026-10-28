@@ -16,6 +16,7 @@ from time import perf_counter
 from types import MethodType
 from typing import TYPE_CHECKING
 
+from .dependency_records import BatchDependencyRun, BatchInputCommand, BatchInputReference
 from .compiled_control_tree import CompiledControlTree
 from .compiled_dependency_plan import CompiledVariablePlan
 from .group_input_reuse import LiteralInputGroupCache
@@ -612,51 +613,6 @@ def _batch_append_scope_sources_are_trusted(namespace: dict, known_input_types) 
                 or not _batch_append_input_scope_is_trusted(inp, known_input_types)):
             return False
     return True
-
-
-@dataclass(frozen=True, slots=True)
-class BatchInputCommand:
-    """Every active input in its original per-run command order.
-
-    Inputs with no physical references are retained because commands such as
-    database selection and settings can affect later commands. This is an
-    immutable projection, not a mutable run-state or an existence assertion.
-    """
-
-    input_uuid: str
-    command_index: int
-    owner_control_file: Path | None
-    line_number: int
-    command_name: str
-    command_text: str
-    # Authoritative count retained independently of the flattened projection.
-    # A consumer can detect references that vanish from both output tuples.
-    reference_count: int
-
-
-@dataclass(frozen=True, slots=True)
-class BatchInputReference:
-    """One dependency with stable input identity and owning command position."""
-
-    input_uuid: str
-    command_index: int
-    owner_control_file: Path | None
-    line_number: int
-    reference: FileReference
-
-
-@dataclass(frozen=True, slots=True)
-class BatchDependencyRun:
-    """One requested context. An error invalidates its entire reference set."""
-
-    index: int
-    flags: str
-    file_references: tuple[FileReference, ...]
-    database_sources: tuple[DeferredDatabaseSource, ...]
-    database_activations: tuple[DeferredDatabaseActivation, ...]
-    error: str | None = None
-    input_references: tuple[BatchInputReference, ...] = ()
-    ordered_inputs: tuple[BatchInputCommand, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
