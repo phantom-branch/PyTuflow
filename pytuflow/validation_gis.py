@@ -36,6 +36,7 @@ class AttributeInspection:
     network_identifiers: tuple[str, ...] = ()
     pit_identifiers: tuple[str, ...] = ()
     bc_identifiers: tuple[str, ...] = ()
+    bc_layer_selected: bool = False
 
 
 def _quote_identifier(value: str) -> str:
@@ -486,6 +487,7 @@ def inspect_gis_attribute_sources(
                                 else ()
                             ),
                             bc_identifiers=bc_names,
+                            bc_layer_selected=_bc_name_field_index(path.stem) is not None,
                         )
                 except Exception as exc:  # noqa: BLE001 - reject unknown provider failures
                     for selector, implicit in selected:
@@ -571,6 +573,10 @@ def inspect_gis_attribute_sources(
                             network_identifiers=network,
                             pit_identifiers=pits,
                             bc_identifiers=bc,
+                            bc_layer_selected=any(
+                                _bc_name_field_index(layer) is not None
+                                for layer in chosen
+                            ),
                         )
                     except (OSError, ValueError, TypeError, sqlite3.DatabaseError) as exc:
                         results[key] = AttributeInspection(
