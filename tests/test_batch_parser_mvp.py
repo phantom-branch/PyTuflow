@@ -310,3 +310,15 @@ def test_feature_linked_wildcard_geopackages_scan_every_match(tmp_path: Path) ->
     assert result.gis_files_scanned == 2
     assert result.gis_sources_added == 2
     assert result.validation.files_examined == 4
+
+
+def test_missing_root_control_file_cannot_pass_empty_inventory(tmp_path: Path) -> None:
+    missing = tmp_path / "absent.tcf"
+    with pytest.raises(FileNotFoundError, match="was not loaded"):
+        validate_batch(missing, ["-s1 DEV"])
+    model = TCF(missing)
+    assert not model.loaded
+    with pytest.raises(FileNotFoundError, match="was not loaded"):
+        validate_batch(model, ["-s1 DEV"])
+    with pytest.raises(ValueError, match="empty, unnamed"):
+        validate_batch(TCF(), ["-s1 DEV"])
