@@ -168,8 +168,14 @@ class Recorder:
             record.update(outcome="xpass", reason=str(event.wasxfail))
         record["phases"][event.when] = phase
 
-    @pytest.fixture(scope="session", autouse=True)
-    def isolated_project_cache(self):
+    def pytest_collection_finish(self, session) -> None:
+        """Activate cache isolation after collection, before any test runs.
+
+        A previous session-scoped fixture defined on this plugin instance
+        triggers PytestRemovedIn10Warning under pytest 9.2. Use lifecycle
+        hooks instead, retaining the same test-data isolation and report
+        semantics without creating a higher-scoped instance-method fixture.
+        """
         from pytuflow.project.config import settings
         from pytuflow.project.template import manager
 
@@ -189,7 +195,9 @@ class Recorder:
             return original_run(command, *args, **kwargs)
 
         self.patches.setattr(subprocess, "run", isolated_run)
-        yield
+
+    def pytest_sessionfinish(self, session, exitstatus: int) -> None:
+        """Always release isolation even when a test or collection fails."""
         self.patches.undo()
 
 
