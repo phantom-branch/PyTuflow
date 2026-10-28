@@ -16,12 +16,12 @@ from time import perf_counter
 from types import MethodType
 from typing import TYPE_CHECKING
 
-from .dependency_records import BatchDependencyRun, BatchInputCommand, BatchInputReference
 from .compiled_control_tree import CompiledControlTree
 from .compiled_dependency_plan import CompiledVariablePlan
-from .group_input_reuse import LiteralInputGroupCache
 from .context import Context, _CONTEXT_APPEND_ATTRIBUTES, _CONTEXT_APPEND_MRO
+from .dependency_records import BatchDependencyRun, BatchInputCommand, BatchInputReference
 from .event import EventDatabase, _EVENT_DATABASE_APPEND_ATTRIBUTES, _EVENT_DATABASE_APPEND_MRO
+from .group_input_reuse import LiteralInputGroupCache
 from .scope import (
     GlobalScope, ScenarioScope, ScopeList, _SCOPE_APPEND_DEFINITIONS,
     _SCOPE_APPEND_INSTANCE_ATTRIBUTES, _SCOPE_LIST_APPEND_ATTRIBUTES,
