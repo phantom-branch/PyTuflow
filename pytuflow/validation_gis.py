@@ -21,7 +21,10 @@ from typing import Literal
 
 from dbfread import DBF
 
+from ._tmf.gis import network_attribute_file_sources, tuflow_type_requires_feature_iter
+from ._tmf.gis_attr_driver import GISAttributes
 from ._tmf.gpkg_safety import readonly_gpkg
+from ._tmf.tfpathlib import TuflowPath
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,15 +47,13 @@ def _quote_identifier(value: str) -> str:
 
 
 def _file_field_index(layer: str) -> int | None:
-    """Mirror PyTUFLOW's file-valued field conventions for recognised layers."""
-    name = layer.casefold()
-    if re.match(r"^1d_nwk[eb]?_", name):
-        return 10
-    if re.match(r"^1d_pit_", name):
-        return 3
-    if re.match(r"^1d_(xs|tab|xz|bg|lc|cs|hw)_", name) or re.match(r"^1d_na_", name):
-        return 0
-    return None
+    """Use the original PyTUFLOW positional GIS-file attribute rules."""
+    indexes = tuflow_type_requires_feature_iter(layer)
+    if not indexes:
+        return None
+    if len(indexes) != 1:
+        raise ValueError(f"Unsupported multi-column file references in {layer}")
+    return indexes[0]
 
 
 def _bc_name_field_index(layer: str) -> int | None:
@@ -183,16 +184,27 @@ def _scan_file_reference_rows(
             if kind in {"Q", "P"}:
                 database_identifiers.add(value.strip())
                 continue
-            if kind == "QO":
-                if "|" not in value:
-                    message = f"QO channel lacks control ID and matrix file delimiter in {layer}"
-                    raise ValueError(message)
-                sources.update(_attribute_file_paths(value, network_m=False, parent=parent))
+            if kind in {"M", "QO"}:
+                # Reuse the parser's exact M/QO/Ignore file-versus-curve rule,
+                # instead of independently interpreting Inlet_Type pipes.
+                attributes = [None] * 11
+                attributes[1], attributes[2], attributes[10] = (
+                    kind, row[1], value
+                )
+                source_values = network_attribute_file_sources(attributes)
+                if not source_values:
+                    raise ValueError(
+                        f"Required {kind} file reference absent in {layer}"
+                    )
+                for file_value in source_values:
+                    sources.update(
+                        _attribute_file_paths(
+                            file_value, network_m=False, parent=parent
+                        )
+                    )
                 continue
-            if kind != "M":
-                # Other channels use Inlet_Type for control names or unused
-                # values. They are not direct file paths.
-                continue
+            # All other channel types name operational rules or nonfile IDs.
+            continue
         elif pit:
             if kind in {"Q", "VPI", "I"}:
                 database_identifiers.add(value.strip())
