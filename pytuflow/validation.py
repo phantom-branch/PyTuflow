@@ -11,15 +11,16 @@ from __future__ import annotations
 import csv
 import fnmatch
 import os
-import sqlite3
+import sqlite3  # noqa: F401 - instrumentation shares SQLite with core safe reader
 import stat
 from collections import defaultdict
 from collections.abc import Collection, Iterator
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import closing
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, Protocol
+
+from ._tmf.gpkg_safety import check_gpkg_safety, read_gpkg_layer_names
 
 if TYPE_CHECKING:
     from ._tmf.batch_dependencies import BatchDependencyRun
@@ -450,65 +451,6 @@ def _resolve_literal_case_paths(
     return resolved, failures, scanned
 
 
-_UNSAVED_GPKG_WAL_ERROR = (
-    "GeoPackage has a non-empty SQLite -wal journal; main .gpkg may "
-    "not contain saved changes. Save/close the editing session, "
-    "checkpoint the database externally, and rerun validation"
-)
-_UNSAVED_GPKG_ROLLBACK_ERROR = (
-    "GeoPackage has a non-empty SQLite -journal rollback file; main .gpkg "
-    "may include uncommitted changes. Save or roll back edits, close the "
-    "editing session, and rerun validation"
-)
-_UNSAFE_GPKG_HARDLINK_ERROR = (
-    "GeoPackage has multiple filesystem hard links (or unknown link count); "
-    "other filenames may have active SQLite journals. A uniquely linked, "
-    "fully saved main .gpkg is required for safe validation"
-)
-_GPKG_SOURCE_CHANGED_ERROR = (
-    "GeoPackage source alias changed target or identity during inspection; "
-    "rerun validation after editing and file links are stable"
-)
-
-
-def _gpkg_journal_error(path: Path, target: Path) -> str | None:
-    """Inspect metadata of journals belonging to a pinned physical source.
-
-    Hard-linked databases have unenumerable alternative journal paths; reject
-    them outright. Symlink aliases can have journals at either spelling.
-    No existing SQLite journal or model file is opened, checkpointed or edited.
-    """
-    links = target.stat().st_nlink
-    if links != 1:
-        return _UNSAFE_GPKG_HARDLINK_ERROR
-    for suffix, error in (
-        ("-wal", _UNSAVED_GPKG_WAL_ERROR),
-        ("-journal", _UNSAVED_GPKG_ROLLBACK_ERROR),
-    ):
-        candidates = {
-            path.with_name(path.name + suffix),
-            target.with_name(target.name + suffix),
-        }
-        for journal in candidates:
-            try:
-                if journal.stat().st_size > 0:
-                    return error
-            except FileNotFoundError:
-                continue
-    return None
-
-
-def _gpkg_source_identity(source: os.stat_result) -> tuple[int, int]:
-    return source.st_dev, source.st_ino
-
-
-def _gpkg_file_snapshot(source: os.stat_result) -> tuple[int, int, int, int, int]:
-    return (
-        source.st_dev, source.st_ino, source.st_size,
-        source.st_mtime_ns, source.st_ctime_ns,
-    )
-
-
 def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
     try:
         info = path.stat()
@@ -520,69 +462,15 @@ def _stat_source(path: Path) -> tuple[ValidationStatus, str]:
         return "missing", "Expected a regular file, not a directory or other type"
     if path.suffix.casefold() == ".gpkg":
         try:
-            # Pin the source before checking journals. A symlink may retarget
-            # while the model is being inspected; never certify another inode.
-            target = path.resolve(strict=True)
-            pinned = target.stat()
-            if _gpkg_source_identity(info) != _gpkg_source_identity(pinned):
-                return "unresolved", _GPKG_SOURCE_CHANGED_ERROR
-            error = _gpkg_journal_error(path, target)
-            if error is not None:
-                return "unresolved", error
-            if path.resolve(strict=True) != target:
-                return "unresolved", _GPKG_SOURCE_CHANGED_ERROR
-        except FileNotFoundError:
-            return "unresolved", "GeoPackage disappeared during inspection"
+            check_gpkg_safety(path, expected_stat=info)
         except (OSError, RuntimeError) as exc:
             return "unresolved", f"Cannot inspect GeoPackage journal state: {exc}"
     return "present", ""
 
 
 def _gpkg_contents(path: Path) -> tuple[tuple[str, ...], str]:
-    """Inspect a pinned main .gpkg with no SQLite auxiliary-file writes.
-
-    SQLite immutable=1 bypasses locking and journal recovery. Reject nonempty
-    WAL/rollback sidecars and multiple-hard-link files, where journal ownership
-    cannot be established. Verify alias and source identity before/after the
-    read: a retargeted symlink must never validate the wrong file.
-    """
-    try:
-        target = path.resolve(strict=True)
-        before = target.stat()
-        alias_before = path.lstat()
-        requested_before = path.stat()
-        if _gpkg_source_identity(requested_before) != _gpkg_source_identity(before):
-            return (), _GPKG_SOURCE_CHANGED_ERROR
-        error = _gpkg_journal_error(path, target)
-        if error is not None:
-            return (), error
-
-        uri = f"{target.as_uri()}?mode=ro&immutable=1"
-        with closing(sqlite3.connect(uri, uri=True)) as db:
-            names = tuple(
-                str(row[0]) for row in db.execute("SELECT table_name FROM gpkg_contents")
-            )
-
-        # Check the *same* target used by SQLite, not a newly resolved target.
-        # Alias metadata catches replacement even if the name points back at
-        # the original database before our final comparison.
-        if path.resolve(strict=True) != target:
-            return (), _GPKG_SOURCE_CHANGED_ERROR
-        alias_after = path.lstat()
-        requested_after = path.stat()
-        after = target.stat()
-        if (
-            _gpkg_file_snapshot(alias_before) != _gpkg_file_snapshot(alias_after)
-            or _gpkg_source_identity(requested_after) != _gpkg_source_identity(before)
-            or _gpkg_file_snapshot(before) != _gpkg_file_snapshot(after)
-        ):
-            return (), _GPKG_SOURCE_CHANGED_ERROR
-        error = _gpkg_journal_error(path, target)
-        if error is not None:
-            return (), error
-        return names, ""
-    except (OSError, sqlite3.DatabaseError, ValueError, RuntimeError) as exc:
-        return (), f"Cannot inspect GeoPackage layers: {exc}"
+    """Compatibility wrapper for the shared safe PyTUFLOW GeoPackage reader."""
+    return read_gpkg_layer_names(path)
 
 
 def _layer_status(
