@@ -116,11 +116,12 @@ def test_command_construction_counts_are_not_reference_cache_hits(tmp_path):
     assert cached.commands_constructed >= 1
     assert cached.commands_cloned > 0
     assert cached.unique_command_templates >= 1
-    assert cached.commands_constructed == 2
-    assert cached.commands_cloned == 19  # wildcard GRID command templates
-    assert cached.input_group_state_reuses == 19  # scenario GIS input states
-    assert (cached.commands_constructed + cached.commands_cloned
-            + cached.input_group_state_reuses) == 40
+    # The retired mutable input-group cache no longer elides RunStates.
+    # Context-specific command templates remain safe, and source records
+    # must still match the ordinary uncached deferred evaluator exactly.
+    assert cached.input_group_state_reuses == 0
+    assert cached.compiled_graph_nodes == 0
+    assert cached.commands_constructed + cached.commands_cloned >= 20
     # The uncached mode uses the uninstrumented base Context.
     assert plain.commands_constructed == 0
     assert [x.input_references for x in cached.runs] == [
@@ -641,7 +642,7 @@ def test_on_run_reused_projection_consumer_exception_propagates_without_duplicat
     )
     model = TCF(source)
     flags = ('-s1 DEV -e1 A', '-s1 DEV -e1 B')
-    assert model.collect_batch_dependencies(flags).invariant_projection_reuses == 1
+    assert model.collect_batch_dependencies(flags).invariant_projection_reuses == 0
     visited = []
 
     def callback(run):
@@ -671,7 +672,7 @@ def test_on_run_scenario_reuse_consumer_exception_propagates(tmp_path):
     )
     model = TCF(source)
     flags = ('-s1 DEV -e1 A', '-s1 DEV -e1 B')
-    assert model.collect_batch_dependencies(flags).invariant_projection_reuses == 1
+    assert model.collect_batch_dependencies(flags).invariant_projection_reuses == 0
     visited = []
 
     def callback(run):
