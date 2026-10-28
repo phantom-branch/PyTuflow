@@ -324,7 +324,10 @@ def test_missing_root_control_file_cannot_pass_empty_inventory(tmp_path: Path) -
         validate_batch(TCF(), ["-s1 DEV"])
 
 
-def test_unused_bc_database_source_does_not_create_missing_file(tmp_path: Path) -> None:
+@pytest.mark.parametrize("database_first", [True, False])
+def test_unused_bc_database_source_does_not_create_missing_file(
+    tmp_path: Path, database_first: bool,
+) -> None:
     _bc_gpkg(tmp_path / "bc.gpkg", name="valid")
     (tmp_path / "bc.csv").write_text(
         "Name,Source,Column 1,Column 2\n"
@@ -333,9 +336,10 @@ def test_unused_bc_database_source_does_not_create_missing_file(tmp_path: Path) 
         encoding="utf-8",
     )
     (tmp_path / "inflow.csv").write_text("Time,Flow\n0,5\n", encoding="utf-8")
+    database = "BC Database == bc.csv\n"
+    gis = "Read GIS BC == bc.gpkg >> 2d_bc_lines\n"
     (tmp_path / "model.tcf").write_text(
-        "BC Database == bc.csv\n"
-        "Read GIS BC == bc.gpkg >> 2d_bc_lines\n",
+        database + gis if database_first else gis + database,
         encoding="utf-8",
     )
     result = validate_batch(tmp_path / "model.tcf", ["-e1 Q10", "-e1 Q100"])
@@ -349,6 +353,53 @@ def test_unused_bc_database_source_does_not_create_missing_file(tmp_path: Path) 
         any(x.entry_name == "unused" for x in run.database_sources)
         for run in result.dependencies.runs
     )
+
+
+def test_late_conditional_database_binds_nested_bcf(tmp_path: Path) -> None:
+    _bc_gpkg(tmp_path / "bc.gpkg", name="flow")
+    (tmp_path / "nested.tbc").write_text(
+        "Read GIS BC == bc.gpkg >> 2d_bc_lines\n", encoding="utf-8"
+    )
+    for name in ("dev", "exg"):
+        (tmp_path / f"{name}.csv").write_text(
+            f"Name,Source,Column 1,Column 2\nflow,{name}_flow.csv,Time,Flow\n",
+            encoding="utf-8",
+        )
+        (tmp_path / f"{name}_flow.csv").write_text("Time,Flow\n0,1\n", encoding="utf-8")
+    (tmp_path / "model.tcf").write_text(
+        "BC Control File == nested.tbc\n"
+        "If Scenario == DEV\n BC Database == dev.csv\n"
+        "Else\n BC Database == exg.csv\nEnd If\n", encoding="utf-8"
+    )
+    result = validate_batch(tmp_path / "model.tcf", ["-s1 DEV", "-s1 EXG"])
+    assert result.passed, result.issues
+    assert result.validation.csv_headers_examined == 2
+    for index, name in enumerate(("dev", "exg")):
+        checked = {
+            item.path for item in result.validation.findings
+            if item.run_index == index and item.kind == "file"
+        }
+        assert tmp_path / f"{name}_flow.csv" in checked
+        other = "exg" if name == "dev" else "dev"
+        assert tmp_path / f"{other}_flow.csv" not in checked
+
+
+def test_multiple_late_bc_databases_remain_ambiguous(tmp_path: Path) -> None:
+    _bc_gpkg(tmp_path / "bc.gpkg", name="flow")
+    for name in ("first", "second"):
+        (tmp_path / f"{name}.csv").write_text(
+            "Name,Source,Column 1,Column 2\nflow,inflow.csv,Time,Flow\n",
+            encoding="utf-8",
+        )
+    (tmp_path / "inflow.csv").write_text("Time,Flow\n0,1\n", encoding="utf-8")
+    (tmp_path / "model.tcf").write_text(
+        "Read GIS BC == bc.gpkg >> 2d_bc_lines\n"
+        "BC Database == first.csv\nBC Database == second.csv\n", encoding="utf-8"
+    )
+    result = validate_batch(tmp_path / "model.tcf", ["-s1 EXG"])
+    assert not result.passed
+    assert any("no preceding active BC Database" in item.detail for item in result.issues)
+    assert result.validation.csv_headers_examined == 0
 
 
 def test_multiple_active_bc_database_declarations_select_by_order(tmp_path: Path) -> None:

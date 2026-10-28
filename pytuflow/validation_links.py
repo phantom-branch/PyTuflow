@@ -318,9 +318,16 @@ def extend_gis_dependencies(
                     )
 
         if is_bc and result.bc_identifiers:
-            activations = [
+            declarations = [
                 a for a in run.database_activations
-                if a.database_kind == "bc" and a.sequence < link.command_index
+                if a.database_kind == "bc"
+            ]
+            # The run projection already filters inactive scenario/event
+            # declarations. A sole BC database is model-wide, including when
+            # a nested BCF is read before its declaration. Multiple databases
+            # still require an unambiguous preceding activation.
+            activations = declarations if len(declarations) == 1 else [
+                a for a in declarations if a.sequence < link.command_index
             ]
             if not activations:
                 issue("GIS BC/SA/RF layer has no preceding active BC Database")
