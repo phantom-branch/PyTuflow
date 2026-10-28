@@ -16,6 +16,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from ._tmf.db.bc_dbase import bc_database_entry_name
 from ._tmf.dependency_records import BatchDependencyRun, BatchInputReference
 from ._tmf.file_reference import FileReference
 from ._tmf.gis import tuflow_type_requires_feature_iter
@@ -334,15 +335,16 @@ def extend_gis_dependencies(
                 continue
             active = max(activations, key=lambda a: a.sequence)
             for identifier in result.bc_identifiers:
+                database_key = str(bc_database_entry_name(identifier)).casefold()
                 matched = [
                     source for source in run.database_sources
                     if source.database_kind == "bc"
                     and source.input_uuid == active.input_uuid
-                    and source.entry_name.casefold() == identifier.casefold()
+                    and source.entry_name.casefold() == database_key
                 ]
                 if len(matched) == 1:
                     selected_bc[run.index].add(
-                        (active.input_uuid, identifier.casefold())
+                        (active.input_uuid, database_key)
                     )
                     continue
                 if len(matched) > 1:
@@ -358,7 +360,7 @@ def extend_gis_dependencies(
                 constants = inline_cache[active.database_path]
                 if (
                     not isinstance(constants, str)
-                    and identifier.casefold() in constants
+                    and database_key in constants
                 ):
                     continue
                 issue(
