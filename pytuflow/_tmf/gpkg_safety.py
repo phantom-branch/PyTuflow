@@ -125,6 +125,17 @@ def check_gpkg_safety(
     _confirm_gpkg(Path(path), target, alias, source)
 
 
+def _readonly_sqlite_uri(path: Path) -> str:
+    """Encode a pinned path with an empty authority for native SQLite."""
+    uri = path.as_uri()
+    # Windows resolves mapped drives to UNC paths. SQLite builds without
+    # URI-authority support reject file://server/share; keep the server in
+    # the path as file:////server/share instead. as_uri already escapes names.
+    if uri.startswith("file://") and not uri.startswith("file:///"):
+        uri = "file:////" + uri[len("file://"):]
+    return f"{uri}?mode=ro&immutable=1"
+
+
 @contextmanager
 def readonly_gpkg(path: Path) -> Iterator[sqlite3.Connection]:
     """Open one stable, checkpointed main GeoPackage without SQLite writes.
@@ -135,7 +146,7 @@ def readonly_gpkg(path: Path) -> Iterator[sqlite3.Connection]:
     """
     path = Path(path)
     target, alias, source = _pin_gpkg(path)
-    uri = f"{target.as_uri()}?mode=ro&immutable=1"
+    uri = _readonly_sqlite_uri(target)
     try:
         with closing(sqlite3.connect(uri, uri=True)) as database:
             yield database
